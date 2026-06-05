@@ -17,5 +17,6 @@ pub mod provider_connect;
 pub mod query;
 pub mod rate_limit;
 pub mod simplefin;
+pub mod subscription;
 pub mod transaction;
 pub mod transaction_category_override;

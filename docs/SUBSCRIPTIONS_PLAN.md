@@ -65,14 +65,14 @@ User overrides always win because `effective_category = COALESCE(override, categ
 - Add `DatabaseRepository` trait methods (mockable) + Postgres impl in [repository_service.rs](../backend/src/services/repository_service.rs): `get_transactions_for_subscription_detection(user_id, since)`, a batch category-update for a set of transaction ids (reuse the auto_categorization update path), and `get_subscription_summary(user_id)` (group SUBSCRIPTION effective-category txns by `normalized_merchant` → merchant display name, count, representative amount, date span).
 
 **Acceptance criteria:**
-- [ ] After a SimpleFin sync or CSV/OFX import, every transaction with a non-empty `merchant_name` has `normalized_merchant` set to its alphanumeric-lowercase form. Teller/Plaid transactions are covered by the same `normalize_batch` path.
-- [ ] Setting a category override on a transaction uses `transaction.normalized_merchant` from the DB; no separate recomputation of the key.
-- [ ] The `auto_categorize_filter` correctly excludes user-overridden merchants (i.e. the JOIN now finds matches).
-- [ ] `cadence.rs` helpers are pure and unit-tested (monthly/weekly/annual matches, variance rejection, monthly-cost normalization).
-- [ ] Detector assigns `SUBSCRIPTION` for a stable monthly merchant ≥3 occurrences; rejects high-variance amounts and sub-threshold counts.
-- [ ] Detector ignores out-of-scope categories and exclusion-list merchants.
-- [ ] Detector does not overwrite a user-overridden merchant.
-- [ ] Repository methods covered by tests using the existing `mockall`/`#[tokio::test]` pattern (see [budget_service_tests.rs](../backend/src/tests/budget_service_tests.rs)).
+- [x] After a SimpleFin sync or CSV/OFX import, every transaction with a non-empty `merchant_name` has `normalized_merchant` set to its alphanumeric-lowercase form. Teller/Plaid transactions are covered by the same `normalize_batch` path.
+- [x] Setting a category override on a transaction uses `transaction.normalized_merchant` from the DB; no separate recomputation of the key.
+- [x] The `auto_categorize_filter` correctly excludes user-overridden merchants (i.e. the JOIN now finds matches).
+- [x] `cadence.rs` helpers are pure and unit-tested (monthly/weekly/annual matches, variance rejection, monthly-cost normalization).
+- [x] Detector assigns `SUBSCRIPTION` for a stable monthly merchant ≥3 occurrences; rejects high-variance amounts and sub-threshold counts.
+- [x] Detector ignores out-of-scope categories and exclusion-list merchants.
+- [x] Detector does not overwrite a user-overridden merchant.
+- [x] Repository methods covered by tests using the existing `mockall`/`#[tokio::test]` pattern (see [budget_service_tests.rs](../backend/src/tests/budget_service_tests.rs)).
 
 ## Phase 3 — Background trigger (post-categorization, post-sync)
 
@@ -157,6 +157,17 @@ User overrides always win because `effective_category = COALESCE(override, categ
 - [ ] `bun --cwd=frontend test` passes.
 
 ---
+
+### TDD log — Phase 2
+
+- Added `normalized_merchant: Option<String>` to `Transaction` model; updated all construction sites.
+- `normalize_batch` now writes `normalized_merchant` from the normalized display name; early-continue path derives it from `merchant_name` when present.
+- `set_transaction_category` reads `transaction.normalized_merchant` directly (authoritative from DB).
+- New repo methods: `get_transactions_for_subscription_detection`, `get_subscription_summary`.
+- `subscription_detection/cadence.rs`: 13 pure unit tests; `exclusions.rs` guards well-known non-subscription merchants.
+- `subscription_detection/service.rs`: `detect_and_assign_for_user` groups by `normalized_merchant`, applies cadence + CV gates.
+- `models/subscription.rs`: `SubscriptionSummary` struct (pre-defined for Phase 4 endpoint).
+- `cargo test -p sumurai-backend --locked`: 591 passed, 0 failed.
 
 ### TDD log — Phase 1
 

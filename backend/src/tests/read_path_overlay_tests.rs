@@ -65,6 +65,7 @@ async fn setup_test_data(
         pending: false,
         created_at: None,
         original_merchant_name: None,
+        normalized_merchant: None,
     };
 
     db::query(
@@ -102,6 +103,7 @@ async fn setup_test_data(
         pending: false,
         created_at: None,
         original_merchant_name: None,
+        normalized_merchant: None,
     };
 
     db::query(

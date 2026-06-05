@@ -54,6 +54,7 @@ mod simplefin_credential_resolver_tests;
 mod simplefin_demo_sync_tests;
 mod simplefin_provider_tests;
 mod simplefin_service_tests;
+mod subscription_cadence_tests;
 mod subscription_detection_tests;
 mod sync_service_factory_tests;
 mod sync_service_tests;

@@ -912,6 +912,7 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
+                    normalized_merchant: None,
                 },
                 Transaction {
                     id: Uuid::new_v4(),
@@ -929,6 +930,7 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
+                    normalized_merchant: None,
                 },
             ];
             Box::pin(async { Ok(transactions) })
@@ -1087,6 +1089,7 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
+                    normalized_merchant: None,
                 },
                 Transaction {
                     id: Uuid::new_v4(),
@@ -1104,6 +1107,7 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
+                    normalized_merchant: None,
                 },
             ];
             Box::pin(async { Ok(transactions) })
@@ -1179,6 +1183,7 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
+                    normalized_merchant: None,
                 },
                 Transaction {
                     id: Uuid::new_v4(),
@@ -1196,6 +1201,7 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
+                    normalized_merchant: None,
                 },
             ];
             Box::pin(async { Ok(transactions) })

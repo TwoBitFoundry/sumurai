@@ -104,6 +104,64 @@ sequenceDiagram
     Axum-->>Browser: 200 JSON
 ```
 
+### Subscription Detection
+
+Subscription detection runs as a background pass — never user-invoked. It has two layers:
+
+**Layer 1 — master-list (instant, global).** `deterministic_label()` in `classifier_labels.rs` checks the transaction's merchant text against a pre-normalized list of known brands (`subscription_detection/known_merchants.rs`) before any keyword or ML branch. A match returns the `"Subscription"` label, which maps to `category_primary = "SUBSCRIPTION"`. This classifies even the first charge from a known brand.
+
+**Layer 2 — cadence + amount heuristic (per-user, rolling 18 months).** After categorization runs, `detect_and_assign_for_user` promotes transactions in eligible categories (`ENTERTAINMENT`, `GENERAL_SERVICES`, `GENERAL_MERCHANDISE`, `RENT_AND_UTILITIES`, `PERSONAL_CARE`) to `SUBSCRIPTION` when they form a stable recurring pattern. User overrides always win — any merchant with an override row is excluded from the detection query.
+
+```mermaid
+flowchart TD
+    Sync["Provider sync\nor CSV/OFX import"]
+    Norm["MerchantNormalizationService\nnormalize_batch()\n→ sets merchant_name\n→ sets normalized_merchant"]
+    Upsert["upsert_transactions_batch()\n→ writes normalized_merchant\nto transactions table"]
+    AutoCat["AutoCategorizationService\n(ML + deterministic labels)"]
+    MasterList{"Layer 1:\nnormalized_merchant\nmatches known brand?"}
+    SubCat["category_primary = SUBSCRIPTION"]
+    BgSpawn["tokio::spawn\ndetect_and_assign_for_user()"]
+
+    subgraph Layer2["Layer 2 — cadence detection (per-user, 18-month window)"]
+        Pull["get_transactions_for_subscription_detection()\namount < 0 · eligible categories · no override"]
+        Group["group by normalized_merchant"]
+        Exclusions{"in exclusion list?"}
+        Cadence{"classify_cadence()\nday-gaps within tolerance?"}
+        CV{"CV ≤ 0.15\n(stable amounts)?"}
+        Count{"occurrences ≥\nmin threshold?"}
+        BatchUpdate["update_transaction_categories_batch()\ncategory_primary = SUBSCRIPTION"]
+    end
+
+    Sync --> Norm --> Upsert --> AutoCat
+    AutoCat --> MasterList
+    MasterList -- yes --> SubCat
+    MasterList -- no --> OtherCat["other category_primary"]
+    AutoCat --> BgSpawn
+    BgSpawn --> Pull --> Group --> Exclusions
+    Exclusions -- excluded --> Skip1["skip merchant"]
+    Exclusions -- not excluded --> Cadence
+    Cadence -- irregular --> Skip2["skip merchant"]
+    Cadence -- stable --> CV
+    CV -- high variance --> Skip3["skip merchant"]
+    CV -- stable --> Count
+    Count -- too few --> Skip4["skip merchant"]
+    Count -- enough --> BatchUpdate
+```
+
+**`classify_cadence` tolerance windows**
+
+| Cadence | Target days | Tolerance |
+|---------|-------------|-----------|
+| Weekly | 7 | ±2 |
+| Biweekly | 14 | ±2 |
+| Monthly | 30 | ±10 |
+| Quarterly | 91 | ±10 |
+| Annual | 365 | ±20 |
+
+Returns `None` (skip) if no window fits all gaps. Amount CV must be ≤ `0.15`. Minimum occurrences: 3 for short cadences (weekly/biweekly/monthly), 2 for long (quarterly/annual).
+
+`normalized_merchant` is the canonical grouping key for both detection and category overrides. The `transaction_category_overrides` JOIN matches on `transactions.normalized_merchant = overrides.normalized_merchant` — overridden merchants are excluded from detection at the query level, so user choices are never overwritten.
+
 ---
 
 ## Frontend

@@ -6,6 +6,8 @@ use crate::models::transaction::Transaction;
 use crate::services::cache_service::CacheService;
 use crate::services::repository_service::DatabaseRepository;
 
+use crate::utils::merchant_name::normalize_merchant_for_match;
+
 use super::engine::normalize;
 use super::types::{AliasIndex, MerchantSource};
 
@@ -53,11 +55,17 @@ impl MerchantNormalizationService {
                 .unwrap_or("");
 
             if raw.is_empty() {
+                if txn.normalized_merchant.is_none() {
+                    if let Some(ref name) = txn.merchant_name {
+                        txn.normalized_merchant = Some(normalize_merchant_for_match(name));
+                    }
+                }
                 continue;
             }
 
             let result = normalize(raw, MerchantSource::Raw, &index);
-            txn.merchant_name = Some(result.display);
+            txn.merchant_name = Some(result.display.clone());
+            txn.normalized_merchant = Some(normalize_merchant_for_match(&result.display));
         }
 
         Ok(())

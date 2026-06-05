@@ -90,6 +90,7 @@ fn build_transactions(account_id: Uuid, user_id: Uuid) -> Vec<Transaction> {
             pending: false,
             created_at: Some(Utc::now()),
             original_merchant_name: None,
+            normalized_merchant: None,
         })
         .collect()
 }

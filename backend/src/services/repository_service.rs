@@ -339,6 +339,17 @@ pub trait DatabaseRepository: Send + Sync {
     async fn get_active_merchant_aliases(
         &self,
     ) -> Result<Vec<crate::services::merchant_normalization::types::AliasRow>>;
+
+    async fn get_transactions_for_subscription_detection(
+        &self,
+        user_id: &Uuid,
+        since: chrono::NaiveDate,
+    ) -> Result<Vec<Transaction>>;
+
+    async fn get_subscription_summary(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<crate::models::subscription::SubscriptionSummary>>;
 }
 
 pub struct PostgresRepository {
@@ -519,7 +530,7 @@ impl PostgresRepository {
                 transaction.created_at.unwrap_or_else(chrono::Utc::now),
             ))),
             original_merchant_name: Set(transaction.original_merchant_name.clone()),
-            ..Default::default()
+            normalized_merchant: Set(transaction.normalized_merchant.clone()),
         }
     }
 
@@ -536,6 +547,7 @@ impl PostgresRepository {
                 .update_columns([
                     transactions::Column::Amount,
                     transactions::Column::MerchantName,
+                    transactions::Column::NormalizedMerchant,
                     transactions::Column::OriginalMerchantName,
                     transactions::Column::Pending,
                 ])
@@ -1015,6 +1027,7 @@ impl DatabaseRepository for PostgresRepository {
                         .update_columns([
                             transactions::Column::Amount,
                             transactions::Column::MerchantName,
+                            transactions::Column::NormalizedMerchant,
                             transactions::Column::Pending,
                         ])
                         .to_owned(),
@@ -2608,5 +2621,115 @@ impl DatabaseRepository for PostgresRepository {
                 priority: r.priority,
             })
             .collect())
+    }
+
+    async fn get_transactions_for_subscription_detection(
+        &self,
+        user_id: &Uuid,
+        since: chrono::NaiveDate,
+    ) -> Result<Vec<Transaction>> {
+        use crate::services::subscription_detection::service::ELIGIBLE_CATEGORIES;
+        let user_id = *user_id;
+        let rows = self
+            .with_tenant(&user_id, move |txn| {
+                Box::pin(async move {
+                    Ok(transactions::Entity::find()
+                        .filter(transactions::Column::UserId.eq(user_id))
+                        .filter(transactions::Column::Amount.lt(0))
+                        .filter(transactions::Column::Date.gte(since))
+                        .filter(
+                            transactions::Column::CategoryPrimary
+                                .is_in(ELIGIBLE_CATEGORIES.iter().copied()),
+                        )
+                        .filter(Self::auto_categorize_filter())
+                        .order_by_asc(transactions::Column::Date)
+                        .all(txn)
+                        .await?)
+                })
+            })
+            .await?;
+
+        Ok(rows.into_iter().map(Into::into).collect())
+    }
+
+    async fn get_subscription_summary(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<crate::models::subscription::SubscriptionSummary>> {
+        use crate::models::subscription::SubscriptionSummary;
+        use crate::services::subscription_detection::cadence::{
+            classify_cadence, normalize_to_monthly_cost, Cadence,
+        };
+        use rust_decimal::Decimal;
+        use std::collections::HashMap;
+
+        let user_id = *user_id;
+        let rows = self
+            .with_tenant(&user_id, move |txn| {
+                Box::pin(async move {
+                    Ok(transactions::Entity::find()
+                        .join(
+                            JoinType::LeftJoin,
+                            transactions::Relation::TransactionCategoryOverrides.def(),
+                        )
+                        .filter(transactions::Column::UserId.eq(user_id))
+                        .filter(Self::effective_category_expr().eq("SUBSCRIPTION"))
+                        .order_by_asc(transactions::Column::Date)
+                        .all(txn)
+                        .await?)
+                })
+            })
+            .await?;
+
+        let mut groups: HashMap<String, Vec<entity::transactions::Model>> = HashMap::new();
+        for row in rows {
+            let key = row
+                .normalized_merchant
+                .clone()
+                .unwrap_or_else(|| row.merchant_name.clone().unwrap_or_default());
+            if key.is_empty() {
+                continue;
+            }
+            groups.entry(key).or_default().push(row);
+        }
+
+        let mut summaries = Vec::new();
+        for (normalized, group) in groups {
+            let dates: Vec<chrono::NaiveDate> = group.iter().map(|r| r.date).collect();
+            let day_gaps: Vec<i64> = dates.windows(2).map(|w| (w[1] - w[0]).num_days()).collect();
+
+            let cadence = classify_cadence(&day_gaps).unwrap_or(Cadence::Monthly);
+
+            let amounts: Vec<f64> = group
+                .iter()
+                .map(|r| r.amount.abs().try_into().unwrap_or(0.0f64))
+                .collect();
+            let representative = amounts.iter().copied().fold(0.0f64, f64::max);
+            let monthly_f64 = normalize_to_monthly_cost(representative, cadence.clone());
+            let monthly_cost = Decimal::try_from(monthly_f64)
+                .unwrap_or(Decimal::try_from(representative).unwrap_or(Decimal::ZERO));
+
+            let last_charged = group
+                .iter()
+                .map(|r| r.date)
+                .max()
+                .unwrap_or_else(|| chrono::Local::now().naive_local().date());
+
+            let merchant = group
+                .iter()
+                .find_map(|r| r.merchant_name.clone())
+                .unwrap_or_else(|| normalized.clone());
+
+            summaries.push(SubscriptionSummary {
+                merchant,
+                normalized_merchant: normalized,
+                monthly_cost,
+                cadence: cadence.as_str().to_string(),
+                last_charged,
+                occurrence_count: group.len() as i64,
+            });
+        }
+
+        Ok(summaries)
     }
 }

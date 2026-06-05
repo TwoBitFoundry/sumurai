@@ -39,6 +39,7 @@ fn make_other_transaction(user_id: Uuid, id: Uuid, merchant: &str, amount: Decim
         pending: false,
         created_at: None,
         original_merchant_name: None,
+        normalized_merchant: None,
     }
 }
 

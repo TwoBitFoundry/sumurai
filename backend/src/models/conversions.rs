@@ -56,6 +56,7 @@ impl From<entity::transactions::Model> for Transaction {
             pending: m.pending.unwrap_or(false),
             created_at: opt_fixed_to_utc(m.created_at),
             original_merchant_name: m.original_merchant_name,
+            normalized_merchant: m.normalized_merchant,
         }
     }
 }

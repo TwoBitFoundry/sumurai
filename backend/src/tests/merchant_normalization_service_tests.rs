@@ -45,6 +45,7 @@ fn make_transaction(merchant: &str, original: Option<&str>) -> Transaction {
         pending: false,
         created_at: None,
         original_merchant_name: original.map(str::to_string),
+        normalized_merchant: None,
     }
 }
 
@@ -172,4 +173,29 @@ async fn given_cache_hit_when_alias_index_then_db_not_called() {
 
     let svc = MerchantNormalizationService::new(Arc::new(db), Arc::new(cache));
     let _ = svc.alias_index().await.unwrap();
+}
+
+#[tokio::test]
+async fn given_raw_description_when_normalize_batch_then_normalized_merchant_set() {
+    let svc = make_service(seed_aliases());
+    let mut txns = vec![make_transaction(
+        "POS COSTCO WHSE #12 TULSA OK 537",
+        Some("POS COSTCO WHSE #12 TULSA OK 537"),
+    )];
+
+    svc.normalize_batch(&mut txns).await.unwrap();
+
+    assert_eq!(txns[0].merchant_name.as_deref(), Some("Costco"));
+    assert_eq!(txns[0].normalized_merchant.as_deref(), Some("costco"));
+}
+
+#[tokio::test]
+async fn given_empty_raw_with_existing_merchant_when_normalize_batch_then_normalized_merchant_derived(
+) {
+    let svc = make_service(vec![]);
+    let mut txns = vec![make_transaction("Netflix", Some(""))];
+
+    svc.normalize_batch(&mut txns).await.unwrap();
+
+    assert_eq!(txns[0].normalized_merchant.as_deref(), Some("netflix"));
 }

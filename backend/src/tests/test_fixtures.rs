@@ -168,6 +168,7 @@ impl TestFixtures {
                 pending: false,
                 created_at: Some(Utc::now()),
                 original_merchant_name: None,
+                normalized_merchant: None,
             },
             Transaction {
                 id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440011").unwrap(),
@@ -185,6 +186,7 @@ impl TestFixtures {
                 pending: false,
                 created_at: Some(Utc::now()),
                 original_merchant_name: None,
+                normalized_merchant: None,
             },
             Transaction {
                 id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440012").unwrap(),
@@ -202,6 +204,7 @@ impl TestFixtures {
                 pending: false,
                 created_at: Some(Utc::now()),
                 original_merchant_name: None,
+                normalized_merchant: None,
             },
         ]
     }
@@ -230,6 +233,7 @@ impl TestFixtures {
             pending: false,
             created_at: Some(Utc::now()),
             original_merchant_name: None,
+            normalized_merchant: None,
         }];
 
         let new_with_duplicate = vec![
@@ -249,6 +253,7 @@ impl TestFixtures {
                 pending: false,
                 created_at: Some(Utc::now()),
                 original_merchant_name: None,
+                normalized_merchant: None,
             },
             Transaction {
                 id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440022").unwrap(),
@@ -266,6 +271,7 @@ impl TestFixtures {
                 pending: false,
                 created_at: Some(Utc::now()),
                 original_merchant_name: None,
+                normalized_merchant: None,
             },
         ];
 

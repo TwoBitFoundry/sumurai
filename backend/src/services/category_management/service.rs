@@ -13,9 +13,7 @@ use crate::services::categorization::category_descriptors::{
     system_category_display_label, SYSTEM_CATEGORY_SLUGS,
 };
 use crate::services::repository_service::DatabaseRepository;
-use crate::utils::merchant_name::{
-    category_lookup_key, format_custom_category_display, normalize_merchant_for_match,
-};
+use crate::utils::merchant_name::{category_lookup_key, format_custom_category_display};
 
 #[derive(Debug)]
 pub enum CategoryServiceError {
@@ -146,8 +144,7 @@ impl CategoryManagementService {
             .await?
             .ok_or(CategoryServiceError::TransactionNotFound)?;
 
-        let normalized_merchant =
-            normalize_merchant_for_match(transaction.merchant_name.as_deref().unwrap_or(""));
+        let normalized_merchant = transaction.normalized_merchant.clone().unwrap_or_default();
 
         if request.category_name == transaction.category_primary && !request.is_custom {
             repository
