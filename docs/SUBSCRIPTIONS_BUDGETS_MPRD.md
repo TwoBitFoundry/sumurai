@@ -140,10 +140,17 @@ sequenceDiagram
 - Delete `frontend/src/views/SubscriptionsPage.tsx` after extraction.
 
 **Acceptance criteria:**
-- [ ] `SubscriptionList` renders merchant cards and invokes `onSelect(merchant)` on click.
-- [ ] `SubscriptionsSection` shows empty state; no duplicate hero metrics in card header.
-- [ ] Component tests pass with fixture props (no `useSubscriptions` in components).
-- [ ] No subscription-specific page view remains under `frontend/src/views/`.
+- [x] `SubscriptionList` renders merchant cards and invokes `onSelect(merchant)` on click.
+- [x] `SubscriptionsSection` shows empty state; no duplicate hero metrics in card header.
+- [x] Component tests pass with fixture props (no `useSubscriptions` in components).
+- [x] No subscription-specific page view remains under `frontend/src/views/`.
+
+**TDD log (Phase 3):**
+- Red: `SubscriptionList.test.tsx`, `SubscriptionsSection.test.tsx` (components missing).
+- Green: extracted `SubscriptionList`, `SubscriptionsSection`; `SubscriptionsTabPanel` wires tab until Phase 4 nav removal.
+- Deleted `views/SubscriptionsPage.tsx` and `tests/views/SubscriptionsPage.test.tsx`.
+- `npm --prefix frontend test -- tests/features/subscriptions/components/` — 6 passed.
+- `npm --prefix frontend test -- tests/components/AuthenticatedApp.test.tsx` — 6 passed.
 
 ---
 

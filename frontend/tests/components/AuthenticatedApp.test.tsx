@@ -84,9 +84,8 @@ jest.mock('@/views/TransactionsPage', () => ({
   default: () => <div>Transactions</div>,
 }));
 
-jest.mock('@/views/SubscriptionsPage', () => ({
-  __esModule: true,
-  default: () => <div>Subscriptions</div>,
+jest.mock('@/features/subscriptions/components/SubscriptionsTabPanel', () => ({
+  SubscriptionsTabPanel: () => <div>Subscriptions</div>,
 }));
 
 jest.mock('@/features/transactions/hooks/useTransactionFilterState', () => ({

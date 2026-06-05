@@ -4,6 +4,7 @@ import { BottomContextualBar } from '@/components/BottomContextualBar';
 import { DateRangePillSlider } from '@/features/analytics/components/DateRangePillSlider';
 import { BudgetMonthPillSlider } from '@/features/budgets/components/BudgetMonthPillSlider';
 import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
+import { SubscriptionsTabPanel } from '@/features/subscriptions/components/SubscriptionsTabPanel';
 import { TransactionsSearchBar } from '@/features/transactions/components/TransactionsSearchBar';
 import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
 import { Alert, cn } from '@/ui/primitives';
@@ -11,7 +12,6 @@ import AccountsPage from '@/views/AccountsPage';
 import BudgetsPage from '@/views/BudgetsPage';
 import DashboardPage from '@/views/DashboardPage';
 import SettingsPage from '@/views/SettingsPage';
-import SubscriptionsPage from '@/views/SubscriptionsPage';
 import TransactionsPage from '@/views/TransactionsPage';
 import { AppLayout } from '../layouts/AppLayout';
 import { GradientShell } from '../ui/primitives';
@@ -134,7 +134,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
                 {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
                 {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}
                 {tab === 'subscriptions' && (
-                  <SubscriptionsPage onNavigateToTransactions={handleNavigateToTransactions} />
+                  <SubscriptionsTabPanel onNavigateToTransactions={handleNavigateToTransactions} />
                 )}
                 {tab === 'accounts' && <AccountsPage onError={setError} />}
                 {tab === 'settings' && <SettingsPage onLogout={onLogout} />}
