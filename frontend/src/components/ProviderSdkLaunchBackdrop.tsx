@@ -2,25 +2,33 @@
 
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import { cn } from '@/ui/primitives';
 import { modalBackdrop } from '@/ui/recipes';
 
 export function ProviderSdkLaunchBackdrop({ active }: { active: boolean }) {
+  const { breakpoint } = useViewportBreakpoint();
+
   useEffect(() => {
     if (typeof document === 'undefined') {
       return;
     }
 
-    if (active) {
-      document.body.dataset.providerSdkInset = 'active';
-      return () => {
-        delete document.body.dataset.providerSdkInset;
-      };
+    if (active && breakpoint !== 'desktop') {
+      document.body.dataset.providerSdkInset = breakpoint;
+      return;
     }
 
     delete document.body.dataset.providerSdkInset;
-    return undefined;
-  }, [active]);
+  }, [active, breakpoint]);
+
+  useEffect(() => {
+    return () => {
+      if (typeof document !== 'undefined') {
+        delete document.body.dataset.providerSdkInset;
+      }
+    };
+  }, []);
 
   if (typeof document === 'undefined') {
     return null;
