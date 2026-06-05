@@ -28,7 +28,7 @@ function toBackendTransaction(transaction: Transaction, day: number): BackendTra
   return {
     id: transaction.id,
     date: storyDate(day),
-    merchant_name: transaction.merchant || transaction.name,
+    merchant_name: transaction.name,
     amount: transaction.amount,
     category_primary: transaction.category.primary,
     category_detailed: transaction.category.detailed,

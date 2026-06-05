@@ -31,7 +31,7 @@ export function TransactionsScreenSlice(props: {
         : null;
     const merchantCounts = new Map<string, number>();
     transactionsForStats.forEach((t) => {
-      const merchant = t.merchant || t.name;
+      const merchant = t.name;
       merchantCounts.set(merchant, (merchantCounts.get(merchant) || 0) + 1);
     });
     const recurringMerchants = Array.from(merchantCounts.entries())
@@ -115,9 +115,7 @@ export function TransactionsScreenSlice(props: {
                 stats.largestTransaction && stats.totalCount > 1
                   ? [
                       {
-                        label:
-                          (stats.largestTransaction.merchant || stats.largestTransaction.name) ??
-                          '',
+                        label: stats.largestTransaction.name,
                       },
                     ]
                   : []

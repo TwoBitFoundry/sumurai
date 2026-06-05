@@ -73,7 +73,7 @@ export const TransactionsMobileList: React.FC<Props> = ({
         transition={{ duration: 0.24, ease: [0.22, 0.61, 0.36, 1] }}
       >
         {visibleItems.map((transaction, index) => {
-          const merchant = transaction.name || transaction.merchant || '-';
+          const merchant = transaction.name || '-';
           const merchantTooltip = transaction.originalMerchantName || merchant;
           const accountLabel = formatAccountLabel(transaction);
           const metaTitle = accountLabel

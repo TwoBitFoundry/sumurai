@@ -129,4 +129,24 @@ describe('TransactionsMobileList', () => {
       'min-h-[5.25rem]'
     );
   });
+
+  it('does not fall back to the legacy merchant field for display text', () => {
+    render(
+      <TransactionsMobileList
+        items={[
+          {
+            ...transaction,
+            name: '',
+            merchant: 'Legacy Merchant',
+          },
+        ]}
+        currentPage={1}
+        pageSize={8}
+        animationKey="page-1"
+      />
+    );
+
+    expect(screen.queryByText('Legacy Merchant')).not.toBeInTheDocument();
+    expect(screen.getByText('-')).toBeInTheDocument();
+  });
 });

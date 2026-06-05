@@ -240,7 +240,7 @@ export const TransactionsTable: React.FC<Props> = ({
                             'py-3',
                             'align-middle'
                           )}
-                          title={r.originalMerchantName || r.name || r.merchant || '-'}
+                          title={r.originalMerchantName || r.name || '-'}
                         >
                           <span
                             className={cn(
@@ -252,7 +252,7 @@ export const TransactionsTable: React.FC<Props> = ({
                               'duration-500'
                             )}
                           >
-                            {r.name || r.merchant || '-'}
+                            {r.name || '-'}
                           </span>
                         </td>
                         <td

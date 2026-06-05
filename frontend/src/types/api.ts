@@ -33,6 +33,7 @@ export interface Transaction {
   name: string;
   merchant?: string;
   originalMerchantName?: string;
+  normalizationSource?: string;
   amount: number;
   category: TransactionCategory;
   provider?: FinancialProvider;

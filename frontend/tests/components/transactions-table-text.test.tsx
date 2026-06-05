@@ -213,4 +213,31 @@ describe('TransactionsTable text tokens', () => {
     const merchantCell = screen.getByText('Coffee').closest('td');
     expect(merchantCell).toHaveAttribute('title', 'Coffee');
   });
+
+  it('does not render the legacy merchant fallback when the canonical name is empty', () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+    window.dispatchEvent(new Event('resize'));
+
+    render(
+      <TransactionsTable
+        items={[
+          {
+            ...baseTx(10),
+            name: '',
+            merchant: 'Legacy Merchant',
+          },
+        ]}
+        total={1}
+        currentPage={1}
+        totalPages={1}
+        pageSize={1}
+        onPrev={() => {}}
+        onNext={() => {}}
+      />
+    );
+
+    expect(screen.queryByText('Legacy Merchant')).not.toBeInTheDocument();
+    const merchantCell = screen.getByText('-').closest('td');
+    expect(merchantCell).toHaveAttribute('title', '-');
+  });
 });

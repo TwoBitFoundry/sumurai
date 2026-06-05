@@ -124,9 +124,30 @@ Make the normalized merchant the only displayed merchant across transaction surf
 
 **Acceptance Criteria**
 
-- [ ] Transaction rows display the normalized merchant name everywhere.
-- [ ] Frontend transaction rendering no longer depends on `name || merchant` display fallback logic.
-- [ ] Raw merchant data remains available for UI detail display without replacing the normalized label.
+- [x] Transaction rows display the normalized merchant name everywhere.
+- [x] Frontend transaction rendering no longer depends on `name || merchant` display fallback logic.
+- [x] Raw merchant data remains available for UI detail display without replacing the normalized label.
+
+**Notes**
+
+- Frontend transaction mapping now treats the backend `merchant_name` as the only canonical display label and keeps raw merchant text in metadata fields only.
+- Transaction table, mobile transaction rows, and supporting storybook fixtures no longer reintroduce the legacy duplicate merchant fallback path.
+
+**TDD Log**
+
+- Red:
+  - `bun --cwd=frontend test ./tests/domain/TransactionTransformer.test.ts`
+  - `bun --cwd=frontend test ./tests/features/transactions/components/TransactionsMobileList.test.tsx`
+  - `bun --cwd=frontend test ./tests/components/transactions-table-text.test.tsx`
+- Green:
+  - `bun --cwd=frontend test ./tests/domain/TransactionTransformer.test.ts`
+  - `bun --cwd=frontend test ./tests/features/transactions/components/TransactionsMobileList.test.tsx`
+  - `bun --cwd=frontend test ./tests/components/transactions-table-text.test.tsx`
+- Verification:
+  - `bun --cwd=frontend run typecheck`
+  - `bun --cwd=frontend run lint`
+  - `bun --cwd=frontend --bun next build --webpack`
+  - `bun --cwd=frontend ./scripts/build-sw.mjs`
 
 ## Phase 4: Transaction Row Raw-Name Popover
 
