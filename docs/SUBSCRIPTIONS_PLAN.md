@@ -118,20 +118,21 @@ User overrides always win because `effective_category = COALESCE(override, categ
 - [x] "Subscriptions" appears in `CategoryPicker`, the transactions category filter, and accent coloring with no extra wiring.
 - [x] `useSubscriptions` fetches and exposes loading/error/data states; tested at the service boundary.
 
-## Phase 6 — First-class Subscriptions view + navigation
+## Phase 6 — Subscriptions on the Budgets page (supersedes standalone tab)
 
-**Goal:** A dedicated top-level Subscriptions view placed alongside Budgets.
+**Goal:** Single Budgets entry point with subscription insights merged into the page (see [SUBSCRIPTIONS_BUDGETS_MPRD.md](SUBSCRIPTIONS_BUDGETS_MPRD.md)).
 
 **Tasks:**
-- Add `'subscriptions'` to the `TabKey` union and nav, positioned **immediately after `'budgets'`**, in [AuthenticatedApp.tsx](../frontend/src/components/AuthenticatedApp.tsx) and [AppLayout.tsx](../frontend/src/layouts/AppLayout.tsx); reuse the `BudgetMonthPillSlider` bottom bar so the view is month-scoped.
-- Create `frontend/src/views/SubscriptionsPage.tsx` using `PageLayout` matching Budgets: hero `HeroStatCard`s (Monthly recurring, Active subscriptions, Largest, Annualized) + a `GlassCard` card-grid of subscription merchant cards (name · monthly amount · cadence badge), mirroring `BudgetList`. `EmptyState` when none.
-- Card click deep-links to the Transactions tab with the category filter set to `SUBSCRIPTION` and merchant search prefilled (via [useTransactionFilterState](../frontend/src/features/transactions/hooks/useTransactionFilterState.ts) + tab switch in `AuthenticatedApp.tsx`).
+- `GET /api/budgets/overview` returns budgets + live subscription summaries; `useBudgets` exposes `subscriptions`.
+- Budgets hero row: Days remaining · Monthly recurring · Annualized · Overages; `SubscriptionsSection` in a `GlassCard` above category budgets.
+- Card click deep-links to Transactions with `SUBSCRIPTION` category + merchant search (via `useTransactionFilterState` + tab switch in `AuthenticatedApp.tsx`).
+- Remove the standalone Subscriptions tab and `GET /api/subscriptions` after migration.
 
 **Acceptance criteria:**
-- [x] A "Subscriptions" tab renders next to Budgets with the month-scoped bottom bar.
-- [x] The view shows hero stats + a merchant card-grid composed from existing primitives, with an empty state.
-- [x] Clicking a card navigates to Transactions filtered to Subscriptions for that merchant.
-- [x] Tab routing + card-click deep-link covered by frontend tests.
+- [x] Budgets tab shows subscription heroes + recurring-subscriptions card above category budgets.
+- [x] Clicking a subscription card navigates to Transactions filtered to Subscriptions for that merchant.
+- [x] No top-level Subscriptions tab remains in navigation.
+- [x] Budgets page and component tests cover merged layout and deep-link.
 
 ## Phase 7 — Retire the crude heuristic
 
@@ -152,8 +153,8 @@ User overrides always win because `effective_category = COALESCE(override, categ
 **Tasks / acceptance criteria:**
 - [x] Seed: a master-list brand ×1 (instant), a non-listed stable monthly merchant ×4 (cadence), an excluded recurring merchant (skipped).
 - [ ] `cargo test -p sumurai-backend --locked subscription_detection` passes.
-- [ ] After a sync/Classify job: `GET /api/transactions?category_primary=SUBSCRIPTION` and `GET /api/subscriptions` return the expected merchants + monthly costs.
-- [ ] At `http://localhost:8080`: Subscriptions tab shows stats + cards; card click deep-links to filtered Transactions; re-categorizing a transaction away removes it from the Subscriptions view (override wins). Capture console/network/screenshot proof.
+- [ ] After a sync/Classify job: `GET /api/transactions?category_primary=SUBSCRIPTION` and `GET /api/budgets/overview` return the expected merchants + monthly costs in `subscriptions`.
+- [ ] At `http://localhost:8080`: Budgets tab shows subscription heroes + recurring-subscriptions card; card click deep-links to filtered Transactions; re-categorizing a transaction away removes it from the subscriptions list on next overview fetch (override wins). Capture console/network/screenshot proof.
 - [ ] `bun --cwd=frontend test` passes.
 
 ---

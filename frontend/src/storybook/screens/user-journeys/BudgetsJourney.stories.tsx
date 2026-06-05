@@ -4,6 +4,7 @@ import { BottomContextualBar } from '@/components/BottomContextualBar';
 import { BudgetMonthPillSlider } from '@/features/budgets/components/BudgetMonthPillSlider';
 import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
+import { sampleSubscriptions } from '@/storybook/fixtures/subscriptions';
 import BudgetsPage from '@/views/BudgetsPage';
 import {
   getPagedStoryTransactions,
@@ -29,7 +30,12 @@ let storyBudgets = storyBudgetRecords.map((budget) => ({ ...budget }));
 
 const handlers = [
   route('GET', '/providers/accounts', () => jsonResponse(storyProviderAccounts)),
-  route('GET', '/budgets', () => jsonResponse(storyBudgets)),
+  route('GET', '/budgets/overview', () =>
+    jsonResponse({
+      budgets: storyBudgets,
+      subscriptions: sampleSubscriptions,
+    })
+  ),
   route('POST', '/budgets', ({ body }) => {
     const payload = body as { category?: string; amount?: string };
     const created = {
@@ -93,6 +99,9 @@ export const Journey: Story = {
     const canvas = within(canvasElement);
     await waitFor(() => {
       expect(canvas.getByText(/provision the coffers/i)).toBeVisible();
+      expect(canvas.getByText('Spotify')).toBeVisible();
+      expect(canvas.getByText('Netflix')).toBeVisible();
+      expect(canvas.getByText('Monthly recurring')).toBeVisible();
     });
     await waitFor(() => {
       expect(canvas.getByRole('button', { name: /next month/i })).toBeVisible();

@@ -205,10 +205,17 @@ sequenceDiagram
 - Manual at `http://localhost:8080` with demo user `me@test.com`.
 
 **Acceptance criteria:**
-- [ ] Storybook budgets slice shows subscriptions card + new heroes.
-- [ ] `SUBSCRIPTIONS_PLAN.md` Phase 6 and Phase 8 checklist corrected.
-- [ ] Full test suites green.
+- [x] Storybook budgets slice shows subscriptions card + new heroes.
+- [x] `SUBSCRIPTIONS_PLAN.md` Phase 6 and Phase 8 checklist corrected.
+- [x] Full test suites green.
 - [ ] Manual check: merged layout, deep-link, month slider scoping, no Subscriptions tab.
+
+**TDD log (Phase 5):**
+- `BudgetsJourney.stories.tsx`: `/budgets/overview` handler + `sampleSubscriptions`; play asserts subscription cards + hero.
+- Removed `SubscriptionService`, `useSubscriptions`, `GET /api/subscriptions`, and `subscription_api_tests.rs`.
+- Updated `SUBSCRIPTIONS_PLAN.md` Phase 6 intent and Phase 8 checklist (Budgets tab, overview endpoint).
+- `cargo test -p sumurai-backend --locked` — 597 passed.
+- `npm --prefix frontend test` — 870 passed.
 
 ---
 

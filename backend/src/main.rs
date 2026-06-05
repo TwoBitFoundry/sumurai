@@ -644,7 +644,6 @@ pub fn create_app(state: AppState) -> Router {
         .route("/api/budgets", post(create_authenticated_budget))
         .route("/api/budgets/{id}", put(update_authenticated_budget))
         .route("/api/budgets/{id}", delete(delete_authenticated_budget))
-        .route("/api/subscriptions", get(get_authenticated_subscriptions))
         .route("/api/auth/account", delete(delete_user_account))
         .route("/api/auth/passkey/enroll/begin", post(begin_passkey_enroll))
         .route(
@@ -3375,44 +3374,6 @@ async fn get_authenticated_budgets_overview(
             budgets,
             subscriptions,
         }))
-    }
-}
-
-#[utoipa::path(
-    get,
-    path = "/api/subscriptions",
-    description = "Returns detected subscription summaries for the authenticated user.",
-    responses(
-        (status = 200, description = "Subscription summaries", body = Vec<crate::models::subscription::SubscriptionSummary>),
-        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
-        (status = 500, description = "Internal server error", body = ApiErrorResponse),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Subscriptions"
-)]
-async fn get_authenticated_subscriptions(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-) -> Result<
-    Json<Vec<crate::models::subscription::SubscriptionSummary>>,
-    (StatusCode, Json<ApiErrorResponse>),
-> {
-    match state
-        .db_repository
-        .get_subscription_summary(&auth_context.user_id)
-        .await
-    {
-        Ok(summaries) => Ok(Json(summaries)),
-        Err(e) => {
-            tracing::error!(
-                "Failed to get subscription summary for user {}: {}",
-                auth_context.user_id,
-                e
-            );
-            Err(ApiErrorResponse::internal_server_error(
-                "Failed to fetch subscriptions",
-            ))
-        }
     }
 }
 

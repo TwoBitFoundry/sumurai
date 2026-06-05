@@ -165,7 +165,6 @@ use utoipa::OpenApi;
         crate::login_with_password,
         crate::begin_passkey_login,
         crate::finish_passkey_login,
-        crate::get_authenticated_subscriptions,
     )
 )]
 pub struct ApiDoc;
