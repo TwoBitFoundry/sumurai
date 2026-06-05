@@ -50,8 +50,6 @@ export function useTransactionsInsights(
           total_spent: 0,
           average_amount: 0,
           largest: null,
-          recurring_count: 0,
-          recurring_merchants: [],
           top_categories: [],
         };
       }

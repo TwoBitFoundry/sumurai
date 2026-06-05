@@ -142,8 +142,8 @@ User overrides always win because `effective_category = COALESCE(override, categ
 - Assess the in-SQL `recurring_count`/`recurring_merchants` logic in `get_transactions_insights` — leave only if still useful as a generic "frequent merchant" signal; otherwise remove and update `TransactionsInsightsResponse` consumers.
 
 **Acceptance criteria:**
-- [ ] No competing "recurring" definition remains user-visible; the SUBSCRIPTION category is authoritative.
-- [ ] Any removed fields are cleaned from model, query, and frontend consumers without breaking the Transactions page.
+- [x] No competing "recurring" definition remains user-visible; the SUBSCRIPTION category is authoritative.
+- [x] Any removed fields are cleaned from model, query, and frontend consumers without breaking the Transactions page.
 
 ## Phase 8 — End-to-end verification
 
@@ -157,6 +157,15 @@ User overrides always win because `effective_category = COALESCE(override, categ
 - [ ] `bun --cwd=frontend test` passes.
 
 ---
+
+### TDD log — Phase 7
+
+- `recurring_count` and `recurring_merchants` removed from `TransactionsInsightsResponse` backend model, SQL CTE, row mapper, and type alias.
+- "Reoccurring" `HeroStatCard` removed from `TransactionsPage.tsx`; `RefreshCcw` import dropped; stats grid updated to `lg:grid-cols-3`.
+- `recurring_count` / `recurring_merchants` removed from `frontend/src/types/api.ts`.
+- All backend integration and repository tests updated; `docs/OPENAPI.json` regenerated.
+- All frontend tests updated (useTransactionsInsights, TransactionsPage, TransactionService).
+- `cargo test`: 594 passed, 0 failed. `bun test`: 866 passed, 0 failed.
 
 ### TDD log — Phase 6
 

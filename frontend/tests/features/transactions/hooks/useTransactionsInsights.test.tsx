@@ -56,8 +56,6 @@ describe('useTransactionsInsights', () => {
       total_spent: 60,
       average_amount: 20,
       largest: { amount: 30, merchant: 'Coffee Collective' },
-      recurring_count: 1,
-      recurring_merchants: ['Coffee Collective'],
       top_categories: ['FOOD_AND_DRINK'],
     } as any);
 

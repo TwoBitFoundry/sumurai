@@ -67,16 +67,7 @@ pub(crate) struct TransactionWithAccountRow {
     pub(crate) original_merchant_name: Option<String>,
 }
 
-type TransactionsInsightsRow = (
-    i64,
-    f64,
-    f64,
-    Option<f64>,
-    Option<String>,
-    i64,
-    Vec<String>,
-    Vec<String>,
-);
+type TransactionsInsightsRow = (i64, f64, f64, Option<f64>, Option<String>, Vec<String>);
 
 pub const EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES: [&str; 4] =
     ["INCOME", "LOAN_PAYMENTS", "TRANSFER_IN", "TRANSFER_OUT"];
@@ -869,8 +860,6 @@ impl PostgresRepository {
         let average_amount: f64 = row.try_get("", "average_amount")?;
         let largest_amount: Option<f64> = row.try_get("", "largest_amount")?;
         let largest_merchant: Option<String> = row.try_get("", "largest_merchant")?;
-        let recurring_count: i64 = row.try_get("", "recurring_count")?;
-        let recurring_merchants: Vec<String> = row.try_get("", "recurring_merchants")?;
         let top_categories: Vec<String> = row.try_get("", "top_categories")?;
         Ok(Self::map_transaction_insights_tuple((
             total_count,
@@ -878,8 +867,6 @@ impl PostgresRepository {
             average_amount,
             largest_amount,
             largest_merchant,
-            recurring_count,
-            recurring_merchants,
             top_categories,
         )))
     }
@@ -891,8 +878,6 @@ impl PostgresRepository {
             average_amount,
             largest_amount,
             largest_merchant,
-            recurring_count,
-            recurring_merchants,
             top_categories,
         ): TransactionsInsightsRow,
     ) -> TransactionsInsightsResponse {
@@ -905,8 +890,6 @@ impl PostgresRepository {
             total_spent,
             average_amount,
             largest,
-            recurring_count,
-            recurring_merchants,
             top_categories,
         }
     }
@@ -1536,22 +1519,6 @@ impl DatabaseRepository for PostgresRepository {
                         ORDER BY ABS(amount) DESC, merchant ASC
                         LIMIT 1
                     ),
-                    merchant_counts AS (
-                        SELECT merchant, COUNT(*) AS c
-                        FROM filtered
-                        WHERE merchant IS NOT NULL
-                        GROUP BY merchant
-                        HAVING COUNT(*) >= 3
-                    ),
-                    recurring AS (
-                        SELECT
-                            COUNT(*)::bigint AS recurring_count,
-                            COALESCE(
-                                (ARRAY_AGG(merchant ORDER BY c DESC, merchant))[1:3],
-                                ARRAY[]::text[]
-                            ) AS recurring_merchants
-                        FROM merchant_counts
-                    ),
                     top_categories AS (
                         SELECT COALESCE(ARRAY_AGG(effective_category ORDER BY c DESC, effective_category), ARRAY[]::text[]) AS categories
                         FROM (
@@ -1569,12 +1536,9 @@ impl DatabaseRepository for PostgresRepository {
                         a.average_amount,
                         l.amount AS largest_amount,
                         l.merchant AS largest_merchant,
-                        r.recurring_count,
-                        r.recurring_merchants,
                         tc.categories AS top_categories
                     FROM aggregates a
                     LEFT JOIN largest l ON true
-                    LEFT JOIN recurring r ON true
                     LEFT JOIN top_categories tc ON true
                     "#,
                 );

@@ -61,8 +61,6 @@ export interface TransactionsInsightsResponse {
   total_spent: number;
   average_amount: number;
   largest: LargestTransaction | null;
-  recurring_count: number;
-  recurring_merchants: string[];
   top_categories: string[];
 }
 

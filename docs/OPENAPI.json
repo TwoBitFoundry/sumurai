@@ -5018,8 +5018,6 @@
           "total_count",
           "total_spent",
           "average_amount",
-          "recurring_count",
-          "recurring_merchants",
           "top_categories"
         ],
         "properties": {
@@ -5036,16 +5034,6 @@
                 "$ref": "#/components/schemas/LargestTransaction"
               }
             ]
-          },
-          "recurring_count": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "recurring_merchants": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           },
           "top_categories": {
             "type": "array",
@@ -5068,11 +5056,6 @@
             "amount": 42.75,
             "merchant": "Coffee Collective"
           },
-          "recurring_count": 2,
-          "recurring_merchants": [
-            "Coffee Collective",
-            "Gas Station"
-          ],
           "top_categories": [
             "FOOD_AND_DRINK",
             "TRANSPORTATION"

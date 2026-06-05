@@ -828,11 +828,6 @@ async fn given_transactions_when_aggregating_insights_then_respects_filters_and_
             merchant: "Coffee Collective".to_string(),
         })
     );
-    assert_eq!(insights.recurring_count, 1);
-    assert_eq!(
-        insights.recurring_merchants,
-        vec!["Coffee Collective".to_string()]
-    );
     assert_eq!(insights.top_categories, vec!["FOOD_AND_DRINK".to_string()]);
 }
 
@@ -925,8 +920,6 @@ async fn given_transactions_when_aggregating_insights_for_empty_set_then_returns
     assert_eq!(insights.total_spent, 0.0);
     assert_eq!(insights.average_amount, 0.0);
     assert_eq!(insights.largest, None);
-    assert_eq!(insights.recurring_count, 0);
-    assert!(insights.recurring_merchants.is_empty());
     assert!(insights.top_categories.is_empty());
 }
 

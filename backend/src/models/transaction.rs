@@ -146,8 +146,6 @@ pub struct LargestTransaction {
         "amount": 42.75,
         "merchant": "Coffee Collective"
     },
-    "recurring_count": 2,
-    "recurring_merchants": ["Coffee Collective", "Gas Station"],
     "top_categories": ["FOOD_AND_DRINK", "TRANSPORTATION"]
 }))]
 pub struct TransactionsInsightsResponse {
@@ -155,8 +153,6 @@ pub struct TransactionsInsightsResponse {
     pub total_spent: f64,
     pub average_amount: f64,
     pub largest: Option<LargestTransaction>,
-    pub recurring_count: i64,
-    pub recurring_merchants: Vec<String>,
     pub top_categories: Vec<String>,
 }
 
