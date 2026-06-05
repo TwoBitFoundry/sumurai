@@ -20,11 +20,12 @@ import {
 import { cn } from './utils';
 
 const MENU_POPOVER_GAP_PX = 8;
+const MENU_POPOVER_WIDTH_PX = 192;
 
 export const menuDropdownRecipes = {
   content: [
-    'fixed z-50 w-48 max-w-[calc(100vw-1rem)]',
-    `overflow-hidden ${uiRadiusRecipes.standard}`,
+    'fixed z-50 w-48 max-w-[calc(100vw-1rem)] max-h-[calc(100vh-1rem)]',
+    `overflow-y-auto ${uiRadiusRecipes.standard}`,
     ...floatingChromeGlass.backdrop,
     ...floatingChromeGlass.shell,
     'p-2',
@@ -82,7 +83,7 @@ export function MenuDropdown({
 }: MenuDropdownProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [popoverPosition, setPopoverPosition] = useState<{ top: number; right: number } | null>(
+  const [popoverPosition, setPopoverPosition] = useState<{ top: number; left: number } | null>(
     null
   );
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -99,9 +100,13 @@ export function MenuDropdown({
     }
 
     const triggerRect = triggerElement.getBoundingClientRect();
+    const left = Math.max(
+      MENU_POPOVER_GAP_PX,
+      Math.min(triggerRect.left, window.innerWidth - MENU_POPOVER_WIDTH_PX - MENU_POPOVER_GAP_PX)
+    );
     setPopoverPosition({
       top: triggerRect.bottom + MENU_POPOVER_GAP_PX,
-      right: Math.max(MENU_POPOVER_GAP_PX, window.innerWidth - triggerRect.right),
+      left,
     });
   }, []);
 
@@ -195,7 +200,7 @@ export function MenuDropdown({
                   transition={{ duration: 0.16, ease: [0.22, 0.61, 0.36, 1] }}
                   style={{
                     top: popoverPosition.top,
-                    right: popoverPosition.right,
+                    left: popoverPosition.left,
                   }}
                   className={cn(menuDropdownRecipes.content, contentClassName)}
                 >

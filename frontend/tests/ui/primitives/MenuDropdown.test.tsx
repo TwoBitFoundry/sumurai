@@ -24,4 +24,44 @@ describe('MenuDropdown', () => {
     expect(csvItem.className).toContain('hover:border-[var(--color-border-default)]');
     expect(csvItem.className).toContain('hover:bg-[var(--color-surface-hover-row)]');
   });
+
+  it('keeps the menu within the viewport on mobile widths', async () => {
+    const user = userEvent.setup();
+    const rectSpy = jest.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      width: 44,
+      height: 44,
+      top: 12,
+      left: 12,
+      bottom: 56,
+      right: 56,
+      x: 12,
+      y: 12,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    const previousInnerWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 390,
+    });
+
+    render(
+      <MenuDropdown trigger={<button type="button">Open</button>}>
+        <MenuItem onClick={jest.fn()}>Export as CSV</MenuItem>
+        <MenuItem onClick={jest.fn()}>Export as OFX</MenuItem>
+      </MenuDropdown>
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+
+    const menu = screen.getByRole('menu');
+    expect(menu).toHaveStyle({ left: '12px' });
+    expect(menu).toHaveStyle({ top: '64px' });
+
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: previousInnerWidth,
+    });
+    rectSpy.mockRestore();
+  });
 });

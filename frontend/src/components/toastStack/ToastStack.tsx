@@ -112,7 +112,7 @@ function ToastCard({ message, progress, onClose, autoDismiss, dismissKey, type }
         type="button"
         variant="ghost"
         size="sm"
-        className={cn('absolute', 'right-3', 'top-3', 'shrink-0')}
+        className={cn('absolute', 'right-3', 'top-1/2', '-translate-y-1/2', 'shrink-0')}
         onClick={onClose}
         aria-label="Close toast"
       >

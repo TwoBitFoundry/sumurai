@@ -11,6 +11,7 @@ mod tests {
     use crate::services::simplefin_connection_service::SimpleFinConnectionService;
     use crate::services::simplefin_org_service::SimpleFinOrganizationService;
     use crate::services::sync_service::SyncService;
+    use crate::utils::merchant_name::normalize_merchant_for_match;
     use chrono::{NaiveDate, Utc};
     use rust_decimal::Decimal;
     use std::collections::HashMap;
@@ -248,6 +249,14 @@ mod tests {
             captured[0].original_merchant_name.as_deref(),
             Some("POS DEBIT STARBUCKS #12345 SEATTLE WA 06/03"),
             "original_merchant_name must be preserved"
+        );
+        assert_eq!(
+            captured[0].normalized_merchant.as_deref(),
+            captured[0]
+                .merchant_name
+                .as_deref()
+                .map(normalize_merchant_for_match)
+                .as_deref()
         );
     }
 

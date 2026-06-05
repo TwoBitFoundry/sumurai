@@ -105,4 +105,18 @@ describe('ToastStack', () => {
     expect(stack).toHaveClass('bottom-6');
     expect(stack).toHaveClass('max-w-lg');
   });
+
+  it('centers the dismiss button within the toast card', () => {
+    render(
+      <ToastStack
+        transients={[{ id: 't-1', message: 'Sync complete' }]}
+        pinnedToast={null}
+        onDismissTransient={jest.fn()}
+        onDismissPinned={jest.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'Close toast' })).toHaveClass('top-1/2');
+    expect(screen.getByRole('button', { name: 'Close toast' })).toHaveClass('-translate-y-1/2');
+  });
 });
