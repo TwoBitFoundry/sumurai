@@ -94,7 +94,19 @@ async fn given_import_file_when_importing_then_persists_other_categories_without
 
             Box::pin(async { Ok(()) })
         });
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .times(1)
+        .returning(|| Box::pin(async { Ok(vec![]) }));
 
+    mock_cache
+        .expect_get_string()
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_cache
+        .expect_set_with_ttl()
+        .times(1)
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
     mock_cache
         .expect_is_session_valid()
         .returning(|_| Box::pin(async { Ok(true) }));
@@ -178,7 +190,19 @@ async fn given_import_failure_when_importing_then_still_persists_other_categorie
             assert!(transactions[0].category_confidence.is_empty());
             Box::pin(async { Ok(()) })
         });
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .times(1)
+        .returning(|| Box::pin(async { Ok(vec![]) }));
 
+    mock_cache
+        .expect_get_string()
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_cache
+        .expect_set_with_ttl()
+        .times(1)
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
     mock_cache
         .expect_is_session_valid()
         .returning(|_| Box::pin(async { Ok(true) }));

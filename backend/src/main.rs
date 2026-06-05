@@ -1883,6 +1883,16 @@ async fn import_authenticated_transactions(
         transaction.user_id = Some(auth_context.user_id);
     }
 
+    let merchant_normalization_service =
+        crate::services::merchant_normalization::service::MerchantNormalizationService::new(
+            state.db_repository.clone(),
+            state.cache_service.clone(),
+        );
+    merchant_normalization_service
+        .normalize_batch(&mut transactions)
+        .await
+        .map_err(|_| api_internal_server_error("Failed to normalize imported merchants"))?;
+
     let transaction_counts_before = state
         .db_repository
         .get_transaction_count_by_account_for_user(&auth_context.user_id)

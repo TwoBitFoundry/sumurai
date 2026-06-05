@@ -78,11 +78,36 @@ Apply one merchant normalization contract across Plaid, Teller, SimpleFIN, and i
 
 **Acceptance Criteria**
 
-- [ ] Plaid transactions persist both raw and normalized merchant data when available.
-- [ ] Teller transactions persist both raw and normalized merchant data when available.
-- [ ] SimpleFIN transactions persist raw merchant plus engine-normalized merchant data.
-- [ ] CSV and OFX imports persist raw merchant plus engine-normalized merchant data.
-- [ ] No transaction ingestion path writes provider or import merchant text directly as the final display value unless it is an accepted provider-normalized field.
+- [x] Plaid transactions persist both raw and normalized merchant data when available.
+- [x] Teller transactions persist both raw and normalized merchant data when available.
+- [x] SimpleFIN transactions persist raw merchant plus engine-normalized merchant data.
+- [x] CSV and OFX imports persist raw merchant plus engine-normalized merchant data.
+- [x] No transaction ingestion path writes provider or import merchant text directly as the final display value unless it is an accepted provider-normalized field.
+
+**Notes**
+
+- Plaid and Teller now preserve provider-raw merchant text separately from accepted provider-normalized display values.
+- Generic provider sync and authenticated CSV/OFX imports now run the merchant normalization service before transaction upserts.
+- SimpleFIN and demo sync keep the engine-normalized path, while imports and provider tests now assert stored normalization source and canonical key behavior.
+
+**TDD Log**
+
+- Red:
+  - `cargo test -p sumurai-backend --locked given_valid_qfx_when_importing_then_writes_transactions_and_sets_user -- --nocapture`
+  - `cargo test -p sumurai-backend --locked given_plaid_transaction_with_merchant_name_when_mapping_then_preserves_raw_and_provider_display -- --nocapture`
+  - `cargo test -p sumurai-backend --locked given_teller_transaction_json_when_from_teller_then_maps_fields_correctly -- --nocapture`
+- Green:
+  - `cargo test -p sumurai-backend --locked given_valid_qfx_when_importing_then_writes_transactions_and_sets_user -- --nocapture`
+  - `cargo test -p sumurai-backend --locked given_plaid_transaction_with_merchant_name_when_mapping_then_preserves_raw_and_provider_display -- --nocapture`
+  - `cargo test -p sumurai-backend --locked given_teller_transaction_json_when_from_teller_then_maps_fields_correctly -- --nocapture`
+  - `cargo test -p sumurai-backend --locked given_import_file_when_importing_then_persists_other_categories_without_categorizer -- --nocapture`
+  - `cargo test -p sumurai-backend --locked given_provider_sync_with_raw_only_merchant_when_persisting_then_normalizes_before_upsert -- --nocapture`
+- Verification:
+  - `cargo fmt -p sumurai-backend -p entity`
+  - `cargo check --workspace --locked --all-targets`
+  - `cargo fmt -p sumurai-backend -p entity --check`
+  - `cargo clippy -p sumurai-backend -p entity --locked --all-targets --no-deps -- -D warnings`
+  - `cargo test -p sumurai-backend --locked`
 
 ## Phase 3: Frontend Merchant Display Contract
 

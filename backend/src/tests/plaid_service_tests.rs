@@ -121,26 +121,49 @@ fn test_category_parsing_falls_back_to_primary_when_detailed_missing() {
 }
 
 #[test]
-fn merchant_name_from_plaid_uses_merchant_name_only() {
+fn given_plaid_transaction_with_merchant_name_when_mapping_then_preserves_raw_and_provider_display()
+{
     let v: Value = serde_json::json!({
+        "transaction_id": "txn_provider_display",
+        "account_id": "acc_123",
+        "amount": 15.5,
+        "date": "2025-09-10",
+        "original_description": "POS DEBIT STARBUCKS #12345 SEATTLE WA 06/03",
         "merchant_name": "Starbucks",
         "name": "CARD PURCHASE STARBUCKS"
     });
+    let transaction = Transaction::from_plaid(&v, &Uuid::nil());
+
     assert_eq!(
-        Transaction::merchant_name_from_plaid(&v),
-        Some("Starbucks".to_string())
+        transaction.original_merchant_name.as_deref(),
+        Some("POS DEBIT STARBUCKS #12345 SEATTLE WA 06/03")
     );
+    assert_eq!(transaction.merchant_name.as_deref(), Some("Starbucks"));
+    assert_eq!(
+        transaction.normalized_merchant.as_deref(),
+        Some("starbucks")
+    );
+    assert_eq!(transaction.normalization_source.as_deref(), Some("plaid"));
 }
 
 #[test]
-fn merchant_name_from_plaid_falls_back_to_transaction_name() {
+fn given_plaid_transaction_without_merchant_name_when_mapping_then_defers_display_to_engine() {
     let v: Value = serde_json::json!({
+        "transaction_id": "txn_engine_fallback",
+        "account_id": "acc_123",
+        "amount": 15.5,
+        "date": "2025-09-10",
         "name": "ATM WITHDRAWAL"
     });
+    let transaction = Transaction::from_plaid(&v, &Uuid::nil());
+
     assert_eq!(
-        Transaction::merchant_name_from_plaid(&v),
-        Some("Atm Withdrawal".to_string())
+        transaction.original_merchant_name.as_deref(),
+        Some("ATM WITHDRAWAL")
     );
+    assert_eq!(transaction.merchant_name, None);
+    assert_eq!(transaction.normalized_merchant, None);
+    assert_eq!(transaction.normalization_source, None);
 }
 
 #[tokio::test]

@@ -7,6 +7,7 @@ use uuid::Uuid;
 
 use crate::models::import::CsvColumnMapping;
 use crate::models::simplefin::SimpleFinInstitutionSyncResult;
+use crate::services::merchant_normalization::engine::canonical_key;
 use crate::utils::merchant_name::normalize_merchant_display_case;
 use csv::StringRecord;
 use sha2::{Digest, Sha256};
@@ -336,6 +337,53 @@ pub struct SyncMetadata {
 }
 
 impl Transaction {
+    fn non_empty_trimmed(value: Option<&str>) -> Option<String> {
+        value
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(String::from)
+    }
+
+    fn plaid_raw_merchant_name(plaid_txn: &serde_json::Value) -> Option<String> {
+        Self::non_empty_trimmed(
+            plaid_txn
+                .get("original_description")
+                .and_then(|v| v.as_str())
+                .or_else(|| plaid_txn.get("name").and_then(|v| v.as_str())),
+        )
+    }
+
+    fn plaid_provider_merchant_name(plaid_txn: &serde_json::Value) -> Option<String> {
+        let merchant = plaid_txn
+            .get("merchant_name")
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())?;
+        let normalized = normalize_merchant_display_case(merchant);
+        if normalized.is_empty() {
+            None
+        } else {
+            Some(normalized)
+        }
+    }
+
+    fn teller_raw_merchant_name(teller_txn: &serde_json::Value) -> Option<String> {
+        Self::non_empty_trimmed(teller_txn.get("description").and_then(|v| v.as_str()))
+    }
+
+    fn teller_provider_merchant_name(teller_txn: &serde_json::Value) -> Option<String> {
+        let merchant = teller_txn["details"]["counterparty"]["name"]
+            .as_str()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())?;
+        let normalized = normalize_merchant_display_case(merchant);
+        if normalized.is_empty() {
+            None
+        } else {
+            Some(normalized)
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn from_ofx(
         fitid: &str,
@@ -554,7 +602,10 @@ impl Transaction {
             Self::normalize_teller_category(category, &raw_amount);
         let amount = raw_amount;
 
-        let merchant_name = Self::merchant_name_from_teller(teller_txn);
+        let merchant_name = Self::teller_provider_merchant_name(teller_txn);
+        let original_merchant_name = Self::teller_raw_merchant_name(teller_txn);
+        let normalized_merchant = merchant_name.as_deref().map(canonical_key);
+        let normalization_source = merchant_name.as_ref().map(|_| "teller".to_string());
 
         Self {
             id: Uuid::new_v4(),
@@ -571,9 +622,9 @@ impl Transaction {
             payment_channel: None,
             pending: teller_txn["status"].as_str() != Some("posted"),
             created_at: Some(chrono::Utc::now()),
-            original_merchant_name: None,
-            normalized_merchant: None,
-            normalization_source: None,
+            original_merchant_name,
+            normalized_merchant,
+            normalization_source,
         }
     }
 
@@ -622,6 +673,11 @@ impl Transaction {
             .unwrap_or(&category_primary)
             .to_string();
 
+        let merchant_name = Self::plaid_provider_merchant_name(plaid_txn);
+        let original_merchant_name = Self::plaid_raw_merchant_name(plaid_txn);
+        let normalized_merchant = merchant_name.as_deref().map(canonical_key);
+        let normalization_source = merchant_name.as_ref().map(|_| "plaid".to_string());
+
         Self {
             id: Uuid::new_v4(),
             account_id: *account_id,
@@ -630,7 +686,7 @@ impl Transaction {
             provider_transaction_id: plaid_txn["transaction_id"].as_str().map(String::from),
             amount,
             date,
-            merchant_name: Self::merchant_name_from_plaid(plaid_txn),
+            merchant_name,
             category_primary,
             category_detailed,
             category_confidence: pfc
@@ -641,9 +697,9 @@ impl Transaction {
             payment_channel: plaid_txn["payment_channel"].as_str().map(String::from),
             pending: plaid_txn["pending"].as_bool().unwrap_or(false),
             created_at: Some(chrono::Utc::now()),
-            original_merchant_name: None,
-            normalized_merchant: None,
-            normalization_source: None,
+            original_merchant_name,
+            normalized_merchant,
+            normalization_source,
         }
     }
 

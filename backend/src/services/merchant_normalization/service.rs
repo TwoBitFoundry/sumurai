@@ -4,6 +4,7 @@ use anyhow::Result;
 
 use crate::models::transaction::Transaction;
 use crate::services::cache_service::CacheService;
+use crate::services::merchant_normalization::engine::canonical_key;
 use crate::services::repository_service::DatabaseRepository;
 
 use super::engine::normalize;
@@ -43,6 +44,19 @@ impl MerchantNormalizationService {
             return Ok(());
         }
 
+        if txns.iter().all(|txn| {
+            let raw = txn
+                .original_merchant_name
+                .as_deref()
+                .or(txn.merchant_name.as_deref())
+                .unwrap_or("");
+
+            raw.is_empty()
+                || (txn.normalized_merchant.is_some() && txn.normalization_source.is_some())
+        }) {
+            return Ok(());
+        }
+
         let index = self.alias_index().await?;
 
         for txn in txns.iter_mut() {
@@ -54,6 +68,24 @@ impl MerchantNormalizationService {
 
             if raw.is_empty() {
                 continue;
+            }
+
+            if txn.normalized_merchant.is_some() && txn.normalization_source.is_some() {
+                continue;
+            }
+
+            if matches!(
+                txn.normalization_source.as_deref(),
+                Some("plaid") | Some("teller")
+            ) {
+                if let Some(display) = txn
+                    .merchant_name
+                    .as_deref()
+                    .filter(|value| !value.is_empty())
+                {
+                    txn.normalized_merchant = Some(canonical_key(display));
+                    continue;
+                }
             }
 
             let result = normalize(raw, MerchantSource::Raw, &index);
