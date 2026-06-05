@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { FinancialProvider } from '@/types/api';
 import type { ProviderCatalogue } from '@/types/providerCatalog';
-import { cn } from '@/ui/primitives';
+import { Badge, cn } from '@/ui/primitives';
 import {
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
@@ -13,13 +13,6 @@ import {
 } from '@/ui/recipes';
 import { PROVIDER_PRICE_ORDER } from '../../../utils/providerCards';
 import { ProviderSelectionCard } from './ProviderSelectionCard';
-
-const eyebrowChip = cn(
-  'inline-flex items-center justify-center rounded-full px-4 py-1 uppercase tracking-[0.3em]',
-  uiTypographyRecipes.label,
-  ...uiStatusRecipes.info.surface,
-  ...uiStatusRecipes.info.text
-);
 
 interface ProviderSelectionPanelProps {
   loading: boolean;
@@ -107,7 +100,13 @@ export const ProviderSelectionPanel = ({
     <section className={panelClasses} data-testid="provider-selection-panel">
       <div className={cn('relative', 'z-10', 'flex', 'flex-col', 'gap-8')}>
         <div className={cn('w-full', 'max-w-4xl', 'space-y-3', 'text-left')}>
-          <span className={eyebrowChip}>Self-Hosted</span>
+          <Badge
+            variant="default"
+            size="lg"
+            className={cn('px-4', 'uppercase', 'tracking-[0.14em]')}
+          >
+            Self-Hosted
+          </Badge>
           <h1
             className={cn(
               uiTypographyRecipes.pageTitle,
