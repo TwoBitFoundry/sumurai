@@ -98,6 +98,7 @@ use utoipa::OpenApi;
             crate::models::transaction_category_override::SetTransactionCategoryRequest,
             crate::models::auto_categorization_job::AutoCategorizationJobState,
             crate::models::auto_categorization_job::AutoCategorizationJobStatus,
+            crate::models::subscription::SubscriptionSummary,
             crate::models::api_error::ApiErrorResponse,
             schemas::SuccessResponse,
             schemas::ErrorResponse,
@@ -162,6 +163,7 @@ use utoipa::OpenApi;
         crate::login_with_password,
         crate::begin_passkey_login,
         crate::finish_passkey_login,
+        crate::get_authenticated_subscriptions,
     )
 )]
 pub struct ApiDoc;

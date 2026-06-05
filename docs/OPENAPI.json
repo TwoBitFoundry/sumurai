@@ -2087,6 +2087,55 @@
         ]
       }
     },
+    "/api/subscriptions": {
+      "get": {
+        "tags": [
+          "Subscriptions"
+        ],
+        "description": "Returns detected subscription summaries for the authenticated user.",
+        "operationId": "get_authenticated_subscriptions",
+        "responses": {
+          "200": {
+            "description": "Subscription summaries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubscriptionSummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
     "/api/transactions": {
       "get": {
         "tags": [
@@ -2780,11 +2829,15 @@
         "type": "object",
         "required": [
           "user_id",
+          "email",
           "expires_at",
           "onboarding_completed",
           "requires_passkey_enrollment"
         ],
         "properties": {
+          "email": {
+            "type": "string"
+          },
           "expires_at": {
             "type": "string"
           },
@@ -2799,6 +2852,7 @@
           }
         },
         "example": {
+          "email": "user@example.com",
           "expires_at": "2024-01-01T12:00:00Z",
           "onboarding_completed": false,
           "requires_passkey_enrollment": true,
@@ -4465,6 +4519,39 @@
           }
         }
       },
+      "SubscriptionSummary": {
+        "type": "object",
+        "required": [
+          "merchant",
+          "normalized_merchant",
+          "monthly_cost",
+          "cadence",
+          "last_charged",
+          "occurrence_count"
+        ],
+        "properties": {
+          "cadence": {
+            "type": "string"
+          },
+          "last_charged": {
+            "type": "string",
+            "format": "date"
+          },
+          "merchant": {
+            "type": "string"
+          },
+          "monthly_cost": {
+            "type": "string"
+          },
+          "normalized_merchant": {
+            "type": "string"
+          },
+          "occurrence_count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "SuccessResponse": {
         "type": "object",
         "required": [
@@ -4735,6 +4822,12 @@
             "format": "uuid"
           },
           "merchant_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "normalized_merchant": {
             "type": [
               "string",
               "null"

@@ -337,3 +337,12 @@ export interface RegisterRequest {
   email: string;
   name: string;
 }
+
+export interface SubscriptionSummary {
+  merchant: string;
+  normalized_merchant: string;
+  monthly_cost: string;
+  cadence: string;
+  last_charged: string;
+  occurrence_count: number;
+}

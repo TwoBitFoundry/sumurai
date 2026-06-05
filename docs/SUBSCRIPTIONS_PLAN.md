@@ -100,10 +100,10 @@ User overrides always win because `effective_category = COALESCE(override, categ
 - Mirror the type in `frontend/src/types/api.ts`.
 
 **Acceptance criteria:**
-- [ ] `GET /api/subscriptions` returns the authenticated user's subscription summaries (RLS-scoped).
-- [ ] Monthly cost is normalized by cadence and matches detector logic.
-- [ ] OpenAPI spec regenerated and `api.ts` type mirrors the model.
-- [ ] Handler covered by an integration-style test.
+- [x] `GET /api/subscriptions` returns the authenticated user's subscription summaries (RLS-scoped).
+- [x] Monthly cost is normalized by cadence and matches detector logic.
+- [x] OpenAPI spec regenerated and `api.ts` type mirrors the model.
+- [x] Handler covered by an integration-style test.
 
 ## Phase 5 — Frontend data layer
 
@@ -157,6 +157,15 @@ User overrides always win because `effective_category = COALESCE(override, categ
 - [ ] `bun --cwd=frontend test` passes.
 
 ---
+
+### TDD log — Phase 4
+
+- `GET /api/subscriptions` handler added in `main.rs`; calls `db_repository.get_subscription_summary()` directly (RLS-scoped by design).
+- Route registered in `create_app`; schema + path registered in `openapi/mod.rs`.
+- `docs/OPENAPI.json` regenerated via `regenerate_openapi_artifacts` ignored test.
+- `SubscriptionSummary` interface added to `frontend/src/types/api.ts`.
+- Two integration tests in `subscription_api_tests.rs`: returns summaries array + empty array.
+- `cargo test -p sumurai-backend --locked`: 594 passed, 0 failed.
 
 ### TDD log — Phase 3
 
