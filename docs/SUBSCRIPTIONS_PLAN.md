@@ -8,22 +8,26 @@ Today the only notion of "recurring" is a crude in-SQL heuristic (merchant appea
 
 ## Core design
 
-Two writers, both targeting `category_primary = "SUBSCRIPTION"`:
-- **Layer 1 — master list (instant, global).** A high-priority rule in the existing `deterministic_label()` cascade ([classifier_labels.rs:87](../backend/src/services/categorization/classifier_labels.rs)) matching known brands by normalized merchant. Classifies even the first charge; gas/utility/transport rules already precede it so they're excluded by ordering.
-- **Layer 2 — cadence + amount heuristic (per-user, background).** Groups outflow transactions by `normalized_merchant` within scoped categories, detects regular cadence + stable amounts, batch-updates matches.
+Two writers, both targeting `category_primary = "SUBSCRIPTION"`. `SUBSCRIPTION` is a new peer category sitting alongside `ENTERTAINMENT`, `GENERAL_SERVICES`, etc. — it does not replace any existing category.
+
+- **Layer 1 — master list (instant, global).** A high-priority rule in the existing `deterministic_label()` cascade ([classifier_labels.rs:87](../backend/src/services/categorization/classifier_labels.rs)) matching known brands. The classifier input is `[debit] merchant_name`; extract the merchant portion and compare against `normalize_merchant_for_match()` ([merchant_name.rs](../backend/src/utils/merchant_name.rs)) applied to each master-list entry. Classifies even the first charge; gas/utility/transport rules already precede it so they're excluded by ordering.
+- **Layer 2 — cadence + amount heuristic (per-user, background).** Looks at transactions already sitting in eligible categories (`ENTERTAINMENT`, `GENERAL_SERVICES`, `GENERAL_MERCHANDISE`, `RENT_AND_UTILITIES`, `PERSONAL_CARE`) and promotes them to `SUBSCRIPTION` when they form a stable recurring pattern. Groups by `normalized_merchant` (the DB column, populated on every sync/import as part of this plan), detects regular cadence + stable amounts, batch-updates matching transaction ids.
+
+**Merchant normalization context.** The 14-stage `MerchantNormalizationService.normalize_batch()` ([merchant_normalization/service.rs](../backend/src/services/merchant_normalization/service.rs)) runs for every provider sync. For SimpleFin/OFX/CSV, `original_merchant_name` carries the raw bank string and the full pipeline does real cleanup. For Teller and Plaid, `original_merchant_name` is `None` — those providers supply pre-enriched names — so the pipeline processes an already-clean `merchant_name` and has minimal effect. In all cases `merchant_name` after sync is the reliable display field for matching and grouping.
 
 User overrides always win because `effective_category = COALESCE(override, category_primary)` ([repository_service.rs:550](../backend/src/services/repository_service.rs)) — false positives self-correct via the existing inline re-categorization flow.
 
 ## Assumptions
 
 - Subscriptions are **outflows** (amount < 0); income/transfers are excluded.
-- **Cadence scan scope:** `ENTERTAINMENT`, `GENERAL_SERVICES`, `GENERAL_MERCHANDISE`, `RENT_AND_UTILITIES`, `PERSONAL_CARE`. Master-list brands classify regardless of category.
+- **Cadence scan scope:** `ENTERTAINMENT`, `GENERAL_SERVICES`, `GENERAL_MERCHANDISE`, `RENT_AND_UTILITIES`, `PERSONAL_CARE`. Only transactions already in one of these categories are eligible for Layer 2 promotion. Master-list brands (Layer 1) classify as `SUBSCRIPTION` regardless of their existing category.
 - Detection re-runs after every sync over a rolling **18-month** window — no separate per-user persistence table needed.
 - Frontend `api.ts` types are hand-maintained and mirrored from the regenerated OpenAPI spec (no codegen).
 - Tests are boundary-only and live in existing test folders, never inline (per repo testing policy).
 
 ## Risks
 
+- **Override JOIN is currently silently broken.** `auto_categorize_filter` and the transaction read query already JOIN on `transactions.normalized_merchant`, but that column is always `NULL`, so overridden merchants are never excluded from auto-categorization today. Populating the column in Phase 2 fixes this but means the fix has real behavioral impact — verify existing override behavior in tests before and after.
 - **False positives** in the cadence layer (e.g. a frequent coffee shop slipping through scope). Mitigated by category scoping, the exclusion list, amount-stability (CV) gate, and user override. Tune thresholds as consts.
 - **Adding a system category** ripples into anything enumerating `SYSTEM_CATEGORY_SLUGS` (charts, budgets, pills). Verify no hardcoded category counts/maps break.
 - **Background spawn after sync** must not block the request or panic the runtime; fire-and-forget with error logging, matching the auto-categorize pattern.
@@ -37,26 +41,33 @@ User overrides always win because `effective_category = COALESCE(override, categ
 
 **Tasks:**
 - Add `"SUBSCRIPTION"` to `SYSTEM_CATEGORY_SLUGS` and `("SUBSCRIPTION", "Subscriptions")` to `SYSTEM_CATEGORY_LABELS` in [category_descriptors.rs](../backend/src/services/categorization/category_descriptors.rs).
-- Remap the `"Subscription"` classifier label `ENTERTAINMENT → SUBSCRIPTION` in `pfc_primary_for_classifier_label()` ([classifier_labels.rs:31](../backend/src/services/categorization/classifier_labels.rs)).
+- In `pfc_primary_for_classifier_label()` ([classifier_labels.rs:31](../backend/src/services/categorization/classifier_labels.rs)), change the `"Subscription"` arm to return `"SUBSCRIPTION"` instead of `"ENTERTAINMENT"`. `ENTERTAINMENT` is unchanged and continues to exist as its own category.
 - Create `backend/src/services/subscription_detection/known_merchants.rs` with a const master list (Netflix, Hulu, Disney+, Max, Paramount+, Peacock, Spotify, Apple/iCloud, YouTube Premium, Amazon Prime, Xbox/Game Pass, PlayStation Plus, Nintendo, Adobe, Dropbox, Audible, NYT, Patreon, …).
-- Add a high-priority master-list rule to `deterministic_label()` (before the existing `subscription`/`monthly`/`saas` keyword branch) returning `"Subscription"` on normalized-merchant match.
+- Add a high-priority master-list rule to `deterministic_label()` (before the existing `subscription`/`monthly`/`saas` keyword branch) returning `"Subscription"` when `normalize_merchant_for_match()` applied to the merchant portion of the classifier input matches a known-merchant entry.
 
 **Acceptance criteria:**
-- [ ] `SUBSCRIPTION` appears in `SYSTEM_CATEGORY_SLUGS` and resolves a display label via `system_category_display_label`.
-- [ ] A transaction from a master-list brand classifies as `SUBSCRIPTION` on its first occurrence.
-- [ ] The `"Subscription"` classifier label maps to `SUBSCRIPTION` (not `ENTERTAINMENT`).
-- [ ] Existing classifier tests still pass; new tests cover master-list hits and the remap.
+- [x] `SUBSCRIPTION` appears in `SYSTEM_CATEGORY_SLUGS` and resolves a display label via `system_category_display_label`.
+- [x] A transaction from a master-list brand classifies as `SUBSCRIPTION` on its first occurrence.
+- [x] The `"Subscription"` classifier label maps to `SUBSCRIPTION`; `ENTERTAINMENT` still resolves correctly for non-subscription entertainment transactions.
+- [x] Existing classifier tests still pass; new tests cover master-list hits and the updated arm.
 
-## Phase 2 — Detection service + repository methods
+## Phase 2 — `normalized_merchant` as single source of truth + detection service + repository methods
 
-**Goal:** Build the per-user cadence/amount detector and the repository surface it needs.
+**Goal:** Establish `transactions.normalized_merchant` as the one canonical key for all merchant-based logic (category overrides, subscription detection), fix the currently-broken override JOIN, then build the per-user cadence/amount detector.
+
+**Background.** `transaction_category_overrides` already stores a `normalized_merchant` key and the read-side JOIN (`auto_categorize_filter`, `get_transaction_by_id_for_user`) already matches on `transactions.normalized_merchant = transaction_category_overrides.normalized_merchant`. However, `transactions.normalized_merchant` is never written, so the JOIN is silently always-null and overridden transactions are never correctly excluded from auto-categorization. Additionally, `category_management_service` recomputes `normalize_merchant_for_match(merchant_name)` on the fly when writing an override, creating a second normalization path that can drift. Both problems are fixed here.
 
 **Tasks:**
+- Fix `MerchantNormalizationService::normalize_batch` ([merchant_normalization/service.rs](../backend/src/services/merchant_normalization/service.rs)) to also write `txn.normalized_merchant = Some(normalize_merchant_for_match(&result.display))` after setting `merchant_name`. For the early-continue path (empty raw), still derive it from the existing `merchant_name` if present. This makes sync/import the single writer.
+- Update `category_management_service::set_transaction_category` ([category_management/service.rs:149](../backend/src/services/category_management/service.rs)) to read `transaction.normalized_merchant` directly instead of recomputing `normalize_merchant_for_match(merchant_name)`. The stored column is now authoritative; the service must not diverge from it.
 - Create `subscription_detection/exclusions.rs` (recurring-but-not-subscription normalized-merchant patterns) and `subscription_detection/cadence.rs` (pure helpers: cadence classification from day-gaps, amount coefficient-of-variation, normalized monthly-cost). Thresholds as named consts (`AMOUNT_CV_MAX ≈ 0.15`, cadence windows weekly/biweekly/monthly±5/quarterly±10/annual±20, min occurrences 3 short / 2 long).
-- Create `subscription_detection/service.rs` with `detect_and_assign_for_user(repo, user_id)`: pull scoped outflows in window → drop exclusions → group by `normalized_merchant` → apply cadence + amount gates → batch-update matches to `SUBSCRIPTION` (skip already-SUBSCRIPTION and user-overridden merchants).
-- Add `DatabaseRepository` trait methods (mockable) + Postgres impl in [repository_service.rs](../backend/src/services/repository_service.rs): `get_transactions_for_subscription_detection(user_id, since)`, a batch category-update for a set of transaction ids (reuse the auto_categorization update path), and `get_subscription_summary(user_id)` (group SUBSCRIPTION effective-category txns by merchant → merchant, count, representative amount, date span).
+- Create `subscription_detection/service.rs` with `detect_and_assign_for_user(repo, user_id)`: pull scoped outflows in window → drop exclusions → group by `transactions.normalized_merchant` → apply cadence + amount gates → batch-update matches to `SUBSCRIPTION` (skip already-SUBSCRIPTION and user-overridden merchants).
+- Add `DatabaseRepository` trait methods (mockable) + Postgres impl in [repository_service.rs](../backend/src/services/repository_service.rs): `get_transactions_for_subscription_detection(user_id, since)`, a batch category-update for a set of transaction ids (reuse the auto_categorization update path), and `get_subscription_summary(user_id)` (group SUBSCRIPTION effective-category txns by `normalized_merchant` → merchant display name, count, representative amount, date span).
 
 **Acceptance criteria:**
+- [ ] After a SimpleFin sync or CSV/OFX import, every transaction with a non-empty `merchant_name` has `normalized_merchant` set to its alphanumeric-lowercase form. Teller/Plaid transactions are covered by the same `normalize_batch` path.
+- [ ] Setting a category override on a transaction uses `transaction.normalized_merchant` from the DB; no separate recomputation of the key.
+- [ ] The `auto_categorize_filter` correctly excludes user-overridden merchants (i.e. the JOIN now finds matches).
 - [ ] `cadence.rs` helpers are pure and unit-tested (monthly/weekly/annual matches, variance rejection, monthly-cost normalization).
 - [ ] Detector assigns `SUBSCRIPTION` for a stable monthly merchant ≥3 occurrences; rejects high-variance amounts and sub-threshold counts.
 - [ ] Detector ignores out-of-scope categories and exclusion-list merchants.
@@ -146,6 +157,14 @@ User overrides always win because `effective_category = COALESCE(override, categ
 - [ ] `bun --cwd=frontend test` passes.
 
 ---
+
+### TDD log — Phase 1
+
+- `cargo test -p sumurai-backend --locked subscription_detection`: 6 passed
+- `cargo test -p sumurai-backend --locked categorization_classifier`: 7 passed
+- `cargo test -p sumurai-backend --locked`: 571 passed, 0 failed
+- Known-merchant matching uses `normalize_merchant_for_match` (alpha-only lowercase) with substring contains. Master-list entries chosen conservatively (e.g. `amazonprime` not bare `amazon`) to avoid false positives.
+- Updated two existing fixtures in `categorization_classifier_tests.rs` that expected `ENTERTAINMENT` from the `"Subscription"` label.
 
 ## Next actions
 
