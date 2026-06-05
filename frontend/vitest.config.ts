@@ -7,9 +7,6 @@ import { defineConfig } from 'vitest/config';
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  server: {
-    host: '127.0.0.1',
-  },
   test: {
     projects: [
       {
@@ -17,8 +14,7 @@ export default defineConfig({
         plugins: [
           storybookTest({
             configDir: path.join(dirname, '.storybook'),
-            storybookScript: 'npm run storybook -- --no-open --host 127.0.0.1',
-            storybookUrl: 'http://127.0.0.1:6006',
+            storybookScript: 'npm run storybook -- --no-open',
             tags: {
               include: ['test'],
               exclude: [],
