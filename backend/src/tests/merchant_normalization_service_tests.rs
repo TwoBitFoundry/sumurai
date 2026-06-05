@@ -108,6 +108,7 @@ async fn given_simplefin_raw_description_when_normalize_batch_then_merchant_name
     svc.normalize_batch(&mut txns).await.unwrap();
 
     assert_eq!(txns[0].merchant_name.as_deref(), Some("Costco"));
+    assert_eq!(txns[0].normalized_merchant.as_deref(), Some("costco"));
 }
 
 #[tokio::test]

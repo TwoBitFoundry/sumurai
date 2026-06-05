@@ -33,7 +33,7 @@ const TopMerchantsListFn: React.FC<Props> = ({ merchants, className = '' }) => {
         <div
           className={cn(
             'grid',
-            'grid-cols-[repeat(auto-fill,minmax(max(calc(50%-4px),160px),1fr))]',
+            'grid-cols-[repeat(auto-fit,minmax(min(100%,33rem),1fr))]',
             'gap-[length:var(--spacing-compact-gap)]'
           )}
         >
@@ -46,7 +46,7 @@ const TopMerchantsListFn: React.FC<Props> = ({ merchants, className = '' }) => {
                   {merchant.name}
                 </div>
                 <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                  {merchant.count} transaction{merchant.count !== 1 ? 's' : ''}
+                  {merchant.count} item{merchant.count !== 1 ? 's' : ''}
                 </div>
               </div>
               <div className={cn('text-right', 'flex-shrink-0', 'ml-4')}>
