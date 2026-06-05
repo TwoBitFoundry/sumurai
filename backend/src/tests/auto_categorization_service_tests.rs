@@ -11,6 +11,32 @@ use rust_decimal_macros::dec;
 use tokio::sync::Notify;
 use uuid::Uuid;
 
+fn make_stable_monthly_subscription_transactions(user_id: Uuid, count: u32) -> Vec<Transaction> {
+    (0..count)
+        .map(|i| Transaction {
+            id: Uuid::new_v4(),
+            account_id: Uuid::new_v4(),
+            user_id: Some(user_id),
+            provider_account_id: None,
+            provider_transaction_id: None,
+            amount: dec!(-9.99),
+            date: NaiveDate::from_ymd_opt(2024, 1, 1)
+                .unwrap()
+                .checked_add_months(chrono::Months::new(i))
+                .unwrap(),
+            merchant_name: Some("Spotify".to_string()),
+            category_primary: "ENTERTAINMENT".to_string(),
+            category_detailed: "ENTERTAINMENT".to_string(),
+            category_confidence: "HIGH".to_string(),
+            payment_channel: None,
+            pending: false,
+            created_at: None,
+            original_merchant_name: None,
+            normalized_merchant: Some("spotify".to_string()),
+        })
+        .collect()
+}
+
 use crate::models::auto_categorization_job::{
     AutoCategorizationJobState, AutoCategorizationJobStatus,
 };
@@ -154,6 +180,9 @@ async fn given_no_active_job_when_starting_then_returns_running_without_waiting_
     db.expect_update_transaction_categories_batch()
         .times(..)
         .returning(|_, _| Box::pin(async { Ok(()) }));
+    db.expect_get_transactions_for_subscription_detection()
+        .times(..)
+        .returning(|_, _| Box::pin(async { Ok(vec![]) }));
 
     let service = make_service(
         db,
@@ -200,6 +229,9 @@ async fn given_active_job_when_starting_again_then_returns_active_job_exists() {
     db.expect_update_transaction_categories_batch()
         .times(..)
         .returning(|_, _| Box::pin(async { Ok(()) }));
+    db.expect_get_transactions_for_subscription_detection()
+        .times(..)
+        .returning(|_, _| Box::pin(async { Ok(vec![]) }));
 
     let service = make_service(
         db,
@@ -270,6 +302,9 @@ async fn given_eligible_transactions_when_job_runs_then_applies_medium_and_high_
             assert!(!updates.iter().any(|update| update.transaction_id == low_id));
             Box::pin(async { Ok(()) })
         });
+    db.expect_get_transactions_for_subscription_detection()
+        .times(..)
+        .returning(|_, _| Box::pin(async { Ok(vec![]) }));
 
     struct MultiPredictionCategorizer {
         call: Arc<Mutex<usize>>,
@@ -404,6 +439,9 @@ async fn given_completed_job_when_reading_status_then_terminal_state_is_availabl
     db.expect_update_transaction_categories_batch()
         .times(..)
         .returning(|_, _| Box::pin(async { Ok(()) }));
+    db.expect_get_transactions_for_subscription_detection()
+        .times(..)
+        .returning(|_, _| Box::pin(async { Ok(vec![]) }));
 
     let cache = InMemoryCache::new();
     let service = make_service(
@@ -450,6 +488,9 @@ async fn given_completed_job_when_worker_finishes_then_session_caches_are_invali
     db.expect_update_transaction_categories_batch()
         .times(..)
         .returning(|_, _| Box::pin(async { Ok(()) }));
+    db.expect_get_transactions_for_subscription_detection()
+        .times(..)
+        .returning(|_, _| Box::pin(async { Ok(vec![]) }));
 
     let store = Arc::new(Mutex::new(HashMap::new()));
     let get_store = Arc::clone(&store);
@@ -567,6 +608,9 @@ async fn given_multiple_batches_when_earlier_rows_are_categorized_then_later_bat
     db.expect_update_transaction_categories_batch()
         .times(2)
         .returning(|_, _| Box::pin(async { Ok(()) }));
+    db.expect_get_transactions_for_subscription_detection()
+        .times(..)
+        .returning(|_, _| Box::pin(async { Ok(vec![]) }));
 
     let service = make_service(
         db,
@@ -616,4 +660,54 @@ async fn given_eligible_query_when_counting_then_excludes_override_backed_transa
         .await
         .expect("eligible count");
     assert_eq!(count, 2);
+}
+
+#[tokio::test]
+async fn given_completed_job_when_detection_runs_then_detection_count_added_to_updated() {
+    let user_id = Uuid::new_v4();
+    let jwt_id = "jwt-detection";
+
+    let sub_txns = make_stable_monthly_subscription_transactions(user_id, 3);
+    let sub_txns_clone = sub_txns.clone();
+    let categorize_txn_id = Uuid::new_v4();
+    let categorize_txn = make_other_transaction(user_id, categorize_txn_id, "Coffee", dec!(-3.00));
+
+    let mut db = MockDatabaseRepository::new();
+    db.expect_count_eligible_auto_categorize_transactions()
+        .with(eq(user_id))
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(1) }));
+    db.expect_fetch_eligible_auto_categorize_transactions()
+        .times(..)
+        .returning(move |_, _, _, _| {
+            let t = categorize_txn.clone();
+            Box::pin(async move { Ok(vec![t]) })
+        });
+    db.expect_get_transactions_for_subscription_detection()
+        .times(1)
+        .returning(move |_, _| {
+            let txns = sub_txns_clone.clone();
+            Box::pin(async move { Ok(txns) })
+        });
+    db.expect_update_transaction_categories_batch()
+        .times(..)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+
+    let service = make_service(
+        db,
+        InMemoryCache::new().into_mock(),
+        Arc::new(StubCategorizer {
+            predictions: vec![PredictedCategory {
+                primary: "FOOD_AND_DRINK".to_string(),
+                confidence: Confidence::High,
+            }],
+            gate: None,
+            entered: None,
+        }),
+    );
+
+    service.start(&user_id, jwt_id).await.unwrap();
+    let finished = wait_for_terminal_status(&service, &user_id).await;
+    assert_eq!(finished.status, AutoCategorizationJobStatus::Completed);
+    assert_eq!(finished.updated, 4);
 }

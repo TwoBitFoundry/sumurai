@@ -84,10 +84,10 @@ User overrides always win because `effective_category = COALESCE(override, categ
 - Invalidate the transactions cache after the pass writes (existing `cache_service.clear_transactions` pattern).
 
 **Acceptance criteria:**
-- [ ] Detection runs as the last stage of the categorization job and updates job counters consistently.
-- [ ] A completed sync spawns the background pass without blocking the response.
-- [ ] Transactions cache is invalidated after detection writes.
-- [ ] No new user-invoked endpoint is introduced for detection.
+- [x] Detection runs as the last stage of the categorization job and updates job counters consistently.
+- [x] A completed sync spawns the background pass without blocking the response.
+- [x] Transactions cache is invalidated after detection writes.
+- [x] No new user-invoked endpoint is introduced for detection.
 
 ## Phase 4 — Read endpoint + contract
 
@@ -157,6 +157,14 @@ User overrides always win because `effective_category = COALESCE(override, categ
 - [ ] `bun --cwd=frontend test` passes.
 
 ---
+
+### TDD log — Phase 3
+
+- `detect_and_assign_for_user` appended as final stage of `run_job` in `auto_categorization/service.rs`; detection count added to `state.updated` before Completed status.
+- `tokio::spawn` post-sync detection added to Plaid (`sync_provider_connection`) and Teller (`sync_teller_connection`) paths in `connection_service.rs`; cache cleared when count > 0.
+- New test: `given_completed_job_when_detection_runs_then_detection_count_added_to_updated` — verifies detection runs and job counter reflects detection updates.
+- Updated 5 existing auto-categorization tests to mock `get_transactions_for_subscription_detection`.
+- `cargo test -p sumurai-backend --locked`: 592 passed, 0 failed.
 
 ### TDD log — Phase 2
 
