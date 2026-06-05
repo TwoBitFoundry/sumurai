@@ -12,13 +12,7 @@ import { useScrollDetection } from '../hooks/useScrollDetection';
 import { AppFooter, AppTitleBar } from '../ui/primitives';
 import { appLayout, text as semanticTextRecipes, font as uiTypographyRecipes } from '../ui/recipes';
 
-export type TabKey =
-  | 'dashboard'
-  | 'transactions'
-  | 'budgets'
-  | 'subscriptions'
-  | 'accounts'
-  | 'settings';
+export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
 interface AppLayoutProps {
   children: ReactNode;

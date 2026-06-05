@@ -4,7 +4,6 @@ import { BottomContextualBar } from '@/components/BottomContextualBar';
 import { DateRangePillSlider } from '@/features/analytics/components/DateRangePillSlider';
 import { BudgetMonthPillSlider } from '@/features/budgets/components/BudgetMonthPillSlider';
 import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
-import { SubscriptionsTabPanel } from '@/features/subscriptions/components/SubscriptionsTabPanel';
 import { TransactionsSearchBar } from '@/features/transactions/components/TransactionsSearchBar';
 import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
 import { Alert, cn } from '@/ui/primitives';
@@ -23,21 +22,14 @@ import {
 } from '../utils/sessionPreferences';
 import { ErrorBoundary } from './ErrorBoundary';
 
-export type TabKey =
-  | 'dashboard'
-  | 'transactions'
-  | 'budgets'
-  | 'subscriptions'
-  | 'accounts'
-  | 'settings';
+export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
 const TAB_INDEX = new Map<TabKey, number>([
   ['dashboard', 0],
   ['transactions', 1],
   ['budgets', 2],
-  ['subscriptions', 3],
-  ['accounts', 4],
-  ['settings', 5],
+  ['accounts', 3],
+  ['settings', 4],
 ]);
 
 interface AuthenticatedAppProps {
@@ -85,7 +77,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
           onSearch={transactionFilters.setSearch}
         />
       </BottomContextualBar>
-    ) : tab === 'budgets' || tab === 'subscriptions' ? (
+    ) : tab === 'budgets' ? (
       <BottomContextualBar>
         <BudgetMonthPillSlider
           monthLabel={budgetMonth.monthLabel}
@@ -132,9 +124,11 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
                   <DashboardPage dateRange={dateRange} setDateRange={setDateRange} />
                 )}
                 {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
-                {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}
-                {tab === 'subscriptions' && (
-                  <SubscriptionsTabPanel onNavigateToTransactions={handleNavigateToTransactions} />
+                {tab === 'budgets' && (
+                  <BudgetsPage
+                    monthControl={budgetMonth}
+                    onNavigateToTransactions={handleNavigateToTransactions}
+                  />
                 )}
                 {tab === 'accounts' && <AccountsPage onError={setError} />}
                 {tab === 'settings' && <SettingsPage onLogout={onLogout} />}

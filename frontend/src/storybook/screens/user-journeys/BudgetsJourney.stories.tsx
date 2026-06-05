@@ -73,7 +73,7 @@ function BudgetsJourney() {
   return (
     <AccountFilterStoryProvider>
       <StoryApiScope handlers={handlers}>
-        <BudgetsPage monthControl={monthControl} />
+        <BudgetsPage monthControl={monthControl} onNavigateToTransactions={() => {}} />
         <BottomContextualBar>
           <BudgetMonthPillSlider
             monthLabel={monthControl.monthLabel}

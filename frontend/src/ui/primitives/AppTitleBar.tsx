@@ -5,7 +5,6 @@ import {
   Building2,
   LayoutDashboard,
   LogOut,
-  Repeat2,
   Settings,
   Target,
   Wifi,
@@ -143,7 +142,7 @@ const titleBarVariants = cva([...appTitleBarRecipes.base], {
   },
 });
 
-type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'subscriptions' | 'accounts' | 'settings';
+type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
 export const TABS: Array<{
   key: Exclude<TabKey, 'settings'>;
@@ -153,7 +152,6 @@ export const TABS: Array<{
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'transactions', label: 'Transactions', icon: ArrowLeftRight },
   { key: 'budgets', label: 'Budgets', icon: Target },
-  { key: 'subscriptions', label: 'Subscriptions', icon: Repeat2 },
   { key: 'accounts', label: 'Accounts', icon: Building2 },
 ];
 

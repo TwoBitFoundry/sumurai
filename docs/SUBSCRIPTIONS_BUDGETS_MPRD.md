@@ -176,12 +176,19 @@ sequenceDiagram
 - Stop importing/calling `useSubscriptions` and `SubscriptionService` in the Budgets page path; do **not** delete those files yet (deferred to Phase 5 after route removal).
 
 **Acceptance criteria:**
-- [ ] Hero row order and values match spec.
-- [ ] Two `GlassCard`s: subscriptions above budgets.
-- [ ] Card click deep-links to Transactions (`SUBSCRIPTION` + merchant).
-- [ ] Month slider affects budgets only, not subscription heroes/grid.
-- [ ] No Subscriptions tab in nav.
-- [ ] `BudgetsPage` and `AuthenticatedApp` tests updated and passing.
+- [x] Hero row order and values match spec.
+- [x] Two `GlassCard`s: subscriptions above budgets.
+- [x] Card click deep-links to Transactions (`SUBSCRIPTION` + merchant).
+- [x] Month slider affects budgets only, not subscription heroes/grid.
+- [x] No Subscriptions tab in nav.
+- [x] `BudgetsPage` and `AuthenticatedApp` tests updated and passing.
+
+**TDD log (Phase 4):**
+- Red: `BudgetsPage.test.tsx` — hero order, card layout, deep-link assertions.
+- Green: recomposed `BudgetsPage`, removed subscriptions tab from nav, updated `BudgetsScreenSlice`.
+- Removed unused `SubscriptionsTabPanel` after tab removal.
+- `npm --prefix frontend test -- tests/views/BudgetsPage.test.tsx tests/components/AuthenticatedApp.test.tsx tests/storybook/screenSlices/responsiveContract.test.tsx` — 12 passed.
+- `npm --prefix frontend run typecheck` — passed.
 
 ---
 

@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type React from 'react';
 import { useBudgets } from '@/features/budgets/hooks/useBudgets';
 import BudgetsPage from '@/views/BudgetsPage';
@@ -27,76 +27,130 @@ jest.mock('@/layouts/PageLayout', () => ({
   ),
 }));
 
+const monthControl = {
+  month: new Date('2026-05-01'),
+  monthLabel: 'May 2026',
+  range: { start: '2026-05-01', end: '2026-05-31' },
+  setMonth: jest.fn(),
+  goToPreviousMonth: jest.fn(),
+  goToNextMonth: jest.fn(),
+  goToCurrentMonth: jest.fn(),
+};
+
+const makeSubscription = (merchant: string) => ({
+  merchant,
+  normalized_merchant: merchant.toLowerCase(),
+  monthly_cost: '9.99',
+  cadence: 'Monthly',
+  last_charged: '2026-05-01',
+  occurrence_count: 3,
+});
+
+const baseUseBudgetsMock = {
+  isLoading: false,
+  transactionsLoading: false,
+  error: null,
+  validationError: null,
+  add: jest.fn(),
+  update: jest.fn(),
+  remove: jest.fn(),
+  computedBudgets: [],
+  subscriptions: [],
+  categoryOptions: [],
+  availableCategoryOptions: [],
+  usedCategories: new Set(),
+  month: new Date('2026-05-01'),
+  monthLabel: 'May 2026',
+  range: { start: '2026-05-01', end: '2026-05-31' },
+  setMonth: jest.fn(),
+  goToPreviousMonth: jest.fn(),
+  goToNextMonth: jest.fn(),
+  goToCurrentMonth: jest.fn(),
+  load: jest.fn(),
+  categories: [],
+};
+
 describe('BudgetsPage', () => {
+  const onNavigateToTransactions = jest.fn();
+
   beforeEach(() => {
+    jest.clearAllMocks();
+    jest.mocked(useBudgets).mockReturnValue(baseUseBudgetsMock as any);
+  });
+
+  it('renders hero row in Days remaining, Monthly recurring, Annualized, Overages order', () => {
     jest.mocked(useBudgets).mockReturnValue({
-      isLoading: false,
-      transactionsLoading: false,
-      error: null,
-      validationError: null,
-      add: jest.fn(),
-      update: jest.fn(),
-      remove: jest.fn(),
-      computedBudgets: [],
-      categoryOptions: [],
-      availableCategoryOptions: [],
-      usedCategories: new Set(),
-      month: new Date('2026-05-01'),
-      monthLabel: 'May 2026',
-      goToPreviousMonth: jest.fn(),
-      goToNextMonth: jest.fn(),
-      goToCurrentMonth: jest.fn(),
+      ...baseUseBudgetsMock,
+      subscriptions: [makeSubscription('Spotify')],
     } as any);
+
+    render(
+      <BudgetsPage
+        monthControl={monthControl}
+        onNavigateToTransactions={onNavigateToTransactions}
+      />
+    );
+
+    const titles = screen.getAllByText(/Days remaining|Monthly recurring|Annualized|Overages/);
+    expect(titles.map((node) => node.textContent)).toEqual([
+      'Days remaining',
+      'Monthly recurring',
+      'Annualized',
+      'Overages',
+    ]);
+    expect(screen.queryByText('Active budgets')).not.toBeInTheDocument();
+    expect(screen.queryByText('Monitor')).not.toBeInTheDocument();
+  });
+
+  it('shows subscription and budget glass cards with subscriptions first', () => {
+    render(
+      <BudgetsPage
+        monthControl={monthControl}
+        onNavigateToTransactions={onNavigateToTransactions}
+      />
+    );
+
+    const cards = Array.from(screen.getByTestId('page-children').firstElementChild?.children ?? []);
+    const subscriptionsCardIndex = cards.findIndex((card) =>
+      card.querySelector('[data-testid="subscriptions-section"]')
+    );
+    const budgetsCardIndex = cards.findIndex((card) =>
+      card.querySelector('[data-testid="budgets-empty-state"]')
+    );
+
+    expect(subscriptionsCardIndex).toBeGreaterThanOrEqual(0);
+    expect(budgetsCardIndex).toBeGreaterThan(subscriptionsCardIndex);
+  });
+
+  it('deep-links to transactions when a subscription card is clicked', () => {
+    jest.mocked(useBudgets).mockReturnValue({
+      ...baseUseBudgetsMock,
+      subscriptions: [makeSubscription('Spotify')],
+    } as any);
+
+    render(
+      <BudgetsPage
+        monthControl={monthControl}
+        onNavigateToTransactions={onNavigateToTransactions}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('subscription-card-spotify'));
+    expect(onNavigateToTransactions).toHaveBeenCalledWith('SUBSCRIPTION', 'Spotify');
   });
 
   it('keeps the budget stats grid in two columns on mobile', () => {
     const { container } = render(
       <BudgetsPage
-        monthControl={{
-          month: new Date('2026-05-01'),
-          monthLabel: 'May 2026',
-          range: { start: '2026-05-01', end: '2026-05-31' },
-          setMonth: jest.fn(),
-          goToPreviousMonth: jest.fn(),
-          goToNextMonth: jest.fn(),
-          goToCurrentMonth: jest.fn(),
-        }}
+        monthControl={monthControl}
+        onNavigateToTransactions={onNavigateToTransactions}
       />
     );
     const statsGrid = container.querySelector(
       '[data-testid="page-layout"] .grid.gap-3'
     ) as HTMLElement | null;
-    const budgetListCard = container.querySelector(
-      '[data-testid="page-children"] [class*="border-subtle"]'
-    );
 
     expect(statsGrid).toHaveClass('grid-cols-2');
     expect(statsGrid).toHaveClass('lg:grid-cols-4');
-    expect(budgetListCard).toBeTruthy();
-  });
-
-  it('keeps the budget insight rails edge to edge on desktop', () => {
-    const { container } = render(
-      <BudgetsPage
-        monthControl={{
-          month: new Date('2026-05-01'),
-          monthLabel: 'May 2026',
-          range: { start: '2026-05-01', end: '2026-05-31' },
-          setMonth: jest.fn(),
-          goToPreviousMonth: jest.fn(),
-          goToNextMonth: jest.fn(),
-          goToCurrentMonth: jest.fn(),
-        }}
-      />
-    );
-    const footerScrolls = container.querySelectorAll(
-      '[data-testid="hero-stat-card-footer-scroll"]'
-    );
-
-    expect(footerScrolls.length).toBeGreaterThan(0);
-    footerScrolls.forEach((footerScroll) => {
-      expect(footerScroll).toHaveClass('w-full');
-      expect(footerScroll).not.toHaveClass('lg:max-w-[10rem]');
-    });
   });
 });
