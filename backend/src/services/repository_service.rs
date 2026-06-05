@@ -127,6 +127,14 @@ pub trait DatabaseRepository: Send + Sync {
         transactions: &[Transaction],
         user_id: &Uuid,
     ) -> Result<()>;
+
+    async fn upsert_provider_snapshot_bundle(
+        &self,
+        user_id: &Uuid,
+        connection: &ProviderConnection,
+        accounts: &[Account],
+        transactions: &[Transaction],
+    ) -> Result<()>;
     #[allow(clippy::too_many_arguments)]
     async fn get_transactions_paginated(
         &self,
@@ -521,8 +529,46 @@ impl PostgresRepository {
                 transaction.created_at.unwrap_or_else(chrono::Utc::now),
             ))),
             original_merchant_name: Set(transaction.original_merchant_name.clone()),
-            normalized_merchant: Set(transaction.normalized_merchant.clone()),
+            normalized_merchant: sea_orm::ActiveValue::NotSet,
         }
+    }
+
+    fn transaction_upsert_update_columns() -> [transactions::Column; 4] {
+        [
+            transactions::Column::Amount,
+            transactions::Column::MerchantName,
+            transactions::Column::OriginalMerchantName,
+            transactions::Column::Pending,
+        ]
+    }
+
+    fn transaction_insert_on_conflict() -> OnConflict {
+        OnConflict::columns([
+            transactions::Column::AccountId,
+            transactions::Column::ProviderTransactionId,
+        ])
+        .update_columns(Self::transaction_upsert_update_columns())
+        .to_owned()
+    }
+
+    async fn upsert_transactions_batch_on<C: ConnectionTrait>(
+        conn: &C,
+        transactions: &[Transaction],
+    ) -> Result<()> {
+        if transactions.is_empty() {
+            return Ok(());
+        }
+
+        let models: Vec<transactions::ActiveModel> = transactions
+            .iter()
+            .map(Self::transaction_active_model)
+            .collect();
+
+        transactions::Entity::insert_many(models)
+            .on_conflict(Self::transaction_insert_on_conflict())
+            .exec(conn)
+            .await?;
+        Ok(())
     }
 
     async fn upsert_transaction_on<C: ConnectionTrait>(
@@ -530,23 +576,60 @@ impl PostgresRepository {
         transaction: &Transaction,
     ) -> Result<()> {
         transactions::Entity::insert(Self::transaction_active_model(transaction))
-            .on_conflict(
-                OnConflict::columns([
-                    transactions::Column::AccountId,
-                    transactions::Column::ProviderTransactionId,
-                ])
-                .update_columns([
-                    transactions::Column::Amount,
-                    transactions::Column::MerchantName,
-                    transactions::Column::NormalizedMerchant,
-                    transactions::Column::OriginalMerchantName,
-                    transactions::Column::Pending,
-                ])
-                .to_owned(),
-            )
+            .on_conflict(Self::transaction_insert_on_conflict())
             .exec(conn)
             .await?;
         Ok(())
+    }
+
+    async fn save_provider_connection_on<C: ConnectionTrait>(
+        conn: &C,
+        connection: &ProviderConnection,
+    ) -> Result<Uuid> {
+        provider_connections::Entity::insert(provider_connections::ActiveModel {
+            id: Set(connection.id),
+            user_id: Set(Some(connection.user_id)),
+            item_id: Set(connection.item_id.clone()),
+            provider: Set(connection.provider.clone()),
+            is_connected: Set(connection.is_connected),
+            last_sync_at: Set(Self::opt_to_db_time(connection.last_sync_at)),
+            connected_at: Set(Self::opt_to_db_time(connection.connected_at)),
+            disconnected_at: Set(Self::opt_to_db_time(connection.disconnected_at)),
+            institution_id: Set(connection.institution_id.clone()),
+            institution_name: Set(connection.institution_name.clone()),
+            transaction_count: Set(Some(connection.transaction_count)),
+            account_count: Set(Some(connection.account_count)),
+            created_at: Set(Self::opt_to_db_time(connection.created_at)),
+            updated_at: Set(Self::opt_to_db_time(connection.updated_at)),
+            institution_logo_url: Set(connection.institution_logo_url.clone()),
+            sync_cursor: Set(connection.sync_cursor.clone()),
+        })
+        .on_conflict(
+            OnConflict::column(provider_connections::Column::ItemId)
+                .update_columns([
+                    provider_connections::Column::Provider,
+                    provider_connections::Column::IsConnected,
+                    provider_connections::Column::LastSyncAt,
+                    provider_connections::Column::ConnectedAt,
+                    provider_connections::Column::DisconnectedAt,
+                    provider_connections::Column::InstitutionId,
+                    provider_connections::Column::InstitutionName,
+                    provider_connections::Column::TransactionCount,
+                    provider_connections::Column::AccountCount,
+                    provider_connections::Column::UpdatedAt,
+                    provider_connections::Column::InstitutionLogoUrl,
+                    provider_connections::Column::SyncCursor,
+                ])
+                .to_owned(),
+        )
+        .exec(conn)
+        .await?;
+        let saved = provider_connections::Entity::find()
+            .filter(provider_connections::Column::ItemId.eq(connection.item_id.clone()))
+            .one(conn)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("Provider connection not found after save"))?;
+        Ok(saved.id)
     }
 
     async fn upsert_account_on<C: ConnectionTrait>(conn: &C, account: &Account) -> Result<()> {
@@ -994,29 +1077,31 @@ impl DatabaseRepository for PostgresRepository {
         }
 
         let user_id = *user_id;
-        let models: Vec<transactions::ActiveModel> = transactions
-            .iter()
-            .map(Self::transaction_active_model)
-            .collect();
+        let transactions = transactions.to_vec();
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move { Self::upsert_transactions_batch_on(txn, &transactions).await })
+        })
+        .await
+    }
 
+    async fn upsert_provider_snapshot_bundle(
+        &self,
+        user_id: &Uuid,
+        connection: &ProviderConnection,
+        accounts: &[Account],
+        transactions: &[Transaction],
+    ) -> Result<()> {
+        let user_id = *user_id;
+        let connection = connection.clone();
+        let accounts = accounts.to_vec();
+        let transactions = transactions.to_vec();
         self.with_tenant(&user_id, move |txn| {
             Box::pin(async move {
-                transactions::Entity::insert_many(models)
-                    .on_conflict(
-                        OnConflict::columns([
-                            transactions::Column::AccountId,
-                            transactions::Column::ProviderTransactionId,
-                        ])
-                        .update_columns([
-                            transactions::Column::Amount,
-                            transactions::Column::MerchantName,
-                            transactions::Column::NormalizedMerchant,
-                            transactions::Column::Pending,
-                        ])
-                        .to_owned(),
-                    )
-                    .exec(txn)
-                    .await?;
+                Self::save_provider_connection_on(txn, &connection).await?;
+                for account in &accounts {
+                    Self::upsert_account_on(txn, account).await?;
+                }
+                Self::upsert_transactions_batch_on(txn, &transactions).await?;
                 Ok(())
             })
         })
@@ -1107,52 +1192,7 @@ impl DatabaseRepository for PostgresRepository {
         let user_id = connection.user_id;
         let connection = connection.clone();
         self.with_tenant(&user_id, move |txn| {
-            Box::pin(async move {
-                provider_connections::Entity::insert(provider_connections::ActiveModel {
-                    id: Set(connection.id),
-                    user_id: Set(Some(connection.user_id)),
-                    item_id: Set(connection.item_id.clone()),
-                    provider: Set(connection.provider.clone()),
-                    is_connected: Set(connection.is_connected),
-                    last_sync_at: Set(Self::opt_to_db_time(connection.last_sync_at)),
-                    connected_at: Set(Self::opt_to_db_time(connection.connected_at)),
-                    disconnected_at: Set(Self::opt_to_db_time(connection.disconnected_at)),
-                    institution_id: Set(connection.institution_id.clone()),
-                    institution_name: Set(connection.institution_name.clone()),
-                    transaction_count: Set(Some(connection.transaction_count)),
-                    account_count: Set(Some(connection.account_count)),
-                    created_at: Set(Self::opt_to_db_time(connection.created_at)),
-                    updated_at: Set(Self::opt_to_db_time(connection.updated_at)),
-                    institution_logo_url: Set(connection.institution_logo_url.clone()),
-                    sync_cursor: Set(connection.sync_cursor.clone()),
-                })
-                .on_conflict(
-                    OnConflict::column(provider_connections::Column::ItemId)
-                        .update_columns([
-                            provider_connections::Column::Provider,
-                            provider_connections::Column::IsConnected,
-                            provider_connections::Column::LastSyncAt,
-                            provider_connections::Column::ConnectedAt,
-                            provider_connections::Column::DisconnectedAt,
-                            provider_connections::Column::InstitutionId,
-                            provider_connections::Column::InstitutionName,
-                            provider_connections::Column::TransactionCount,
-                            provider_connections::Column::AccountCount,
-                            provider_connections::Column::UpdatedAt,
-                            provider_connections::Column::InstitutionLogoUrl,
-                            provider_connections::Column::SyncCursor,
-                        ])
-                        .to_owned(),
-                )
-                .exec(txn)
-                .await?;
-                let saved = provider_connections::Entity::find()
-                    .filter(provider_connections::Column::ItemId.eq(connection.item_id.clone()))
-                    .one(txn)
-                    .await?
-                    .ok_or_else(|| anyhow::anyhow!("Provider connection not found after save"))?;
-                Ok(saved.id)
-            })
+            Box::pin(async move { Self::save_provider_connection_on(txn, &connection).await })
         })
         .await
     }

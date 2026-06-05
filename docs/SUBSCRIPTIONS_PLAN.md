@@ -150,13 +150,22 @@ User overrides always win because `effective_category = COALESCE(override, categ
 **Goal:** Prove the full pipeline against real data.
 
 **Tasks / acceptance criteria:**
-- [ ] Seed: a master-list brand ×1 (instant), a non-listed stable monthly merchant ×4 (cadence), an excluded recurring merchant (skipped).
+- [x] Seed: a master-list brand ×1 (instant), a non-listed stable monthly merchant ×4 (cadence), an excluded recurring merchant (skipped).
 - [ ] `cargo test -p sumurai-backend --locked subscription_detection` passes.
 - [ ] After a sync/Classify job: `GET /api/transactions?category_primary=SUBSCRIPTION` and `GET /api/subscriptions` return the expected merchants + monthly costs.
 - [ ] At `http://localhost:8080`: Subscriptions tab shows stats + cards; card click deep-links to filtered Transactions; re-categorizing a transaction away removes it from the Subscriptions view (override wins). Capture console/network/screenshot proof.
 - [ ] `bun --cwd=frontend test` passes.
 
 ---
+
+### TDD log — Phase 8 (seed)
+
+- `maybe_seed_demo_simplefin_data` for `me@test.com` only (`SEED_DEMO_USER`): 26 deterministic provider transaction ids.
+- Atomic `upsert_provider_snapshot_bundle` (connection + accounts + transactions in one tenant transaction).
+- `normalized_merchant` is DB-generated; shared `transaction_insert_on_conflict()` excludes it from all upsert paths.
+- `is_demo_simplefin_seeded` requires all 26 `DEMO_SIMPLEFIN_PROVIDER_TXN_IDS` before skip.
+- Deterministic entity ids via `demo_entity_id(user_id, key)` for stable re-runs.
+- Postgres integration test: batch upsert twice updates amount + generated `normalized_merchant` without error.
 
 ### TDD log — Phase 7
 

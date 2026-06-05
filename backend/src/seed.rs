@@ -7,6 +7,8 @@ use crate::services::repository_service::DatabaseRepository;
 use crate::services::{AuthService, CacheService};
 use chrono::{NaiveDate, Utc};
 use rust_decimal::Decimal;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -14,6 +16,69 @@ use uuid::Uuid;
 pub const DEMO_EMAIL: &str = "me@test.com";
 const DEMO_PASSWORD: &str = "Test1234!";
 pub const SUMURAI_DEMO_ORG_CONN_ID: &str = "sumurai_demo";
+
+pub const DEMO_SIMPLEFIN_PROVIDER_TXN_IDS: [&str; 26] = [
+    "sumurai_demo_txn_01",
+    "sumurai_demo_txn_02",
+    "sumurai_demo_txn_03",
+    "sumurai_demo_txn_04",
+    "sumurai_demo_txn_05",
+    "sumurai_demo_txn_06",
+    "sumurai_demo_txn_07",
+    "sumurai_demo_txn_08",
+    "sumurai_demo_txn_09",
+    "sumurai_demo_txn_10",
+    "sumurai_demo_txn_11",
+    "sumurai_demo_txn_12",
+    "sumurai_demo_txn_13",
+    "sumurai_demo_txn_14",
+    "sumurai_demo_txn_15",
+    "sumurai_demo_txn_16",
+    "sumurai_demo_txn_17",
+    "sumurai_demo_txn_18",
+    "sumurai_demo_txn_19",
+    "sumurai_demo_gym_01",
+    "sumurai_demo_gym_02",
+    "sumurai_demo_gym_03",
+    "sumurai_demo_gym_04",
+    "sumurai_demo_excl_01",
+    "sumurai_demo_excl_02",
+    "sumurai_demo_excl_03",
+];
+
+fn demo_seed_hash(user_id: Uuid, key: &str, salt: &str) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    salt.hash(&mut hasher);
+    user_id.hash(&mut hasher);
+    key.hash(&mut hasher);
+    hasher.finish()
+}
+
+pub fn demo_entity_id(user_id: Uuid, key: &str) -> Uuid {
+    let high = demo_seed_hash(user_id, key, "sumurai-demo-seed-high");
+    let low = demo_seed_hash(user_id, key, "sumurai-demo-seed-low");
+    Uuid::from_fields(
+        (high >> 32) as u32,
+        (high >> 16) as u16,
+        high as u16,
+        &[
+            (low >> 56) as u8,
+            (low >> 48) as u8,
+            (low >> 40) as u8,
+            (low >> 32) as u8,
+            (low >> 24) as u8,
+            (low >> 16) as u8,
+            (low >> 8) as u8,
+            low as u8,
+        ],
+    )
+}
+
+pub fn is_demo_simplefin_seeded(provider_txn_ids: &[String]) -> bool {
+    DEMO_SIMPLEFIN_PROVIDER_TXN_IDS
+        .iter()
+        .all(|expected| provider_txn_ids.iter().any(|id| id == expected))
+}
 
 pub async fn maybe_seed_demo_user(
     db: &Arc<dyn DatabaseRepository>,
@@ -90,19 +155,26 @@ pub async fn maybe_seed_demo_simplefin_data(
     let user_id = user.id;
     let item_id = format!("simplefin_{}_sumurai_demo", user_id);
 
-    let existing = db
-        .get_all_provider_connections_by_user(&user_id)
+    let provider_txn_ids = db
+        .get_provider_transaction_ids_for_user(&user_id)
         .await
         .unwrap_or_default();
 
-    if existing.iter().any(|c| c.item_id == item_id) {
+    if is_demo_simplefin_seeded(&provider_txn_ids) {
         tracing::info!("Demo SimpleFin data already present, skipping");
         return Ok(());
     }
 
     let now = Utc::now();
+    let connection_id = demo_entity_id(user_id, "connection:sumurai_demo");
+    let checking_id = demo_entity_id(user_id, "account:sumurai_demo_dep_checking");
+    let savings_id = demo_entity_id(user_id, "account:sumurai_demo_dep_savings");
+    let credit_id = demo_entity_id(user_id, "account:sumurai_demo_credit");
+    let investment_id = demo_entity_id(user_id, "account:sumurai_demo_investment");
+    let loan_id = demo_entity_id(user_id, "account:sumurai_demo_loan");
+
     let connection = ProviderConnection {
-        id: Uuid::new_v4(),
+        id: connection_id,
         user_id,
         item_id: item_id.clone(),
         provider: "simplefin".to_string(),
@@ -119,17 +191,6 @@ pub async fn maybe_seed_demo_simplefin_data(
         created_at: Some(now),
         updated_at: Some(now),
     };
-
-    let connection_id = db
-        .save_provider_connection(&connection)
-        .await
-        .map_err(|e| anyhow::anyhow!("Failed to save demo provider connection: {}", e))?;
-
-    let checking_id = Uuid::new_v4();
-    let savings_id = Uuid::new_v4();
-    let credit_id = Uuid::new_v4();
-    let investment_id = Uuid::new_v4();
-    let loan_id = Uuid::new_v4();
 
     let accounts = [
         Account {
@@ -194,165 +255,228 @@ pub async fn maybe_seed_demo_simplefin_data(
         },
     ];
 
-    for account in &accounts {
-        db.upsert_account(account)
-            .await
-            .map_err(|e| anyhow::anyhow!("Failed to upsert demo account: {}", e))?;
-    }
-
     let seed_date = NaiveDate::from_ymd_opt(2026, 6, 1).unwrap();
+    let d = |y, m, day| NaiveDate::from_ymd_opt(y, m, day).unwrap();
 
-    let raw_txns: &[(&str, Uuid, &str, &str)] = &[
+    let raw_txns: &[(&str, Uuid, &str, &str, NaiveDate)] = &[
         (
             "sumurai_demo_txn_01",
             checking_id,
             "SQ *BLUE BOTTLE COFFEE",
             "-4.75",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_02",
             checking_id,
             "PAYROLL DIRECT DEPOSIT SUMURAI INC",
             "2500.00",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_03",
             checking_id,
             "CHECK # 1042 PAID",
             "-150.00",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_04",
             checking_id,
             "ATM WITHDRAWAL 123 MAIN ST",
             "-60.00",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_05",
             checking_id,
             "ZELLE PAYMENT TO ALEX SMITH",
             "-75.00",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_06",
             checking_id,
             "NETFLIX.COM 866-579-7172 CA",
             "-15.49",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_07",
             checking_id,
             "COSTCO WHSE #573 PORTLAND OR 06/01",
             "-127.83",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_08",
             checking_id,
             "POS DEBIT STARBUCKS #12345 SEATTLE WA 06/03",
             "-6.45",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_09",
             checking_id,
             "WALMART SUPERCENTER 4321 06/04",
             "-89.23",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_10",
             checking_id,
             "TARGET STORE #1234 PORTLAND OR",
             "-43.12",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_11",
             checking_id,
             "AMAZON.COM LLC",
             "-34.99",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_12",
             checking_id,
             "AMZN MKTP US*1A2B3C4D",
             "-22.50",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_13",
             checking_id,
             "SHELL OIL 59401234 DEBIT PURCHASE",
             "-52.00",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_14",
             checking_id,
             "UBER* TRIPS HELP.UBER.COM CA",
             "-18.75",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_15",
             checking_id,
             "RANDOMCO MERCHANT PORTLAND OR 12345",
             "-29.99",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_16",
             credit_id,
             "WHOLEFDS MKT #10452 PORTLAND OR",
             "-67.43",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_17",
             savings_id,
             "ONLINE TRANSFER TO CHECKING",
             "-200.00",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_18",
             investment_id,
             "DIVIDEND REINVESTMENT VANGUARD",
             "12.50",
+            seed_date,
         ),
         (
             "sumurai_demo_txn_19",
             loan_id,
             "AUTOPAY LOAN PAYMENT",
             "-348.00",
+            seed_date,
+        ),
+        (
+            "sumurai_demo_gym_01",
+            checking_id,
+            "PDXFIT GYM PORTLAND OR MONTHLY",
+            "-29.99",
+            d(2026, 2, 15),
+        ),
+        (
+            "sumurai_demo_gym_02",
+            checking_id,
+            "PDXFIT GYM PORTLAND OR MONTHLY",
+            "-29.99",
+            d(2026, 3, 15),
+        ),
+        (
+            "sumurai_demo_gym_03",
+            checking_id,
+            "PDXFIT GYM PORTLAND OR MONTHLY",
+            "-29.99",
+            d(2026, 4, 15),
+        ),
+        (
+            "sumurai_demo_gym_04",
+            checking_id,
+            "PDXFIT GYM PORTLAND OR MONTHLY",
+            "-29.99",
+            d(2026, 5, 15),
+        ),
+        (
+            "sumurai_demo_excl_01",
+            checking_id,
+            "POS DEBIT STARBUCKS #12345 SEATTLE WA",
+            "-6.45",
+            d(2026, 3, 10),
+        ),
+        (
+            "sumurai_demo_excl_02",
+            checking_id,
+            "POS DEBIT STARBUCKS #12345 SEATTLE WA",
+            "-6.45",
+            d(2026, 4, 10),
+        ),
+        (
+            "sumurai_demo_excl_03",
+            checking_id,
+            "POS DEBIT STARBUCKS #12345 SEATTLE WA",
+            "-6.45",
+            d(2026, 5, 10),
         ),
     ];
 
     let mut transactions: Vec<Transaction> = raw_txns
         .iter()
-        .map(|(txn_id, account_id, raw_desc, amount_str)| Transaction {
-            id: Uuid::new_v4(),
-            account_id: *account_id,
-            user_id: Some(user_id),
-            provider_account_id: None,
-            provider_transaction_id: Some(txn_id.to_string()),
-            amount: Decimal::from_str(amount_str).unwrap(),
-            date: seed_date,
-            merchant_name: Some(raw_desc.to_string()),
-            category_primary: "OTHER".to_string(),
-            category_detailed: "OTHER".to_string(),
-            category_confidence: String::new(),
-            payment_channel: None,
-            pending: false,
-            created_at: Some(now),
-            original_merchant_name: Some(raw_desc.to_string()),
-            normalized_merchant: None,
-        })
+        .map(
+            |(txn_id, account_id, raw_desc, amount_str, txn_date)| Transaction {
+                id: demo_entity_id(user_id, &format!("txn:{txn_id}")),
+                account_id: *account_id,
+                user_id: Some(user_id),
+                provider_account_id: None,
+                provider_transaction_id: Some(txn_id.to_string()),
+                amount: Decimal::from_str(amount_str).unwrap(),
+                date: *txn_date,
+                merchant_name: Some(raw_desc.to_string()),
+                category_primary: "OTHER".to_string(),
+                category_detailed: "OTHER".to_string(),
+                category_confidence: String::new(),
+                payment_channel: None,
+                pending: false,
+                created_at: Some(now),
+                original_merchant_name: Some(raw_desc.to_string()),
+                normalized_merchant: None,
+            },
+        )
         .collect();
 
     let normalization_service =
         MerchantNormalizationService::new(Arc::clone(db), Arc::clone(cache_service));
-    if let Err(e) = normalization_service
+    normalization_service
         .normalize_batch(&mut transactions)
         .await
-    {
-        tracing::warn!("Demo seed normalization failed: {}", e);
-    }
+        .map_err(|e| anyhow::anyhow!("Demo seed normalization failed: {}", e))?;
 
-    db.upsert_transactions_batch(&transactions, &user_id)
+    db.upsert_provider_snapshot_bundle(&user_id, &connection, &accounts, &transactions)
         .await
-        .map_err(|e| anyhow::anyhow!("Failed to seed demo transactions: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Failed to seed demo SimpleFin snapshot: {}", e))?;
 
     tracing::info!("Demo SimpleFin data seeded for me@test.com");
     Ok(())

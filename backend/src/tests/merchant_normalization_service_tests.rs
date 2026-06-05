@@ -186,16 +186,4 @@ async fn given_raw_description_when_normalize_batch_then_normalized_merchant_set
     svc.normalize_batch(&mut txns).await.unwrap();
 
     assert_eq!(txns[0].merchant_name.as_deref(), Some("Costco"));
-    assert_eq!(txns[0].normalized_merchant.as_deref(), Some("costco"));
-}
-
-#[tokio::test]
-async fn given_empty_raw_with_existing_merchant_when_normalize_batch_then_normalized_merchant_derived(
-) {
-    let svc = make_service(vec![]);
-    let mut txns = vec![make_transaction("Netflix", Some(""))];
-
-    svc.normalize_batch(&mut txns).await.unwrap();
-
-    assert_eq!(txns[0].normalized_merchant.as_deref(), Some("netflix"));
 }
