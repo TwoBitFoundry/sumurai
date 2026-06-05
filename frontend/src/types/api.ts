@@ -70,6 +70,11 @@ export interface Budget {
   amount: number;
 }
 
+export interface BudgetsOverviewResponse {
+  budgets: Budget[];
+  subscriptions: SubscriptionSummary[];
+}
+
 // Historically budgets included a `month`. Budgets are now
 // persistent containers not tied to months. Keep `month` only
 // for backward compatibility with older backend responses.

@@ -12,6 +12,7 @@ mod auto_categorization_service_tests;
 mod bank_level_sync_tests;
 mod budget_api_integration_tests;
 mod budget_service_tests;
+mod budgets_overview_api_tests;
 mod cache_keys_tests;
 mod cache_service_tests;
 mod categorization_classifier_tests;

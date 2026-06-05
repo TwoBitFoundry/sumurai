@@ -1246,6 +1246,45 @@
         ]
       }
     },
+    "/api/budgets/overview": {
+      "get": {
+        "tags": [
+          "Budgets"
+        ],
+        "description": "Returns budgets (cached when available) and live subscription summaries for the authenticated user.",
+        "operationId": "get_authenticated_budgets_overview",
+        "responses": {
+          "200": {
+            "description": "Budgets and subscription overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetsOverviewResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
     "/api/budgets/{id}": {
       "put": {
         "tags": [
@@ -3063,6 +3102,27 @@
           "id": "11111111-2222-3333-4444-555555555555",
           "updated_at": "2024-01-15T12:00:00Z",
           "user_id": "99999999-8888-7777-6666-555555555555"
+        }
+      },
+      "BudgetsOverviewResponse": {
+        "type": "object",
+        "required": [
+          "budgets",
+          "subscriptions"
+        ],
+        "properties": {
+          "budgets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Budget"
+            }
+          },
+          "subscriptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionSummary"
+            }
+          }
         }
       },
       "CashFlowPoint": {

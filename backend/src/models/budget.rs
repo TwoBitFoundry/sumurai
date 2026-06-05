@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+use crate::models::subscription::SubscriptionSummary;
+
 #[allow(unused_imports)]
 use serde_json::json;
 
@@ -60,4 +62,10 @@ pub struct UpdateBudgetRequest {
 pub struct DeleteBudgetResponse {
     pub deleted: bool,
     pub budget_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+pub struct BudgetsOverviewResponse {
+    pub budgets: Vec<Budget>,
+    pub subscriptions: Vec<SubscriptionSummary>,
 }
