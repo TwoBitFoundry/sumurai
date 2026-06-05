@@ -406,6 +406,7 @@ impl SimpleFinProvider {
             created_at: None,
             original_merchant_name: Some(simplefin_txn.description.clone()),
             normalized_merchant: None,
+            normalization_source: None,
         })
     }
 }

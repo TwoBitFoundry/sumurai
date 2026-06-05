@@ -63,6 +63,8 @@ fn sample_transaction(
         is_custom: false,
         is_overridden: false,
         original_merchant_name: None,
+        normalized_merchant: None,
+        normalization_source: None,
     }
 }
 

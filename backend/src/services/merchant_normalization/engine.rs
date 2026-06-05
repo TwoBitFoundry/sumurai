@@ -21,8 +21,8 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
             display
         };
         return NormalizedMerchant {
+            canonical_key: Some(canonical_key(&display)),
             display,
-            canonical_key: None,
             source: MatchSource::Enriched,
             confidence: 1.0,
         };
@@ -37,8 +37,8 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     // Stage 3.5: Early structural check — preserve patterns that digit-stripping would destroy
     if let Some(display) = structural_label(&work) {
         return NormalizedMerchant {
+            canonical_key: Some(canonical_key(&display)),
             display,
-            canonical_key: None,
             source: MatchSource::Structural,
             confidence: 0.85,
         };
@@ -48,7 +48,7 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     if let Some(canonical) = lookup_contains(&work, index) {
         return NormalizedMerchant {
             display: canonical.clone(),
-            canonical_key: Some(to_canonical_key(&canonical)),
+            canonical_key: Some(canonical_key(&canonical)),
             source: MatchSource::EarlyContains,
             confidence: 0.95,
         };
@@ -56,7 +56,7 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     if let Some(canonical) = index.exact.get(&work) {
         return NormalizedMerchant {
             display: canonical.clone(),
-            canonical_key: Some(to_canonical_key(canonical)),
+            canonical_key: Some(canonical_key(canonical)),
             source: MatchSource::EarlyExact,
             confidence: 1.0,
         };
@@ -84,7 +84,7 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     if let Some(canonical) = lookup_contains(&work, index) {
         return NormalizedMerchant {
             display: canonical.clone(),
-            canonical_key: Some(to_canonical_key(&canonical)),
+            canonical_key: Some(canonical_key(&canonical)),
             source: MatchSource::Contains,
             confidence: 0.9,
         };
@@ -92,7 +92,7 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     if let Some(canonical) = index.exact.get(work.trim()) {
         return NormalizedMerchant {
             display: canonical.clone(),
-            canonical_key: Some(to_canonical_key(canonical)),
+            canonical_key: Some(canonical_key(canonical)),
             source: MatchSource::Exact,
             confidence: 1.0,
         };
@@ -101,8 +101,8 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     // Stage 12: Structural fallback
     if let Some(display) = structural_label(&work) {
         return NormalizedMerchant {
+            canonical_key: Some(canonical_key(&display)),
             display,
-            canonical_key: None,
             source: MatchSource::Structural,
             confidence: 0.85,
         };
@@ -115,8 +115,8 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     let display = finalize(display, &original);
 
     NormalizedMerchant {
+        canonical_key: Some(canonical_key(&display)),
         display,
-        canonical_key: None,
         source: MatchSource::Fallback,
         confidence: 0.5,
     }
@@ -126,7 +126,7 @@ fn collapse_whitespace(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-fn to_canonical_key(name: &str) -> String {
+pub fn canonical_key(name: &str) -> String {
     name.chars()
         .filter(|c| c.is_alphanumeric())
         .map(|c| c.to_ascii_lowercase())

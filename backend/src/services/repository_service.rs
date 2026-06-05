@@ -65,6 +65,8 @@ pub(crate) struct TransactionWithAccountRow {
     pub(crate) is_overridden: bool,
     pub(crate) is_custom: bool,
     pub(crate) original_merchant_name: Option<String>,
+    pub(crate) normalized_merchant: Option<String>,
+    pub(crate) normalization_source: Option<String>,
 }
 
 type TransactionsInsightsRow = (i64, f64, f64, Option<f64>, Option<String>, Vec<String>);
@@ -529,15 +531,18 @@ impl PostgresRepository {
                 transaction.created_at.unwrap_or_else(chrono::Utc::now),
             ))),
             original_merchant_name: Set(transaction.original_merchant_name.clone()),
-            normalized_merchant: sea_orm::ActiveValue::NotSet,
+            normalized_merchant: Set(transaction.normalized_merchant.clone()),
+            normalization_source: Set(transaction.normalization_source.clone()),
         }
     }
 
-    fn transaction_upsert_update_columns() -> [transactions::Column; 4] {
+    fn transaction_upsert_update_columns() -> [transactions::Column; 6] {
         [
             transactions::Column::Amount,
             transactions::Column::MerchantName,
             transactions::Column::OriginalMerchantName,
+            transactions::Column::NormalizedMerchant,
+            transactions::Column::NormalizationSource,
             transactions::Column::Pending,
         ]
     }
@@ -741,6 +746,8 @@ impl PostgresRepository {
                 transactions::Column::Date,
                 transactions::Column::MerchantName,
                 transactions::Column::OriginalMerchantName,
+                transactions::Column::NormalizedMerchant,
+                transactions::Column::NormalizationSource,
                 transactions::Column::CategoryDetailed,
                 transactions::Column::CategoryConfidence,
                 transactions::Column::PaymentChannel,
@@ -934,6 +941,8 @@ impl PostgresRepository {
             is_custom: row.is_custom,
             is_overridden: row.is_overridden,
             original_merchant_name: row.original_merchant_name,
+            normalized_merchant: row.normalized_merchant,
+            normalization_source: row.normalization_source,
         }
     }
 

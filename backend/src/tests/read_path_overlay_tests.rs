@@ -66,6 +66,7 @@ async fn setup_test_data(
         created_at: None,
         original_merchant_name: None,
         normalized_merchant: None,
+        normalization_source: None,
     };
 
     db::query(
@@ -104,6 +105,7 @@ async fn setup_test_data(
         created_at: None,
         original_merchant_name: None,
         normalized_merchant: None,
+        normalization_source: None,
     };
 
     db::query(

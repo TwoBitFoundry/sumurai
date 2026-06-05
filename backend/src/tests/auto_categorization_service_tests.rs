@@ -33,6 +33,7 @@ fn make_stable_monthly_subscription_transactions(user_id: Uuid, count: u32) -> V
             created_at: None,
             original_merchant_name: None,
             normalized_merchant: Some("spotify".to_string()),
+            normalization_source: None,
         })
         .collect()
 }
@@ -66,6 +67,7 @@ fn make_other_transaction(user_id: Uuid, id: Uuid, merchant: &str, amount: Decim
         created_at: None,
         original_merchant_name: None,
         normalized_merchant: None,
+        normalization_source: None,
     }
 }
 

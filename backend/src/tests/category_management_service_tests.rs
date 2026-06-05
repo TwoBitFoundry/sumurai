@@ -55,6 +55,7 @@ fn make_transaction(
         created_at: None,
         original_merchant_name: None,
         normalized_merchant: merchant_name.map(normalize_merchant_for_match),
+        normalization_source: None,
     }
 }
 
@@ -408,6 +409,48 @@ async fn given_different_category_when_set_transaction_category_then_upserts_ove
 
     let o = result.unwrap().unwrap();
     assert_eq!(o.category_name, "ENTERTAINMENT");
+}
+
+#[tokio::test]
+async fn given_stored_normalized_key_when_set_transaction_category_then_uses_stored_key() {
+    let service = make_service();
+    let user_id = Uuid::new_v4();
+    let mut repo = MockDatabaseRepository::new();
+    let txn_id = Uuid::new_v4();
+
+    let mut txn = make_transaction(user_id, "FOOD_AND_DRINK", Some("Netflix.Com"));
+    txn.normalized_merchant = Some("netflix".to_string());
+
+    repo.expect_get_transaction_by_id_for_user()
+        .times(1)
+        .returning(move |_, _| {
+            let t = txn.clone();
+            Box::pin(async move { Ok(Some(t)) })
+        });
+
+    let override_row = make_override(user_id, "netflix", "ENTERTAINMENT", None);
+    let override_clone = override_row.clone();
+
+    repo.expect_upsert_transaction_category_override()
+        .withf(|_, norm, cat, cid| norm == "netflix" && cat == "ENTERTAINMENT" && cid.is_none())
+        .times(1)
+        .returning(move |_, _, _, _| {
+            let o = override_clone.clone();
+            Box::pin(async move { Ok(o) })
+        });
+
+    use crate::models::transaction_category_override::SetTransactionCategoryRequest;
+    let request = SetTransactionCategoryRequest {
+        category_name: "ENTERTAINMENT".to_string(),
+        is_custom: false,
+    };
+
+    let result = service
+        .set_transaction_category(&repo, &user_id, &txn_id, request)
+        .await;
+
+    let o = result.unwrap().unwrap();
+    assert_eq!(o.normalized_merchant, "netflix");
 }
 
 #[tokio::test]

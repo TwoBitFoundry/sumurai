@@ -91,6 +91,7 @@ fn build_transactions(account_id: Uuid, user_id: Uuid) -> Vec<Transaction> {
             created_at: Some(Utc::now()),
             original_merchant_name: None,
             normalized_merchant: None,
+            normalization_source: None,
         })
         .collect()
 }

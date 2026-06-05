@@ -30,6 +30,7 @@ pub struct Model {
     pub user_id: Option<Uuid>,
     pub normalized_merchant: Option<String>,
     pub original_merchant_name: Option<String>,
+    pub normalization_source: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
@@ -49,6 +50,7 @@ pub enum Column {
     UserId,
     NormalizedMerchant,
     OriginalMerchantName,
+    NormalizationSource,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DerivePrimaryKey)]
@@ -89,6 +91,7 @@ impl ColumnTrait for Column {
             Self::UserId => ColumnType::Uuid.def().null(),
             Self::NormalizedMerchant => ColumnType::Text.def().null(),
             Self::OriginalMerchantName => ColumnType::String(StringLen::None).def().null(),
+            Self::NormalizationSource => ColumnType::Text.def().null(),
         }
     }
 }

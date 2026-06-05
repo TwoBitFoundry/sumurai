@@ -463,6 +463,7 @@ pub async fn maybe_seed_demo_simplefin_data(
                 created_at: Some(now),
                 original_merchant_name: Some(raw_desc.to_string()),
                 normalized_merchant: None,
+                normalization_source: None,
             },
         )
         .collect();

@@ -49,6 +49,7 @@ pub struct Transaction {
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     pub original_merchant_name: Option<String>,
     pub normalized_merchant: Option<String>,
+    pub normalization_source: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
@@ -93,6 +94,8 @@ pub struct TransactionWithAccount {
     pub is_custom: bool,
     pub is_overridden: bool,
     pub original_merchant_name: Option<String>,
+    pub normalized_merchant: Option<String>,
+    pub normalization_source: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -369,6 +372,7 @@ impl Transaction {
             created_at: Some(chrono::Utc::now()),
             original_merchant_name: Some(merchant_name.trim().to_string()),
             normalized_merchant: None,
+            normalization_source: None,
         }
     }
 
@@ -444,6 +448,7 @@ impl Transaction {
             created_at: Some(chrono::Utc::now()),
             original_merchant_name: Some(description.to_string()),
             normalized_merchant: None,
+            normalization_source: None,
         })
     }
 
@@ -568,6 +573,7 @@ impl Transaction {
             created_at: Some(chrono::Utc::now()),
             original_merchant_name: None,
             normalized_merchant: None,
+            normalization_source: None,
         }
     }
 
@@ -637,6 +643,7 @@ impl Transaction {
             created_at: Some(chrono::Utc::now()),
             original_merchant_name: None,
             normalized_merchant: None,
+            normalization_source: None,
         }
     }
 

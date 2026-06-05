@@ -94,6 +94,7 @@ fn create_test_transaction(
         created_at: Some(Utc::now()),
         original_merchant_name: None,
         normalized_merchant: None,
+        normalization_source: None,
     }
 }
 
@@ -243,6 +244,50 @@ async fn given_tenant_scoped_transaction_when_wrapped_then_logs_set_config_first
 }
 
 #[tokio::test]
+async fn given_transaction_with_app_supplied_normalized_fields_when_upserting_then_insert_statement_includes_them(
+) {
+    let user_id = Uuid::new_v4();
+    let key = parse_encryption_key_hex(
+        "0101010101010101010101010101010101010101010101010101010101010101",
+    )
+    .expect("test encryption key must be valid hex");
+
+    let db = MockDatabase::new(DbBackend::Postgres)
+        .append_exec_results([
+            MockExecResult {
+                rows_affected: 0,
+                ..Default::default()
+            },
+            MockExecResult {
+                rows_affected: 1,
+                ..Default::default()
+            },
+        ])
+        .into_connection();
+
+    let repo = PostgresRepository::from_mock(db, key);
+    let mut transaction = create_test_transaction(
+        user_id,
+        Uuid::new_v4(),
+        format!("txn_{}", Uuid::new_v4()),
+        -1299,
+        NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
+    );
+    transaction.normalized_merchant = Some("netflix".to_string());
+    transaction.normalization_source = Some("sumurai_engine".to_string());
+
+    repo.upsert_transaction(&transaction).await.unwrap();
+
+    let log = repo.into_mock_transaction_log();
+    let stmts = log[0].statements();
+    let insert_sql = format!("{:?}", &stmts[2]);
+
+    assert!(insert_sql.contains("normalized_merchant"));
+    assert!(insert_sql.contains("normalization_source"));
+    assert!(insert_sql.contains("sumurai_engine"));
+}
+
+#[tokio::test]
 async fn given_two_users_when_cross_tenant_read_then_other_users_data_is_invisible() {
     let Some(pool) = connect_pool().await else {
         return;
@@ -351,7 +396,7 @@ async fn given_many_transactions_when_batch_upserting_then_writes_all_rows_witho
 }
 
 #[tokio::test]
-async fn given_generated_normalized_merchant_when_batch_upserting_twice_then_updates_without_error()
+async fn given_app_supplied_normalized_merchant_when_batch_upserting_twice_then_persists_that_key()
 {
     let Some(pool) = connect_pool().await else {
         return;
@@ -371,6 +416,7 @@ async fn given_generated_normalized_merchant_when_batch_upserting_twice_then_upd
     );
     first.merchant_name = Some("Netflix.com".to_string());
     first.original_merchant_name = Some("NETFLIX.COM 866-579-7172 CA".to_string());
+    first.normalized_merchant = Some("netflix".to_string());
 
     let mut second = first.clone();
     second.amount = dec!(-15.49);
@@ -400,7 +446,7 @@ async fn given_generated_normalized_merchant_when_batch_upserting_twice_then_upd
     .await
     .unwrap();
 
-    assert_eq!(normalized_merchant.as_deref(), Some("netflixcom"));
+    assert_eq!(normalized_merchant.as_deref(), Some("netflix"));
     assert_eq!(amount, dec!(-15.49));
 }
 

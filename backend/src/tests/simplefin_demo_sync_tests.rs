@@ -60,6 +60,7 @@ mod tests {
             created_at: Some(Utc::now()),
             original_merchant_name: Some(raw_desc.to_string()),
             normalized_merchant: None,
+            normalization_source: None,
         }
     }
 

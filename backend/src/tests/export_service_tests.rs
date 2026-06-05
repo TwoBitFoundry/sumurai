@@ -64,6 +64,8 @@ fn sample_transaction(fixture: TransactionFixture<'_>) -> TransactionWithAccount
         is_custom: false,
         is_overridden: false,
         original_merchant_name: None,
+        normalized_merchant: None,
+        normalization_source: None,
     }
 }
 

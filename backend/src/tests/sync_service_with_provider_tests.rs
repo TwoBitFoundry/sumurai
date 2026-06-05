@@ -102,6 +102,7 @@ async fn given_sync_service_with_provider_when_sync_then_maps_accounts_correctly
         created_at: Some(Utc::now()),
         original_merchant_name: None,
         normalized_merchant: None,
+        normalization_source: None,
     };
 
     let provider: Arc<dyn FinancialDataProvider> = Arc::new(MockProvider {

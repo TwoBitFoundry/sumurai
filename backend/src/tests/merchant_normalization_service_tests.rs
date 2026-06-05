@@ -46,6 +46,7 @@ fn make_transaction(merchant: &str, original: Option<&str>) -> Transaction {
         created_at: None,
         original_merchant_name: original.map(str::to_string),
         normalized_merchant: None,
+        normalization_source: None,
     }
 }
 
@@ -109,6 +110,10 @@ async fn given_simplefin_raw_description_when_normalize_batch_then_merchant_name
 
     assert_eq!(txns[0].merchant_name.as_deref(), Some("Costco"));
     assert_eq!(txns[0].normalized_merchant.as_deref(), Some("costco"));
+    assert_eq!(
+        txns[0].normalization_source.as_deref(),
+        Some("sumurai_engine")
+    );
 }
 
 #[tokio::test]

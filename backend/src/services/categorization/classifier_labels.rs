@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
 use crate::models::predicted_category::{Confidence, PredictedCategory};
+use crate::services::merchant_normalization::engine::canonical_key;
 use crate::services::subscription_detection::known_merchants::KNOWN_SUBSCRIPTION_MERCHANTS;
-use crate::utils::merchant_name::normalize_merchant_for_match;
 use rust_decimal::Decimal;
 
 const MEDIUM_CONFIDENCE_FLOOR: f32 = 0.75;
@@ -92,7 +92,7 @@ fn extract_merchant_normalized(input: &str) -> String {
         .trim_start_matches("[debit]")
         .trim_start_matches("[credit]")
         .trim();
-    normalize_merchant_for_match(merchant)
+    canonical_key(merchant)
 }
 
 fn deterministic_label(input: &str) -> Option<&'static str> {
