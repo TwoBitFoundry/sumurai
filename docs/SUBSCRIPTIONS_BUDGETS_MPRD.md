@@ -114,11 +114,17 @@ sequenceDiagram
 - Add Bun tests: `BudgetService.getOverview()` contract; `SubscriptionCalculator` math; `useBudgets` mutation shape preserved.
 
 **Acceptance criteria:**
-- [ ] `useBudgets` fetches overview; exposes `budgets` and `subscriptions`.
-- [ ] Add/update/remove budget mutations still work with optimistic updates.
-- [ ] `['budgets']` invalidation refetches overview (subscriptions refresh after sync).
-- [ ] Frontend boundary tests pass for overview integration in `useBudgets`.
-- [ ] Budgets page not required to be wired yet — hook verified in isolation.
+- [x] `useBudgets` fetches overview; exposes `budgets` and `subscriptions`.
+- [x] Add/update/remove budget mutations still work with optimistic updates.
+- [x] `['budgets']` invalidation refetches overview (subscriptions refresh after sync).
+- [x] Frontend boundary tests pass for overview integration in `useBudgets`.
+- [x] Budgets page not required to be wired yet — hook verified in isolation.
+
+**TDD log (Phase 2):**
+- Red: `SubscriptionCalculator.test.ts`, `BudgetService.getOverview` test, `useBudgets.test.tsx` overview mocks + subscriptions assertions.
+- Green: `SubscriptionCalculator`, `BudgetService.getOverview`, `useBudgets` overview query + mutation cache shape.
+- `npm --prefix frontend test -- tests/domain/SubscriptionCalculator.test.ts tests/services/BudgetService.test.ts tests/features/budgets/hooks/useBudgets.test.tsx` — 22 passed.
+- `npm --prefix frontend run typecheck` — passed.
 
 ---
 

@@ -10,6 +10,45 @@ jest.mock('@/services/ApiClient', () => ({
   },
 }));
 
+describe('BudgetService.getOverview — Given/When/Then', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('Given backend returns overview; When getOverview; Then maps budgets and returns subscriptions', async () => {
+    jest.mocked(ApiClient.get).mockResolvedValueOnce({
+      budgets: [{ id: 'b1', category: 'Food', amount: '100.50' }],
+      subscriptions: [
+        {
+          merchant: 'Spotify',
+          normalized_merchant: 'spotify',
+          monthly_cost: '9.99',
+          cadence: 'Monthly',
+          last_charged: '2024-03-01',
+          occurrence_count: 3,
+        },
+      ],
+    } as any);
+
+    const overview = await BudgetService.getOverview();
+
+    expect(ApiClient.get).toHaveBeenCalledWith('/budgets/overview');
+    expect(overview).toEqual({
+      budgets: [{ id: 'b1', category: 'Food', amount: 100.5 }],
+      subscriptions: [
+        {
+          merchant: 'Spotify',
+          normalized_merchant: 'spotify',
+          monthly_cost: '9.99',
+          cadence: 'Monthly',
+          last_charged: '2024-03-01',
+          occurrence_count: 3,
+        },
+      ],
+    });
+  });
+});
+
 describe('BudgetService.getBudgets — Given/When/Then', () => {
   beforeEach(() => {
     jest.clearAllMocks();

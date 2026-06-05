@@ -2,7 +2,7 @@
  * API access for budget operations.
  */
 
-import type { Budget } from '../types/api';
+import type { Budget, BudgetsOverviewResponse, SubscriptionSummary } from '../types/api';
 import { ApiClient } from './ApiClient';
 
 type BudgetRecord = {
@@ -11,8 +11,24 @@ type BudgetRecord = {
   amount: number | string;
 };
 
+type OverviewRecord = {
+  budgets: BudgetRecord[];
+  subscriptions: SubscriptionSummary[];
+};
+
 export class BudgetService {
-  // Return plain budgets; map any legacy month field away.
+  static async getOverview(): Promise<BudgetsOverviewResponse> {
+    const response = await ApiClient.get<OverviewRecord>('/budgets/overview');
+    return {
+      budgets: response.budgets.map((b) => ({
+        id: b.id,
+        category: b.category,
+        amount: Number(b.amount),
+      })),
+      subscriptions: response.subscriptions,
+    };
+  }
+
   static async getBudgets(): Promise<Budget[]> {
     const budgets = await ApiClient.get<BudgetRecord[]>('/budgets');
     return budgets.map((b) => ({ id: b.id, category: b.category, amount: Number(b.amount) }));
