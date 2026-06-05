@@ -115,8 +115,8 @@ User overrides always win because `effective_category = COALESCE(override, categ
 - Add a `useSubscriptions` hook (React Query, `keepPreviousData`, month-range-aware like `useBudgets`).
 
 **Acceptance criteria:**
-- [ ] "Subscriptions" appears in `CategoryPicker`, the transactions category filter, and accent coloring with no extra wiring.
-- [ ] `useSubscriptions` fetches and exposes loading/error/data states; tested at the service boundary.
+- [x] "Subscriptions" appears in `CategoryPicker`, the transactions category filter, and accent coloring with no extra wiring.
+- [x] `useSubscriptions` fetches and exposes loading/error/data states; tested at the service boundary.
 
 ## Phase 6 — First-class Subscriptions view + navigation
 
@@ -157,6 +157,15 @@ User overrides always win because `effective_category = COALESCE(override, categ
 - [ ] `bun --cwd=frontend test` passes.
 
 ---
+
+### TDD log — Phase 5
+
+- `SUBSCRIPTION: 'Subscriptions'` added to `SYSTEM_CATEGORY_LABELS`; `'SUBSCRIPTION'` added to `SYSTEM_CATEGORY_SLUGS` in `categories.ts`.
+- `frontend/src/services/SubscriptionService.ts` created — thin `ApiClient.get` wrapper.
+- `useSubscriptions` hook created at `frontend/src/features/subscriptions/hooks/useSubscriptions.ts` — React Query with `placeholderData: keepPreviousData`, staleTime 5m.
+- `tests/services/SubscriptionService.test.ts`: 2 tests — happy path + network error.
+- `tests/features/subscriptions/hooks/useSubscriptions.test.tsx`: 3 tests — loaded data, error state, empty array.
+- `bun test`: 862 passed, 0 failed.
 
 ### TDD log — Phase 4
 
