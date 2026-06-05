@@ -165,7 +165,7 @@ describe('TransactionsPage', () => {
       />
     );
 
-    expect(getByRole('button', { name: /classify/i })).toBeEnabled();
+    expect(getByRole('button', { name: /categorize/i })).toBeEnabled();
   });
 
   it('shows the insights loading state independently from the table', () => {

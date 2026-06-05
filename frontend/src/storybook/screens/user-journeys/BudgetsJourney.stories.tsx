@@ -79,7 +79,7 @@ function BudgetsJourney() {
   return (
     <AccountFilterStoryProvider>
       <StoryApiScope handlers={handlers}>
-        <BudgetsPage monthControl={monthControl} onNavigateToTransactions={() => {}} />
+        <BudgetsPage monthControl={monthControl} />
         <BottomContextualBar>
           <BudgetMonthPillSlider
             monthLabel={monthControl.monthLabel}
@@ -101,7 +101,7 @@ export const Journey: Story = {
       expect(canvas.getByText(/provision the coffers/i)).toBeVisible();
       expect(canvas.getByText('Spotify')).toBeVisible();
       expect(canvas.getByText('Netflix')).toBeVisible();
-      expect(canvas.getByText('Monthly recurring')).toBeVisible();
+      expect(canvas.getByText('monthly vows')).toBeVisible();
     });
     await waitFor(() => {
       expect(canvas.getByRole('button', { name: /next month/i })).toBeVisible();

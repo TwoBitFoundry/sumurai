@@ -15,15 +15,15 @@ import { useBudgets } from '../features/budgets/hooks/useBudgets';
 import { SubscriptionsSection } from '../features/subscriptions/components/SubscriptionsSection';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import { PageLayout } from '../layouts/PageLayout';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '../ui/recipes';
 import { formatCategoryName } from '../utils/categories';
 import { fmtUSD } from '../utils/format';
 
 interface BudgetsPageProps {
   monthControl: BudgetMonthControl;
-  onNavigateToTransactions: (category: string, merchant: string) => void;
 }
 
-export default function BudgetsPage({ monthControl, onNavigateToTransactions }: BudgetsPageProps) {
+export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
   const {
     isLoading,
     transactionsLoading,
@@ -141,14 +141,14 @@ export default function BudgetsPage({ monthControl, onNavigateToTransactions }: 
         />
         <HeroStatCard
           index={2}
-          title="Monthly recurring"
+          title="monthly vows"
           icon={<Repeat2 />}
           value={monthlyRecurringValue}
           suffix="per month"
         />
         <HeroStatCard
           index={3}
-          title="Annualized"
+          title="annualized vows"
           icon={<CalendarClock />}
           value={annualizedValue}
           suffix="per year"
@@ -186,11 +186,7 @@ export default function BudgetsPage({ monthControl, onNavigateToTransactions }: 
             containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
             className={cn('space-y-6')}
           >
-            <SubscriptionsSection
-              subscriptions={subscriptions}
-              isLoading={isLoading}
-              onSelect={(merchant) => onNavigateToTransactions('SUBSCRIPTION', merchant)}
-            />
+            <SubscriptionsSection subscriptions={subscriptions} isLoading={isLoading} />
           </GlassCard>
           <GlassCard
             variant="accent"
@@ -200,39 +196,60 @@ export default function BudgetsPage({ monthControl, onNavigateToTransactions }: 
             containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
             className={cn('space-y-6')}
           >
-            <BudgetToolbar
-              loading={budgetsLoading}
-              isPickerOpen={isAdding}
-              addButtonRef={addButtonRef}
-              onAddBudget={toggleAddPicker}
-            />
-            <AddBudgetPicker
-              open={isAdding}
-              anchorRef={addButtonRef}
-              categories={availableCategoryOptions}
-              accentIndexByName={accentIndexByName}
-              value={form}
-              onChange={setForm}
-              onSave={onSaveAdd}
-              onRequestClose={cancel}
-            />
-            {hasBudgets ? (
-              <BudgetList
-                items={computedBudgets}
-                editingId={editingId}
-                onStartEdit={onStartEdit}
-                onCancelEdit={cancel}
-                onSaveEdit={onSaveEdit}
-                onDelete={onDelete}
+            <section className={cn('space-y-4')} data-testid="budgets-section">
+              <div
+                className={cn(
+                  'flex',
+                  'flex-col',
+                  'gap-4',
+                  'sm:flex-row',
+                  'sm:items-start',
+                  'sm:justify-between'
+                )}
+              >
+                <div className={cn('space-y-1')}>
+                  <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+                    Allowances
+                  </h2>
+                  <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
+                    Establish allowances to take command of spending.
+                  </p>
+                </div>
+                <BudgetToolbar
+                  loading={budgetsLoading}
+                  isPickerOpen={isAdding}
+                  addButtonRef={addButtonRef}
+                  onAddBudget={toggleAddPicker}
+                />
+              </div>
+              <AddBudgetPicker
+                open={isAdding}
+                anchorRef={addButtonRef}
+                categories={availableCategoryOptions}
+                accentIndexByName={accentIndexByName}
+                value={form}
+                onChange={setForm}
+                onSave={onSaveAdd}
+                onRequestClose={cancel}
               />
-            ) : (
-              <EmptyState
-                icon={Target}
-                title="No budgets yet"
-                description="Establish your first allowance to see your progress."
-                data-testid="budgets-empty-state"
-              />
-            )}
+              {hasBudgets ? (
+                <BudgetList
+                  items={computedBudgets}
+                  editingId={editingId}
+                  onStartEdit={onStartEdit}
+                  onCancelEdit={cancel}
+                  onSaveEdit={onSaveEdit}
+                  onDelete={onDelete}
+                />
+              ) : (
+                <EmptyState
+                  icon={Target}
+                  title="No budgets yet"
+                  description="Establish your first allowance to see your progress."
+                  data-testid="budgets-empty-state"
+                />
+              )}
+            </section>
           </GlassCard>
         </div>
       </PageLayout>

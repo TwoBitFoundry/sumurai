@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { SubscriptionsSection } from '@/features/subscriptions/components/SubscriptionsSection';
 import type { SubscriptionSummary } from '@/types/api';
 
@@ -12,36 +12,28 @@ const makeSubscription = (merchant: string, normalized: string): SubscriptionSum
 });
 
 describe('SubscriptionsSection', () => {
-  const onSelect = jest.fn();
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('shows heading and subtitle without hero metrics', () => {
-    render(<SubscriptionsSection subscriptions={[]} isLoading={false} onSelect={onSelect} />);
+    render(<SubscriptionsSection subscriptions={[]} isLoading={false} />);
 
-    expect(screen.getByText('Recurring subscriptions')).toBeInTheDocument();
-    expect(screen.queryByText('Monthly recurring')).not.toBeInTheDocument();
-    expect(screen.queryByText('Annualized')).not.toBeInTheDocument();
+    expect(screen.getByText('Vows')).toBeInTheDocument();
+    expect(screen.queryByText('monthly vows')).not.toBeInTheDocument();
+    expect(screen.queryByText('annualized vows')).not.toBeInTheDocument();
   });
 
   it('shows empty state when there are no subscriptions', () => {
-    render(<SubscriptionsSection subscriptions={[]} isLoading={false} onSelect={onSelect} />);
+    render(<SubscriptionsSection subscriptions={[]} isLoading={false} />);
 
     expect(screen.getByTestId('subscriptions-empty-state')).toBeInTheDocument();
   });
 
-  it('renders subscription cards and forwards selection', () => {
+  it('renders subscription cards', () => {
     render(
       <SubscriptionsSection
         subscriptions={[makeSubscription('Spotify', 'spotify')]}
         isLoading={false}
-        onSelect={onSelect}
       />
     );
 
-    fireEvent.click(screen.getByTestId('subscription-card-spotify'));
-    expect(onSelect).toHaveBeenCalledWith('Spotify');
+    expect(screen.getByText('Spotify')).toBeInTheDocument();
   });
 });

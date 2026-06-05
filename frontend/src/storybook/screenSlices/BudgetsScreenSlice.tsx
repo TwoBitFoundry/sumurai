@@ -9,6 +9,7 @@ import { PageLayout } from '@/layouts/PageLayout';
 import { sampleBudgetProgressEntries } from '@/storybook/fixtures/budgets';
 import { sampleSubscriptions } from '@/storybook/fixtures/subscriptions';
 import { Button, cn, EmptyState, GlassCard } from '@/ui/primitives';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
 export type BudgetsScreenSliceState = 'loaded' | 'empty' | 'error' | 'adding';
 
@@ -26,14 +27,14 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         />
         <HeroStatCard
           index={2}
-          title="Monthly recurring"
+          title="monthly vows"
           icon={<Repeat2 />}
           value="$25.98"
           suffix="per month"
         />
         <HeroStatCard
           index={3}
-          title="Annualized"
+          title="annualized vows"
           icon={<CalendarClock />}
           value="$311.76"
           suffix="per year"
@@ -64,14 +65,14 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         />
         <HeroStatCard
           index={2}
-          title="Monthly recurring"
+          title="monthly vows"
           icon={<Repeat2 />}
           value="$0.00"
           suffix="per month"
         />
         <HeroStatCard
           index={3}
-          title="Annualized"
+          title="annualized vows"
           icon={<CalendarClock />}
           value="$0.00"
           suffix="per year"
@@ -112,11 +113,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
             containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
             className={cn('space-y-6')}
           >
-            <SubscriptionsSection
-              subscriptions={subscriptions}
-              isLoading={false}
-              onSelect={() => {}}
-            />
+            <SubscriptionsSection subscriptions={subscriptions} isLoading={false} />
           </GlassCard>
           <GlassCard
             variant="accent"
@@ -126,56 +123,78 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
             containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
             className={cn('space-y-6')}
           >
-            {props.state === 'loaded' || props.state === 'adding' ? (
-              <>
-                <BudgetToolbar
-                  loading={false}
-                  isPickerOpen={props.state === 'adding'}
-                  addButtonRef={{ current: null }}
-                  onAddBudget={() => {}}
-                />
-                {props.state === 'adding' ? (
-                  <AddBudgetPicker
-                    open
-                    anchorRef={{ current: null }}
-                    categories={['food_and_drink', 'transportation']}
-                    accentIndexByName={
-                      new Map([
-                        ['food_and_drink', 0],
-                        ['transportation', 1],
-                      ])
-                    }
-                    value={{ category: '', amount: '' }}
-                    onChange={() => {}}
-                    onSave={() => {}}
-                    onRequestClose={() => {}}
+            <section className={cn('space-y-4')} data-testid="budgets-section">
+              <div
+                className={cn(
+                  'flex',
+                  'flex-col',
+                  'gap-4',
+                  'sm:flex-row',
+                  'sm:items-start',
+                  'sm:justify-between'
+                )}
+              >
+                <div className={cn('space-y-1')}>
+                  <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+                    Allowances
+                  </h2>
+                  <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
+                    Establish allowances to take command of spending.
+                  </p>
+                </div>
+                {props.state === 'loaded' || props.state === 'adding' ? (
+                  <BudgetToolbar
+                    loading={false}
+                    isPickerOpen={props.state === 'adding'}
+                    addButtonRef={{ current: null }}
+                    onAddBudget={() => {}}
                   />
                 ) : null}
-                <BudgetList
-                  items={sampleBudgetProgressEntries}
-                  editingId={null}
-                  onStartEdit={() => {}}
-                  onCancelEdit={() => {}}
-                  onSaveEdit={() => {}}
-                  onDelete={() => {}}
+              </div>
+              {props.state === 'loaded' || props.state === 'adding' ? (
+                <>
+                  {props.state === 'adding' ? (
+                    <AddBudgetPicker
+                      open
+                      anchorRef={{ current: null }}
+                      categories={['food_and_drink', 'transportation']}
+                      accentIndexByName={
+                        new Map([
+                          ['food_and_drink', 0],
+                          ['transportation', 1],
+                        ])
+                      }
+                      value={{ category: '', amount: '' }}
+                      onChange={() => {}}
+                      onSave={() => {}}
+                      onRequestClose={() => {}}
+                    />
+                  ) : null}
+                  <BudgetList
+                    items={sampleBudgetProgressEntries}
+                    editingId={null}
+                    onStartEdit={() => {}}
+                    onCancelEdit={() => {}}
+                    onSaveEdit={() => {}}
+                    onDelete={() => {}}
+                  />
+                </>
+              ) : null}
+              {props.state === 'empty' ? (
+                <EmptyState
+                  icon={Target}
+                  title="No budgets yet"
+                  description="Set your first category limit. Lead the month with discipline."
+                  action={
+                    <Button type="button" onClick={() => {}} variant="primary" size="md">
+                      <Plus />
+                      Add budget
+                    </Button>
+                  }
+                  data-testid="budgets-empty-state"
                 />
-              </>
-            ) : null}
-
-            {props.state === 'empty' ? (
-              <EmptyState
-                icon={Target}
-                title="No budgets yet"
-                description="Set your first category limit. Lead the month with discipline."
-                action={
-                  <Button type="button" onClick={() => {}} variant="primary" size="md">
-                    <Plus />
-                    Add budget
-                  </Button>
-                }
-                data-testid="budgets-empty-state"
-              />
-            ) : null}
+              ) : null}
+            </section>
           </GlassCard>
         </div>
       </PageLayout>

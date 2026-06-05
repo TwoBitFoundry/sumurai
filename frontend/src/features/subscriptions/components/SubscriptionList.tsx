@@ -15,14 +15,9 @@ import { fmtUSD } from '@/utils/format';
 export interface SubscriptionListProps {
   subscriptions: SubscriptionSummary[];
   isLoading?: boolean;
-  onSelect: (merchant: string) => void;
 }
 
-export function SubscriptionList({
-  subscriptions,
-  isLoading = false,
-  onSelect,
-}: SubscriptionListProps) {
+export function SubscriptionList({ subscriptions, isLoading = false }: SubscriptionListProps) {
   if (!isLoading && subscriptions.length === 0) {
     return (
       <EmptyState
@@ -45,19 +40,13 @@ export function SubscriptionList({
 
         return (
           <li key={s.normalized_merchant} className={cn(heroStatCardRecipes.base)}>
-            <button
-              type="button"
+            <div
               data-testid={`subscription-card-${s.normalized_merchant}`}
-              onClick={() => onSelect(s.merchant)}
               className={cn(
                 heroStatCardRecipes.shell,
                 heroStyles.border,
                 heroStyles.borderDark,
-                heroStyles.hoverBorder,
-                heroStyles.hoverBorderDark,
-                'flex w-full flex-col gap-2 p-3.5 pt-4 text-left cursor-pointer',
-                'hover:ring-2',
-                heroStyles.hoverBorder
+                'flex w-full flex-col gap-2 p-3.5 pt-4 text-left'
               )}
               style={ringStyle}
             >
@@ -118,7 +107,7 @@ export function SubscriptionList({
                 <span>{s.last_charged}</span>
                 <span className={cn('ml-auto')}>{s.occurrence_count}×</span>
               </div>
-            </button>
+            </div>
           </li>
         );
       })}

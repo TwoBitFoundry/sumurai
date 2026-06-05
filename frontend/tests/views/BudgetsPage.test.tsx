@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import type React from 'react';
 import { useBudgets } from '@/features/budgets/hooks/useBudgets';
 import BudgetsPage from '@/views/BudgetsPage';
@@ -71,31 +71,24 @@ const baseUseBudgetsMock = {
 };
 
 describe('BudgetsPage', () => {
-  const onNavigateToTransactions = jest.fn();
-
   beforeEach(() => {
     jest.clearAllMocks();
     jest.mocked(useBudgets).mockReturnValue(baseUseBudgetsMock as any);
   });
 
-  it('renders hero row in Days remaining, Monthly recurring, Annualized, Overages order', () => {
+  it('renders hero row in Days remaining, monthly vows, annualized vows, Overages order', () => {
     jest.mocked(useBudgets).mockReturnValue({
       ...baseUseBudgetsMock,
       subscriptions: [makeSubscription('Spotify')],
     } as any);
 
-    render(
-      <BudgetsPage
-        monthControl={monthControl}
-        onNavigateToTransactions={onNavigateToTransactions}
-      />
-    );
+    render(<BudgetsPage monthControl={monthControl} />);
 
-    const titles = screen.getAllByText(/Days remaining|Monthly recurring|Annualized|Overages/);
+    const titles = screen.getAllByText(/Days remaining|monthly vows|annualized vows|Overages/);
     expect(titles.map((node) => node.textContent)).toEqual([
       'Days remaining',
-      'Monthly recurring',
-      'Annualized',
+      'monthly vows',
+      'annualized vows',
       'Overages',
     ]);
     expect(screen.queryByText('Active budgets')).not.toBeInTheDocument();
@@ -103,12 +96,7 @@ describe('BudgetsPage', () => {
   });
 
   it('shows subscription and budget glass cards with subscriptions first', () => {
-    render(
-      <BudgetsPage
-        monthControl={monthControl}
-        onNavigateToTransactions={onNavigateToTransactions}
-      />
-    );
+    render(<BudgetsPage monthControl={monthControl} />);
 
     const cards = Array.from(screen.getByTestId('page-children').firstElementChild?.children ?? []);
     const subscriptionsCardIndex = cards.findIndex((card) =>
@@ -122,30 +110,8 @@ describe('BudgetsPage', () => {
     expect(budgetsCardIndex).toBeGreaterThan(subscriptionsCardIndex);
   });
 
-  it('deep-links to transactions when a subscription card is clicked', () => {
-    jest.mocked(useBudgets).mockReturnValue({
-      ...baseUseBudgetsMock,
-      subscriptions: [makeSubscription('Spotify')],
-    } as any);
-
-    render(
-      <BudgetsPage
-        monthControl={monthControl}
-        onNavigateToTransactions={onNavigateToTransactions}
-      />
-    );
-
-    fireEvent.click(screen.getByTestId('subscription-card-spotify'));
-    expect(onNavigateToTransactions).toHaveBeenCalledWith('SUBSCRIPTION', 'Spotify');
-  });
-
   it('keeps the budget stats grid in two columns on mobile', () => {
-    const { container } = render(
-      <BudgetsPage
-        monthControl={monthControl}
-        onNavigateToTransactions={onNavigateToTransactions}
-      />
-    );
+    const { container } = render(<BudgetsPage monthControl={monthControl} />);
     const statsGrid = container.querySelector(
       '[data-testid="page-layout"] .grid.gap-3'
     ) as HTMLElement | null;

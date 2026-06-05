@@ -86,7 +86,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
         ) : (
           <WandSparkles className={cn(control.glyph.md)} />
         )}
-        {autoCategorization.isActive ? 'Cancel' : 'Classify'}
+        {autoCategorization.isActive ? 'Cancel' : 'Categorize'}
       </Button>
     </div>
   );

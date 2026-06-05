@@ -60,11 +60,6 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
-  const handleNavigateToTransactions = (category: string, merchant: string) => {
-    transactionFilters.setSelectedCategory(category);
-    transactionFilters.setSearch(merchant);
-    handleTabChange('transactions');
-  };
   const bottomBarContent =
     tab === 'dashboard' ? (
       <BottomContextualBar>
@@ -124,12 +119,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
                   <DashboardPage dateRange={dateRange} setDateRange={setDateRange} />
                 )}
                 {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
-                {tab === 'budgets' && (
-                  <BudgetsPage
-                    monthControl={budgetMonth}
-                    onNavigateToTransactions={handleNavigateToTransactions}
-                  />
-                )}
+                {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}
                 {tab === 'accounts' && <AccountsPage onError={setError} />}
                 {tab === 'settings' && <SettingsPage onLogout={onLogout} />}
               </motion.section>
