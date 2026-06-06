@@ -376,8 +376,8 @@ async fn given_provider_sync_with_raw_only_merchant_when_persisting_then_normali
         .returning(move |transactions, _| {
             assert_eq!(transactions.len(), 1);
             let txn = &transactions[0];
-            assert_eq!(txn.merchant_name.as_deref(), Some("Starbucks Seattle"));
-            assert_eq!(txn.normalized_merchant.as_deref(), Some("starbucksseattle"));
+            assert_eq!(txn.merchant_name.as_deref(), Some("Starbucks"));
+            assert_eq!(txn.normalized_merchant.as_deref(), Some("starbucks"));
             assert_eq!(txn.normalization_source.as_deref(), Some("sumurai_engine"));
             assert_eq!(
                 txn.original_merchant_name.as_deref(),

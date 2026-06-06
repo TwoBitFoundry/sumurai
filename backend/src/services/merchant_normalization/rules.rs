@@ -36,10 +36,14 @@ pub static LEADING_PREFIXES: &[&str] = &[
     "WEB",
     "SIG",
     "PMT",
+    "DEP",
     "PAYMENT",
 ];
 
-pub static CORPORATE_SUFFIXES: &[&str] = &["PLLC", "LLP", "LLC", "INC", "CORP", "LTD", "CO", "THE"];
+pub static CORPORATE_SUFFIXES: &[&str] = &[
+    "PLLC", "LLP", "LLC", "INC", "CORP", "LTD", "CO", "THE", "ST", "AVE", "RD", "DR", "PL", "LN",
+    "CT", "BLVD",
+];
 
 pub static US_STATES: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     [
@@ -97,7 +101,7 @@ pub static RE_CHECK: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)^check\s+#?(\d+
 
 pub static RE_INLINE_NOISE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(
-        r"\b(?:POS PURCHASE|CHK CARD PUR|CPPWDRAWAL|POS|PURCHASE|DEBIT)\b|\bN\.?A\.?\b|\bUS[A]?\b",
+        r"\b(?:POS PURCHASE|CHK CARD PUR|CPPWDRAWAL|PO BOX|POS|PURCHASE|DEBIT)\b|\bN\.?A\.?\b|\bUS[A]?\b",
     )
     .unwrap()
 });

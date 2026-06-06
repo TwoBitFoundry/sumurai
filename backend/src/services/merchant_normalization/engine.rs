@@ -65,6 +65,9 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     // Stage 5: Strip leading payment prefixes (loop until stable)
     let work = strip_leading_prefixes(work);
 
+    // Stage 5.5: Cut at first digit that follows an alpha character (address boundary)
+    let work = cut_at_address_boundary(work);
+
     // Stage 6: Strip trailing tails and codes
     let work = strip_trailing_tails(work);
 
@@ -144,6 +147,15 @@ fn apply_aggregator_split(work: String) -> String {
         }
     }
 
+    if let Some(rest) = work.strip_prefix("PAYPAL") {
+        let rest = rest
+            .trim_start_matches(|c: char| !c.is_alphanumeric())
+            .trim();
+        if !rest.is_empty() {
+            return rest.to_string();
+        }
+    }
+
     for agg in KEEP_AGGREGATOR {
         if word_boundary_contains(&work, agg) {
             return agg.to_string();
@@ -180,6 +192,50 @@ fn normalize_url(work: &str) -> String {
         .split_whitespace()
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+fn cut_at_address_boundary(work: String) -> String {
+    let work = {
+        let mut tokens = work.split_whitespace();
+        if let Some(first) = tokens.next() {
+            if first.len() >= 3 && first.chars().all(|c| c.is_ascii_digit()) {
+                let rest: Vec<&str> = tokens.collect();
+                if rest.is_empty() {
+                    work
+                } else {
+                    rest.join(" ")
+                }
+            } else {
+                work
+            }
+        } else {
+            work
+        }
+    };
+
+    let mut result = String::new();
+    let mut seen_alpha = false;
+
+    for ch in work.chars() {
+        if ch.is_ascii_alphabetic() {
+            seen_alpha = true;
+            result.push(ch);
+        } else if ch.is_ascii_digit() {
+            if seen_alpha {
+                break;
+            }
+            result.push(ch);
+        } else {
+            result.push(ch);
+        }
+    }
+
+    let trimmed = result.trim().to_string();
+    if trimmed.is_empty() {
+        work
+    } else {
+        collapse_whitespace(&trimmed)
+    }
 }
 
 fn strip_leading_prefixes(mut work: String) -> String {

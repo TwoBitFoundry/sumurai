@@ -5,12 +5,13 @@ use anyhow::Result;
 use crate::models::transaction::Transaction;
 use crate::services::cache_service::CacheService;
 use crate::services::merchant_normalization::engine::canonical_key;
+use crate::services::merchant_normalization::types::AliasRow;
 use crate::services::repository_service::DatabaseRepository;
 
 use super::engine::normalize;
 use super::types::{AliasIndex, MerchantSource};
 
-const ALIAS_INDEX_CACHE_KEY: &str = "merchant_aliases_index";
+const ALIAS_INDEX_CACHE_KEY: &str = "merchant_aliases_index_v2";
 const ALIAS_INDEX_TTL: u64 = 3600;
 
 pub struct MerchantNormalizationService {
@@ -25,12 +26,30 @@ impl MerchantNormalizationService {
 
     pub async fn alias_index(&self) -> Result<Arc<AliasIndex>> {
         if let Some(cached) = self.cache.get_string(ALIAS_INDEX_CACHE_KEY).await? {
-            if let Ok(rows) = serde_json::from_str(&cached) {
-                return Ok(Arc::new(AliasIndex::from_rows(rows)));
+            if let Ok(rows) = serde_json::from_str::<Vec<super::types::AliasRow>>(&cached) {
+                if !rows.is_empty() {
+                    return Ok(Arc::new(AliasIndex::from_rows(rows)));
+                }
             }
         }
 
-        let rows = self.db.get_active_merchant_aliases().await?;
+        let rows = self
+            .db
+            .get_active_merchant_aliases()
+            .await?
+            .into_iter()
+            .chain(
+                migration::merchant_alias_seeds::MERCHANT_ALIAS_SEEDS
+                    .iter()
+                    .chain(migration::merchant_alias_seeds::MERCHANT_ALIAS_SEEDS_V2.iter())
+                    .map(|seed| AliasRow {
+                        match_type: seed.match_type.to_string(),
+                        match_key: seed.match_key.to_string(),
+                        canonical_name: seed.canonical_name.to_string(),
+                        priority: seed.priority,
+                    }),
+            )
+            .collect::<Vec<_>>();
         let json = serde_json::to_string(&rows)?;
         self.cache
             .set_with_ttl(ALIAS_INDEX_CACHE_KEY, &json, ALIAS_INDEX_TTL)
