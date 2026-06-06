@@ -84,7 +84,7 @@ describe('CategoryPicker', () => {
       />
     );
 
-    expect(screen.getByText('Customize Category')).toBeInTheDocument();
+    expect(screen.getByText('Change Category')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Food & Drink' })).toHaveAttribute(
       'aria-pressed',
       'true'
@@ -263,7 +263,7 @@ describe('CategoryPicker', () => {
       'lg:min-h-8',
       'ring-inset'
     );
-    expect(screen.getByText('Customize Category').closest('section')).toHaveClass(
+    expect(screen.getByText('Change Category').closest('section')).toHaveClass(
       'flex',
       'min-h-0',
       'flex-1',
@@ -275,7 +275,7 @@ describe('CategoryPicker', () => {
       'gap-2'
     );
     expect(screen.getByRole('button', { name: 'Close category picker' })).toBeInTheDocument();
-    const scrollArea = screen.getByText('Customize Category').closest('section')?.children[1];
+    const scrollArea = screen.getByText('Change Category').closest('section')?.children[1];
     expect(scrollArea).toHaveClass(
       'min-h-0',
       'flex-1',

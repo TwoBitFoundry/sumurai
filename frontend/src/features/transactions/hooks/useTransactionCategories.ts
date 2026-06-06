@@ -3,11 +3,15 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { TransactionService } from '@/services/TransactionService';
+import { mergeTransactionFilterCategories } from '@/utils/categories';
+import { useCategories } from './useCategories';
 
 export function useTransactionCategories() {
   const { loading: accountsLoading } = useAccountFilter();
+  const { custom, isLoading: categoriesLoading } = useCategories();
 
   const categoriesQuery = useQuery({
     queryKey: ['transactions', 'categories'],
@@ -24,8 +28,13 @@ export function useTransactionCategories() {
     gcTime: 60 * 1000,
   });
 
+  const categories = useMemo(
+    () => mergeTransactionFilterCategories(categoriesQuery.data ?? [], custom),
+    [categoriesQuery.data, custom]
+  );
+
   return {
-    categories: categoriesQuery.data ?? [],
-    loading: categoriesQuery.isLoading,
+    categories,
+    loading: categoriesQuery.isLoading || categoriesLoading,
   };
 }

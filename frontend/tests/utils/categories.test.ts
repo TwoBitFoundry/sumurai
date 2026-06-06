@@ -7,6 +7,7 @@ import {
   getTagThemeForCategory,
   getTagThemeForCategoryAtIndex,
   longestFormattedCategoryLabel,
+  mergeTransactionFilterCategories,
   mobileCategoryChipWidthRem,
   sortCategoryNamesAlphabetically,
   validateCustomCategoryName,
@@ -25,6 +26,37 @@ describe('category accent index', () => {
     expect(getTagThemeForCategory('food_and_drink', accentIndex).key).toBe(
       getTagThemeForCategoryAtIndex(1).key
     );
+  });
+});
+
+describe('mergeTransactionFilterCategories', () => {
+  it('includes custom categories that are not yet used on transactions', () => {
+    expect(
+      mergeTransactionFilterCategories(
+        ['FOOD_AND_DRINK'],
+        [{ id: '1', display_name: 'Weekend Brunch', lookup_key: 'weekend brunch' }]
+      )
+    ).toEqual(['FOOD_AND_DRINK', 'Weekend Brunch']);
+  });
+
+  it('dedupes custom categories already present in transaction categories', () => {
+    expect(
+      mergeTransactionFilterCategories(
+        ['Coffee'],
+        [{ id: '1', display_name: 'Coffee', lookup_key: 'coffee' }]
+      )
+    ).toEqual(['Coffee']);
+  });
+
+  it('removes custom-only categories when they are deleted from the catalog', () => {
+    expect(
+      mergeTransactionFilterCategories(
+        [],
+        [{ id: '1', display_name: 'Weekend Brunch', lookup_key: 'weekend brunch' }]
+      )
+    ).toEqual(['Weekend Brunch']);
+
+    expect(mergeTransactionFilterCategories([], [])).toEqual([]);
   });
 });
 

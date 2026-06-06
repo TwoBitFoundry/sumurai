@@ -164,7 +164,7 @@ export function CategoryPicker({
           onClose={onRequestClose}
           closeLabel="Close category picker"
         >
-          <p className={cn(modalDrawerSectionLabelClassName)}>Customize Category</p>
+          <p className={cn(modalDrawerSectionLabelClassName)}>Change Category</p>
         </ModalDrawerHeader>
         <div
           className={cn(

@@ -84,6 +84,14 @@ export function sortCategoryNamesAlphabetically(names: string[]): string[] {
   );
 }
 
+export function mergeTransactionFilterCategories(
+  transactionCategories: string[],
+  customCategories: CustomCategory[]
+): string[] {
+  const customNames = customCategories.map((category) => category.display_name);
+  return sortCategoryNamesAlphabetically([...new Set([...transactionCategories, ...customNames])]);
+}
+
 export function buildCategoryAccentIndex(names: readonly string[]): ReadonlyMap<string, number> {
   return new Map(names.map((name, index) => [name, index]));
 }
