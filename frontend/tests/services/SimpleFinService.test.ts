@@ -90,7 +90,7 @@ describe('SimpleFinService', () => {
   });
 
   describe('connectAndSyncAll', () => {
-    it('connects then syncs one connection without failing on rate limit', async () => {
+    it('connects then syncs the bridge and returns total synced transactions', async () => {
       postSpy
         .mockResolvedValueOnce({
           connection_id: 'conn-from-connect',
@@ -98,14 +98,21 @@ describe('SimpleFinService', () => {
         } as any)
         .mockResolvedValue({
           transactions: Array.from({ length: 12 }, (_, index) => ({ id: `txn-${index}` })),
-          metadata: {
-            transaction_count: 12,
-            account_count: 1,
-            sync_timestamp: '',
-            start_date: '',
-            end_date: '',
-            connection_updated: false,
-          },
+          simplefin_institution_results: [
+            {
+              institution_name: 'Bank A',
+              connection_id: 'conn-from-status',
+              status: 'synced',
+              transaction_count: 12,
+            },
+            {
+              institution_name: 'Bank B',
+              connection_id: 'conn-other',
+              status: 'synced',
+              transaction_count: 7,
+            },
+          ],
+          bridge_warnings: [],
         } as any);
       getSpy.mockResolvedValue({
         provider: 'simplefin',
@@ -127,7 +134,7 @@ describe('SimpleFinService', () => {
 
       expect(result).toEqual({
         rateLimited: false,
-        transactionCount: 12,
+        transactionCount: 19,
         institutionsRequiringAuth: [],
       });
       expect(postSpy).toHaveBeenCalledWith('/providers/sync-transactions', {

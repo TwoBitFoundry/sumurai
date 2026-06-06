@@ -92,10 +92,18 @@ export class SimpleFinService {
     }
 
     try {
-      const result = await SimpleFinService.syncTransactions(connectionId);
+      const result = await SimpleFinService.syncBridge(connectionId);
+      if (result.rateLimited) {
+        return { rateLimited: true, transactionCount: 0, institutionsRequiringAuth };
+      }
+      const transactionCount =
+        result.simplefin_institution_results.reduce(
+          (sum, institution) => sum + (institution.transaction_count ?? 0),
+          0
+        ) || result.transactions.length;
       return {
         rateLimited: false,
-        transactionCount: result.transactions.length,
+        transactionCount,
         institutionsRequiringAuth,
       };
     } catch (error) {

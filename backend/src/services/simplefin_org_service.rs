@@ -1,7 +1,9 @@
 use crate::models::plaid::ProviderConnection;
 use crate::models::simplefin::{SimpleFinAccountsResponse, SimpleFinConnection};
+use crate::models::transaction::Transaction;
 use crate::providers::simplefin_provider::SimpleFinProvider;
 use crate::services::cache_service::CacheService;
+use crate::services::merchant_normalization::service::MerchantNormalizationService;
 use crate::services::repository_service::DatabaseRepository;
 use anyhow::Result;
 use std::collections::HashSet;
@@ -11,16 +13,19 @@ use uuid::Uuid;
 pub struct SimpleFinOrganizationService {
     db_repository: Arc<dyn DatabaseRepository>,
     cache_service: Arc<dyn CacheService>,
+    merchant_normalization_service: Arc<MerchantNormalizationService>,
 }
 
 impl SimpleFinOrganizationService {
     pub fn new(
         db_repository: Arc<dyn DatabaseRepository>,
         cache_service: Arc<dyn CacheService>,
+        merchant_normalization_service: Arc<MerchantNormalizationService>,
     ) -> Self {
         Self {
             db_repository,
             cache_service,
+            merchant_normalization_service,
         }
     }
 
@@ -75,6 +80,7 @@ impl SimpleFinOrganizationService {
 
         let mut persisted_accounts = Vec::new();
         let mut transaction_count = 0;
+        let mut transactions_to_persist: Vec<Transaction> = Vec::new();
 
         for simplefin_account in snapshot_accounts
             .iter()
@@ -92,17 +98,7 @@ impl SimpleFinOrganizationService {
                         match SimpleFinProvider::map_transaction(simplefin_tx, &account) {
                             Ok(mut tx) => {
                                 tx.user_id = Some(*user_id);
-
-                                match self.db_repository.upsert_transaction(&tx).await {
-                                    Ok(_) => transaction_count += 1,
-                                    Err(e) => {
-                                        tracing::warn!(
-                                            "Failed to persist SimpleFIN transaction for user {}: {}",
-                                            user_id,
-                                            e
-                                        );
-                                    }
-                                }
+                                transactions_to_persist.push(tx);
                             }
                             Err(e) => {
                                 tracing::warn!(
@@ -121,6 +117,35 @@ impl SimpleFinOrganizationService {
                         user_id,
                         e
                     );
+                }
+            }
+        }
+
+        if !transactions_to_persist.is_empty() {
+            if let Err(e) = self
+                .merchant_normalization_service
+                .normalize_batch(&mut transactions_to_persist)
+                .await
+            {
+                tracing::warn!("Merchant name normalization failed: {}", e);
+            }
+
+            for chunk in transactions_to_persist.chunks(500) {
+                match self
+                    .db_repository
+                    .upsert_transactions_batch(chunk, user_id)
+                    .await
+                {
+                    Ok(_) => {
+                        transaction_count += chunk.len() as i32;
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            "Failed to persist SimpleFIN transaction batch for user {}: {}",
+                            user_id,
+                            e
+                        );
+                    }
                 }
             }
         }

@@ -364,6 +364,12 @@ async fn main() -> anyhow::Result<()> {
         crate::services::simplefin_org_service::SimpleFinOrganizationService::new(
             db_repository.clone(),
             cache_service.clone(),
+            Arc::new(
+                crate::services::merchant_normalization::service::MerchantNormalizationService::new(
+                    db_repository.clone(),
+                    cache_service.clone(),
+                ),
+            ),
         ),
     );
 

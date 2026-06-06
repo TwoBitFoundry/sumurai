@@ -183,7 +183,6 @@ export function useTellerConnectionStrategy(
       loadFailedMessage: TELLER_CONNECT_LOAD_FAILED_MESSAGE,
       render: () => {
         if (!tellerApplicationId) {
-          setReady(false);
           return null;
         }
         const applicationIdForSdk = isOnline ? tellerApplicationId : '';

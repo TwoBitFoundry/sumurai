@@ -160,7 +160,7 @@ async fn given_cache_hit_when_alias_index_then_db_not_called() {
     cache_values
         .lock()
         .unwrap()
-        .insert("merchant_aliases_index".to_string(), json);
+        .insert("merchant_aliases_index_v2".to_string(), json);
 
     let get_values = Arc::clone(&cache_values);
     let set_values = Arc::clone(&cache_values);
@@ -179,6 +179,70 @@ async fn given_cache_hit_when_alias_index_then_db_not_called() {
 
     let svc = MerchantNormalizationService::new(Arc::new(db), Arc::new(cache));
     let _ = svc.alias_index().await.unwrap();
+}
+
+#[tokio::test]
+async fn given_empty_cached_alias_index_when_alias_index_then_rebuilds_from_db() {
+    let aliases = seed_aliases();
+
+    let mut db = MockDatabaseRepository::new();
+    db.expect_get_active_merchant_aliases()
+        .times(1)
+        .returning(move || {
+            let rows = aliases.clone();
+            Box::pin(async move { Ok(rows) })
+        });
+
+    let cache_values: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new(HashMap::new()));
+    cache_values
+        .lock()
+        .unwrap()
+        .insert("merchant_aliases_index_v2".to_string(), "[]".to_string());
+
+    let get_values = Arc::clone(&cache_values);
+    let set_values = Arc::clone(&cache_values);
+    let mut cache = MockCacheService::new();
+    cache.expect_get_string().returning(move |key| {
+        let value = get_values.lock().unwrap().get(key).cloned();
+        Box::pin(async move { Ok(value) })
+    });
+    cache.expect_set_with_ttl().returning(move |key, value, _| {
+        set_values
+            .lock()
+            .unwrap()
+            .insert(key.to_string(), value.to_string());
+        Box::pin(async { Ok(()) })
+    });
+
+    let svc = MerchantNormalizationService::new(Arc::new(db), Arc::new(cache));
+    let index = svc.alias_index().await.unwrap();
+
+    assert!(!index.contains.is_empty());
+}
+
+#[tokio::test]
+async fn given_empty_db_aliases_when_normalize_batch_then_builtin_aliases_still_apply() {
+    let svc = make_service(vec![]);
+    let mut txns = vec![
+        make_transaction(
+            "COSTCO WHSE #12 POS PURCHASE TULSA OK 851428",
+            Some("COSTCO WHSE #12 POS PURCHASE TULSA OK 851428"),
+        ),
+        make_transaction(
+            "STARBUCKS 2401 UTAH AVE S SEATTLE 98134 WA USA",
+            Some("STARBUCKS 2401 UTAH AVE S SEATTLE 98134 WA USA"),
+        ),
+        make_transaction(
+            "BOKF, NA BOKF, NA - *****04463",
+            Some("BOKF, NA BOKF, NA - *****04463"),
+        ),
+    ];
+
+    svc.normalize_batch(&mut txns).await.unwrap();
+
+    assert_eq!(txns[0].merchant_name.as_deref(), Some("Costco"));
+    assert_eq!(txns[1].merchant_name.as_deref(), Some("Starbucks"));
+    assert_eq!(txns[2].merchant_name.as_deref(), Some("BOKF"));
 }
 
 #[tokio::test]

@@ -17,6 +17,7 @@ use crate::services::cache_service::{CacheService, MockCacheService};
 use crate::services::connection_service::{
     ConnectionService, SimpleFinConnectError, SyncConnectionParams,
 };
+use crate::services::merchant_normalization::service::MerchantNormalizationService;
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::simplefin_connection_service::SimpleFinConnectionService;
 use crate::services::simplefin_org_service::SimpleFinOrganizationService;
@@ -67,6 +68,12 @@ type SimpleFinSyncHarness = (
     Arc<Mutex<HashSet<String>>>,
     Arc<Mutex<usize>>,
     Arc<Mutex<usize>>,
+);
+
+type SimpleFinNormalizationHarness = (
+    ConnectionService,
+    Arc<SyncService>,
+    Arc<Mutex<Vec<Transaction>>>,
 );
 
 fn three_org_snapshot() -> SimpleFinAccountsResponse {
@@ -208,6 +215,8 @@ type SimpleFinConnectHarness = (
     Arc<Mutex<HashSet<String>>>,
 );
 
+type SimpleFinConnectNormalizationHarness = (ConnectionService, Arc<Mutex<Vec<Transaction>>>);
+
 fn build_simplefin_connection_service(
     snapshot: SimpleFinAccountsResponse,
     hidden_orgs: HashSet<String>,
@@ -309,6 +318,116 @@ fn build_simplefin_connection_service(
     (connection_service, saved_item_ids, upserted_account_ids)
 }
 
+fn build_simplefin_connect_normalization_service(
+    snapshot: SimpleFinAccountsResponse,
+) -> SimpleFinConnectNormalizationHarness {
+    let snapshot_for_accounts = snapshot;
+
+    let mut mock_client = MockSimpleFinHttpClient::new();
+    mock_client
+        .expect_claim()
+        .returning(|_| Ok(ACCESS_URL.to_string()));
+    mock_client
+        .expect_get_accounts()
+        .returning(move |_, _| Ok(snapshot_for_accounts.clone()));
+
+    let simplefin_provider: Arc<dyn FinancialDataProvider> =
+        Arc::new(SimpleFinProvider::new(Arc::new(mock_client)));
+    let provider_registry = Arc::new(ProviderRegistry::from_providers([(
+        "simplefin",
+        simplefin_provider,
+    )]));
+
+    let captured_transactions = Arc::new(Mutex::new(Vec::<Transaction>::new()));
+
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_simplefin_root_credential()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_db
+        .expect_store_simplefin_root_credential()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_list_simplefin_hidden_orgs()
+        .returning(|_| Box::pin(async { Ok(HashSet::new()) }));
+    mock_db
+        .expect_save_provider_connection()
+        .returning(|connection| {
+            let connection_id = stable_uuid(&connection.item_id);
+            Box::pin(async move { Ok(connection_id) })
+        });
+    mock_db
+        .expect_upsert_account()
+        .returning(|_| Box::pin(async { Ok(()) }));
+    let captured_transactions_clone = Arc::clone(&captured_transactions);
+    mock_db
+        .expect_upsert_transactions_batch()
+        .returning(move |batch, _| {
+            *captured_transactions_clone.lock().unwrap() = batch.to_vec();
+            Box::pin(async { Ok(()) })
+        });
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .returning(|| Box::pin(async { Ok(vec![]) }));
+
+    let mut mock_cache = MockCacheService::new();
+    mock_cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_cache
+        .expect_set_with_ttl()
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_invalidate_pattern()
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_clear_transactions()
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_clear_budgets()
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_cache_jwt_scoped_bank_connection()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_cache_jwt_scoped_bank_accounts()
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_add_transaction()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+
+    let db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository> =
+        Arc::new(mock_db);
+    let credential_resolvers = build_credential_resolvers(Arc::clone(&db_repository));
+    let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
+    let merchant_normalization_service = Arc::new(MerchantNormalizationService::new(
+        Arc::clone(&db_repository),
+        Arc::clone(&cache_service),
+    ));
+    let org_service = Arc::new(SimpleFinOrganizationService::new(
+        Arc::clone(&db_repository),
+        Arc::clone(&cache_service),
+        merchant_normalization_service,
+    ));
+    let simplefin_connection_service = Arc::new(SimpleFinConnectionService::new(
+        Arc::clone(&db_repository),
+        Arc::clone(&cache_service),
+        Arc::clone(&provider_registry),
+        credential_resolvers.clone(),
+        org_service,
+    ));
+    let connection_service = ConnectionService::new(
+        db_repository,
+        cache_service,
+        provider_registry,
+        noop_categorizer(),
+        credential_resolvers,
+    )
+    .with_simplefin_connection_service(simplefin_connection_service);
+
+    (connection_service, captured_transactions)
+}
+
 #[tokio::test]
 async fn given_three_org_snapshot_when_connect_simplefin_then_writes_three_connections_and_accounts(
 ) {
@@ -371,6 +490,85 @@ async fn given_one_org_auth_error_when_connect_simplefin_then_links_other_instit
     assert!(saved.contains(&simplefin_org_item_id(&user_id, "org-1")));
     assert!(!saved.contains(&simplefin_org_item_id(&user_id, "org-2")));
     assert!(saved.contains(&simplefin_org_item_id(&user_id, "org-3")));
+}
+
+#[tokio::test]
+async fn given_connect_snapshot_transactions_when_connect_simplefin_then_normalizes_before_persist()
+{
+    let user_id = Uuid::new_v4();
+    let jwt_id = "jwt_simplefin";
+    let snapshot = SimpleFinAccountsResponse {
+        errors: vec![],
+        connections: vec![SimpleFinConnection {
+            conn_id: "org-1".to_string(),
+            name: "Bank A".to_string(),
+            org_id: "inst-1".to_string(),
+            org_url: None,
+            sfin_url: None,
+        }],
+        accounts: vec![SimpleFinAccount {
+            id: "acct-1".to_string(),
+            name: "Checking A".to_string(),
+            conn_id: Some("org-1".to_string()),
+            org: None,
+            currency: Some("USD".to_string()),
+            balance: Some("100.00".to_string()),
+            available_balance: None,
+            balance_date: None,
+            holdings: vec![],
+            transactions: vec![
+                SimpleFinTransaction {
+                    id: "txn-1".to_string(),
+                    posted: chrono::Utc::now().timestamp(),
+                    amount: "-12.34".to_string(),
+                    description: "COSTCO WHSE #12 POS PURCHASE TULSA OK 851428".to_string(),
+                    pending: false,
+                    transacted_at: None,
+                    extra: serde_json::Value::Null,
+                },
+                SimpleFinTransaction {
+                    id: "txn-2".to_string(),
+                    posted: chrono::Utc::now().timestamp(),
+                    amount: "-6.54".to_string(),
+                    description: "STARBUCKS 2401 UTAH AVE S SEATTLE 98134 WA USA".to_string(),
+                    pending: false,
+                    transacted_at: None,
+                    extra: serde_json::Value::Null,
+                },
+                SimpleFinTransaction {
+                    id: "txn-3".to_string(),
+                    posted: chrono::Utc::now().timestamp(),
+                    amount: "-40.00".to_string(),
+                    description: "BOKF, NA BOKF, NA - *****04463".to_string(),
+                    pending: false,
+                    transacted_at: None,
+                    extra: serde_json::Value::Null,
+                },
+            ],
+        }],
+    };
+    let (connection_service, captured_transactions) =
+        build_simplefin_connect_normalization_service(snapshot);
+
+    connection_service
+        .connect_simplefin_provider(&user_id, jwt_id, &simplefin_connect_request())
+        .await
+        .unwrap();
+
+    let merchant_pairs = captured_transactions
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|txn| {
+            (
+                txn.merchant_name.clone().unwrap_or_default(),
+                txn.normalized_merchant.clone().unwrap_or_default(),
+            )
+        })
+        .collect::<HashSet<_>>();
+    assert!(merchant_pairs.contains(&("Costco".to_string(), "costco".to_string())));
+    assert!(merchant_pairs.contains(&("Starbucks".to_string(), "starbucks".to_string())));
+    assert!(merchant_pairs.contains(&("BOKF".to_string(), "bokf".to_string())));
 }
 
 #[tokio::test]
@@ -1146,9 +1344,14 @@ fn build_simplefin_sync_service_with_categorizer_and_accounts(
     let credential_resolvers = build_credential_resolvers(Arc::clone(&db_repository));
 
     let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
+    let merchant_normalization_service = Arc::new(MerchantNormalizationService::new(
+        Arc::clone(&db_repository),
+        Arc::clone(&cache_service),
+    ));
     let org_service = Arc::new(SimpleFinOrganizationService::new(
         Arc::clone(&db_repository),
         Arc::clone(&cache_service),
+        merchant_normalization_service,
     ));
     let simplefin_connection_service = Arc::new(SimpleFinConnectionService::new(
         Arc::clone(&db_repository),
@@ -1174,6 +1377,166 @@ fn build_simplefin_sync_service_with_categorizer_and_accounts(
         upsert_accounts,
         upsert_transactions,
     )
+}
+
+fn build_simplefin_normalization_sync_service(
+    snapshot: SimpleFinAccountsResponse,
+    transactions: Vec<SimpleFinTransaction>,
+    db_accounts: Vec<Account>,
+) -> SimpleFinNormalizationHarness {
+    let snapshot_for_accounts = snapshot.clone();
+    let mut mock_client = MockSimpleFinHttpClient::new();
+    mock_client
+        .expect_claim()
+        .returning(|_| Ok(ACCESS_URL.to_string()));
+    mock_client
+        .expect_get_accounts()
+        .returning(move |_, params| {
+            if params.balances_only {
+                Ok(snapshot_for_accounts.clone())
+            } else {
+                Ok(SimpleFinAccountsResponse {
+                    errors: snapshot_for_accounts.errors.clone(),
+                    connections: snapshot_for_accounts.connections.clone(),
+                    accounts: snapshot_for_accounts
+                        .accounts
+                        .iter()
+                        .map(|account| {
+                            let mut cloned = account.clone();
+                            cloned.transactions = transactions.clone();
+                            cloned
+                        })
+                        .collect(),
+                })
+            }
+        });
+
+    let simplefin_provider: Arc<dyn FinancialDataProvider> =
+        Arc::new(SimpleFinProvider::new(Arc::new(mock_client)));
+    let provider_registry = Arc::new(ProviderRegistry::from_providers([(
+        "simplefin",
+        Arc::clone(&simplefin_provider),
+    )]));
+    let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
+
+    let captured_transactions = Arc::new(Mutex::new(Vec::<Transaction>::new()));
+    let saved_connections = Arc::new(Mutex::new(HashMap::<String, ProviderConnection>::new()));
+
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_simplefin_root_credential()
+        .returning(|_| Box::pin(async { Ok(Some(ACCESS_URL.to_string())) }));
+    mock_db
+        .expect_list_simplefin_hidden_orgs()
+        .returning(|_| Box::pin(async { Ok(HashSet::new()) }));
+    mock_db.expect_save_provider_connection().returning({
+        let saved_connections = Arc::clone(&saved_connections);
+        move |connection| {
+            let connection_id = stable_uuid(&connection.item_id);
+            let mut saved_connection = connection.clone();
+            saved_connection.id = connection_id;
+            saved_connections
+                .lock()
+                .unwrap()
+                .insert(connection.item_id.clone(), saved_connection);
+            Box::pin(async move { Ok(connection_id) })
+        }
+    });
+    mock_db
+        .expect_upsert_account()
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_db.expect_get_accounts_for_user().returning(move |_| {
+        let db_accounts = db_accounts.clone();
+        Box::pin(async move { Ok(db_accounts) })
+    });
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning({
+            let saved_connections = Arc::clone(&saved_connections);
+            move |_| {
+                let connections = saved_connections
+                    .lock()
+                    .unwrap()
+                    .values()
+                    .cloned()
+                    .collect::<Vec<_>>();
+                Box::pin(async move { Ok(connections) })
+            }
+        });
+    mock_db
+        .expect_get_provider_transaction_ids_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+    let captured_transactions_clone = Arc::clone(&captured_transactions);
+    mock_db
+        .expect_upsert_transactions_batch()
+        .returning(move |batch, _| {
+            *captured_transactions_clone.lock().unwrap() = batch.to_vec();
+            Box::pin(async { Ok(()) })
+        });
+    mock_db
+        .expect_count_transactions()
+        .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .returning(|| Box::pin(async { Ok(vec![]) }));
+
+    let mut mock_cache = MockCacheService::new();
+    mock_cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_cache
+        .expect_set_with_ttl()
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_invalidate_pattern()
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_clear_transactions()
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_clear_budgets()
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_cache_jwt_scoped_bank_connection()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_cache_jwt_scoped_bank_accounts()
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_add_transaction()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+
+    let db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository> =
+        Arc::new(mock_db);
+    let credential_resolvers = build_credential_resolvers(Arc::clone(&db_repository));
+
+    let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
+    let merchant_normalization_service = Arc::new(MerchantNormalizationService::new(
+        Arc::clone(&db_repository),
+        Arc::clone(&cache_service),
+    ));
+    let org_service = Arc::new(SimpleFinOrganizationService::new(
+        Arc::clone(&db_repository),
+        Arc::clone(&cache_service),
+        merchant_normalization_service,
+    ));
+    let simplefin_connection_service = Arc::new(SimpleFinConnectionService::new(
+        Arc::clone(&db_repository),
+        Arc::clone(&cache_service),
+        Arc::clone(&provider_registry),
+        credential_resolvers.clone(),
+        org_service,
+    ));
+    let connection_service = ConnectionService::new(
+        db_repository,
+        cache_service,
+        provider_registry,
+        noop_categorizer(),
+        credential_resolvers,
+    )
+    .with_simplefin_connection_service(simplefin_connection_service);
+
+    (connection_service, sync_service, captured_transactions)
 }
 
 #[tokio::test]
@@ -1206,6 +1569,111 @@ async fn given_blocklisted_connection_when_sync_simplefin_then_writes_no_account
     assert!(result.transactions.is_empty());
     assert_eq!(*upsert_accounts.lock().unwrap(), 0);
     assert_eq!(*upsert_transactions.lock().unwrap(), 0);
+}
+
+#[tokio::test]
+async fn given_simplefin_sync_with_empty_db_aliases_when_upserting_then_builtins_normalize_merchants(
+) {
+    let user_id = Uuid::new_v4();
+    let mut connection =
+        ProviderConnection::new(user_id, &simplefin_org_item_id(&user_id, "org-1"));
+    connection.mark_connected("Bank A");
+    let recent_posted = chrono::Utc::now().timestamp();
+    let snapshot = SimpleFinAccountsResponse {
+        errors: vec![],
+        connections: vec![SimpleFinConnection {
+            conn_id: "org-1".to_string(),
+            name: "Bank A".to_string(),
+            org_id: "inst-1".to_string(),
+            org_url: None,
+            sfin_url: None,
+        }],
+        accounts: vec![SimpleFinAccount {
+            id: "acct-1".to_string(),
+            name: "Checking A".to_string(),
+            conn_id: Some("org-1".to_string()),
+            org: None,
+            currency: Some("USD".to_string()),
+            balance: Some("100.00".to_string()),
+            available_balance: None,
+            balance_date: None,
+            holdings: vec![],
+            transactions: vec![],
+        }],
+    };
+
+    let account_id = stable_uuid("acct-1");
+    let db_accounts = vec![Account {
+        id: account_id,
+        user_id: Some(user_id),
+        provider_account_id: Some("acct-1".to_string()),
+        provider_connection_id: Some(stable_uuid(&simplefin_org_item_id(&user_id, "org-1"))),
+        name: "Checking A".to_string(),
+        account_type: "depository".to_string(),
+        balance_current: None,
+        mask: Some("1234".to_string()),
+        institution_name: Some("Bank A".to_string()),
+        provider_conn_id: Some("org-1".to_string()),
+    }];
+    let transactions = vec![
+        SimpleFinTransaction {
+            id: "txn-1".to_string(),
+            posted: recent_posted,
+            amount: "-12.34".to_string(),
+            description: "COSTCO WHSE #12 POS PURCHASE TULSA OK 851428".to_string(),
+            pending: false,
+            transacted_at: None,
+            extra: serde_json::Value::Null,
+        },
+        SimpleFinTransaction {
+            id: "txn-2".to_string(),
+            posted: recent_posted,
+            amount: "-6.54".to_string(),
+            description: "STARBUCKS 2401 UTAH AVE S SEATTLE 98134 WA USA".to_string(),
+            pending: false,
+            transacted_at: None,
+            extra: serde_json::Value::Null,
+        },
+        SimpleFinTransaction {
+            id: "txn-3".to_string(),
+            posted: recent_posted,
+            amount: "-40.00".to_string(),
+            description: "BOKF, NA BOKF, NA - *****04463".to_string(),
+            pending: false,
+            transacted_at: None,
+            extra: serde_json::Value::Null,
+        },
+    ];
+    let (connection_service, sync_service, captured_transactions) =
+        build_simplefin_normalization_sync_service(snapshot, transactions, db_accounts);
+
+    connection_service
+        .sync_provider_connection(
+            SyncConnectionParams {
+                provider: "simplefin",
+                user_id: &user_id,
+                jwt_id: "jwt_sync",
+            },
+            sync_service.as_ref(),
+            &mut connection,
+            None,
+        )
+        .await
+        .unwrap();
+
+    let captured = captured_transactions.lock().unwrap();
+    let merchant_pairs = captured
+        .iter()
+        .map(|txn| {
+            (
+                txn.merchant_name.clone().unwrap_or_default(),
+                txn.normalized_merchant.clone().unwrap_or_default(),
+            )
+        })
+        .collect::<HashSet<_>>();
+    assert!(merchant_pairs.contains(&("Costco".to_string(), "costco".to_string())));
+    assert!(merchant_pairs.contains(&("Starbucks".to_string(), "starbucks".to_string())));
+    assert!(merchant_pairs.contains(&("BOKF".to_string(), "bokf".to_string())));
 }
 
 #[tokio::test]
