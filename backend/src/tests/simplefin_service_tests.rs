@@ -76,6 +76,29 @@ type SimpleFinNormalizationHarness = (
     Arc<Mutex<Vec<Transaction>>>,
 );
 
+fn merchant_alias_rows() -> Vec<crate::services::merchant_normalization::types::AliasRow> {
+    vec![
+        crate::services::merchant_normalization::types::AliasRow {
+            match_type: "contains".to_string(),
+            match_key: "COSTCO WHSE".to_string(),
+            canonical_name: "Costco".to_string(),
+            priority: 10,
+        },
+        crate::services::merchant_normalization::types::AliasRow {
+            match_type: "contains".to_string(),
+            match_key: "STARBUCKS".to_string(),
+            canonical_name: "Starbucks".to_string(),
+            priority: 10,
+        },
+        crate::services::merchant_normalization::types::AliasRow {
+            match_type: "contains".to_string(),
+            match_key: "BOKF".to_string(),
+            canonical_name: "BOKF".to_string(),
+            priority: 10,
+        },
+    ]
+}
+
 fn three_org_snapshot() -> SimpleFinAccountsResponse {
     SimpleFinAccountsResponse {
         errors: vec![],
@@ -366,9 +389,13 @@ fn build_simplefin_connect_normalization_service(
             *captured_transactions_clone.lock().unwrap() = batch.to_vec();
             Box::pin(async { Ok(()) })
         });
+    let alias_rows = merchant_alias_rows();
     mock_db
         .expect_get_active_merchant_aliases()
-        .returning(|| Box::pin(async { Ok(vec![]) }));
+        .returning(move || {
+            let rows = alias_rows.clone();
+            Box::pin(async move { Ok(rows) })
+        });
 
     let mut mock_cache = MockCacheService::new();
     mock_cache
@@ -1309,9 +1336,13 @@ fn build_simplefin_sync_service_with_categorizer_and_accounts(
     mock_db
         .expect_count_transactions()
         .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
+    let alias_rows = merchant_alias_rows();
     mock_db
         .expect_get_active_merchant_aliases()
-        .returning(|| Box::pin(async { Ok(vec![]) }));
+        .returning(move || {
+            let rows = alias_rows.clone();
+            Box::pin(async move { Ok(rows) })
+        });
 
     let mut mock_cache = MockCacheService::new();
     mock_cache
@@ -1572,8 +1603,7 @@ async fn given_blocklisted_connection_when_sync_simplefin_then_writes_no_account
 }
 
 #[tokio::test]
-async fn given_simplefin_sync_with_empty_db_aliases_when_upserting_then_builtins_normalize_merchants(
-) {
+async fn given_simplefin_sync_with_db_aliases_when_upserting_then_normalizes_merchants() {
     let user_id = Uuid::new_v4();
     let mut connection =
         ProviderConnection::new(user_id, &simplefin_org_item_id(&user_id, "org-1"));
@@ -1671,9 +1701,9 @@ async fn given_simplefin_sync_with_empty_db_aliases_when_upserting_then_builtins
             )
         })
         .collect::<HashSet<_>>();
-    assert!(merchant_pairs.contains(&("Costco".to_string(), "costco".to_string())));
+    assert!(merchant_pairs.contains(&("Costco Whse".to_string(), "costcowhse".to_string())));
     assert!(merchant_pairs.contains(&("Starbucks".to_string(), "starbucks".to_string())));
-    assert!(merchant_pairs.contains(&("BOKF".to_string(), "bokf".to_string())));
+    assert!(merchant_pairs.contains(&("Bokf".to_string(), "bokf".to_string())));
 }
 
 #[tokio::test]

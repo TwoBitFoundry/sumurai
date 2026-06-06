@@ -145,7 +145,10 @@ async fn given_cache_miss_when_alias_index_then_rebuilds_from_db() {
     let cache = InMemoryCache::new().into_mock();
     let svc = MerchantNormalizationService::new(Arc::new(db), Arc::new(cache));
 
-    let _ = svc.alias_index().await.unwrap();
+    let index = svc.alias_index().await.unwrap();
+
+    assert!(index.exact.is_empty());
+    assert!(index.contains.is_empty());
 }
 
 #[tokio::test]
@@ -218,31 +221,6 @@ async fn given_empty_cached_alias_index_when_alias_index_then_rebuilds_from_db()
     let index = svc.alias_index().await.unwrap();
 
     assert!(!index.contains.is_empty());
-}
-
-#[tokio::test]
-async fn given_empty_db_aliases_when_normalize_batch_then_builtin_aliases_still_apply() {
-    let svc = make_service(vec![]);
-    let mut txns = vec![
-        make_transaction(
-            "COSTCO WHSE #12 POS PURCHASE TULSA OK 851428",
-            Some("COSTCO WHSE #12 POS PURCHASE TULSA OK 851428"),
-        ),
-        make_transaction(
-            "STARBUCKS 2401 UTAH AVE S SEATTLE 98134 WA USA",
-            Some("STARBUCKS 2401 UTAH AVE S SEATTLE 98134 WA USA"),
-        ),
-        make_transaction(
-            "BOKF, NA BOKF, NA - *****04463",
-            Some("BOKF, NA BOKF, NA - *****04463"),
-        ),
-    ];
-
-    svc.normalize_batch(&mut txns).await.unwrap();
-
-    assert_eq!(txns[0].merchant_name.as_deref(), Some("Costco"));
-    assert_eq!(txns[1].merchant_name.as_deref(), Some("Starbucks"));
-    assert_eq!(txns[2].merchant_name.as_deref(), Some("BOKF"));
 }
 
 #[tokio::test]

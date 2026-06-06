@@ -5,7 +5,6 @@ use anyhow::Result;
 use crate::models::transaction::Transaction;
 use crate::services::cache_service::CacheService;
 use crate::services::merchant_normalization::engine::canonical_key;
-use crate::services::merchant_normalization::types::AliasRow;
 use crate::services::repository_service::DatabaseRepository;
 
 use super::engine::normalize;
@@ -33,24 +32,7 @@ impl MerchantNormalizationService {
             }
         }
 
-        let rows = self
-            .db
-            .get_active_merchant_aliases()
-            .await?
-            .into_iter()
-            .chain(
-                migration::merchant_alias_seeds::MERCHANT_ALIAS_SEEDS
-                    .iter()
-                    .chain(migration::merchant_alias_seeds::MERCHANT_ALIAS_SEEDS_V2.iter())
-                    .chain(migration::merchant_alias_seeds::MERCHANT_ALIAS_SEEDS_V3.iter())
-                    .map(|seed| AliasRow {
-                        match_type: seed.match_type.to_string(),
-                        match_key: seed.match_key.to_string(),
-                        canonical_name: seed.canonical_name.to_string(),
-                        priority: seed.priority,
-                    }),
-            )
-            .collect::<Vec<_>>();
+        let rows = self.db.get_active_merchant_aliases().await?;
         let json = serde_json::to_string(&rows)?;
         self.cache
             .set_with_ttl(ALIAS_INDEX_CACHE_KEY, &json, ALIAS_INDEX_TTL)
