@@ -309,13 +309,11 @@ export const AppTitleBar = ({
               <IconButton
                 type="button"
                 onClick={() => onTabChange('settings')}
-                variant="ghost"
+                variant={currentTab === 'settings' ? 'ghost' : 'toolbar'}
                 size="md"
                 className={cn(
                   ...appTitleBarRecipes.actionIcon,
-                  currentTab === 'settings'
-                    ? buttonRecipes.tabActive.join(' ')
-                    : appTitleBarRecipes.settingsIdle
+                  currentTab === 'settings' ? buttonRecipes.tabActive.join(' ') : undefined
                 )}
                 aria-label="Settings"
                 title="Settings"

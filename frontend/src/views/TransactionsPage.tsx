@@ -1,11 +1,4 @@
-import {
-  AlertTriangle,
-  Loader2,
-  ReceiptText,
-  Settings,
-  TrendingUp,
-  WandSparkles,
-} from 'lucide-react';
+import { AlertTriangle, Loader2, ReceiptText, Tags, TrendingUp, WandSparkles } from 'lucide-react';
 import type React from 'react';
 import { useRef, useState } from 'react';
 import { Button, cn, GlassCard, IconButton } from '@/ui/primitives';
@@ -86,29 +79,49 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
         ? `⚠ ${formatCategoryName(topCategories[0])}`
         : `⚠ ${formatCategoryName(topCategories[0])} & ${formatCategoryName(topCategories[1])}`;
   const actions = (
-    <div className={cn('flex', 'w-full', 'justify-end', 'lg:w-auto', 'lg:justify-start')}>
-      <div className="inline-flex max-w-full flex-col items-center gap-2">
-        <Button
-          type="button"
-          onClick={() => void autoCategorization.handleAction()}
-          disabled={!isOnline || autoCategorization.isPending}
-          variant={autoCategorization.isActive ? 'danger' : 'primary'}
-          size="md"
-          className={cn('normal-case')}
-          title={
-            !isOnline
-              ? 'Unavailable while offline'
-              : (autoCategorization.progressLabel ?? undefined)
-          }
-        >
-          {autoCategorization.isPending ? (
-            <Loader2 className={cn(control.glyph.md, 'animate-spin')} />
-          ) : (
-            <WandSparkles className={cn(control.glyph.md)} />
-          )}
-          {autoCategorization.isActive ? 'Cancel' : 'Categorize'}
-        </Button>
-      </div>
+    <div
+      className={cn(
+        'flex',
+        'w-full',
+        'flex-wrap',
+        'items-center',
+        'justify-between',
+        'gap-3',
+        'lg:w-auto'
+      )}
+    >
+      <IconButton
+        ref={addCategoryButtonRef}
+        type="button"
+        onClick={() => setIsCategoryCatalogOpen((open) => !open)}
+        variant="ghost"
+        size="md"
+        aria-label="Categories"
+        title="Categories"
+        aria-expanded={isCategoryCatalogOpen}
+        aria-haspopup="dialog"
+        className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
+      >
+        <Tags />
+      </IconButton>
+      <Button
+        type="button"
+        onClick={() => void autoCategorization.handleAction()}
+        disabled={!isOnline || autoCategorization.isPending}
+        variant={autoCategorization.isActive ? 'danger' : 'primary'}
+        size="md"
+        className={cn('shrink-0', 'normal-case')}
+        title={
+          !isOnline ? 'Unavailable while offline' : (autoCategorization.progressLabel ?? undefined)
+        }
+      >
+        {autoCategorization.isPending ? (
+          <Loader2 className={cn(control.glyph.md, 'animate-spin')} />
+        ) : (
+          <WandSparkles className={cn(control.glyph.md)} />
+        )}
+        {autoCategorization.isActive ? 'Cancel' : 'Categorize'}
+      </Button>
     </div>
   );
 
@@ -168,57 +181,29 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
           withInnerEffects={false}
           className={cn('relative', 'z-10')}
         >
-          <div
-            className={cn(
-              'flex',
-              'flex-col',
-              'gap-4',
-              'sm:flex-row',
-              'sm:items-start',
-              'sm:justify-between',
-              'px-3',
-              'pt-6',
-              'md:px-6'
-            )}
-          >
-            <div className={cn('space-y-1')}>
-              <h2
-                className={cn(
-                  'flex',
-                  'min-w-0',
-                  'items-center',
-                  'gap-2',
-                  uiTypographyRecipes.sectionTitle,
-                  uiTextRecipes.primary
-                )}
-              >
-                <span
-                  className={cn(...controlIconWell.lg, heroAccents.emerald.icon)}
-                  aria-hidden="true"
-                >
-                  <ReceiptText />
-                </span>
-                Transactions
-              </h2>
-              <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
-                Search or filter your transactions by category or keywords. Add or customize the
-                categories.
-              </p>
-            </div>
-            <IconButton
-              ref={addCategoryButtonRef}
-              type="button"
-              onClick={() => setIsCategoryCatalogOpen((open) => !open)}
-              variant="ghost"
-              size="md"
-              aria-label="Categories"
-              title="Categories"
-              aria-expanded={isCategoryCatalogOpen}
-              aria-haspopup="dialog"
-              className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
+          <div className={cn('space-y-1', 'px-3', 'pt-6', 'md:px-6')}>
+            <h2
+              className={cn(
+                'flex',
+                'min-w-0',
+                'items-center',
+                'gap-2',
+                uiTypographyRecipes.sectionTitle,
+                uiTextRecipes.primary
+              )}
             >
-              <Settings />
-            </IconButton>
+              <span
+                className={cn(...controlIconWell.lg, heroAccents.emerald.icon)}
+                aria-hidden="true"
+              >
+                <ReceiptText />
+              </span>
+              Transactions
+            </h2>
+            <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
+              Search or filter your transactions by category or keywords. Add or customize the
+              categories.
+            </p>
           </div>
           <CategoryCatalogPicker
             open={isCategoryCatalogOpen}

@@ -48,6 +48,19 @@ export const iconButtonRecipes = {
     'dark:hover:bg-[color:color-mix(in_srgb,var(--color-status-danger-strong-surface)_46%,transparent)]',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-status-danger-border)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-[var(--color-status-danger-border)] dark:focus-visible:ring-offset-slate-900',
   ],
+  toolbar: [
+    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} disabled:cursor-not-allowed`,
+    'border border-transparent',
+    'bg-transparent',
+    'shadow-none',
+    'text-slate-600 dark:text-slate-200',
+    'transition-all duration-200 ease-out hover:-translate-y-[2px] active:scale-[0.98] disabled:active:scale-100 disabled:hover:translate-y-0',
+    'hover:border-[var(--color-border-control)]',
+    'hover:bg-[var(--color-surface-hover-row)]',
+    'dark:hover:border-[var(--color-border-divider)]',
+    'dark:hover:bg-[var(--color-surface-hover-row)]',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]',
+  ],
 } as const;
 
 const iconButtonVariants = cva('', {
@@ -57,6 +70,7 @@ const iconButtonVariants = cva('', {
       primary: iconButtonRecipes.primary.join(' '),
       success: iconButtonRecipes.success.join(' '),
       danger: iconButtonRecipes.danger.join(' '),
+      toolbar: iconButtonRecipes.toolbar.join(' '),
     },
     size: {
       sm: control.square.sm,
