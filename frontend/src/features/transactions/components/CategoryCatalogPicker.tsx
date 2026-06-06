@@ -28,7 +28,7 @@ import {
 } from '@/ui/recipes';
 import {
   formatCategoryName,
-  getTagThemeForCategoryAtIndex,
+  getTagThemeForCategory,
   validateCustomCategoryName,
 } from '@/utils/categories';
 import DeleteCustomCategoryConfirm from './DeleteCustomCategoryConfirm';
@@ -74,7 +74,7 @@ export function CategoryCatalogPicker({
   onCategoryCreated,
   onCategoryDeleted,
 }: CategoryCatalogPickerProps) {
-  const { system, custom, all } = useCategories();
+  const { system, custom, all, accentIndexByName } = useCategories();
   const customByDisplayName = useMemo(
     () => new Map(custom.map((category) => [category.display_name, category])),
     [custom]
@@ -159,11 +159,11 @@ export function CategoryCatalogPicker({
             aria-label="Available categories"
             className={cn('flex flex-wrap gap-2', 'list-none', 'p-0', 'm-0')}
           >
-            {all.map((categoryName, index) => {
+            {all.map((categoryName) => {
               const customCategory = customByDisplayName.get(categoryName);
               const isCustom = customCategory != null;
               const label = formatCategoryName(categoryName);
-              const theme = getTagThemeForCategoryAtIndex(index);
+              const theme = getTagThemeForCategory(categoryName, accentIndexByName);
 
               return (
                 <li

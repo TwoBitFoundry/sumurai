@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileDown, RefreshCw } from 'lucide-react';
+import { Download, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, cn, MenuDropdown, MenuItem } from '@/ui/primitives';
+import { Button, cn, IconButton, MenuDropdown, MenuItem } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { control, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { OnboardingProviderConnectModal } from '../components/onboarding/OnboardingProviderConnectModal';
 import { ToastStack } from '../components/toastStack/ToastStack';
 import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToastStack';
@@ -680,38 +680,44 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     <div className="inline-flex max-w-full flex-col items-center gap-2">
       <div className="flex flex-wrap items-center justify-center gap-3">
         {summary.institutions > 0 && (
-          <Button
+          <IconButton
             type="button"
             onClick={syncAll}
             disabled={syncingAll || !isOnline}
             variant="ghost"
             size="md"
-            className={cn(appTitleBarRecipes.settingsIdle, 'normal-case')}
-            title={!isOnline ? 'Unavailable while offline' : undefined}
+            aria-label={syncingAll ? 'Syncing all institutions' : 'Sync all'}
+            className={cn(appTitleBarRecipes.settingsIdle)}
+            title={
+              syncingAll
+                ? 'Syncing all institutions'
+                : !isOnline
+                  ? 'Unavailable while offline'
+                  : 'Sync all'
+            }
           >
-            <RefreshCw className={cn(control.glyph.md, syncingAll && 'animate-spin')} />
-            {syncingAll ? 'Syncing...' : !isOnline ? 'Offline' : 'Sync all'}
-          </Button>
+            <RefreshCw className={cn(syncingAll && 'animate-spin')} />
+          </IconButton>
         )}
         <MenuDropdown
           trigger={
-            <Button
+            <IconButton
               type="button"
               variant="ghost"
               size="md"
-              className={cn(appTitleBarRecipes.settingsIdle, 'normal-case')}
+              className={cn(appTitleBarRecipes.settingsIdle)}
               disabled={isExporting || !isOnline}
+              aria-label={isExporting ? 'Exporting all institutions' : 'Export All'}
               title={
                 isExporting
                   ? 'Export all in progress'
                   : !isOnline
                     ? 'Unavailable while offline'
-                    : undefined
+                    : 'Export all'
               }
             >
-              <FileDown className={cn(control.glyph.md, isExporting && 'animate-pulse')} />
-              {isExporting ? 'Exporting...' : 'Export All'}
-            </Button>
+              <Download className={cn(isExporting && 'animate-pulse')} />
+            </IconButton>
           }
         >
           <MenuItem onClick={() => void exportAccounts('csv')}>Export as CSV</MenuItem>

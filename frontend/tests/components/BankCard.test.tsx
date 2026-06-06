@@ -170,29 +170,30 @@ describe('BankCard', () => {
     );
 
     const heading = screen.getByRole('heading', { name: 'Chase' });
-    const titleRow = heading.parentElement;
-    expect(titleRow).toHaveClass('items-center');
-    expect(titleRow).toHaveClass('p-3');
+    const headerGrid = heading.parentElement;
+    expect(headerGrid).toHaveClass('grid');
+    expect(headerGrid).toHaveClass('items-center');
+    expect(headerGrid).toHaveClass('px-3');
     expect(
-      within(titleRow as HTMLElement).getByRole('status', { name: 'Connected' })
-    ).toBeVisible();
-
-    const actionRow = screen.getByRole('button', { name: 'Show accounts' }).parentElement;
-    expect(actionRow).toHaveClass('items-center');
-    expect(
-      within(actionRow as HTMLElement).getByRole('button', { name: 'Sync now' })
+      within(headerGrid as HTMLElement).getByRole('status', { name: 'Connected' })
     ).toBeVisible();
     expect(
-      within(actionRow as HTMLElement).getByRole('button', { name: 'Export institution data' })
+      within(headerGrid as HTMLElement).getByRole('button', { name: 'Show accounts' })
     ).toBeVisible();
     expect(
-      within(actionRow as HTMLElement).queryByRole('button', { name: 'Disconnect' })
+      within(headerGrid as HTMLElement).getByRole('button', { name: 'Sync now' })
+    ).toBeVisible();
+    expect(
+      within(headerGrid as HTMLElement).getByRole('button', { name: 'Export institution data' })
+    ).toBeVisible();
+    expect(
+      within(headerGrid as HTMLElement).queryByRole('button', { name: 'Disconnect' })
     ).not.toBeInTheDocument();
 
     const disconnectButton = screen.getByRole('button', { name: 'Disconnect' });
     expect(disconnectButton.parentElement).toHaveClass('row-span-2');
     expect(disconnectButton.parentElement).toHaveClass('items-center');
-    expect(titleRow).not.toContainElement(disconnectButton);
+    expect(headerGrid).not.toContainElement(disconnectButton);
   });
 
   it('shows connection status before the bank name', () => {
@@ -347,7 +348,7 @@ describe('BankCard', () => {
 
     await user.click(screen.getByRole('button', { name: 'Show accounts' }));
 
-    const count = await screen.findByText('7 items');
+    const count = await screen.findByText('7×');
     const actions = count.parentElement;
 
     expect(actions).toContainElement(screen.getByRole('button', { name: 'Import transactions' }));

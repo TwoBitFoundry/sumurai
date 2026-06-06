@@ -2722,11 +2722,13 @@ impl DatabaseRepository for PostgresRepository {
             let monthly_cost = Decimal::try_from(monthly_f64)
                 .unwrap_or(Decimal::try_from(representative).unwrap_or(Decimal::ZERO));
 
-            let last_charged = group
+            let first_charged = group
                 .iter()
                 .map(|r| r.date)
-                .max()
+                .min()
                 .unwrap_or_else(|| chrono::Local::now().naive_local().date());
+
+            let last_charged = group.iter().map(|r| r.date).max().unwrap_or(first_charged);
 
             let merchant = group
                 .iter()
@@ -2738,6 +2740,7 @@ impl DatabaseRepository for PostgresRepository {
                 normalized_merchant: normalized,
                 monthly_cost,
                 cadence: cadence.as_str().to_string(),
+                first_charged,
                 last_charged,
                 occurrence_count: group.len() as i64,
             });

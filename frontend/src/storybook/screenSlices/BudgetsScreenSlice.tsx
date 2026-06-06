@@ -1,5 +1,6 @@
-import { AlertTriangle, CalendarClock, Clock, Plus, Repeat2, Target } from 'lucide-react';
-import HeroStatCard from '@/components/widgets/HeroStatCard';
+import { AlertTriangle, Clock, Plus, Repeat2, Target } from 'lucide-react';
+import { CollapsibleSection } from '@/components/CollapsibleSection';
+import HeroStatCard, { SubscriptionCostsMetric } from '@/components/widgets/HeroStatCard';
 import AddBudgetPicker from '@/features/budgets/components/AddBudgetPicker';
 import { BudgetList } from '@/features/budgets/components/BudgetList';
 import BudgetSummaryCard from '@/features/budgets/components/BudgetSummaryCard';
@@ -9,14 +10,14 @@ import { PageLayout } from '@/layouts/PageLayout';
 import { sampleBudgetProgressEntries } from '@/storybook/fixtures/budgets';
 import { sampleSubscriptions } from '@/storybook/fixtures/subscriptions';
 import { Button, cn, EmptyState, GlassCard } from '@/ui/primitives';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { heroAccents } from '@/ui/tokens';
 
 export type BudgetsScreenSliceState = 'loaded' | 'empty' | 'error' | 'adding';
 
 export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
   const heroStatsLoaded = (
     <div className="space-y-3">
-      <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-4')}>
+      <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-3')}>
         <HeroStatCard
           index={1}
           title="Days remaining"
@@ -27,20 +28,12 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         />
         <HeroStatCard
           index={2}
-          title="Recurring subscriptions"
+          title="Subscription costs"
           icon={<Repeat2 />}
-          value="$25.98"
-          suffix="per month"
+          value={<SubscriptionCostsMetric monthly="$25.98" yearly="$311.76" />}
         />
         <HeroStatCard
           index={3}
-          title="Annualized subscriptions"
-          icon={<CalendarClock />}
-          value="$311.76"
-          suffix="per year"
-        />
-        <HeroStatCard
-          index={4}
           title="Overages"
           icon={<AlertTriangle />}
           value="1"
@@ -54,7 +47,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
 
   const heroStatsEmpty = (
     <div className="space-y-3">
-      <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-4')}>
+      <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-3')}>
         <HeroStatCard
           index={1}
           title="Days remaining"
@@ -65,20 +58,12 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         />
         <HeroStatCard
           index={2}
-          title="Recurring subscriptions"
+          title="Subscription costs"
           icon={<Repeat2 />}
-          value="$0.00"
-          suffix="per month"
+          value={<SubscriptionCostsMetric monthly="$0.00" yearly="$0.00" />}
         />
         <HeroStatCard
           index={3}
-          title="Annualized subscriptions"
-          icon={<CalendarClock />}
-          value="$0.00"
-          suffix="per year"
-        />
-        <HeroStatCard
-          index={4}
           title="Overages"
           icon={<AlertTriangle />}
           value="0"
@@ -99,7 +84,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
     <div data-testid="budgets-page">
       <PageLayout
         title="Budgets under command"
-        subtitle="Set your spending limits and track your subscriptions."
+        subtitle="Review subscriptions and manage monthly budgets categories from all your connected bank accounts."
         error={errorMessage}
         stats={heroStats}
       >
@@ -122,34 +107,26 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
             containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
             className={cn('space-y-6')}
           >
-            <section className={cn('space-y-4')} data-testid="budgets-section">
-              <div
-                className={cn(
-                  'flex',
-                  'flex-col',
-                  'gap-4',
-                  'sm:flex-row',
-                  'sm:items-start',
-                  'sm:justify-between'
-                )}
-              >
-                <div className={cn('space-y-1')}>
-                  <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-                    Budgets
-                  </h2>
-                  <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
-                    Establish allowances to take command of spending.
-                  </p>
-                </div>
-                {props.state === 'loaded' || props.state === 'adding' ? (
+            <CollapsibleSection
+              sectionId="budgets"
+              title="Budgets"
+              titleIcon={Target}
+              titleIconClassName={heroAccents.emerald.icon}
+              description="Add, edit, or delete budgets by transaction categories."
+              testId="budgets-section"
+              expandLabel="Show budgets"
+              collapseLabel="Hide budgets"
+              actions={
+                props.state === 'loaded' || props.state === 'adding' ? (
                   <BudgetToolbar
                     loading={false}
                     isPickerOpen={props.state === 'adding'}
                     addButtonRef={{ current: null }}
                     onAddBudget={() => {}}
                   />
-                ) : null}
-              </div>
+                ) : undefined
+              }
+            >
               {props.state === 'loaded' || props.state === 'adding' ? (
                 <>
                   {props.state === 'adding' ? (
@@ -193,7 +170,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
                   data-testid="budgets-empty-state"
                 />
               ) : null}
-            </section>
+            </CollapsibleSection>
           </GlassCard>
         </div>
       </PageLayout>

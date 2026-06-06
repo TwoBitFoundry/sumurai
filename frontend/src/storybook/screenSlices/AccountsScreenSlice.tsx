@@ -8,9 +8,8 @@ import { PageLayout } from '@/layouts/PageLayout';
 import { sampleBankConnections } from '@/storybook/fixtures/plaid';
 import { storyProviderPickerPanelProps } from '@/storybook/fixtures/providerPicker';
 import type { FinancialProvider } from '@/types/api';
-import { Button, cn } from '@/ui/primitives';
+import { cn, IconButton } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { font as uiTypographyRecipes } from '@/ui/recipes';
 
 type ProviderPickerSliceProps = {
   loading?: boolean;
@@ -55,20 +54,16 @@ export function AccountsConnectedScreenSlice(props: {
   const actions = (
     <>
       {!props.connectionsEmpty ? (
-        <Button
+        <IconButton
           type="button"
           variant="ghost"
           size="md"
-          className={cn(
-            appTitleBarRecipes.settingsIdle,
-            'normal-case',
-            uiTypographyRecipes.bodyStrong,
-            'px-5'
-          )}
+          aria-label={props.syncingAll ? 'Syncing all institutions' : 'Sync all'}
+          className={cn(appTitleBarRecipes.settingsIdle)}
+          title={props.syncingAll ? 'Syncing all institutions' : 'Sync all'}
         >
           <RefreshCw className={cn(props.syncingAll && 'animate-spin')} />
-          {props.syncingAll ? 'Syncing...' : 'Sync all'}
-        </Button>
+        </IconButton>
       ) : null}
       <ConnectButton onClick={() => {}} disabled={false}>
         Link Account

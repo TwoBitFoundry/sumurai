@@ -36,6 +36,31 @@ export type HeroStatCardProps = {
   layout?: 'stack' | 'row' | 'row-tablet';
 };
 
+export function SubscriptionCostsMetric({
+  monthly,
+  yearly,
+}: {
+  monthly: React.ReactNode;
+  yearly: React.ReactNode;
+}) {
+  return (
+    <div className={cn('flex', 'flex-wrap', 'items-baseline', 'gap-x-3', 'gap-y-1')}>
+      <span
+        className={cn('inline-flex', 'shrink-0', 'items-baseline', 'gap-1.5', 'whitespace-nowrap')}
+      >
+        <span>{monthly}</span>
+        <span className={cn(heroStatCardRecipes.suffix)}>/ mo</span>
+      </span>
+      <span
+        className={cn('inline-flex', 'shrink-0', 'items-baseline', 'gap-1.5', 'whitespace-nowrap')}
+      >
+        <span>{yearly}</span>
+        <span className={cn(heroStatCardRecipes.suffix)}>/ year</span>
+      </span>
+    </div>
+  );
+}
+
 export { heroStatSemanticThemes };
 
 const heroFooterPillRecipes = {

@@ -1,4 +1,11 @@
-import { AlertTriangle, Loader2, Plus, ReceiptText, TrendingUp, WandSparkles } from 'lucide-react';
+import {
+  AlertTriangle,
+  Loader2,
+  ReceiptText,
+  Settings,
+  TrendingUp,
+  WandSparkles,
+} from 'lucide-react';
 import type React from 'react';
 import { useRef, useState } from 'react';
 import { Button, cn, GlassCard } from '@/ui/primitives';
@@ -181,10 +188,10 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
               size="md"
               aria-expanded={isCategoryCatalogOpen}
               aria-haspopup="dialog"
-              className={cn('shrink-0', 'whitespace-nowrap')}
+              className={cn('w-full', 'sm:w-auto', 'sm:shrink-0', 'whitespace-nowrap')}
             >
-              <Plus className={control.glyph.md} />
-              Manage categories
+              <Settings className={control.glyph.md} />
+              Categories
             </Button>
           </div>
           <CategoryCatalogPicker

@@ -26,7 +26,7 @@ describe('storybook screen slices responsive contract', () => {
     ) as HTMLElement | null;
 
     expect(statsGrid).toHaveClass('grid-cols-2');
-    expect(statsGrid).toHaveClass('lg:grid-cols-4');
+    expect(statsGrid).toHaveClass('lg:grid-cols-3');
   });
 
   it('keeps the settings slice centered with a desktop max width', () => {

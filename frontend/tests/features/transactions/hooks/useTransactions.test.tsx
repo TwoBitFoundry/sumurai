@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { AccountFilterTestProvider } from '@tests/utils/AccountFilterTestProvider';
 import { type ReactNode, useState } from 'react';
 import { AccountFilterContext } from '@/context/AccountFilterContext';
+import { useTransactionCategories } from '@/features/transactions/hooks/useTransactionCategories';
 import { useTransactions } from '@/features/transactions/hooks/useTransactions';
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
 import { PlaidService } from '@/services/PlaidService';
@@ -21,6 +22,10 @@ jest.mock('@/services/PlaidService', () => ({
     getAccounts: jest.fn(),
     getStatus: jest.fn(),
   },
+}));
+
+jest.mock('@/features/transactions/hooks/useTransactionCategories', () => ({
+  useTransactionCategories: jest.fn(),
 }));
 
 const asTransaction = (id: string, date = '2024-02-10') => ({
@@ -143,6 +148,10 @@ describe('useTransactions', () => {
       institution_name: 'First Platypus Bank',
       connection_id: 'conn_1',
     } as any);
+    jest.mocked(useTransactionCategories).mockReturnValue({
+      categories: [],
+      loading: false,
+    });
   });
 
   it('remounting serves cached transactions immediately without extra getTransactions while fresh', async () => {
@@ -177,6 +186,10 @@ describe('useTransactions', () => {
     jest
       .mocked(TransactionService.getTransactionCategories)
       .mockResolvedValue(['FOOD_AND_DRINK', 'TRANSPORTATION']);
+    jest.mocked(useTransactionCategories).mockReturnValue({
+      categories: ['FOOD_AND_DRINK', 'TRANSPORTATION'],
+      loading: false,
+    });
 
     const { result, unmount } = renderHook(() => useTransactions({ pageSize: 10 }), {
       wrapper: RemountWrapper,
@@ -190,8 +203,6 @@ describe('useTransactions', () => {
     });
 
     const callCount = jest.mocked(TransactionService.getTransactions).mock.calls.length;
-    const categoriesCallCount = jest.mocked(TransactionService.getTransactionCategories).mock.calls
-      .length;
     const txIds = result.current.transactions.map((t) => t.id);
 
     unmount();
@@ -212,9 +223,6 @@ describe('useTransactions', () => {
 
     await waitFor(() => {
       expect(jest.mocked(TransactionService.getTransactions).mock.calls.length).toBe(callCount);
-      expect(jest.mocked(TransactionService.getTransactionCategories).mock.calls.length).toBe(
-        categoriesCallCount
-      );
     });
   });
 
@@ -257,6 +265,10 @@ describe('useTransactions', () => {
     jest
       .mocked(TransactionService.getTransactionCategories)
       .mockResolvedValue(['FOOD_AND_DRINK', 'TRANSPORTATION']);
+    jest.mocked(useTransactionCategories).mockReturnValue({
+      categories: ['FOOD_AND_DRINK', 'TRANSPORTATION'],
+      loading: false,
+    });
 
     const { result } = renderHook(
       () => {
@@ -267,6 +279,8 @@ describe('useTransactions', () => {
 
     await waitFor(() => {
       expect(result.current.categories).toEqual(['FOOD_AND_DRINK', 'TRANSPORTATION']);
+      expect(result.current.transactions).toHaveLength(2);
+      expect(result.current.totalItems).toBe(4);
     });
 
     expect(TransactionService.getTransactions).toHaveBeenLastCalledWith(
@@ -275,8 +289,6 @@ describe('useTransactions', () => {
         page_size: 10,
       })
     );
-    expect(result.current.transactions).toHaveLength(2);
-    expect(result.current.totalItems).toBe(4);
     expect(result.current.totalPages).toBe(1);
   });
 

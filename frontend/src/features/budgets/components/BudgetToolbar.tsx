@@ -3,7 +3,7 @@ import type { RefObject } from 'react';
 import { Button, cn } from '@/ui/primitives';
 import { control, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
-const budgetActionButtonClasses = cn('shrink-0', 'whitespace-nowrap');
+const budgetActionButtonClasses = cn('w-full', 'sm:w-auto', 'sm:shrink-0', 'whitespace-nowrap');
 
 interface BudgetToolbarProps {
   loading: boolean;
@@ -20,7 +20,17 @@ export const BudgetToolbar = ({
 }: BudgetToolbarProps) => {
   return (
     <div
-      className={cn('flex', 'items-center', 'justify-end', 'gap-3')}
+      className={cn(
+        'flex',
+        'w-full',
+        'flex-col',
+        'items-stretch',
+        'gap-3',
+        'sm:w-auto',
+        'sm:flex-row',
+        'sm:items-center',
+        'sm:justify-end'
+      )}
       data-testid="budget-toolbar"
     >
       <div
@@ -28,6 +38,8 @@ export const BudgetToolbar = ({
           'inline-flex',
           'items-center',
           'gap-1',
+          'self-end',
+          'sm:self-auto',
           uiTypographyRecipes.caption,
           uiTextRecipes.subtle,
           'transition-colors',
@@ -52,7 +64,7 @@ export const BudgetToolbar = ({
         className={budgetActionButtonClasses}
       >
         <Plus className={control.glyph.md} />
-        Add budget
+        Budget
       </Button>
     </div>
   );

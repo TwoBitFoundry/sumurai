@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, FileDown, RefreshCw, Unlink } from 'lucide-react';
+import { ChevronDown, Download, RefreshCw, Unlink } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { getSessionBankExpanded, setSessionBankExpanded } from '@/utils/sessionPreferences';
@@ -160,17 +160,37 @@ export const BankCard: React.FC<BankCardProps> = ({
           className={cn(
             'col-start-1',
             'row-start-1',
-            'flex',
+            'row-span-2',
+            'grid',
             'min-w-0',
             'items-center',
             'gap-2',
-            'p-3'
+            'px-3',
+            'pt-3',
+            'pb-3',
+            showSyncButton
+              ? 'grid-cols-[auto_auto_minmax(0,1fr)]'
+              : 'grid-cols-[auto_minmax(0,1fr)]'
           )}
         >
-          <StatusPill status={bank.status} className={cn('shrink-0')} />
+          <div
+            className={cn(
+              'col-start-1',
+              'row-start-1',
+              'flex',
+              'items-center',
+              'justify-center',
+              control.square.md,
+              'shrink-0'
+            )}
+          >
+            <StatusPill status={bank.status} />
+          </div>
           <h3
             title={bank.name}
             className={cn(
+              showSyncButton ? 'col-start-3' : 'col-start-2',
+              'row-start-1',
               'min-w-0',
               'line-clamp-2',
               'break-words',
@@ -180,6 +200,87 @@ export const BankCard: React.FC<BankCardProps> = ({
           >
             {bank.name}
           </h3>
+          <IconButton
+            type="button"
+            size="md"
+            onClick={() => setExpanded((v) => !v)}
+            variant="ghost"
+            aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
+            className={cn(
+              appTitleBarRecipes.settingsIdle,
+              'col-start-1',
+              'row-start-2',
+              'shrink-0',
+              'justify-self-center'
+            )}
+          >
+            <ChevronDown
+              className={cn('transition-transform', 'duration-200', expanded && 'rotate-180')}
+            />
+          </IconButton>
+          {showSyncButton ? (
+            <IconButton
+              type="button"
+              size="md"
+              onClick={handleSync}
+              disabled={loading || !isOnline}
+              variant="ghost"
+              aria-label="Sync now"
+              title={!isOnline ? 'Unavailable while offline' : undefined}
+              className={cn(
+                appTitleBarRecipes.settingsIdle,
+                'col-start-2',
+                'row-start-2',
+                'shrink-0',
+                'justify-self-center'
+              )}
+            >
+              <div className={cn('flex', 'flex-col', 'items-center', 'gap-0.5', control.glyph.md)}>
+                <RefreshCw className={cn(loading && 'animate-spin')} />
+                {loading && syncElapsed > 0 && (
+                  <span
+                    className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted, 'tabular-nums')}
+                  >
+                    {syncElapsed}s
+                  </span>
+                )}
+              </div>
+            </IconButton>
+          ) : null}
+          <div
+            className={cn(
+              showSyncButton ? 'col-start-3' : 'col-start-2',
+              'row-start-2',
+              'justify-self-start'
+            )}
+          >
+            <MenuDropdown
+              trigger={
+                <IconButton
+                  type="button"
+                  size="md"
+                  variant="ghost"
+                  aria-label="Export institution data"
+                  title={
+                    isExporting
+                      ? 'Exporting...'
+                      : !isOnline
+                        ? 'Unavailable while offline'
+                        : bank.connectionId == null
+                          ? 'Export unavailable'
+                          : 'Export institution data'
+                  }
+                  disabled={isExporting || !isOnline || bank.connectionId == null}
+                  className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
+                >
+                  <Download className={cn(isExporting && 'animate-pulse')} />
+                </IconButton>
+              }
+            >
+              <MenuItem onClick={() => void handleExport('csv')}>Export as CSV</MenuItem>
+              <MenuItem onClick={() => void handleExport('ofx')}>Export as OFX</MenuItem>
+            </MenuDropdown>
+          </div>
         </div>
         <div
           className={cn(
@@ -202,80 +303,6 @@ export const BankCard: React.FC<BankCardProps> = ({
           >
             <Unlink />
           </IconButton>
-        </div>
-        <div
-          className={cn(
-            'col-start-1',
-            'row-start-2',
-            'flex',
-            'flex-wrap',
-            'items-center',
-            'gap-2',
-            'px-3',
-            'pb-3'
-          )}
-        >
-          <IconButton
-            type="button"
-            size="md"
-            onClick={() => setExpanded((v) => !v)}
-            variant="ghost"
-            aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
-            className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
-          >
-            <ChevronDown
-              className={cn('transition-transform', 'duration-200', expanded && 'rotate-180')}
-            />
-          </IconButton>
-          {showSyncButton ? (
-            <IconButton
-              type="button"
-              size="md"
-              onClick={handleSync}
-              disabled={loading || !isOnline}
-              variant="ghost"
-              aria-label="Sync now"
-              title={!isOnline ? 'Unavailable while offline' : undefined}
-              className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
-            >
-              <div className={cn('flex', 'flex-col', 'items-center', 'gap-0.5', control.glyph.md)}>
-                <RefreshCw className={cn(loading && 'animate-spin')} />
-                {loading && syncElapsed > 0 && (
-                  <span
-                    className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted, 'tabular-nums')}
-                  >
-                    {syncElapsed}s
-                  </span>
-                )}
-              </div>
-            </IconButton>
-          ) : null}
-          <MenuDropdown
-            trigger={
-              <IconButton
-                type="button"
-                size="md"
-                variant="ghost"
-                aria-label="Export institution data"
-                title={
-                  isExporting
-                    ? 'Exporting...'
-                    : !isOnline
-                      ? 'Unavailable while offline'
-                      : bank.connectionId == null
-                        ? 'Export unavailable'
-                        : 'Export institution data'
-                }
-                disabled={isExporting || !isOnline || bank.connectionId == null}
-                className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
-              >
-                <FileDown className={cn(isExporting && 'animate-pulse')} />
-              </IconButton>
-            }
-          >
-            <MenuItem onClick={() => void handleExport('csv')}>Export as CSV</MenuItem>
-            <MenuItem onClick={() => void handleExport('ofx')}>Export as OFX</MenuItem>
-          </MenuDropdown>
         </div>
         {statusCaption ? (
           <p

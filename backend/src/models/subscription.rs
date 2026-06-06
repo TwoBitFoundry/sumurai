@@ -14,6 +14,7 @@ pub struct SubscriptionSummary {
     #[schema(value_type = String)]
     pub monthly_cost: Decimal,
     pub cadence: String,
+    pub first_charged: NaiveDate,
     pub last_charged: NaiveDate,
     pub occurrence_count: i64,
 }
@@ -25,6 +26,7 @@ impl SubscriptionSummary {
         normalized_merchant: String,
         representative_amount: Decimal,
         cadence: Cadence,
+        first_charged: NaiveDate,
         last_charged: NaiveDate,
         occurrence_count: i64,
     ) -> Self {
@@ -40,6 +42,7 @@ impl SubscriptionSummary {
             normalized_merchant,
             monthly_cost,
             cadence: cadence.as_str().to_string(),
+            first_charged,
             last_charged,
             occurrence_count,
         }

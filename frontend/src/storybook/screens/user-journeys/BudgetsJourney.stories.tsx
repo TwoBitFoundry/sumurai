@@ -101,7 +101,7 @@ export const Journey: Story = {
       expect(canvas.getByText(/provision the coffers/i)).toBeVisible();
       expect(canvas.getByText('Spotify')).toBeVisible();
       expect(canvas.getByText('Netflix')).toBeVisible();
-      expect(canvas.getByText('Recurring subscriptions')).toBeVisible();
+      expect(canvas.getByText('Subscription costs')).toBeVisible();
     });
     await waitFor(() => {
       expect(canvas.getByRole('button', { name: /next month/i })).toBeVisible();
@@ -115,7 +115,7 @@ export const Journey: Story = {
     }).format(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1));
     await expect(canvas.getByText(expectedMonth)).toBeVisible();
 
-    const addBudget = canvas.getByRole('button', { name: /add budget/i });
+    const addBudget = canvas.getByRole('button', { name: /^budget$/i });
     await userEvent.click(addBudget);
     const picker = await screen.findByTestId('add-budget-picker-content');
     await userEvent.click(within(picker).getByRole('button', { name: /bills and utilities/i }));

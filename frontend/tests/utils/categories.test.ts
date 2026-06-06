@@ -14,7 +14,7 @@ import {
 } from '@/utils/categories';
 
 describe('category accent index', () => {
-  it('assigns colors by sorted roster index and repeats', () => {
+  it('assigns colors by sorted filter roster index and repeats', () => {
     const names = sortCategoryNamesAlphabetically(['transportation', 'Coffee', 'food_and_drink']);
     const accentIndex = buildCategoryAccentIndex(names);
 
@@ -25,6 +25,26 @@ describe('category accent index', () => {
     );
     expect(getTagThemeForCategory('food_and_drink', accentIndex).key).toBe(
       getTagThemeForCategoryAtIndex(1).key
+    );
+  });
+
+  it('resolves budget and display category aliases to the same accent as transaction slugs', () => {
+    const names = sortCategoryNamesAlphabetically([
+      'ENTERTAINMENT',
+      'FOOD_AND_DRINK',
+      'GENERAL_SERVICES',
+      'SUBSCRIPTION',
+    ]);
+    const accentIndex = buildCategoryAccentIndex(names);
+
+    const subscriptionTheme = getTagThemeForCategory('SUBSCRIPTION', accentIndex);
+    expect(getTagThemeForCategory('Subscriptions', accentIndex).key).toBe(subscriptionTheme.key);
+    expect(getTagThemeForCategory('subscription', accentIndex).key).toBe(subscriptionTheme.key);
+    expect(getTagThemeForCategory('GENERAL_SERVICES', accentIndex).key).toBe(
+      getTagThemeForCategory('Services', accentIndex).key
+    );
+    expect(getTagThemeForCategory('food and drink', accentIndex).key).toBe(
+      getTagThemeForCategory('FOOD_AND_DRINK', accentIndex).key
     );
   });
 });

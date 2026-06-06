@@ -16,7 +16,7 @@ describe('BudgetToolbar', () => {
       />
     );
 
-    const addBudgetButton = screen.getByRole('button', { name: 'Add budget' });
+    const addBudgetButton = screen.getByRole('button', { name: 'Budget' });
     expect(addBudgetButton.className).toContain(control.height.md);
     expect(addBudgetButton.className).not.toContain(control.height.lg);
     expect(addBudgetButton).toHaveAttribute('aria-expanded', 'false');

@@ -347,6 +347,7 @@ export interface SubscriptionSummary {
   normalized_merchant: string;
   monthly_cost: string;
   cadence: string;
+  first_charged: string;
   last_charged: string;
   occurrence_count: number;
 }

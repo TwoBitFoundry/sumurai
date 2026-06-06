@@ -46,8 +46,14 @@ const TopMerchantsListFn: React.FC<Props> = ({ merchants, className = '' }) => {
                 >
                   {merchant.name}
                 </div>
-                <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                  {merchant.count} item{merchant.count !== 1 ? 's' : ''}
+                <div
+                  className={cn(
+                    uiTypographyRecipes.captionStrong,
+                    uiTextRecipes.muted,
+                    'tabular-nums'
+                  )}
+                >
+                  {merchant.count}×
                 </div>
               </div>
               <div className={cn('text-right', 'flex-shrink-0', 'ml-4')}>

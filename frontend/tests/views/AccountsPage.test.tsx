@@ -305,7 +305,7 @@ describe('AccountsPage', () => {
     });
 
     renderAccountsPage();
-    expect(screen.getByRole('button', { name: 'Exporting...' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Exporting all institutions' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Export institution data' })).toBeDisabled();
   });
 
@@ -346,7 +346,7 @@ describe('AccountsPage', () => {
       .closest('section');
     expect(heroSection).toBeTruthy();
     expect(
-      within(heroSection as HTMLElement).getByRole('button', { name: /^offline$/i })
+      within(heroSection as HTMLElement).getByRole('button', { name: 'Sync all' })
     ).toBeDisabled();
     expect(screen.getByText('Unavailable while offline')).toBeVisible();
   });
@@ -415,7 +415,7 @@ describe('AccountsPage', () => {
     await expandInstitutionAccounts(user);
 
     await waitFor(() => {
-      expect(screen.getByText('55 items')).toBeVisible();
+      expect(screen.getByText('55×')).toBeVisible();
     });
   });
 

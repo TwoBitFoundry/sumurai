@@ -38,7 +38,7 @@ export function formatBalancesAxisValue(n: number) {
 
 function niceAxisStep(rawStep: number) {
   if (!Number.isFinite(rawStep) || rawStep <= 0) return 1;
-  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const mag = 10 ** Math.floor(Math.log10(rawStep));
   const norm = rawStep / mag;
   if (norm <= 1) return mag;
   if (norm <= 2) return 2 * mag;
