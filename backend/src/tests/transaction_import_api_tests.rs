@@ -378,6 +378,10 @@ async fn given_valid_qfx_when_importing_then_writes_transactions_and_sets_user()
             assert_eq!(transactions.len(), 1);
             let txn = &transactions[0];
             assert_eq!(txn.user_id, Some(user.id));
+            assert_eq!(txn.original_merchant_name.as_deref(), Some("COFFEE SHOP"));
+            assert_eq!(txn.merchant_name.as_deref(), Some("Coffee Shop"));
+            assert_eq!(txn.normalized_merchant.as_deref(), Some("coffeeshop"));
+            assert_eq!(txn.normalization_source.as_deref(), Some("sumurai_engine"));
             assert_eq!(txn.category_primary, "OTHER");
             assert_eq!(txn.category_detailed, "OTHER");
             assert!(!txn.pending);
@@ -387,7 +391,19 @@ async fn given_valid_qfx_when_importing_then_writes_transactions_and_sets_user()
             );
             Box::pin(async { Ok(()) })
         });
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .times(1)
+        .returning(|| Box::pin(async { Ok(vec![]) }));
 
+    mock_cache
+        .expect_get_string()
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_cache
+        .expect_set_with_ttl()
+        .times(1)
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
     mock_cache
         .expect_is_session_valid()
         .returning(|_| Box::pin(async { Ok(true) }));
@@ -465,7 +481,19 @@ async fn given_duplicate_ofx_import_when_reimporting_then_reports_skipped_transa
             assert_eq!(transactions.len(), 2);
             Box::pin(async { Ok(()) })
         });
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .times(1)
+        .returning(|| Box::pin(async { Ok(vec![]) }));
 
+    mock_cache
+        .expect_get_string()
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_cache
+        .expect_set_with_ttl()
+        .times(1)
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
     mock_cache
         .expect_is_session_valid()
         .returning(|_| Box::pin(async { Ok(true) }));
@@ -550,11 +578,26 @@ async fn given_csv_mapping_when_importing_then_creates_expected_transactions() {
             assert_eq!(transactions.len(), 1);
             let txn = &transactions[0];
             assert_eq!(txn.user_id, Some(user.id));
+            assert_eq!(txn.original_merchant_name.as_deref(), Some("Coffee Shop"));
             assert_eq!(txn.merchant_name.as_deref(), Some("Coffee Shop"));
+            assert_eq!(txn.normalized_merchant.as_deref(), Some("coffeeshop"));
+            assert_eq!(txn.normalization_source.as_deref(), Some("sumurai_engine"));
             assert_eq!(txn.amount.to_string(), "-12.34");
             Box::pin(async { Ok(()) })
         });
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .times(1)
+        .returning(|| Box::pin(async { Ok(vec![]) }));
 
+    mock_cache
+        .expect_get_string()
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_cache
+        .expect_set_with_ttl()
+        .times(1)
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
     mock_cache
         .expect_is_session_valid()
         .returning(|_| Box::pin(async { Ok(true) }));

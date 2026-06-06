@@ -44,6 +44,7 @@ fn make_transaction(
         created_at: None,
         original_merchant_name: None,
         normalized_merchant: merchant_name.map(normalize_merchant_for_match),
+        normalization_source: None,
     }
 }
 

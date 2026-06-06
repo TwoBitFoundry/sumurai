@@ -29,6 +29,12 @@ pub const MERCHANT_ALIAS_SEEDS: &[MerchantAliasSeed] = &[
         priority: 10,
     },
     MerchantAliasSeed {
+        match_type: "contains",
+        match_key: "BOKF",
+        canonical_name: "BOKF",
+        priority: 10,
+    },
+    MerchantAliasSeed {
         match_type: "exact",
         match_key: "BOKF",
         canonical_name: "BOKF",
@@ -51,6 +57,12 @@ pub const MERCHANT_ALIAS_SEEDS: &[MerchantAliasSeed] = &[
         match_key: "TESLA",
         canonical_name: "Tesla",
         priority: 5,
+    },
+    MerchantAliasSeed {
+        match_type: "contains",
+        match_key: "OK NATURAL GAS",
+        canonical_name: "Oklahoma Natural Gas",
+        priority: 10,
     },
     MerchantAliasSeed {
         match_type: "contains",
@@ -176,6 +188,12 @@ pub const MERCHANT_ALIAS_SEEDS: &[MerchantAliasSeed] = &[
         match_type: "contains",
         match_key: "SPOTIFY",
         canonical_name: "Spotify",
+        priority: 10,
+    },
+    MerchantAliasSeed {
+        match_type: "contains",
+        match_key: "APPLECARD",
+        canonical_name: "Apple Card",
         priority: 10,
     },
     MerchantAliasSeed {
@@ -390,6 +408,39 @@ pub const MERCHANT_ALIAS_SEEDS: &[MerchantAliasSeed] = &[
     },
 ];
 
+pub const MERCHANT_ALIAS_SEEDS_V2: &[MerchantAliasSeed] = &[
+    MerchantAliasSeed {
+        match_type: "contains",
+        match_key: "PLAYSTATION",
+        canonical_name: "PlayStation",
+        priority: 10,
+    },
+    MerchantAliasSeed {
+        match_type: "contains",
+        match_key: "BURGER KING",
+        canonical_name: "Burger King",
+        priority: 10,
+    },
+    MerchantAliasSeed {
+        match_type: "contains",
+        match_key: "OPENAI",
+        canonical_name: "OpenAI",
+        priority: 10,
+    },
+    MerchantAliasSeed {
+        match_type: "contains",
+        match_key: "CURSOR AI POWERED IDE",
+        canonical_name: "Cursor",
+        priority: 10,
+    },
+    MerchantAliasSeed {
+        match_type: "contains",
+        match_key: "QT",
+        canonical_name: "QuikTrip",
+        priority: 5,
+    },
+];
+
 pub async fn insert_merchant_alias_seeds<C>(db: &C) -> Result<(), DbErr>
 where
     C: ConnectionTrait,
@@ -413,3 +464,18 @@ where
 
     Ok(())
 }
+
+pub const MERCHANT_ALIAS_SEEDS_V3: &[MerchantAliasSeed] = &[
+    MerchantAliasSeed {
+        match_type: "contains",
+        match_key: "TURBOTAX",
+        canonical_name: "TurboTax",
+        priority: 10,
+    },
+    MerchantAliasSeed {
+        match_type: "contains",
+        match_key: "BRAUMS",
+        canonical_name: "Braums",
+        priority: 10,
+    },
+];

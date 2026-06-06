@@ -4,13 +4,13 @@ use anyhow::Result;
 
 use crate::models::transaction::Transaction;
 use crate::services::cache_service::CacheService;
+use crate::services::merchant_normalization::engine::canonical_key;
 use crate::services::repository_service::DatabaseRepository;
-use crate::utils::merchant_name::normalize_merchant_for_match;
 
 use super::engine::normalize;
 use super::types::{AliasIndex, MerchantSource};
 
-const ALIAS_INDEX_CACHE_KEY: &str = "merchant_aliases_index";
+const ALIAS_INDEX_CACHE_KEY: &str = "merchant_aliases_index_v2";
 const ALIAS_INDEX_TTL: u64 = 3600;
 
 pub struct MerchantNormalizationService {
@@ -25,8 +25,10 @@ impl MerchantNormalizationService {
 
     pub async fn alias_index(&self) -> Result<Arc<AliasIndex>> {
         if let Some(cached) = self.cache.get_string(ALIAS_INDEX_CACHE_KEY).await? {
-            if let Ok(rows) = serde_json::from_str(&cached) {
-                return Ok(Arc::new(AliasIndex::from_rows(rows)));
+            if let Ok(rows) = serde_json::from_str::<Vec<super::types::AliasRow>>(&cached) {
+                if !rows.is_empty() {
+                    return Ok(Arc::new(AliasIndex::from_rows(rows)));
+                }
             }
         }
 
@@ -44,6 +46,19 @@ impl MerchantNormalizationService {
             return Ok(());
         }
 
+        if txns.iter().all(|txn| {
+            let raw = txn
+                .original_merchant_name
+                .as_deref()
+                .or(txn.merchant_name.as_deref())
+                .unwrap_or("");
+
+            raw.is_empty()
+                || (txn.normalized_merchant.is_some() && txn.normalization_source.is_some())
+        }) {
+            return Ok(());
+        }
+
         let index = self.alias_index().await?;
 
         for txn in txns.iter_mut() {
@@ -57,9 +72,28 @@ impl MerchantNormalizationService {
                 continue;
             }
 
+            if txn.normalized_merchant.is_some() && txn.normalization_source.is_some() {
+                continue;
+            }
+
+            if matches!(
+                txn.normalization_source.as_deref(),
+                Some("plaid") | Some("teller")
+            ) {
+                if let Some(display) = txn
+                    .merchant_name
+                    .as_deref()
+                    .filter(|value| !value.is_empty())
+                {
+                    txn.normalized_merchant = Some(canonical_key(display));
+                    continue;
+                }
+            }
+
             let result = normalize(raw, MerchantSource::Raw, &index);
             txn.merchant_name = Some(result.display.clone());
-            txn.normalized_merchant = Some(normalize_merchant_for_match(&result.display));
+            txn.normalized_merchant = result.canonical_key.clone();
+            txn.normalization_source = Some("sumurai_engine".to_string());
         }
 
         Ok(())

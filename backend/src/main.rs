@@ -364,6 +364,12 @@ async fn main() -> anyhow::Result<()> {
         crate::services::simplefin_org_service::SimpleFinOrganizationService::new(
             db_repository.clone(),
             cache_service.clone(),
+            Arc::new(
+                crate::services::merchant_normalization::service::MerchantNormalizationService::new(
+                    db_repository.clone(),
+                    cache_service.clone(),
+                ),
+            ),
         ),
     );
 
@@ -1882,6 +1888,16 @@ async fn import_authenticated_transactions(
     for transaction in &mut transactions {
         transaction.user_id = Some(auth_context.user_id);
     }
+
+    let merchant_normalization_service =
+        crate::services::merchant_normalization::service::MerchantNormalizationService::new(
+            state.db_repository.clone(),
+            state.cache_service.clone(),
+        );
+    merchant_normalization_service
+        .normalize_batch(&mut transactions)
+        .await
+        .map_err(|_| api_internal_server_error("Failed to normalize imported merchants"))?;
 
     let transaction_counts_before = state
         .db_repository

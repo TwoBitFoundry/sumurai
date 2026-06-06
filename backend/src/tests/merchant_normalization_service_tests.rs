@@ -46,6 +46,7 @@ fn make_transaction(merchant: &str, original: Option<&str>) -> Transaction {
         created_at: None,
         original_merchant_name: original.map(str::to_string),
         normalized_merchant: None,
+        normalization_source: None,
     }
 }
 
@@ -109,6 +110,10 @@ async fn given_simplefin_raw_description_when_normalize_batch_then_merchant_name
 
     assert_eq!(txns[0].merchant_name.as_deref(), Some("Costco"));
     assert_eq!(txns[0].normalized_merchant.as_deref(), Some("costco"));
+    assert_eq!(
+        txns[0].normalization_source.as_deref(),
+        Some("sumurai_engine")
+    );
 }
 
 #[tokio::test]
@@ -140,7 +145,10 @@ async fn given_cache_miss_when_alias_index_then_rebuilds_from_db() {
     let cache = InMemoryCache::new().into_mock();
     let svc = MerchantNormalizationService::new(Arc::new(db), Arc::new(cache));
 
-    let _ = svc.alias_index().await.unwrap();
+    let index = svc.alias_index().await.unwrap();
+
+    assert!(index.exact.is_empty());
+    assert!(index.contains.is_empty());
 }
 
 #[tokio::test]
@@ -155,7 +163,7 @@ async fn given_cache_hit_when_alias_index_then_db_not_called() {
     cache_values
         .lock()
         .unwrap()
-        .insert("merchant_aliases_index".to_string(), json);
+        .insert("merchant_aliases_index_v2".to_string(), json);
 
     let get_values = Arc::clone(&cache_values);
     let set_values = Arc::clone(&cache_values);
@@ -174,6 +182,45 @@ async fn given_cache_hit_when_alias_index_then_db_not_called() {
 
     let svc = MerchantNormalizationService::new(Arc::new(db), Arc::new(cache));
     let _ = svc.alias_index().await.unwrap();
+}
+
+#[tokio::test]
+async fn given_empty_cached_alias_index_when_alias_index_then_rebuilds_from_db() {
+    let aliases = seed_aliases();
+
+    let mut db = MockDatabaseRepository::new();
+    db.expect_get_active_merchant_aliases()
+        .times(1)
+        .returning(move || {
+            let rows = aliases.clone();
+            Box::pin(async move { Ok(rows) })
+        });
+
+    let cache_values: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new(HashMap::new()));
+    cache_values
+        .lock()
+        .unwrap()
+        .insert("merchant_aliases_index_v2".to_string(), "[]".to_string());
+
+    let get_values = Arc::clone(&cache_values);
+    let set_values = Arc::clone(&cache_values);
+    let mut cache = MockCacheService::new();
+    cache.expect_get_string().returning(move |key| {
+        let value = get_values.lock().unwrap().get(key).cloned();
+        Box::pin(async move { Ok(value) })
+    });
+    cache.expect_set_with_ttl().returning(move |key, value, _| {
+        set_values
+            .lock()
+            .unwrap()
+            .insert(key.to_string(), value.to_string());
+        Box::pin(async { Ok(()) })
+    });
+
+    let svc = MerchantNormalizationService::new(Arc::new(db), Arc::new(cache));
+    let index = svc.alias_index().await.unwrap();
+
+    assert!(!index.contains.is_empty());
 }
 
 #[tokio::test]

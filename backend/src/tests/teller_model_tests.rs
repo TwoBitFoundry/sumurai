@@ -54,6 +54,15 @@ fn given_teller_transaction_json_when_from_teller_then_maps_fields_correctly() {
     assert_eq!(transaction.amount, Decimal::from_str("-89.40").unwrap());
     assert_eq!(transaction.date.to_string(), "2024-01-15");
     assert_eq!(transaction.merchant_name, Some("Starbucks".to_string()));
+    assert_eq!(
+        transaction.original_merchant_name.as_deref(),
+        Some("Coffee Shop")
+    );
+    assert_eq!(
+        transaction.normalized_merchant.as_deref(),
+        Some("starbucks")
+    );
+    assert_eq!(transaction.normalization_source.as_deref(), Some("teller"));
     assert_eq!(transaction.category_primary, "GENERAL_MERCHANDISE");
     assert_eq!(
         transaction.category_detailed,
@@ -211,22 +220,42 @@ fn given_teller_transaction_without_counterparty_when_from_teller_then_uses_desc
 
     let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
-    assert_eq!(transaction.merchant_name, Some("Generic Store".to_string()));
+    assert_eq!(
+        transaction.original_merchant_name.as_deref(),
+        Some("Generic Store")
+    );
+    assert_eq!(transaction.merchant_name, None);
+    assert_eq!(transaction.normalized_merchant, None);
+    assert_eq!(transaction.normalization_source, None);
 }
 
 #[test]
-fn merchant_name_from_teller_falls_back_when_counterparty_name_empty() {
+fn given_teller_transaction_with_empty_counterparty_name_when_from_teller_then_no_provider_merchant(
+) {
+    let account_id = Uuid::new_v4();
     let v = serde_json::json!({
+        "id": "txn_empty_counterparty",
         "description": "Statement line text",
+        "date": "2025-01-15",
+        "amount": "-12.50",
+        "status": "posted",
+        "type": "card_payment",
         "details": {
             "category": "general",
-            "counterparty": { "name": "", "type": "organization" }
-        }
+            "counterparty": { "name": "", "type": "organization" },
+            "processing_status": "complete"
+        },
+        "links": { "account": "/accounts/acc1", "self": "/transactions/txn1" }
     });
+    let transaction = Transaction::from_teller(&v, &account_id, Some("acc_empty_counterparty"));
+
     assert_eq!(
-        Transaction::merchant_name_from_teller(&v),
-        Some("Statement Line Text".to_string())
+        transaction.original_merchant_name.as_deref(),
+        Some("Statement line text")
     );
+    assert_eq!(transaction.merchant_name, None);
+    assert_eq!(transaction.normalized_merchant, None);
+    assert_eq!(transaction.normalization_source, None);
 }
 
 #[test]

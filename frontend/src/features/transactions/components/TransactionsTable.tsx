@@ -14,6 +14,7 @@ import {
 import type { Transaction } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
 import InlineCategoryCell from './InlineCategoryCell';
+import TransactionMerchantLabel from './TransactionMerchantLabel';
 import { TransactionsMobileList } from './TransactionsMobileList';
 import { transactionsRowRecipes } from './transactionsRowRecipes';
 
@@ -240,9 +241,10 @@ export const TransactionsTable: React.FC<Props> = ({
                             'py-3',
                             'align-middle'
                           )}
-                          title={r.originalMerchantName || r.name || r.merchant || '-'}
                         >
-                          <span
+                          <TransactionMerchantLabel
+                            merchantName={r.name}
+                            originalMerchantName={r.originalMerchantName}
                             className={cn(
                               'block',
                               transactionsRowRecipes.merchantEllipsis,
@@ -251,9 +253,7 @@ export const TransactionsTable: React.FC<Props> = ({
                               'transition-colors',
                               'duration-500'
                             )}
-                          >
-                            {r.name || r.merchant || '-'}
-                          </span>
+                          />
                         </td>
                         <td
                           className={cn(

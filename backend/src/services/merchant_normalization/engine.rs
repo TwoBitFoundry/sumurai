@@ -21,8 +21,8 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
             display
         };
         return NormalizedMerchant {
+            canonical_key: Some(canonical_key(&display)),
             display,
-            canonical_key: None,
             source: MatchSource::Enriched,
             confidence: 1.0,
         };
@@ -37,8 +37,8 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     // Stage 3.5: Early structural check — preserve patterns that digit-stripping would destroy
     if let Some(display) = structural_label(&work) {
         return NormalizedMerchant {
+            canonical_key: Some(canonical_key(&display)),
             display,
-            canonical_key: None,
             source: MatchSource::Structural,
             confidence: 0.85,
         };
@@ -48,7 +48,7 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     if let Some(canonical) = lookup_contains(&work, index) {
         return NormalizedMerchant {
             display: canonical.clone(),
-            canonical_key: Some(to_canonical_key(&canonical)),
+            canonical_key: Some(canonical_key(&canonical)),
             source: MatchSource::EarlyContains,
             confidence: 0.95,
         };
@@ -56,7 +56,7 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     if let Some(canonical) = index.exact.get(&work) {
         return NormalizedMerchant {
             display: canonical.clone(),
-            canonical_key: Some(to_canonical_key(canonical)),
+            canonical_key: Some(canonical_key(canonical)),
             source: MatchSource::EarlyExact,
             confidence: 1.0,
         };
@@ -64,6 +64,9 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
 
     // Stage 5: Strip leading payment prefixes (loop until stable)
     let work = strip_leading_prefixes(work);
+
+    // Stage 5.5: Cut at first digit that follows an alpha character (address boundary)
+    let work = cut_at_address_boundary(work);
 
     // Stage 6: Strip trailing tails and codes
     let work = strip_trailing_tails(work);
@@ -84,7 +87,7 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     if let Some(canonical) = lookup_contains(&work, index) {
         return NormalizedMerchant {
             display: canonical.clone(),
-            canonical_key: Some(to_canonical_key(&canonical)),
+            canonical_key: Some(canonical_key(&canonical)),
             source: MatchSource::Contains,
             confidence: 0.9,
         };
@@ -92,7 +95,7 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     if let Some(canonical) = index.exact.get(work.trim()) {
         return NormalizedMerchant {
             display: canonical.clone(),
-            canonical_key: Some(to_canonical_key(canonical)),
+            canonical_key: Some(canonical_key(canonical)),
             source: MatchSource::Exact,
             confidence: 1.0,
         };
@@ -101,8 +104,8 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     // Stage 12: Structural fallback
     if let Some(display) = structural_label(&work) {
         return NormalizedMerchant {
+            canonical_key: Some(canonical_key(&display)),
             display,
-            canonical_key: None,
             source: MatchSource::Structural,
             confidence: 0.85,
         };
@@ -115,8 +118,8 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     let display = finalize(display, &original);
 
     NormalizedMerchant {
+        canonical_key: Some(canonical_key(&display)),
         display,
-        canonical_key: None,
         source: MatchSource::Fallback,
         confidence: 0.5,
     }
@@ -126,7 +129,7 @@ fn collapse_whitespace(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-fn to_canonical_key(name: &str) -> String {
+pub fn canonical_key(name: &str) -> String {
     name.chars()
         .filter(|c| c.is_alphanumeric())
         .map(|c| c.to_ascii_lowercase())
@@ -141,6 +144,15 @@ fn apply_aggregator_split(work: String) -> String {
             if !rest.is_empty() {
                 return rest;
             }
+        }
+    }
+
+    if let Some(rest) = work.strip_prefix("PAYPAL") {
+        let rest = rest
+            .trim_start_matches(|c: char| !c.is_alphanumeric())
+            .trim();
+        if !rest.is_empty() {
+            return rest.to_string();
         }
     }
 
@@ -180,6 +192,50 @@ fn normalize_url(work: &str) -> String {
         .split_whitespace()
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+fn cut_at_address_boundary(work: String) -> String {
+    let work = {
+        let mut tokens = work.split_whitespace();
+        if let Some(first) = tokens.next() {
+            if first.len() >= 3 && first.chars().all(|c| c.is_ascii_digit()) {
+                let rest: Vec<&str> = tokens.collect();
+                if rest.is_empty() {
+                    work
+                } else {
+                    rest.join(" ")
+                }
+            } else {
+                work
+            }
+        } else {
+            work
+        }
+    };
+
+    let mut result = String::new();
+    let mut seen_alpha = false;
+
+    for ch in work.chars() {
+        if ch.is_ascii_alphabetic() {
+            seen_alpha = true;
+            result.push(ch);
+        } else if ch.is_ascii_digit() {
+            if seen_alpha {
+                break;
+            }
+            result.push(ch);
+        } else {
+            result.push(ch);
+        }
+    }
+
+    let trimmed = result.trim().to_string();
+    if trimmed.is_empty() {
+        work
+    } else {
+        collapse_whitespace(&trimmed)
+    }
 }
 
 fn strip_leading_prefixes(mut work: String) -> String {

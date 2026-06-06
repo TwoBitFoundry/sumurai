@@ -7,6 +7,7 @@ mod tests {
     use crate::seed::SUMURAI_DEMO_ORG_CONN_ID;
     use crate::services::cache_service::MockCacheService;
     use crate::services::connection_service::SyncConnectionParams;
+    use crate::services::merchant_normalization::service::MerchantNormalizationService;
     use crate::services::repository_service::MockDatabaseRepository;
     use crate::services::simplefin_connection_service::SimpleFinConnectionService;
     use crate::services::simplefin_org_service::SimpleFinOrganizationService;
@@ -60,6 +61,7 @@ mod tests {
             created_at: Some(Utc::now()),
             original_merchant_name: Some(raw_desc.to_string()),
             normalized_merchant: None,
+            normalization_source: None,
         }
     }
 
@@ -133,10 +135,15 @@ mod tests {
             Arc::new(mock_db);
         let cache_service: Arc<dyn crate::services::cache_service::CacheService> =
             Arc::new(mock_cache);
+        let merchant_normalization_service = Arc::new(MerchantNormalizationService::new(
+            Arc::clone(&db_repository),
+            Arc::clone(&cache_service),
+        ));
 
         let org_service = Arc::new(SimpleFinOrganizationService::new(
             Arc::clone(&db_repository),
             Arc::clone(&cache_service),
+            merchant_normalization_service,
         ));
 
         let provider_registry = Arc::new(ProviderRegistry::new());

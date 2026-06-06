@@ -978,6 +978,20 @@ impl ConnectionService {
             })
             .collect();
 
+        let mut valid_transactions = valid_transactions;
+
+        if let Err(e) = self
+            .merchant_normalization_service
+            .normalize_batch(&mut valid_transactions)
+            .await
+        {
+            tracing::warn!(
+                "Merchant normalization failed for user {}: {}",
+                params.user_id,
+                e
+            );
+        }
+
         for chunk in valid_transactions.chunks(500) {
             if let Err(e) = self
                 .db_repository
@@ -1616,6 +1630,14 @@ impl ConnectionService {
             }
 
             synced_transactions.push(transaction);
+        }
+
+        if let Err(e) = self
+            .merchant_normalization_service
+            .normalize_batch(&mut synced_transactions)
+            .await
+        {
+            tracing::warn!("Merchant normalization failed for user {}: {}", user_id, e);
         }
 
         for chunk in synced_transactions.chunks(500) {

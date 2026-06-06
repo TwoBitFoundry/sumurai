@@ -7,6 +7,8 @@ describe('TransactionTransformer', () => {
         id: 'txn123',
         date: '2024-01-15',
         merchant_name: 'Starbucks',
+        original_merchant_name: 'POS DEBIT STARBUCKS #12345 SEATTLE WA 06/03',
+        normalization_source: 'plaid',
         amount: 5.5,
         category_primary: 'FOOD_AND_DRINK',
         account_name: 'Checking Account',
@@ -18,6 +20,8 @@ describe('TransactionTransformer', () => {
       expect(result.name).toBe('Starbucks');
       expect(result.amount).toBe(5.5);
       expect(result.merchant).toBe('Starbucks');
+      expect(result.originalMerchantName).toBe('POS DEBIT STARBUCKS #12345 SEATTLE WA 06/03');
+      expect(result.normalizationSource).toBe('plaid');
       expect(result.category.primary).toBe('FOOD_AND_DRINK');
       expect(result.account_name).toBe('Checking Account');
       expect(result.account_type).toBe('checking');
@@ -33,7 +37,7 @@ describe('TransactionTransformer', () => {
       };
       const result = TransactionTransformer.backendToFrontend(backendTxn);
       expect(result.name).toBe('Unknown');
-      expect(result.merchant).toBeUndefined();
+      expect(result.merchant).toBe('Unknown');
       expect(result.category.primary).toBe('OTHER');
       expect(result.category.detailed).toBeUndefined();
     });
@@ -80,6 +84,20 @@ describe('TransactionTransformer', () => {
       };
       const result = TransactionTransformer.backendToFrontend(backendTxn);
       expect(result.location).toEqual({ city: 'San Francisco', state: 'CA' });
+    });
+
+    it('should not promote legacy merchant fallback fields into the canonical display name', () => {
+      const backendTxn = {
+        id: 'txn123',
+        date: '2024-01-15',
+        amount: 100,
+        account_name: 'Checking',
+        account_type: 'checking',
+      };
+      const result = TransactionTransformer.backendToFrontend(backendTxn);
+
+      expect(result.name).toBe('Unknown');
+      expect(result.merchant).toBe('Unknown');
     });
   });
 });

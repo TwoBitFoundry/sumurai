@@ -5,6 +5,7 @@ export interface BackendTransaction {
   date: string;
   merchant_name?: string;
   original_merchant_name?: string;
+  normalization_source?: string;
   amount: number;
   category_primary?: string;
   category_detailed?: string;
@@ -18,6 +19,7 @@ export interface BackendTransaction {
 
 export class TransactionTransformer {
   static backendToFrontend(bt: BackendTransaction): Transaction {
+    const merchantName = bt.merchant_name ?? 'Unknown';
     const category: TransactionCategory = {
       primary: bt.category_primary ?? 'OTHER',
     };
@@ -32,9 +34,10 @@ export class TransactionTransformer {
     return {
       id: bt.id,
       date: bt.date,
-      name: bt.merchant_name || 'Unknown',
-      merchant: bt.merchant_name,
+      name: merchantName,
+      merchant: merchantName,
       originalMerchantName: bt.original_merchant_name,
+      normalizationSource: bt.normalization_source,
       amount: bt.amount,
       category,
       account_name: bt.account_name,

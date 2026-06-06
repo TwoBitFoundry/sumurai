@@ -57,6 +57,7 @@ impl From<entity::transactions::Model> for Transaction {
             created_at: opt_fixed_to_utc(m.created_at),
             original_merchant_name: m.original_merchant_name,
             normalized_merchant: m.normalized_merchant,
+            normalization_source: m.normalization_source,
         }
     }
 }
@@ -223,6 +224,7 @@ mod tests {
             created_at: None,
             normalized_merchant: None,
             original_merchant_name: None,
+            normalization_source: None,
         };
         let txn = Transaction::from(m);
         assert!(!txn.pending);

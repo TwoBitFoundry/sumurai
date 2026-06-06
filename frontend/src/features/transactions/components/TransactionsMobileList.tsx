@@ -8,6 +8,7 @@ import { cn, EmptyState } from '@/ui/primitives';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { fmtUSD } from '@/utils/format';
 import InlineCategoryCell from './InlineCategoryCell';
+import TransactionMerchantLabel from './TransactionMerchantLabel';
 import { transactionsRowRecipes } from './transactionsRowRecipes';
 
 interface Props {
@@ -73,8 +74,6 @@ export const TransactionsMobileList: React.FC<Props> = ({
         transition={{ duration: 0.24, ease: [0.22, 0.61, 0.36, 1] }}
       >
         {visibleItems.map((transaction, index) => {
-          const merchant = transaction.name || transaction.merchant || '-';
-          const merchantTooltip = transaction.originalMerchantName || merchant;
           const accountLabel = formatAccountLabel(transaction);
           const metaTitle = accountLabel
             ? `${formatMobileDate(transaction.date)} · ${accountLabel}`
@@ -101,17 +100,18 @@ export const TransactionsMobileList: React.FC<Props> = ({
                   'overflow-hidden'
                 )}
               >
-                <p
-                  className={cn(
-                    'flex-1',
-                    transactionsRowRecipes.merchantEllipsis,
-                    uiTypographyRecipes.bodyStrong,
-                    'leading-snug',
-                    uiTextRecipes.primary
-                  )}
-                  title={merchantTooltip}
-                >
-                  {merchant}
+                <p className={cn('flex-1', 'min-w-0')}>
+                  <TransactionMerchantLabel
+                    merchantName={transaction.name}
+                    originalMerchantName={transaction.originalMerchantName}
+                    className={cn(
+                      'block',
+                      transactionsRowRecipes.merchantEllipsis,
+                      uiTypographyRecipes.bodyStrong,
+                      'leading-snug',
+                      uiTextRecipes.primary
+                    )}
+                  />
                 </p>
                 <p
                   className={cn(

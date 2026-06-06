@@ -107,6 +107,7 @@ fn make_txn(
         created_at: None,
         original_merchant_name: None,
         normalized_merchant: Some(normalized.to_string()),
+        normalization_source: None,
     }
 }
 

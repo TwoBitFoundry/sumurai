@@ -121,6 +121,7 @@ fn test_map_transactions_to_accounts_updates_account_ids() {
         created_at: Some(Utc::now()),
         original_merchant_name: None,
         normalized_merchant: None,
+        normalization_source: None,
     }];
 
     sync_service.map_transactions_to_accounts(&mut transactions, &account_mapping);

@@ -260,6 +260,8 @@ async fn given_authenticated_user_when_get_transactions_with_account_ids_then_re
                     is_custom: false,
                     is_overridden: false,
                     original_merchant_name: None,
+                    normalized_merchant: None,
+                    normalization_source: None,
                 }])
             })
         },
@@ -395,6 +397,8 @@ async fn given_authenticated_user_when_get_transactions_page_two_then_returns_ne
                     is_custom: false,
                     is_overridden: false,
                     original_merchant_name: None,
+                    normalized_merchant: None,
+                    normalization_source: None,
                 })
                 .collect();
             Box::pin(async move { Ok(transactions) })
@@ -902,6 +906,7 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
                     normalized_merchant: None,
+                    normalization_source: None,
                 },
                 Transaction {
                     id: Uuid::new_v4(),
@@ -920,6 +925,7 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
                     normalized_merchant: None,
+                    normalization_source: None,
                 },
             ];
             Box::pin(async { Ok(transactions) })
@@ -1079,6 +1085,7 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
                     normalized_merchant: None,
+                    normalization_source: None,
                 },
                 Transaction {
                     id: Uuid::new_v4(),
@@ -1097,6 +1104,7 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
                     normalized_merchant: None,
+                    normalization_source: None,
                 },
             ];
             Box::pin(async { Ok(transactions) })
@@ -1173,6 +1181,7 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
                     normalized_merchant: None,
+                    normalization_source: None,
                 },
                 Transaction {
                     id: Uuid::new_v4(),
@@ -1191,6 +1200,7 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
                     normalized_merchant: None,
+                    normalization_source: None,
                 },
             ];
             Box::pin(async { Ok(transactions) })
