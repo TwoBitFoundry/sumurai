@@ -143,6 +143,18 @@ fn alias_index_from_seed() -> AliasIndex {
             canonical_name: "Netflix".into(),
             priority: 10,
         },
+        AliasRow {
+            match_type: "contains".into(),
+            match_key: "TURBOTAX".into(),
+            canonical_name: "TurboTax".into(),
+            priority: 10,
+        },
+        AliasRow {
+            match_type: "contains".into(),
+            match_key: "BRAUMS".into(),
+            canonical_name: "Braums".into(),
+            priority: 10,
+        },
     ];
     AliasIndex::from_rows(rows)
 }
@@ -495,13 +507,13 @@ fn given_15th_street_vet_runon_when_normalize_then_15th_street_veterinary() {
 }
 
 #[test]
-fn given_braums_with_leading_store_number_when_normalize_then_braums_store() {
+fn given_braums_with_leading_store_number_when_normalize_then_braums() {
     let result = normalize(
         "103 BRAUMS STORE 550 E 47th St S WICHITA 67216 KS USA",
         MerchantSource::Raw,
         &idx(),
     );
-    assert_eq!(result.display, "Braums Store");
+    assert_eq!(result.display, "Braums");
 }
 
 #[test]
@@ -515,13 +527,13 @@ fn given_progressive_ins_with_address_when_normalize_then_progressive_ins() {
 }
 
 #[test]
-fn given_dep_turbotax_when_normalize_then_turbotax_irs_refund() {
+fn given_dep_turbotax_when_normalize_then_turbotax() {
     let result = normalize(
         "DEP TURBOTAX IRS REFUND - *****0165",
         MerchantSource::Raw,
         &idx(),
     );
-    assert_eq!(result.display, "Turbotax Irs Refund");
+    assert_eq!(result.display, "TurboTax");
 }
 
 #[test]
@@ -625,7 +637,7 @@ fn given_two_digit_leading_token_not_stripped() {
 #[test]
 fn given_three_digit_leading_token_stripped() {
     let result = normalize("103 BRAUMS STORE 550 E", MerchantSource::Raw, &idx());
-    assert_eq!(result.display, "Braums Store");
+    assert_eq!(result.display, "Braums");
 }
 
 #[test]

@@ -465,26 +465,17 @@ where
     Ok(())
 }
 
-pub async fn insert_merchant_alias_seeds_v2<C>(db: &C) -> Result<(), DbErr>
-where
-    C: ConnectionTrait,
-{
-    let now = chrono::Utc::now().fixed_offset();
-
-    for seed in MERCHANT_ALIAS_SEEDS_V2 {
-        merchant_aliases::ActiveModel {
-            id: Set(Uuid::new_v4()),
-            match_type: Set(seed.match_type.to_string()),
-            match_key: Set(seed.match_key.to_string()),
-            canonical_name: Set(seed.canonical_name.to_string()),
-            priority: Set(seed.priority),
-            is_active: Set(true),
-            created_at: Set(now),
-            updated_at: Set(now),
-        }
-        .insert(db)
-        .await?;
-    }
-
-    Ok(())
-}
+pub const MERCHANT_ALIAS_SEEDS_V3: &[MerchantAliasSeed] = &[
+    MerchantAliasSeed {
+        match_type: "contains",
+        match_key: "TURBOTAX",
+        canonical_name: "TurboTax",
+        priority: 10,
+    },
+    MerchantAliasSeed {
+        match_type: "contains",
+        match_key: "BRAUMS",
+        canonical_name: "Braums",
+        priority: 10,
+    },
+];

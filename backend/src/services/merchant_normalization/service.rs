@@ -42,6 +42,7 @@ impl MerchantNormalizationService {
                 migration::merchant_alias_seeds::MERCHANT_ALIAS_SEEDS
                     .iter()
                     .chain(migration::merchant_alias_seeds::MERCHANT_ALIAS_SEEDS_V2.iter())
+                    .chain(migration::merchant_alias_seeds::MERCHANT_ALIAS_SEEDS_V3.iter())
                     .map(|seed| AliasRow {
                         match_type: seed.match_type.to_string(),
                         match_key: seed.match_key.to_string(),
