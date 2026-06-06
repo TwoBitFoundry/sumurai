@@ -9,7 +9,7 @@ import {
   accountTypeSortOrder,
 } from '../domain/accountCategories';
 import { getConnectionStatusCaption } from '../domain/connectionStatus';
-import { cn, GlassCard, IconButton, MenuDropdown, MenuItem } from '../ui/primitives';
+import { Button, cn, GlassCard, IconButton, MenuDropdown, MenuItem } from '../ui/primitives';
 import { appTitleBarRecipes } from '../ui/primitives/AppTitleBar';
 import {
   control,
@@ -146,31 +146,17 @@ export const BankCard: React.FC<BankCardProps> = ({
       containerClassName={cn('p-4', 'md:p-5', 'lg:p-5')}
       className={cn('space-y-6')}
     >
-      <div
-        className={cn(
-          'grid',
-          'min-w-0',
-          'grid-cols-[minmax(0,1fr)_auto]',
-          'gap-x-3',
-          'gap-y-2',
-          statusCaption ? 'grid-rows-[auto_auto_auto]' : 'grid-rows-[auto_auto]'
-        )}
-      >
+      <div className={cn('min-w-0', 'space-y-2')}>
         <div
           className={cn(
-            'col-start-1',
-            'row-start-1',
-            'row-span-2',
             'grid',
             'min-w-0',
-            'items-center',
-            'gap-2',
+            'grid-cols-[auto_minmax(0,1fr)]',
+            'gap-x-2',
+            'gap-y-1',
             'px-3',
             'pt-3',
-            'pb-3',
-            showSyncButton
-              ? 'grid-cols-[auto_auto_minmax(0,1fr)]'
-              : 'grid-cols-[auto_minmax(0,1fr)]'
+            statusCaption ? 'pb-1' : 'pb-3'
           )}
         >
           <div
@@ -189,7 +175,7 @@ export const BankCard: React.FC<BankCardProps> = ({
           <h3
             title={bank.name}
             className={cn(
-              showSyncButton ? 'col-start-3' : 'col-start-2',
+              'col-start-2',
               'row-start-1',
               'min-w-0',
               'line-clamp-2',
@@ -200,60 +186,59 @@ export const BankCard: React.FC<BankCardProps> = ({
           >
             {bank.name}
           </h3>
-          <IconButton
-            type="button"
-            size="md"
-            onClick={() => setExpanded((v) => !v)}
-            variant="ghost"
-            aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
+          <div
             className={cn(
-              appTitleBarRecipes.settingsIdle,
+              'col-span-2',
               'col-start-1',
               'row-start-2',
-              'shrink-0',
-              'justify-self-center'
+              'flex',
+              'min-w-0',
+              'flex-wrap',
+              'items-center',
+              'gap-2'
             )}
           >
-            <ChevronDown
-              className={cn('transition-transform', 'duration-200', expanded && 'rotate-180')}
-            />
-          </IconButton>
-          {showSyncButton ? (
             <IconButton
               type="button"
               size="md"
-              onClick={handleSync}
-              disabled={loading || !isOnline}
+              onClick={() => setExpanded((v) => !v)}
               variant="ghost"
-              aria-label="Sync now"
-              title={!isOnline ? 'Unavailable while offline' : undefined}
-              className={cn(
-                appTitleBarRecipes.settingsIdle,
-                'col-start-2',
-                'row-start-2',
-                'shrink-0',
-                'justify-self-center'
-              )}
+              aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
+              className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
             >
-              <div className={cn('flex', 'flex-col', 'items-center', 'gap-0.5', control.glyph.md)}>
-                <RefreshCw className={cn(loading && 'animate-spin')} />
-                {loading && syncElapsed > 0 && (
-                  <span
-                    className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted, 'tabular-nums')}
-                  >
-                    {syncElapsed}s
-                  </span>
-                )}
-              </div>
+              <ChevronDown
+                className={cn('transition-transform', 'duration-200', expanded && 'rotate-180')}
+              />
             </IconButton>
-          ) : null}
-          <div
-            className={cn(
-              showSyncButton ? 'col-start-3' : 'col-start-2',
-              'row-start-2',
-              'justify-self-start'
-            )}
-          >
+            {showSyncButton ? (
+              <IconButton
+                type="button"
+                size="md"
+                onClick={handleSync}
+                disabled={loading || !isOnline}
+                variant="ghost"
+                aria-label="Sync now"
+                title={!isOnline ? 'Unavailable while offline' : undefined}
+                className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
+              >
+                <div
+                  className={cn('flex', 'flex-col', 'items-center', 'gap-0.5', control.glyph.md)}
+                >
+                  <RefreshCw className={cn(loading && 'animate-spin')} />
+                  {loading && syncElapsed > 0 && (
+                    <span
+                      className={cn(
+                        uiTypographyRecipes.caption,
+                        uiTextRecipes.muted,
+                        'tabular-nums'
+                      )}
+                    >
+                      {syncElapsed}s
+                    </span>
+                  )}
+                </div>
+              </IconButton>
+            ) : null}
             <MenuDropdown
               trigger={
                 <IconButton
@@ -280,35 +265,33 @@ export const BankCard: React.FC<BankCardProps> = ({
               <MenuItem onClick={() => void handleExport('csv')}>Export as CSV</MenuItem>
               <MenuItem onClick={() => void handleExport('ofx')}>Export as OFX</MenuItem>
             </MenuDropdown>
+            <Button
+              type="button"
+              variant="danger"
+              size="md"
+              onClick={handleDisconnectClick}
+              aria-label="Disconnect"
+              className={cn(
+                'ml-auto',
+                'shrink-0',
+                'normal-case',
+                'aspect-square',
+                'px-0',
+                'md:aspect-auto',
+                'md:gap-2',
+                'md:px-3'
+              )}
+            >
+              <Unlink className={cn(control.glyph.md)} />
+              <span className={cn('hidden', 'md:inline')}>Disconnect</span>
+            </Button>
           </div>
-        </div>
-        <div
-          className={cn(
-            'col-start-2',
-            'row-start-1',
-            'row-span-2',
-            'flex',
-            'items-center',
-            'self-center',
-            'pr-3'
-          )}
-        >
-          <IconButton
-            type="button"
-            size="md"
-            onClick={handleDisconnectClick}
-            variant="danger"
-            aria-label="Disconnect"
-            className={cn('shrink-0')}
-          >
-            <Unlink />
-          </IconButton>
         </div>
         {statusCaption ? (
           <p
             className={cn(
-              'col-span-2',
-              'row-start-3',
+              'px-3',
+              'pb-3',
               uiTypographyRecipes.caption,
               ...(bank.status === 'needs_reauth'
                 ? uiStatusRecipes.warning.text

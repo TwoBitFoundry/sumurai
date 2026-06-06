@@ -8,9 +8,15 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useRef, useState } from 'react';
-import { Button, cn, GlassCard } from '@/ui/primitives';
+import { Button, cn, GlassCard, IconButton } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { control, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import {
+  control,
+  controlIconWell,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
+import { heroAccents } from '@/ui/tokens';
 import { ToastStack } from '../components/toastStack/ToastStack';
 import HeroStatCard from '../components/widgets/HeroStatCard';
 import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToastStack';
@@ -80,25 +86,29 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
         ? `⚠ ${formatCategoryName(topCategories[0])}`
         : `⚠ ${formatCategoryName(topCategories[0])} & ${formatCategoryName(topCategories[1])}`;
   const actions = (
-    <div className="inline-flex max-w-full flex-col items-center gap-2">
-      <Button
-        type="button"
-        onClick={() => void autoCategorization.handleAction()}
-        disabled={!isOnline || autoCategorization.isPending}
-        variant="ghost"
-        size="md"
-        className={cn(appTitleBarRecipes.settingsIdle, 'normal-case')}
-        title={
-          !isOnline ? 'Unavailable while offline' : (autoCategorization.progressLabel ?? undefined)
-        }
-      >
-        {autoCategorization.isPending ? (
-          <Loader2 className={cn(control.glyph.md, 'animate-spin')} />
-        ) : (
-          <WandSparkles className={cn(control.glyph.md)} />
-        )}
-        {autoCategorization.isActive ? 'Cancel' : 'Categorize'}
-      </Button>
+    <div className={cn('flex', 'w-full', 'justify-end', 'lg:w-auto', 'lg:justify-start')}>
+      <div className="inline-flex max-w-full flex-col items-center gap-2">
+        <Button
+          type="button"
+          onClick={() => void autoCategorization.handleAction()}
+          disabled={!isOnline || autoCategorization.isPending}
+          variant={autoCategorization.isActive ? 'danger' : 'primary'}
+          size="md"
+          className={cn('normal-case')}
+          title={
+            !isOnline
+              ? 'Unavailable while offline'
+              : (autoCategorization.progressLabel ?? undefined)
+          }
+        >
+          {autoCategorization.isPending ? (
+            <Loader2 className={cn(control.glyph.md, 'animate-spin')} />
+          ) : (
+            <WandSparkles className={cn(control.glyph.md)} />
+          )}
+          {autoCategorization.isActive ? 'Cancel' : 'Categorize'}
+        </Button>
+      </div>
     </div>
   );
 
@@ -172,7 +182,22 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
             )}
           >
             <div className={cn('space-y-1')}>
-              <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+              <h2
+                className={cn(
+                  'flex',
+                  'min-w-0',
+                  'items-center',
+                  'gap-2',
+                  uiTypographyRecipes.sectionTitle,
+                  uiTextRecipes.primary
+                )}
+              >
+                <span
+                  className={cn(...controlIconWell.lg, heroAccents.emerald.icon)}
+                  aria-hidden="true"
+                >
+                  <ReceiptText />
+                </span>
                 Transactions
               </h2>
               <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
@@ -180,19 +205,20 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
                 categories.
               </p>
             </div>
-            <Button
+            <IconButton
               ref={addCategoryButtonRef}
               type="button"
               onClick={() => setIsCategoryCatalogOpen((open) => !open)}
-              variant="primary"
+              variant="ghost"
               size="md"
+              aria-label="Categories"
+              title="Categories"
               aria-expanded={isCategoryCatalogOpen}
               aria-haspopup="dialog"
-              className={cn('w-full', 'sm:w-auto', 'sm:shrink-0', 'whitespace-nowrap')}
+              className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
             >
-              <Settings className={control.glyph.md} />
-              Categories
-            </Button>
+              <Settings />
+            </IconButton>
           </div>
           <CategoryCatalogPicker
             open={isCategoryCatalogOpen}

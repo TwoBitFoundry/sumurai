@@ -677,52 +677,56 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     ? `Refreshed ${formatAbsoluteTime(summary.latestSync)}`
     : '';
   const actions = (
-    <div className="inline-flex max-w-full flex-col items-center gap-2">
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        {summary.institutions > 0 && (
-          <IconButton
-            type="button"
-            onClick={syncAll}
-            disabled={syncingAll || !isOnline}
-            variant="ghost"
-            size="md"
-            aria-label={syncingAll ? 'Syncing all institutions' : 'Sync all'}
-            className={cn(appTitleBarRecipes.settingsIdle)}
-            title={
-              syncingAll
-                ? 'Syncing all institutions'
-                : !isOnline
-                  ? 'Unavailable while offline'
-                  : 'Sync all'
-            }
-          >
-            <RefreshCw className={cn(syncingAll && 'animate-spin')} />
-          </IconButton>
-        )}
-        <MenuDropdown
-          trigger={
+    <div className={cn('inline-flex', 'max-w-full', 'w-full', 'flex-col', 'gap-2', 'lg:w-auto')}>
+      <div
+        className={cn('flex', 'w-full', 'flex-wrap', 'items-center', 'justify-between', 'gap-3')}
+      >
+        <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-3')}>
+          {summary.institutions > 0 && (
             <IconButton
               type="button"
+              onClick={syncAll}
+              disabled={syncingAll || !isOnline}
               variant="ghost"
               size="md"
+              aria-label={syncingAll ? 'Syncing all institutions' : 'Sync all'}
               className={cn(appTitleBarRecipes.settingsIdle)}
-              disabled={isExporting || !isOnline}
-              aria-label={isExporting ? 'Exporting all institutions' : 'Export All'}
               title={
-                isExporting
-                  ? 'Export all in progress'
+                syncingAll
+                  ? 'Syncing all institutions'
                   : !isOnline
                     ? 'Unavailable while offline'
-                    : 'Export all'
+                    : 'Sync all'
               }
             >
-              <Download className={cn(isExporting && 'animate-pulse')} />
+              <RefreshCw className={cn(syncingAll && 'animate-spin')} />
             </IconButton>
-          }
-        >
-          <MenuItem onClick={() => void exportAccounts('csv')}>Export as CSV</MenuItem>
-          <MenuItem onClick={() => void exportAccounts('ofx')}>Export as OFX</MenuItem>
-        </MenuDropdown>
+          )}
+          <MenuDropdown
+            trigger={
+              <IconButton
+                type="button"
+                variant="ghost"
+                size="md"
+                className={cn(appTitleBarRecipes.settingsIdle)}
+                disabled={isExporting || !isOnline}
+                aria-label={isExporting ? 'Exporting all institutions' : 'Export All'}
+                title={
+                  isExporting
+                    ? 'Export all in progress'
+                    : !isOnline
+                      ? 'Unavailable while offline'
+                      : 'Export all'
+                }
+              >
+                <Download className={cn(isExporting && 'animate-pulse')} />
+              </IconButton>
+            }
+          >
+            <MenuItem onClick={() => void exportAccounts('csv')}>Export as CSV</MenuItem>
+            <MenuItem onClick={() => void exportAccounts('ofx')}>Export as OFX</MenuItem>
+          </MenuDropdown>
+        </div>
         <ConnectButton
           onClick={handlePrimaryConnect}
           disabled={connectDisabled}

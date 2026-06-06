@@ -157,8 +157,11 @@ describe('shared UI recipes', () => {
     expect(settingsSecurityLayout.passkeyRow).toEqual(
       expect.arrayContaining(['flex-col', 'md:flex-row', 'lg:gap-4'])
     );
+    expect(settingsSecurityLayout.sectionHeader).toEqual(
+      expect.arrayContaining(['flex-col', 'md:flex-row', 'md:justify-between'])
+    );
     expect(settingsSecurityLayout.addTrigger).toEqual(
-      expect.arrayContaining(['w-full', 'md:w-auto', 'lg:w-auto'])
+      expect.arrayContaining(['w-full', 'shrink-0', 'md:w-auto'])
     );
     expect(settingsSecurityLayout.modalActions).toEqual(
       expect.arrayContaining(['flex-col', 'md:flex-row'])

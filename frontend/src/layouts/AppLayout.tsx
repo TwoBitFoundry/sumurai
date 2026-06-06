@@ -166,7 +166,7 @@ export function AppLayout({
                     className={cn(
                       'relative z-10 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300',
                       uiTypographyRecipes.bodyStrong,
-                      currentTab === key ? 'max-w-[8rem] opacity-100' : 'max-w-0 opacity-0'
+                      currentTab === key ? 'max-w-[13ch] opacity-100' : 'max-w-0 opacity-0'
                     )}
                   >
                     <span className={cn(currentTab === key && 'ml-1.5')}>{label}</span>

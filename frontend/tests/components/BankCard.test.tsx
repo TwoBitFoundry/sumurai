@@ -172,8 +172,10 @@ describe('BankCard', () => {
     const heading = screen.getByRole('heading', { name: 'Chase' });
     const headerGrid = heading.parentElement;
     expect(headerGrid).toHaveClass('grid');
-    expect(headerGrid).toHaveClass('items-center');
+    expect(headerGrid).toHaveClass('grid-cols-[auto_minmax(0,1fr)]');
     expect(headerGrid).toHaveClass('px-3');
+    expect(heading).toHaveClass('col-start-2');
+    expect(heading).toHaveClass('row-start-1');
     expect(
       within(headerGrid as HTMLElement).getByRole('status', { name: 'Connected' })
     ).toBeVisible();
@@ -187,13 +189,8 @@ describe('BankCard', () => {
       within(headerGrid as HTMLElement).getByRole('button', { name: 'Export institution data' })
     ).toBeVisible();
     expect(
-      within(headerGrid as HTMLElement).queryByRole('button', { name: 'Disconnect' })
-    ).not.toBeInTheDocument();
-
-    const disconnectButton = screen.getByRole('button', { name: 'Disconnect' });
-    expect(disconnectButton.parentElement).toHaveClass('row-span-2');
-    expect(disconnectButton.parentElement).toHaveClass('items-center');
-    expect(headerGrid).not.toContainElement(disconnectButton);
+      within(headerGrid as HTMLElement).getByRole('button', { name: 'Disconnect' })
+    ).toBeVisible();
   });
 
   it('shows connection status before the bank name', () => {
