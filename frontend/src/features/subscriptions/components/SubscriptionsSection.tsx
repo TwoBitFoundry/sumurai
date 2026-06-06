@@ -15,9 +15,11 @@ export function SubscriptionsSection({
   return (
     <section className={cn('space-y-4')} data-testid="subscriptions-section">
       <div className={cn('space-y-1')}>
-        <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>Vows</h2>
+        <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+          Subscriptions
+        </h2>
         <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
-          Surfaced recurring vows from transaction history.
+          Surfaced recurring subscriptions from transaction history.
         </p>
       </div>
       <SubscriptionList subscriptions={subscriptions} isLoading={isLoading} />

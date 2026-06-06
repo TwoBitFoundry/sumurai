@@ -219,12 +219,12 @@ describe('AccountsPage', () => {
     expect(screen.getByTestId('accounts-page')).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {
-        name: /unite ally institutions under one domain/i,
+        name: /unite your financial allies with teller/i,
       })
     ).toBeVisible();
     expect(screen.getByText('Unavailable while offline')).toBeVisible();
     const tellerButton = screen.getAllByRole('button', {
-      name: /^connect teller to an ally$/i,
+      name: /^link account$/i,
     })[0];
     expect(tellerButton).toBeDisabled();
     expect(tellerButton.querySelector('img')).toHaveAttribute('src', '/teller.webp');
@@ -258,7 +258,7 @@ describe('AccountsPage', () => {
 
     const syncAllButton = screen.getByRole('button', { name: 'Sync all' });
     const exportAllButton = screen.getByRole('button', { name: 'Export All' });
-    const connectButton = screen.getByRole('button', { name: /^connect teller to an ally$/i });
+    const connectButton = screen.getByRole('button', { name: /^link account$/i });
 
     expect(
       syncAllButton.compareDocumentPosition(exportAllButton) & Node.DOCUMENT_POSITION_FOLLOWING
@@ -341,7 +341,7 @@ describe('AccountsPage', () => {
 
     const heroSection = screen
       .getByRole('heading', {
-        name: /unite ally institutions under one domain/i,
+        name: /unite your financial allies with teller/i,
       })
       .closest('section');
     expect(heroSection).toBeTruthy();
@@ -450,7 +450,7 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    const plaidButton = screen.getByRole('button', { name: /^connect plaid to an ally$/i });
+    const plaidButton = screen.getByRole('button', { name: /^link account$/i });
     expect(plaidButton.querySelector('img')).toHaveAttribute('src', '/plaid.webp');
   });
 
@@ -622,7 +622,7 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    await user.click(screen.getByRole('button', { name: /^connect simplefin to an ally$/i }));
+    await user.click(screen.getByRole('button', { name: /^link account$/i }));
 
     expect(
       screen.getByRole('dialog', { name: /connect your simplefin bridge/i })
@@ -777,7 +777,7 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    expect(screen.getByRole('button', { name: /^connect plaid to an ally$/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^link account$/i })).toBeEnabled();
   });
 
   it('falls back to plaid connect when teller is selected but not configured', () => {
@@ -811,10 +811,10 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    expect(screen.getByRole('button', { name: /^connect plaid to an ally$/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^link account$/i })).toBeEnabled();
     expect(
-      screen.queryByRole('button', { name: /^connect teller to an ally$/i })
-    ).not.toBeInTheDocument();
+      screen.getByRole('button', { name: /^link account$/i }).querySelector('img')
+    ).toHaveAttribute('src', '/plaid.webp');
   });
 
   describe('provider picker fallback', () => {
@@ -832,7 +832,7 @@ describe('AccountsPage', () => {
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       expect(
         screen.queryByRole('heading', {
-          name: /unite ally institutions under one domain/i,
+          name: /unite your financial allies/i,
         })
       ).not.toBeInTheDocument();
     });
@@ -870,7 +870,7 @@ describe('AccountsPage', () => {
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       expect(
         screen.queryByRole('heading', {
-          name: /unite ally institutions under one domain/i,
+          name: /unite your financial allies/i,
         })
       ).not.toBeInTheDocument();
       for (const button of screen.getAllByRole('button', { name: /^connect$/i })) {
@@ -919,7 +919,7 @@ describe('AccountsPage', () => {
       expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
       expect(
         screen.getByRole('heading', {
-          name: /unite ally institutions under one domain/i,
+          name: /unite your financial allies/i,
         })
       ).toBeInTheDocument();
     });

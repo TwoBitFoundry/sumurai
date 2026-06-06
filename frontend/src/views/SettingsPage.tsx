@@ -68,9 +68,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         <GlassCard variant="default" padding="lg">
           <div className={cn('space-y-5')}>
             <div className={cn('space-y-2')}>
-              <span className={pageLayoutRecipes.badge}>Settings</span>
               <h1 className={pageLayoutRecipes.title}>Inspect the armory</h1>
-              <p className={pageLayoutRecipes.subtitle}>Take matters into your own hands.</p>
+              <p className={pageLayoutRecipes.subtitle}>
+                Manage your security, profile, and account preferences.
+              </p>
             </div>
 
             {userEmail && (
@@ -84,7 +85,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
             <section className={cn('space-y-3')}>
               <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-                Choose your banners
+                Brandish your colors
               </h2>
               <ThemeModeSelector value={preference} onChange={setPreference} />
             </section>

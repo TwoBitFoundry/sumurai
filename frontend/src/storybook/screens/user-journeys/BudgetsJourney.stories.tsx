@@ -101,7 +101,7 @@ export const Journey: Story = {
       expect(canvas.getByText(/provision the coffers/i)).toBeVisible();
       expect(canvas.getByText('Spotify')).toBeVisible();
       expect(canvas.getByText('Netflix')).toBeVisible();
-      expect(canvas.getByText('monthly vows')).toBeVisible();
+      expect(canvas.getByText('Recurring subscriptions')).toBeVisible();
     });
     await waitFor(() => {
       expect(canvas.getByRole('button', { name: /next month/i })).toBeVisible();

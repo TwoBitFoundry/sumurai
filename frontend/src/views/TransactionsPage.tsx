@@ -2,7 +2,7 @@ import { AlertTriangle, Loader2, ReceiptText, TrendingUp, WandSparkles } from 'l
 import type React from 'react';
 import { Button, cn, GlassCard } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { control } from '@/ui/recipes';
+import { control, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { ToastStack } from '../components/toastStack/ToastStack';
 import HeroStatCard from '../components/widgets/HeroStatCard';
 import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToastStack';
@@ -35,6 +35,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
     totalPages,
     tableAnimationKey,
     dateRange,
+    categories,
   } = useTransactions({ pageSize: 8, filterControl });
   const {
     insights,
@@ -61,7 +62,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
   const avgTransaction = insights?.average_amount ?? 0;
   const largestTransaction = insights?.largest ?? null;
   const topCategories = insights?.top_categories ?? [];
-  const { all: categories, custom } = useCategories();
+  const { custom } = useCategories();
   const categoryDriver =
     loadingMessage || topCategories.length === 0
       ? null
@@ -94,9 +95,8 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
   return (
     <div data-testid="transactions-page">
       <PageLayout
-        badge="Transactions"
-        title="Tally the ledgers across allies"
-        subtitle="Every movement, accounted for, categorized, and within reach."
+        title="Tally the ledgers across financial allies"
+        subtitle="Review, categorize, and track transactions from all your connected bank accounts."
         actions={actions}
         error={error}
         stats={
@@ -148,6 +148,15 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
           withInnerEffects={false}
           className={cn('relative', 'z-10')}
         >
+          <div className={cn('space-y-1', 'px-3', 'pt-6', 'md:px-6')}>
+            <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+              Transactions
+            </h2>
+            <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
+              Search or filter your transactions by category or keywords. Add or customize the
+              categories.
+            </p>
+          </div>
           <TransactionsToolbar
             search={search}
             onSearch={setSearch}

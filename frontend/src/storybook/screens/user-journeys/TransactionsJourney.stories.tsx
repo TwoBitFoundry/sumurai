@@ -57,7 +57,7 @@ export const Journey: Story = {
     const canvas = within(canvasElement);
     await waitFor(() => {
       expect(
-        canvas.getByRole('heading', { name: /tally the ledgers across allies/i })
+        canvas.getByRole('heading', { name: /tally the ledgers across financial allies/i })
       ).toBeVisible();
     });
 

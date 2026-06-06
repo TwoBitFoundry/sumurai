@@ -15,9 +15,9 @@ describe('SubscriptionsSection', () => {
   it('shows heading and subtitle without hero metrics', () => {
     render(<SubscriptionsSection subscriptions={[]} isLoading={false} />);
 
-    expect(screen.getByText('Vows')).toBeInTheDocument();
-    expect(screen.queryByText('monthly vows')).not.toBeInTheDocument();
-    expect(screen.queryByText('annualized vows')).not.toBeInTheDocument();
+    expect(screen.getByText('Subscriptions')).toBeInTheDocument();
+    expect(screen.queryByText('Recurring subscriptions')).not.toBeInTheDocument();
+    expect(screen.queryByText('Annualized subscriptions')).not.toBeInTheDocument();
   });
 
   it('shows empty state when there are no subscriptions', () => {

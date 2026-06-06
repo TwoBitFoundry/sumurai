@@ -33,7 +33,8 @@ const TopMerchantsListFn: React.FC<Props> = ({ merchants, className = '' }) => {
         <div
           className={cn(
             'grid',
-            'grid-cols-[repeat(auto-fit,minmax(min(100%,33rem),1fr))]',
+            'grid-cols-1',
+            'md:grid-cols-2',
             'gap-[length:var(--spacing-compact-gap)]'
           )}
         >
@@ -65,7 +66,7 @@ const TopMerchantsListFn: React.FC<Props> = ({ merchants, className = '' }) => {
           <EmptyState
             icon={MapPin}
             title="No merchants ranked yet"
-            description="No spending recorded for this period."
+            description="No merchants recorded for this period."
           />
         </div>
       )}

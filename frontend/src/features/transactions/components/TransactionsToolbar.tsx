@@ -12,7 +12,7 @@ interface TransactionsToolbarProps {
   onSelectCategory: (c: string | null) => void;
 }
 
-const toolbarShell = ['border-b px-3 pb-4 pt-6 md:px-6', ...semanticBorders.subtle] as const;
+const toolbarShell = ['border-b px-3 pb-4 pt-4 md:px-6', ...semanticBorders.subtle] as const;
 
 export const TransactionsToolbar = ({
   search,

@@ -27,14 +27,14 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         />
         <HeroStatCard
           index={2}
-          title="monthly vows"
+          title="Recurring subscriptions"
           icon={<Repeat2 />}
           value="$25.98"
           suffix="per month"
         />
         <HeroStatCard
           index={3}
-          title="annualized vows"
+          title="Annualized subscriptions"
           icon={<CalendarClock />}
           value="$311.76"
           suffix="per year"
@@ -65,14 +65,14 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         />
         <HeroStatCard
           index={2}
-          title="monthly vows"
+          title="Recurring subscriptions"
           icon={<Repeat2 />}
           value="$0.00"
           suffix="per month"
         />
         <HeroStatCard
           index={3}
-          title="annualized vows"
+          title="Annualized subscriptions"
           icon={<CalendarClock />}
           value="$0.00"
           suffix="per year"
@@ -98,9 +98,8 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
   return (
     <div data-testid="budgets-page">
       <PageLayout
-        badge="Budgets"
         title="Budgets under command"
-        subtitle="Cut through the budgeting fog of war."
+        subtitle="Set your spending limits and track your subscriptions."
         error={errorMessage}
         stats={heroStats}
       >
@@ -136,7 +135,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
               >
                 <div className={cn('space-y-1')}>
                   <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-                    Allowances
+                    Budgets
                   </h2>
                   <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
                     Establish allowances to take command of spending.

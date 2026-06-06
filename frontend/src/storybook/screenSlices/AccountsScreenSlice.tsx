@@ -71,7 +71,7 @@ export function AccountsConnectedScreenSlice(props: {
         </Button>
       ) : null}
       <ConnectButton onClick={() => {}} disabled={false}>
-        Add account
+        Link Account
       </ConnectButton>
     </>
   );
@@ -88,9 +88,8 @@ export function AccountsConnectedScreenSlice(props: {
   return (
     <div data-testid="accounts-page">
       <PageLayout
-        badge="Plaid Accounts"
-        title="Sworn accounts & allies"
-        subtitle="Bind your financial houses. Link institutions and keep every balance true."
+        title="Unite your financial allies with Plaid"
+        subtitle="Securely link and sync accounts on-demand, view balances, and import or export your data any time."
         actions={actions}
         stats={statsGrid}
       >

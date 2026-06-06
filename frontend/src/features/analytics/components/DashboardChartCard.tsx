@@ -43,7 +43,7 @@ export const DashboardChartCard = ({
     >
       <div className={cn('mb-3', 'md:mb-4', 'flex', 'items-center', 'justify-between')}>
         <div>
-          <h3 className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>{title}</h3>
+          <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>{title}</h2>
           {description && (
             <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>{description}</p>
           )}

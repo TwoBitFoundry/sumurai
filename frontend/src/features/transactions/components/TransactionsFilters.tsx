@@ -152,6 +152,7 @@ export const TransactionsFilters: React.FC<Props> = ({
                 'items-center',
                 'gap-1',
                 'overflow-x-auto',
+                'px-1',
                 'pb-1',
                 'pt-1'
               )}

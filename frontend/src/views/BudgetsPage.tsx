@@ -141,14 +141,14 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
         />
         <HeroStatCard
           index={2}
-          title="monthly vows"
+          title="Recurring subscriptions"
           icon={<Repeat2 />}
           value={monthlyRecurringValue}
           suffix="per month"
         />
         <HeroStatCard
           index={3}
-          title="annualized vows"
+          title="Annualized subscriptions"
           icon={<CalendarClock />}
           value={annualizedValue}
           suffix="per year"
@@ -171,9 +171,8 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
   return (
     <div data-testid="budgets-page">
       <PageLayout
-        badge="Budgets"
         title="Provision the coffers"
-        subtitle="Name allowances. Honor vows. Life is a succession of single moments; the seasons do not pause for an unready mind."
+        subtitle="Set your spending limits and track your subscriptions."
         error={errorMessage}
         stats={heroStats}
       >
@@ -209,7 +208,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
               >
                 <div className={cn('space-y-1')}>
                   <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-                    Allowances
+                    Budgets
                   </h2>
                   <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
                     Establish allowances to take command of spending.
@@ -245,7 +244,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
                 <EmptyState
                   icon={Target}
                   title="No budgets yet"
-                  description="Establish your first allowance to see your progress."
+                  description="Set your first budget to see your progress."
                   data-testid="budgets-empty-state"
                 />
               )}

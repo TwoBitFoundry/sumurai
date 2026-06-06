@@ -20,13 +20,13 @@ describe('TopMerchantsList', () => {
     } as any);
   });
 
-  it('uses a single column on smaller layouts', () => {
+  it('uses one column on mobile and two columns on tablet and desktop', () => {
     const { container } = render(<TopMerchantsList merchants={sampleTopMerchants} />);
 
     expect(container.firstElementChild).toHaveClass('flex', 'flex-col');
-    expect(container.querySelector('.grid')).toHaveClass(
-      'grid-cols-[repeat(auto-fit,minmax(min(100%,33rem),1fr))]'
-    );
+    const grid = container.querySelector('.grid');
+    expect(grid).toHaveClass('grid-cols-1');
+    expect(grid).toHaveClass('md:grid-cols-2');
     expect(screen.getByText('Corner Market')).toBeInTheDocument();
     expect(screen.getByText('14 items')).toBeInTheDocument();
   });

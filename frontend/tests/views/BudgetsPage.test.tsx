@@ -76,7 +76,7 @@ describe('BudgetsPage', () => {
     jest.mocked(useBudgets).mockReturnValue(baseUseBudgetsMock as any);
   });
 
-  it('renders hero row in Days remaining, monthly vows, annualized vows, Overages order', () => {
+  it('renders hero row in Days remaining, recurring subscriptions, annualized subscriptions, Overages order', () => {
     jest.mocked(useBudgets).mockReturnValue({
       ...baseUseBudgetsMock,
       subscriptions: [makeSubscription('Spotify')],
@@ -84,11 +84,13 @@ describe('BudgetsPage', () => {
 
     render(<BudgetsPage monthControl={monthControl} />);
 
-    const titles = screen.getAllByText(/Days remaining|monthly vows|annualized vows|Overages/);
+    const titles = screen.getAllByText(
+      /Days remaining|Recurring subscriptions|Annualized subscriptions|Overages/
+    );
     expect(titles.map((node) => node.textContent)).toEqual([
       'Days remaining',
-      'monthly vows',
-      'annualized vows',
+      'Recurring subscriptions',
+      'Annualized subscriptions',
       'Overages',
     ]);
     expect(screen.queryByText('Active budgets')).not.toBeInTheDocument();

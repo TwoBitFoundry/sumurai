@@ -34,11 +34,7 @@ import type { FinancialProvider } from '../types/api';
 import type { ProviderCatalogue } from '../types/providerCatalog';
 import { dispatchAccountsChanged } from '../utils/events';
 import { formatUserFacingApiError } from '../utils/formatUserFacingApiError';
-import {
-  getConnectAccountProviderContent,
-  getProviderCardConfig,
-  getProviderLogoSrc,
-} from '../utils/providerCards';
+import { getProviderCardConfig, getProviderLogoSrc } from '../utils/providerCards';
 import {
   refreshFinancialDataAfterProviderChange,
   type SyncProvider,
@@ -109,8 +105,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     return providerCatalog.resolveConnectProvider(preferred);
   }, [providerCatalog]);
   const primaryProviderCard = getProviderCardConfig(primaryProvider);
-  const primaryConnectContent = getConnectAccountProviderContent(primaryProvider);
   const providerLabel = primaryProviderCard.title;
+  const connectAccountLabel = 'Link Account';
   const providerLogoSrc = getProviderLogoSrc(primaryProvider);
   const { isExporting, error: exportError, toast: exportToast, exportAccounts } = useExport();
 
@@ -727,7 +723,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           title={!isOnline ? 'Unavailable while offline' : undefined}
           leadingImageSrc={providerLogoSrc}
         >
-          {primaryConnectContent.cta.defaultLabel}
+          {connectAccountLabel}
         </ConnectButton>
       </div>
       {!isOnline && (
@@ -785,9 +781,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     <div data-testid="accounts-page">
       {connectionFlow.connectionMount}
       <PageLayout
-        badge={`${providerLabel} Connections`}
-        title="Unite ally institutions under one domain"
-        subtitle="Keep every account balance in clear view; reporting on demand."
+        title={`Unite your financial allies with ${providerLabel}`}
+        subtitle="Securely link and sync accounts on-demand, view balances, and import or export your data any time."
         actions={actions}
         stats={statsGrid}
       >
@@ -800,7 +795,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           isExporting={isExporting}
           isOnline={isOnline}
           providerName={`${providerLabel} accounts`}
-          connectLabel={primaryConnectContent.cta.defaultLabel}
+          connectLabel={connectAccountLabel}
           connectLogoSrc={providerLogoSrc}
           onImportSuccess={handleImportSuccess}
           emptyState={connectionsEmptyState}
