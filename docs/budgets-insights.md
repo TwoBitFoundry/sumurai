@@ -111,10 +111,17 @@ which requires a small backend change.
 - Storybook + interaction tests in `frontend/tests/features/budgets/components/`: front renders metric; clicking flips to the question; changing a filter-key prop resets to front; zero-activity fallback renders. Follow the `BankCard.stories.tsx` `play`-test pattern.
 
 **Acceptance criteria**
-- [ ] Clicking a card smoothly reveals its question; clicking again returns to the metric.
-- [ ] A flipped card stays flipped until re-clicked or until the filter key changes (which resets all).
-- [ ] Zero-activity fallback copy renders when there is no budget activity for the active filter.
-- [ ] Components compose `HeroStatCard`/tokens/recipes — no one-off styling outside the design system.
+- [x] Clicking a card smoothly reveals its question; clicking again returns to the metric.
+- [x] A flipped card stays flipped until re-clicked or until the filter key changes (which resets all).
+- [x] Zero-activity fallback copy renders when there is no budget activity for the active filter.
+- [x] Components compose `HeroStatCard`/tokens/recipes — no one-off styling outside the design system.
+
+**TDD log**
+- Wrote `BudgetInsightCard.test.tsx` (6 tests) and `BudgetInsightsPanel.test.tsx` (7 tests) first; confirmed red.
+- Implemented `BudgetInsightCard.tsx` using AnimatePresence mode="wait" for opacity cross-fade between front and back; card is a `button` with `aria-expanded`.
+- Implemented `BudgetInsightsPanel.tsx` owning `Record<string,boolean>` flip state; `useEffect` on `[month, filterKey]` resets all. Card 4 swaps title/value/question based on `isAccountFiltered`.
+- Added Storybook stories with `play` interaction tests for both components.
+- 13/13 new tests + 21/21 total budgets-component tests green; typecheck clean.
 
 ---
 
