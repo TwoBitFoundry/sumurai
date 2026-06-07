@@ -98,15 +98,20 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
   const subscriptions = budgetsQuery.data?.subscriptions ?? [];
   const transactions = txnsQuery.data ?? [];
 
+  const hasAccountRoster = allAccountIds.length > 0;
+  const hasEmptyAccountSelection = hasAccountRoster && selectedAccountIds.length === 0;
   const isAccountFiltered =
-    !isAllAccountsSelected && selectedAccountIds.length > 0 && allAccountIds.length > 0;
+    hasAccountRoster && !isAllAccountsSelected && selectedAccountIds.length > 0;
 
   const filteredSubscriptions = useMemo(() => {
+    if (hasEmptyAccountSelection) {
+      return [];
+    }
     if (!isAccountFiltered) return subscriptions;
     return subscriptions.filter((sub) =>
       sub.account_ids.some((id) => selectedAccountIds.includes(id))
     );
-  }, [subscriptions, selectedAccountIds, isAccountFiltered]);
+  }, [hasEmptyAccountSelection, isAccountFiltered, selectedAccountIds, subscriptions]);
 
   const loadError = useMemo(() => {
     if (!budgetsQuery.isError || budgetsQuery.error == null) {

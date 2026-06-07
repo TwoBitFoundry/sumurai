@@ -38,23 +38,8 @@ function addMonthsClamped(date: Date, months: number): Date {
   return new Date(target.getFullYear(), target.getMonth(), day);
 }
 
-function addDays(date: Date, days: number): Date {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
 function advanceSubscriptionChargeDate(isoDate: string, cadence: string): string {
   const date = parseIsoDate(isoDate);
-  const key = cadence.trim().toLowerCase();
-
-  if (key === 'weekly') {
-    return formatIsoDate(addDays(date, 7));
-  }
-  if (key === 'biweekly') {
-    return formatIsoDate(addDays(date, 14));
-  }
-
   const normalized = normalizeSubscriptionCadence(cadence) ?? 'monthly';
   switch (normalized) {
     case 'quarterly':
@@ -67,15 +52,6 @@ function advanceSubscriptionChargeDate(isoDate: string, cadence: string): string
 }
 
 function chargeAmountFromMonthly(monthlyCost: number, cadence: string): number {
-  const key = cadence.trim().toLowerCase();
-
-  if (key === 'weekly') {
-    return monthlyCost * (12 / 52);
-  }
-  if (key === 'biweekly') {
-    return monthlyCost * (12 / 26);
-  }
-
   const normalized = normalizeSubscriptionCadence(cadence) ?? 'monthly';
   switch (normalized) {
     case 'quarterly':
