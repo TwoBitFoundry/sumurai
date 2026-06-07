@@ -17,7 +17,8 @@
       "name": "Docker Compose (Full Stack)",
       "runtimeExecutable": "docker",
       "runtimeArgs": ["compose", "-f", "docker-compose.dev.yml", "up", "-d", "--build"],
-      "port": 8080
+      "port": 8080,
+      "autoPort": false
     }
   ]
 }

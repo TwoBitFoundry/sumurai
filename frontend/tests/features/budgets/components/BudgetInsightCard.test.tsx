@@ -21,6 +21,7 @@ describe('BudgetInsightCard', () => {
   it('renders the question text when flipped is true', () => {
     render(<BudgetInsightCard {...defaultProps} flipped />);
     expect(screen.getByText('How much can I spend every day?')).toBeInTheDocument();
+    expect(screen.getByTestId('budget-insight-question').querySelector('svg')).toBeTruthy();
     expect(screen.queryByText('$15.00')).not.toBeInTheDocument();
   });
 
@@ -43,8 +44,24 @@ describe('BudgetInsightCard', () => {
     expect(screen.getByText('/ day')).toBeInTheDocument();
   });
 
-  it('renders optional subtext pill on the front', () => {
-    render(<BudgetInsightCard {...defaultProps} subtext="20 days left" />);
-    expect(screen.getByText('20 days left')).toBeInTheDocument();
+  it('keeps the front row on one line', () => {
+    const { container } = render(
+      <BudgetInsightCard
+        {...defaultProps}
+        title="Runway Pace"
+        value={
+          <span>
+            $18.55<span>/ d until Jun 17</span>
+          </span>
+        }
+      />
+    );
+
+    const frontFace = container.querySelector('.whitespace-nowrap.justify-between');
+    expect(frontFace).toBeTruthy();
+    expect(frontFace?.className).not.toContain('flex-col');
+    expect(frontFace?.className).not.toContain('flex-wrap');
+    expect(frontFace?.textContent).toContain('Runway Pace');
+    expect(frontFace?.textContent).toContain('$18.55');
   });
 });

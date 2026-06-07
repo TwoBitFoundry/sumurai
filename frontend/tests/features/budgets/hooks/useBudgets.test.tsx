@@ -575,8 +575,6 @@ describe('useBudgets', () => {
       expect(result.current.isLoading).toBe(false);
       expect(result.current.filteredSubscriptions).toHaveLength(2);
     });
-
-    expect(result.current.isAccountFiltered).toBe(false);
   });
 
   it('filters subscriptions by account_id when account filter is active', async () => {
@@ -624,7 +622,6 @@ describe('useBudgets', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.isAccountFiltered).toBe(true);
       expect(result.current.filteredSubscriptions).toHaveLength(1);
       expect(result.current.filteredSubscriptions[0].merchant).toBe('Spotify');
     });

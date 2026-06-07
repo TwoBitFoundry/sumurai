@@ -1,18 +1,18 @@
-import { CalendarX2, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
+import { Flame, Repeat2, Wallet } from 'lucide-react';
 import { useState } from 'react';
-import type { BudgetStats } from '@/domain/BudgetCalculator';
 import type { BudgetInsights } from '@/domain/BudgetInsightsCalculator';
+import { SubscriptionCalculator } from '@/domain/SubscriptionCalculator';
 import { cn } from '@/ui/primitives';
 import { text as semanticTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import type { SubscriptionSummary } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
-import { BudgetInsightCard } from './BudgetInsightCard';
+import { BudgetInsightCard, budgetInsightCardRecipes } from './BudgetInsightCard';
 
 export interface BudgetInsightsPanelProps {
   insights: BudgetInsights;
-  stats: BudgetStats;
+  subscriptions: SubscriptionSummary[];
   month: Date;
   filterKey: string;
-  isAccountFiltered?: boolean;
 }
 
 function fmtMonthName(date: Date): string {
@@ -25,10 +25,9 @@ function fmtRunoutDate(date: Date): string {
 
 export function BudgetInsightsPanel({
   insights,
-  stats,
+  subscriptions,
   month,
   filterKey,
-  isAccountFiltered = false,
 }: BudgetInsightsPanelProps) {
   const resetKey = `${month.getFullYear()}-${month.getMonth()}-${filterKey}`;
   const [lastResetKey, setLastResetKey] = useState(resetKey);
@@ -52,68 +51,82 @@ export function BudgetInsightsPanel({
     );
   }
 
-  const card4Title = isAccountFiltered ? 'Account Burden' : 'Budget Slack';
-  const card4Value = isAccountFiltered
-    ? insights.accountWeightPct != null
-      ? `${insights.accountWeightPct.toFixed(1)}%`
-      : '—'
-    : fmtUSD(insights.budgetSlack);
-  const card4Question = isAccountFiltered
-    ? 'How much weight is this account carrying?'
-    : 'Do I have unassigned slack left?';
-  const card4HowToAct = isAccountFiltered
-    ? 'High % means this account drives most of your budget spend.'
-    : 'Positive slack means your upcoming subscriptions are covered.';
+  const { monthlyTotal, yearToDate } = SubscriptionCalculator.computeSubscriptionHeroStats(
+    subscriptions,
+    month
+  );
 
   return (
-    <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-4')}>
+    <div
+      data-testid="budget-insights-grid"
+      className={cn(
+        'grid',
+        'grid-cols-1',
+        'gap-3',
+        '[&>*]:min-w-0',
+        'md:grid-cols-2',
+        'lg:grid-cols-3',
+        '[&>*:last-child]:md:col-span-2',
+        '[&>*:last-child]:lg:col-span-1'
+      )}
+    >
       <BudgetInsightCard
-        title="Daily Pacing"
-        icon={<TrendingDown />}
-        value={insights.dailyPacing != null ? fmtUSD(insights.dailyPacing) : '—'}
-        suffix={insights.dailyPacing != null ? '/ day' : undefined}
-        subtext={`${stats.daysRemaining} days left`}
-        question="How much can I spend every day for the rest of the month without blowing my budget?"
-        howToAct="Stay at or below this daily rate to end the month in the green."
-        accent="emerald"
-        flipped={!!flipped['daily-pacing']}
-        onToggle={() => toggle('daily-pacing')}
-      />
-      <BudgetInsightCard
-        title="Safe-To-Spend"
-        icon={<Wallet />}
-        value={fmtUSD(insights.safeToSpend)}
-        subtext={
-          insights.upcomingSubscriptionsTotal > 0
-            ? `${fmtUSD(insights.upcomingSubscriptionsTotal)} reserved`
-            : 'No upcoming subscriptions'
+        title="Runway Pace"
+        icon={<Flame />}
+        value={
+          insights.dailyPacing != null ? (
+            <span className={cn(budgetInsightCardRecipes.metric)}>
+              <span>{fmtUSD(insights.dailyPacing)}</span>
+              {insights.runoutDate ? (
+                <>
+                  <span className={cn(budgetInsightCardRecipes.suffix)}>/ d until</span>
+                  <span>{fmtRunoutDate(insights.runoutDate)}</span>
+                </>
+              ) : (
+                <span className={cn(budgetInsightCardRecipes.suffix)}>/ d</span>
+              )}
+            </span>
+          ) : (
+            '—'
+          )
         }
-        question="How much of my cash is actually mine to spend vs. already spoken for?"
-        howToAct="Upcoming subscriptions are deducted from your remaining budget."
+        question="How much am I spending per day, and when will I run out at this pace?"
         accent="sky"
-        flipped={!!flipped['safe-to-spend']}
-        onToggle={() => toggle('safe-to-spend')}
+        flipped={!!flipped.pacing}
+        onToggle={() => toggle('pacing')}
       />
       <BudgetInsightCard
-        title="Exhaustion Projection"
-        icon={<CalendarX2 />}
-        value={insights.runoutDate ? fmtRunoutDate(insights.runoutDate) : 'On track'}
-        subtext={insights.runoutDate ? 'projected empty' : undefined}
-        question="At my current speed, what day will this budget run dry?"
-        howToAct="Slow your spending to push this date to the end of the month."
-        accent="amber"
-        flipped={!!flipped['exhaustion-projection']}
-        onToggle={() => toggle('exhaustion-projection')}
+        title="Free Spend"
+        icon={<Wallet />}
+        value={
+          <span className={cn(budgetInsightCardRecipes.metric)}>
+            <span className={cn(insights.freeSpend < 0 && semanticTextRecipes.danger)}>
+              {fmtUSD(insights.freeSpend)}
+            </span>
+            <span className={cn(budgetInsightCardRecipes.suffix)}>/</span>
+            <span>{fmtUSD(insights.income)}</span>
+          </span>
+        }
+        question="How much income is left after planned budgets and overages?"
+        accent="sky"
+        flipped={!!flipped['free-spend']}
+        onToggle={() => toggle('free-spend')}
       />
       <BudgetInsightCard
-        title={card4Title}
-        icon={<TrendingUp />}
-        value={card4Value}
-        question={card4Question}
-        howToAct={card4HowToAct}
-        accent="violet"
-        flipped={!!flipped['card-4']}
-        onToggle={() => toggle('card-4')}
+        title="Sub Costs"
+        icon={<Repeat2 />}
+        value={
+          <span className={cn(budgetInsightCardRecipes.metric)}>
+            <span>{fmtUSD(monthlyTotal)}</span>
+            <span className={cn(budgetInsightCardRecipes.suffix)}>/ m</span>
+            <span>{fmtUSD(yearToDate)}</span>
+            <span className={cn(budgetInsightCardRecipes.suffix)}>/ ytd</span>
+          </span>
+        }
+        question="What do my subscriptions cost per month and year to date?"
+        accent="sky"
+        flipped={!!flipped['subscription-costs']}
+        onToggle={() => toggle('subscription-costs')}
       />
     </div>
   );

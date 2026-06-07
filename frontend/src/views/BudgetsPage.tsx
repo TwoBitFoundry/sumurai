@@ -34,11 +34,11 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
     computedBudgets,
     subscriptions,
     filteredSubscriptions,
-    isAccountFiltered,
-    totalBudgetSpend,
     filterKey,
     availableCategoryOptions,
     month,
+    range,
+    transactions,
   } = useBudgets(monthControl);
   const { accentIndexByName } = useCategories();
   const addButtonRef = useRef<HTMLButtonElement>(null);
@@ -93,14 +93,13 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
     () =>
       computeBudgetInsights({
         stats,
-        subscriptions: filteredSubscriptions,
         month,
         referenceDate: new Date(),
-        isAccountFiltered,
-        filteredBudgetSpend: stats.totalSpent,
-        totalBudgetSpend,
+        transactions,
+        range,
+        computedBudgets,
       }),
-    [stats, filteredSubscriptions, month, isAccountFiltered, totalBudgetSpend]
+    [stats, month, transactions, range, computedBudgets]
   );
 
   const budgetsLoading = isLoading || transactionsLoading;
@@ -108,14 +107,13 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
 
   const heroStats = (
     <div className="space-y-3">
+      <BudgetSummaryCard totalBudgeted={stats.totalBudgeted} totalSpent={stats.totalSpent} />
       <BudgetInsightsPanel
         insights={insights}
-        stats={stats}
+        subscriptions={filteredSubscriptions}
         month={month}
         filterKey={filterKey}
-        isAccountFiltered={isAccountFiltered}
       />
-      <BudgetSummaryCard totalBudgeted={stats.totalBudgeted} totalSpent={stats.totalSpent} />
     </div>
   );
 
@@ -152,7 +150,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
               sectionId="budgets"
               title="Budgets"
               titleIcon={Target}
-              titleIconClassName={heroAccents.emerald.icon}
+              titleIconClassName={heroAccents.sky.icon}
               description="Add, edit, or delete budgets by transaction categories."
               testId="budgets-section"
               expandLabel="Show budgets"

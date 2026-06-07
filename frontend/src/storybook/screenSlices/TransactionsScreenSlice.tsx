@@ -100,6 +100,7 @@ export function TransactionsScreenSlice(props: {
             />
             <HeroStatCard
               index={2}
+              accent="emerald"
               title="Average size"
               icon={<TrendingUp />}
               value={fmtUSD(stats.avgTransaction)}
@@ -107,6 +108,7 @@ export function TransactionsScreenSlice(props: {
             />
             <HeroStatCard
               index={3}
+              accent="emerald"
               title="Largest size"
               icon={<AlertTriangle />}
               value={

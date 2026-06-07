@@ -1,69 +1,52 @@
-import type { SubscriptionSummary } from '../types/api';
+import type { Transaction } from '../types/api';
 import type { BudgetStats } from './BudgetCalculator';
-import { computeSubscriptionNextDueDate } from './subscriptionDates';
+import { BudgetCalculator } from './BudgetCalculator';
 
 export interface BudgetInsightsInput {
   stats: BudgetStats;
-  subscriptions: SubscriptionSummary[];
   month: Date;
   referenceDate: Date;
-  isAccountFiltered: boolean;
-  filteredBudgetSpend: number;
-  totalBudgetSpend: number;
+  transactions: Transaction[];
+  range: { start: string; end: string };
+  computedBudgets: Array<{ amount: number; spent: number }>;
 }
 
 export interface BudgetInsights {
   dailyPacing: number | null;
-  safeToSpend: number;
-  upcomingSubscriptionsTotal: number;
+  income: number;
+  freeSpend: number;
   runoutDate: Date | null;
-  accountWeightPct: number | null;
-  budgetSlack: number;
   hasActivity: boolean;
 }
 
-function isoDate(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
 export function computeBudgetInsights(input: BudgetInsightsInput): BudgetInsights {
-  const {
-    stats,
-    subscriptions,
-    month,
-    referenceDate,
-    isAccountFiltered,
-    filteredBudgetSpend,
-    totalBudgetSpend,
-  } = input;
+  const { stats, month, referenceDate, transactions, range, computedBudgets } = input;
 
-  const { totalBudgeted, totalSpent, remaining, daysRemaining } = stats;
+  const { totalBudgeted, totalSpent, remaining } = stats;
 
   const hasActivity = totalBudgeted > 0 || totalSpent > 0;
-
-  const dailyPacing = daysRemaining > 0 ? remaining / daysRemaining : null;
-
-  const refIso = isoDate(referenceDate);
-  const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
-  const monthEndIso = isoDate(monthEnd);
-
-  const upcomingSubscriptionsTotal = subscriptions.reduce((sum, sub) => {
-    const nextDue = computeSubscriptionNextDueDate(sub.last_charged, sub.cadence, referenceDate);
-    if (nextDue >= refIso && nextDue <= monthEndIso) {
-      return sum + parseFloat(sub.monthly_cost);
-    }
-    return sum;
-  }, 0);
-
-  const safeToSpend = Math.max(0, remaining - upcomingSubscriptionsTotal);
 
   const isCurrentMonth =
     month.getFullYear() === referenceDate.getFullYear() &&
     month.getMonth() === referenceDate.getMonth();
+  const isPastMonth =
+    month.getFullYear() < referenceDate.getFullYear() ||
+    (month.getFullYear() === referenceDate.getFullYear() &&
+      month.getMonth() < referenceDate.getMonth());
   const currentDayOfMonth = referenceDate.getDate();
+
+  let dailyPacing: number | null = null;
+  if (totalSpent > 0) {
+    if (isCurrentMonth && currentDayOfMonth > 0) {
+      dailyPacing = totalSpent / currentDayOfMonth;
+    } else if (isPastMonth && stats.totalDays > 0) {
+      dailyPacing = totalSpent / stats.totalDays;
+    }
+  }
+
+  const income = BudgetCalculator.calculateIncome(transactions, range.start, range.end);
+  const overages = BudgetCalculator.computeOverages(computedBudgets);
+  const freeSpend = income - totalBudgeted - overages;
 
   let runoutDate: Date | null = null;
   if (isCurrentMonth && totalSpent > 0 && currentDayOfMonth > 0 && remaining > 0) {
@@ -76,22 +59,11 @@ export function computeBudgetInsights(input: BudgetInsightsInput): BudgetInsight
     );
   }
 
-  let accountWeightPct: number | null = null;
-  let budgetSlack = 0;
-
-  if (isAccountFiltered) {
-    accountWeightPct = totalBudgetSpend > 0 ? (filteredBudgetSpend / totalBudgetSpend) * 100 : 0;
-  } else {
-    budgetSlack = Math.max(0, remaining - upcomingSubscriptionsTotal);
-  }
-
   return {
     dailyPacing,
-    safeToSpend,
-    upcomingSubscriptionsTotal,
+    income,
+    freeSpend,
     runoutDate,
-    accountWeightPct,
-    budgetSlack,
     hasActivity,
   };
 }

@@ -69,10 +69,9 @@ const baseUseBudgetsMock = {
   computedBudgets: [
     { id: 'b1', category: 'FOOD_AND_DRINK', amount: 200, spent: 80, percentage: 40 },
   ],
+  transactions: [],
   subscriptions: [],
   filteredSubscriptions: [],
-  isAccountFiltered: false,
-  totalBudgetSpend: 80,
   filterKey: 'all',
   categoryOptions: [],
   availableCategoryOptions: [],
@@ -101,10 +100,9 @@ describe('BudgetsPage', () => {
   it('renders four insight cards replacing the old hero cards', () => {
     render(<BudgetsPage monthControl={monthControl} />);
 
-    expect(screen.getByText('Daily Pacing')).toBeInTheDocument();
-    expect(screen.getByText('Safe-To-Spend')).toBeInTheDocument();
-    expect(screen.getByText('Exhaustion Projection')).toBeInTheDocument();
-    expect(screen.getByText('Budget Slack')).toBeInTheDocument();
+    expect(screen.getByText('Runway Pace')).toBeInTheDocument();
+    expect(screen.getByText('Free Spend')).toBeInTheDocument();
+    expect(screen.getByText('Sub Costs')).toBeInTheDocument();
 
     expect(screen.queryByText('Days remaining')).not.toBeInTheDocument();
     expect(screen.queryByText('Subscription costs')).not.toBeInTheDocument();
@@ -131,13 +129,12 @@ describe('BudgetsPage', () => {
     expect(budgetsCardIndex).toBeGreaterThan(subscriptionsCardIndex);
   });
 
-  it('keeps the budget stats grid in two columns on mobile, four on large screens', () => {
-    const { container } = render(<BudgetsPage monthControl={monthControl} />);
-    const statsGrid = container.querySelector(
-      '[data-testid="page-layout"] .grid.gap-3'
-    ) as HTMLElement | null;
+  it('keeps the insight grid in one column on mobile, two on tablet, and three on desktop', () => {
+    render(<BudgetsPage monthControl={monthControl} />);
 
-    expect(statsGrid).toHaveClass('grid-cols-2');
-    expect(statsGrid).toHaveClass('lg:grid-cols-4');
+    const statsGrid = screen.getByTestId('budget-insights-grid');
+    expect(statsGrid).toHaveClass('grid-cols-1');
+    expect(statsGrid).toHaveClass('md:grid-cols-2');
+    expect(statsGrid).toHaveClass('lg:grid-cols-3');
   });
 });

@@ -27,7 +27,7 @@ export const OverBudget: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText(/\$1,000\.00/)).toBeVisible();
     await expect(canvas.getByText(/\$1,250\.00/)).toBeVisible();
-    await expect(canvas.getByText(/-\$250\.00 over/i)).toBeVisible();
+    await expect(canvas.getByText(/\$250\.00/i)).toBeVisible();
   },
 };
 

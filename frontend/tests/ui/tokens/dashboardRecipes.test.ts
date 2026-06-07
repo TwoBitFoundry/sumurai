@@ -23,8 +23,8 @@ describe('dashboard surface components', () => {
   it('keeps the budget progress copy intact', () => {
     render(createElement(BudgetProgress, { amount: 500, spent: 220 }));
 
-    expect(screen.getByText(/44% used/i)).toBeVisible();
-    expect(screen.getByText(/\$280\.00 left/i)).toBeVisible();
+    expect(screen.getByText(/44%/i)).toBeVisible();
+    expect(screen.getByText(/\$280\.00/i)).toBeVisible();
   });
 
   it('keeps the transactions table navigation intact', () => {

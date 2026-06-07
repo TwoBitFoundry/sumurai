@@ -2,19 +2,27 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type React from 'react';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { cn } from '@/ui/primitives';
-import { text as semanticTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { type HeroAccent, heroAccents } from '@/ui/tokens';
+import { BudgetInsightQuestion } from './BudgetInsightQuestion';
 
 const FADE = { duration: 0.24, ease: [0.22, 0.61, 0.36, 1] } as const;
+
+export const budgetInsightCardRecipes = {
+  frontRow: 'flex w-full min-w-0 items-center justify-between gap-x-1.5 whitespace-nowrap',
+  leading: 'flex min-w-0 items-center gap-x-1.5',
+  metricCluster: 'flex min-w-0 shrink items-baseline justify-end gap-x-1.5',
+  metric: 'inline-flex items-baseline gap-x-1.5 whitespace-nowrap',
+  title: cn(heroStatCardRecipes.title, 'whitespace-nowrap'),
+  value: cn(heroStatCardRecipes.value, 'whitespace-nowrap'),
+  suffix: cn(heroStatCardRecipes.suffix, 'whitespace-nowrap'),
+} as const;
 
 export interface BudgetInsightCardProps {
   title: string;
   icon?: React.ReactNode;
   value: React.ReactNode;
   suffix?: React.ReactNode;
-  subtext?: React.ReactNode;
   question: string;
-  howToAct?: string;
   accent?: HeroAccent;
   flipped: boolean;
   onToggle: () => void;
@@ -26,10 +34,8 @@ export function BudgetInsightCard({
   icon,
   value,
   suffix,
-  subtext,
   question,
-  howToAct,
-  accent = 'emerald',
+  accent = 'sky',
   flipped,
   onToggle,
   className,
@@ -47,12 +53,11 @@ export function BudgetInsightCard({
     >
       <div
         className={cn(
-          heroStatCardRecipes.shell,
+          heroStatCardRecipes.shellCompact,
           styles.border,
           styles.borderDark,
           styles.hoverBorder,
           styles.hoverBorderDark,
-          'min-h-[120px]',
           'cursor-pointer'
         )}
       >
@@ -79,7 +84,7 @@ export function BudgetInsightCard({
           />
         </div>
 
-        <div className="relative z-10 flex h-full min-h-[88px] flex-col justify-between">
+        <div className="relative z-10 w-full min-w-0">
           <AnimatePresence mode="wait" initial={false}>
             {flipped ? (
               <motion.div
@@ -88,16 +93,8 @@ export function BudgetInsightCard({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={FADE}
-                className="flex h-full flex-col gap-2"
               >
-                <p className={cn(uiTypographyRecipes.label, semanticTextRecipes.label)}>
-                  {question}
-                </p>
-                {howToAct ? (
-                  <p className={cn(uiTypographyRecipes.caption, semanticTextRecipes.muted)}>
-                    {howToAct}
-                  </p>
-                ) : null}
+                <BudgetInsightQuestion question={question} />
               </motion.div>
             ) : (
               <motion.div
@@ -106,37 +103,20 @@ export function BudgetInsightCard({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={FADE}
-                className="flex h-full flex-col justify-between gap-2"
+                className={cn(budgetInsightCardRecipes.frontRow)}
               >
-                <div className="flex min-w-0 items-center gap-2">
+                <div className={cn(budgetInsightCardRecipes.leading)}>
                   {icon ? (
                     <span className={cn(...heroStatCardRecipes.iconWell, styles.icon)}>{icon}</span>
                   ) : null}
-                  <div className={cn('min-w-0', heroStatCardRecipes.title)}>{title}</div>
+                  <div className={cn(budgetInsightCardRecipes.title)}>{title}</div>
                 </div>
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <div className={cn(heroStatCardRecipes.value)}>{value}</div>
-                  {suffix ? <div className={cn(heroStatCardRecipes.suffix)}>{suffix}</div> : null}
+                <div className={cn(budgetInsightCardRecipes.metricCluster)}>
+                  <div className={cn(budgetInsightCardRecipes.value)}>{value}</div>
+                  {suffix ? (
+                    <div className={cn(budgetInsightCardRecipes.suffix)}>{suffix}</div>
+                  ) : null}
                 </div>
-                {subtext ? (
-                  <div className={cn(heroStatCardRecipes.footer)}>
-                    <span
-                      className={cn(
-                        'inline-flex',
-                        'max-w-none',
-                        'flex-shrink-0',
-                        'items-center',
-                        'rounded-full',
-                        'px-2',
-                        'py-0.5',
-                        uiTypographyRecipes.badge,
-                        styles.defaultPill
-                      )}
-                    >
-                      {subtext}
-                    </span>
-                  </div>
-                ) : null}
               </motion.div>
             )}
           </AnimatePresence>

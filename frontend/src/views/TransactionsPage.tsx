@@ -145,6 +145,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
 
             <HeroStatCard
               index={2}
+              accent="emerald"
               title="Average size"
               icon={<TrendingUp />}
               value={loadingMessage ?? fmtUSD(avgTransaction)}
@@ -153,6 +154,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
 
             <HeroStatCard
               index={3}
+              accent="emerald"
               title="Largest size"
               icon={<AlertTriangle />}
               value={

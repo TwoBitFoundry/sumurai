@@ -15,8 +15,8 @@ export const SUBSCRIPTION_CADENCE_ORDER: SubscriptionCadenceKey[] = [
 ];
 
 export const SUBSCRIPTION_CADENCE_ACCENT = {
-  monthly: 'emerald',
-  quarterly: 'amber',
+  monthly: 'sky',
+  quarterly: 'sky',
   annual: 'sky',
 } as const satisfies Record<SubscriptionCadenceKey, HeroAccent>;
 
