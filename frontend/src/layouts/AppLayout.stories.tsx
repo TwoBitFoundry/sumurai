@@ -47,7 +47,7 @@ export const Dashboard: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: 'Transactions' }));
     await expect(args.onTabChange).toHaveBeenCalledWith('transactions');
-    await userEvent.click(canvas.getByRole('button', { name: /logout/i }));
+    await userEvent.click(canvas.getByRole('button', { name: /log off/i }));
     await expect(args.onLogout).toHaveBeenCalledTimes(1);
   },
 };

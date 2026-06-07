@@ -44,7 +44,7 @@ export const AuthenticatedDashboard: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Settings' }));
     await expect(args.onTabChange).toHaveBeenCalledWith('settings');
 
-    await userEvent.click(canvas.getByRole('button', { name: /logout/i }));
+    await userEvent.click(canvas.getByRole('button', { name: /log off/i }));
     await expect(args.onLogout).toHaveBeenCalledTimes(1);
   },
 };

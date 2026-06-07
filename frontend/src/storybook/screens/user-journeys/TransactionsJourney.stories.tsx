@@ -5,7 +5,12 @@ import { TransactionsSearchBar } from '@/features/transactions/components/Transa
 import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import TransactionsPage from '@/views/TransactionsPage';
-import { getPagedStoryTransactions, storyCategoryList, storyProviderAccounts } from './shared';
+import {
+  getPagedStoryTransactions,
+  storyCategoryList,
+  storyProviderAccounts,
+  storyTransactionCategories,
+} from './shared';
 import { jsonResponse, route, StoryApiScope } from './storyApi';
 
 const meta = {
@@ -25,6 +30,7 @@ const storyInteractionTimeoutMs = 20_000;
 const handlers = [
   route('GET', '/providers/accounts', () => jsonResponse(storyProviderAccounts)),
   route('GET', '/categories', () => jsonResponse(storyCategoryList)),
+  route('GET', '/transactions/categories', () => jsonResponse(storyTransactionCategories)),
   route('GET', '/transactions', (request) =>
     jsonResponse(
       getPagedStoryTransactions({
