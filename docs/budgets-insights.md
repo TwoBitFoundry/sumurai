@@ -89,9 +89,15 @@ which requires a small backend change.
 - Tests in `frontend/tests/domain/BudgetInsightsCalculator.test.ts`: per-card happy path, zero-spend, zero-budget, over-budget, month-end subscription clamping, filtered vs unfiltered Card 4, non-current-month.
 
 **Acceptance criteria**
-- [ ] Each formula matches the PRD math and is covered by boundary unit tests.
-- [ ] No `NaN`/`Infinity` escapes; division-by-zero paths return defined fallback values.
-- [ ] Calculator is pure (no React/DOM/`Date.now` inside — `referenceDate` is injected).
+- [x] Each formula matches the PRD math and is covered by boundary unit tests.
+- [x] No `NaN`/`Infinity` escapes; division-by-zero paths return defined fallback values.
+- [x] Calculator is pure (no React/DOM/`Date.now` inside — `referenceDate` is injected).
+
+**TDD log**
+- Wrote `frontend/tests/domain/BudgetInsightsCalculator.test.ts` first (22 tests covering all four cards, zero-spend/zero-budget/over-budget, non-current-month projection, filtered vs unfiltered Card 4, hasActivity).
+- Confirmed red (module-not-found error).
+- Implemented `frontend/src/domain/BudgetInsightsCalculator.ts` using `computeSubscriptionNextDueDate` for upcoming detection, injected `referenceDate`, and clamped all division guards.
+- 22/22 tests green; frontend typecheck clean.
 
 ---
 
