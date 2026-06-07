@@ -16,6 +16,7 @@ const makeSubscription = (
   first_charged: firstCharged,
   last_charged: lastCharged,
   occurrence_count: 3,
+  account_ids: [],
 });
 
 describe('SubscriptionList', () => {

@@ -4539,9 +4539,17 @@
           "cadence",
           "first_charged",
           "last_charged",
-          "occurrence_count"
+          "occurrence_count",
+          "account_ids"
         ],
         "properties": {
+          "account_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           "cadence": {
             "type": "string"
           },
@@ -4843,6 +4851,12 @@
               "null"
             ]
           },
+          "normalization_source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "normalized_merchant": {
             "type": [
               "string",
@@ -4968,6 +4982,18 @@
             "type": "boolean"
           },
           "merchant_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "normalization_source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "normalized_merchant": {
             "type": [
               "string",
               "null"

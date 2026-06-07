@@ -16,6 +16,8 @@ async fn given_authenticated_user_when_get_budgets_overview_then_returns_budgets
 {
     let user_id = Uuid::new_v4();
     let budgets = vec![Budget::new(user_id, "Groceries".to_string(), dec!(200))];
+    let account_id_a = Uuid::new_v4();
+    let account_id_b = Uuid::new_v4();
     let subscriptions = vec![SubscriptionSummary {
         merchant: "Spotify".to_string(),
         normalized_merchant: "spotify".to_string(),
@@ -24,6 +26,7 @@ async fn given_authenticated_user_when_get_budgets_overview_then_returns_budgets
         first_charged: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
         last_charged: NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
         occurrence_count: 3,
+        account_ids: vec![account_id_a, account_id_b],
     }];
 
     let mut mock = MockDatabaseRepository::new();
@@ -79,6 +82,10 @@ async fn given_authenticated_user_when_get_budgets_overview_then_returns_budgets
     assert!(v["subscriptions"].is_array());
     assert_eq!(v["subscriptions"].as_array().unwrap().len(), 1);
     assert_eq!(v["subscriptions"][0]["merchant"], "Spotify");
+    let ids = v["subscriptions"][0]["account_ids"].as_array().unwrap();
+    assert_eq!(ids.len(), 2);
+    assert_eq!(ids[0].as_str().unwrap(), account_id_a.to_string());
+    assert_eq!(ids[1].as_str().unwrap(), account_id_b.to_string());
 }
 
 #[tokio::test]
@@ -96,6 +103,7 @@ async fn given_cache_hit_when_get_budgets_overview_then_uses_cached_budgets_and_
         first_charged: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
         last_charged: NaiveDate::from_ymd_opt(2024, 3, 15).unwrap(),
         occurrence_count: 5,
+        account_ids: vec![],
     }];
 
     let mock_db = MockDatabaseRepository::new();

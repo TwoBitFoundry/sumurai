@@ -48,6 +48,7 @@ const makeSubscription = (merchant: string, monthlyCost: string) => ({
   first_charged: '2024-01-01',
   last_charged: '2024-03-01',
   occurrence_count: 3,
+  account_ids: [],
 });
 const asTransaction = (id: string, categoryId: string, amount: number, date?: string) => {
   // Use a deterministic date in the middle of current month to avoid timing issues

@@ -350,4 +350,5 @@ export interface SubscriptionSummary {
   first_charged: string;
   last_charged: string;
   occurrence_count: number;
+  account_ids: string[];
 }

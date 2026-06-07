@@ -4,6 +4,7 @@ use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 use crate::services::subscription_detection::cadence::Cadence;
 
@@ -17,6 +18,7 @@ pub struct SubscriptionSummary {
     pub first_charged: NaiveDate,
     pub last_charged: NaiveDate,
     pub occurrence_count: i64,
+    pub account_ids: Vec<Uuid>,
 }
 
 impl SubscriptionSummary {
@@ -29,6 +31,7 @@ impl SubscriptionSummary {
         first_charged: NaiveDate,
         last_charged: NaiveDate,
         occurrence_count: i64,
+        account_ids: Vec<Uuid>,
     ) -> Self {
         let monthly_cost_f64 =
             crate::services::subscription_detection::cadence::normalize_to_monthly_cost(
@@ -45,6 +48,7 @@ impl SubscriptionSummary {
             first_charged,
             last_charged,
             occurrence_count,
+            account_ids,
         }
     }
 }

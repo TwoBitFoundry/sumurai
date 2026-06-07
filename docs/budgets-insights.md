@@ -1,95 +1,147 @@
-# Product Requirements Document (PRD)
+# Contextual Budget Insights & Demystification — Implementation Plan
 
-## Feature: Contextual Budget Insights & Demystification
+> Phased build plan for the "Provision the coffers" insight cards. Supersedes the
+> PRD draft previously in this file (see git history for the original requirements
+> narrative). This document is the execution source of truth.
 
-### 1. Document Control
+## Context
 
-- **Status:** Draft
-- **Date:** June 5, 2026
-- **Target Release:** Q3 2026
-- **Related UI Reference:** `image_3af602.jpg` (Budgets page / "Provision the coffers")
+The Budgets page (`frontend/src/views/BudgetsPage.tsx`, titled "Provision the coffers")
+currently renders three static hero cards — **Days remaining**, **Subscription costs**,
+**Overages** — plus a **Budget Summary** card. These top cards do not respond to the
+account/month filters in the bottom contextual bar, and the raw numbers read as abstract
+to everyday users.
 
-### 2. Product Vision & Objective
+This change replaces the three hero cards with **four filter-aware insight cards** that
+recompute as the user changes the account or month filter, and that flip to reveal a
+plain-English "Human Question" explaining what each metric answers. The **Budget Summary**
+card stays. A scoping decision surfaced during investigation: subscriptions are
+currently aggregated by merchant only and carry **no account association** — confirmed as
+an implementation miss. Card math that involves subscriptions must become account-aware,
+which requires a small backend change.
 
-The "Provision the coffers" (Budgets) page currently displays high-level static metrics at the top (Days Remaining, Monthly Vows, Annualized Vows, Overages), as referenced in `image_3af602.jpg`.
+> Terminology: this product no longer uses the names "Vows" (subscriptions) or
+> "Allowances" (budgets) from the original PRD draft. Use **subscriptions** and
+> **budgets** throughout.
 
-While clean, these top-level cards do not currently leverage the contextual transaction filtering bar (account-level and month-level filters). Furthermore, raw financial metrics can sometimes feel abstract to everyday users.
+### Decisions locked with the requester
+- **Layout:** the 4 new cards **replace** the 3 hero cards; keep the Budget Summary card below.
+- **Subscriptions & accounts:** subscriptions **must** be filterable by account (fix the miss) — add account attribution to subscriptions.
+- **Flip motion:** **smooth expand/fade** reusing the existing `AnimatePresence` height+opacity pattern (as in `BankCard` / `CollapsibleSection`) — no 3D rotateY.
 
-**Objectives:**
+### The four cards (front metric → back "Human Question")
+1. **Daily Pacing** — `(totalBudgeted − totalSpent) / daysRemaining` → *"How much can I spend every day for the rest of the month without blowing my budget?"*
+2. **Safe-To-Spend** — `remaining − Σ(upcoming unpaid subscriptions this month)` → *"How much of my cash is actually mine to spend vs. already spoken for?"*
+3. **Exhaustion Projection** — `runoutDate = today + remaining / (totalSpent / currentDayOfMonth)` → *"At my current speed, what day will this budget run dry?"*
+4. **Account Burden / Budget Slack** — filtered: account's share of total budget spend `%`; unfiltered: leftover slack → *"How much weight is this account carrying?"* / *"Do I have unassigned slack left?"*
 
-1. **Dynamic Contextuality:** Transform the top-level insight cards into a live utility panel that recalculates instantly when users apply account or month filters.
-2. **The "Human Question" Paradigm:** Allow users to click on any insight card to flip/expand it, revealing the direct, plain-English question the math is attempting to answer.
-3. **No Dashboard Overlap:** Avoid high-level historical charts (which live on the Dashboard tab) in favor of forward-looking, highly actionable velocity and allocation guardrails.
-4. **Value-Tier Separation:** Keep calculations strictly mathematical (utility tier). Complex predictive behaviors (AI-driven anomaly detection) are reserved for the premium paid tier.
+## Key existing code to reuse (do not reinvent)
+- `frontend/src/domain/BudgetCalculator.ts` — `computeStats()` already yields `totalBudgeted`, `totalSpent`, `remaining`, `daysRemaining`, `totalDays`. Extend, don't duplicate.
+- `frontend/src/domain/subscriptionDates.ts` — `computeSubscriptionNextDueDate(last_charged, cadence, ref)` for subscription due dates. `addMonthsClamped` handles month-end edge cases.
+- `frontend/src/domain/SubscriptionCalculator.ts` — monthly-cost summing pattern.
+- `frontend/src/components/widgets/HeroStatCard.tsx` — front-of-card visual language (`HeroStatCardProps`, accents, pills, `heroStatCardRecipes`).
+- `frontend/src/features/budgets/hooks/useBudgets.ts` — owns the budgets + month-transactions queries and the account filter (`useAccountFilter`); already recomputes `computedBudgets`/`stats` from filtered transactions.
+- `frontend/src/components/CollapsibleSection.tsx` / `BankCard.tsx` — the `AnimatePresence` expand/fade recipe (`duration: 0.24, ease: [0.22, 0.61, 0.36, 1]`).
+- `framer-motion@^12` is already a dependency.
 
-### 3. User Experience & The "Human Question" Interaction
+## Architectural constraints found during investigation
+- **Account ids:** `useAccountFilter` selects on `account.id` (internal UUID). The frontend `Transaction` type exposes only `provider_account_id`, **not** the internal `account_id`. Account filtering of transactions is therefore done **server-side** today (`TransactionService.getTransactions({ accountIds })`). Keep that pattern — do not attempt client-side transaction filtering by account.
+- **Card 4 denominator:** the filtered "Account Weight %" needs *total spend across all accounts*, but the existing month-transactions query is already account-filtered. Add one **always-unfiltered** month-transactions query, used solely for that denominator.
+- **Subscriptions:** backend aggregates by `normalized_merchant`/`merchant_name` only (`repository_service.rs::get_subscription_summary`). Transactions carry `account_id: Option<Uuid>`. Add distinct `account_ids` per subscription so the frontend can filter subscriptions by `selectedAccountIds` **client-side** (instant, no extra round-trip).
+- **"Budget Slack":** there is no top-level budget pool entity in the model. Define unfiltered Card 4 slack pragmatically as `max(0, remaining − upcomingSubscriptionsTotal)` and document that a true "unassigned pool" needs an income/total-budget concept that is out of scope.
 
-To make budgeting feel intuitive and educational, each insight card operates on a **Double-Sided State**:
+---
 
-- **Front State (The Metric):** Standard clean typographic style (matching the design language in `image_3af602.jpg`).
-- **Back State (The Demystifier):** Triggered on-click. The card executes a subtle 3D flip or smooth expansion to display the foundational question it answers, along with a brief explanation of how to act on it.
+## Phase 1 — Backend: account-attributed subscriptions
 
-```
-+------------------------------------+          +------------------------------------+
-|  DAILY PACING                      |  Click   |  WHAT THIS ANSWERS:                |
-|  $12.50 / day remaining            | -------> |  "How much can I spend every day   |
-|                                    | <------- |   without blowing my budget?"      |
-|  Based on $300.00 over 24 days     |  Close   |                                    |
-+------------------------------------+          +------------------------------------+
+**Goal:** Each `SubscriptionSummary` carries the distinct accounts it was charged on, so the frontend can filter subscriptions by account.
 
+**Tasks**
+- `backend/src/models/subscription.rs` — add `pub account_ids: Vec<Uuid>` to `SubscriptionSummary` (with `ToSchema` annotation).
+- `backend/src/services/repository_service.rs` (`get_subscription_summary`, ~L2762–2844) — while grouping each merchant's transactions, collect the distinct non-null `account_id`s and set `account_ids` on the summary.
+- Regenerate OpenAPI (`backend/openapi/`, `docs/OPENAPI.json`) per CLAUDE.md's "adding a feature" flow.
+- Mirror the type in `frontend/src/types/api.ts`: `SubscriptionSummary.account_ids: string[]`.
+- Update backend tests in `backend/src/tests/budgets_overview_api_tests.rs` to assert account attribution; update any frontend fixtures/tests asserting the subscription shape (`frontend/tests/services/BudgetService.test.ts`, subscription stories/fixtures).
 
-```
+**Acceptance criteria**
+- [x] `/budgets/overview` returns each subscription with a populated `account_ids` array.
+- [x] A subscription charged on two accounts lists both ids; single-account subscriptions list one.
+- [x] OpenAPI spec + `frontend/src/types/api.ts` reflect the new field; `cargo test -p sumurai-backend` and existing frontend type-checks pass.
 
-### 4. Functional Specifications & Dynamic Metric Formulas
+**TDD log**
+- Added `account_ids: Vec<Uuid>` to `SubscriptionSummary`; struct literal breakage was the red state.
+- Updated `get_subscription_summary` to collect distinct non-null `account_id`s per merchant group.
+- Backend test extended to assert two-account fixture round-trips; `cargo test` 632/632 pass.
+- Regenerated `docs/OPENAPI.json` via `regenerate_openapi_artifacts` — `account_ids` now in required + properties.
+- Mirrored field in `frontend/src/types/api.ts`; updated 7 test/fixture files; frontend typecheck clean; 31/31 frontend tests pass.
 
-These metrics must adapt seamlessly to the month and account filters selected in the action bar at the bottom of the page (as seen in `image_3af602.jpg`).
+---
 
-#### Card 1: Pacing & Burn Velocity (Dynamic)
+## Phase 2 — Insight math (pure domain)
 
-- **Default State (No Filters):** Calculates the velocity across all accounts for the selected month.
-- **Filtered State (Account Selected):** Isolates the velocity *specifically* for transactions on that payment method.
-- **Calculations:**
-  $$\text{Daily Pacing} = \frac{\text{Total Budget} - \text{Total Spent so far in Month}}{\text{Days Remaining in Month}}$$
-- **The "Human Question" Interaction (Back of Card):**
-  - **Question:** *"How much can I spend every day for the rest of the month without blowing my budget?"*
-  - **Contextual Variation:** If filtered to a credit card: *"How fast am I running up a balance on this specific card relative to my budget limits?"*
+**Goal:** A single, fully unit-tested calculator that turns budget stats + subscriptions + filter context into the four card values. No UI, no React.
 
-#### Card 2: Safe-To-Spend Buffer (Dynamic)
+**Tasks**
+- Add `frontend/src/domain/BudgetInsightsCalculator.ts` exporting a `computeBudgetInsights(input)` returning a typed `BudgetInsights` object with the four metrics plus their supporting figures (e.g. `dailyPacing`, `safeToSpend`, `upcomingSubscriptionsTotal`, `runoutDate | null`, `accountWeightPct | null`, `budgetSlack`, and a `hasActivity` flag for the zero-transaction fallback).
+- Inputs: `stats: BudgetStats`, `subscriptions: SubscriptionSummary[]` (already account-filtered by the hook), `month: Date`, `referenceDate: Date`, `isAccountFiltered: boolean`, `filteredBudgetSpend: number`, `totalBudgetSpend: number` (Card 4 denominator).
+- Reuse `computeSubscriptionNextDueDate` for upcoming-subscription detection: a subscription counts if its next due date falls within `[referenceDate, monthEnd]`; sum `monthly_cost`.
+- Guard every division: `daysRemaining === 0`, `currentDayOfMonth === 0`, zero burn ⇒ `runoutDate = null`; viewing a non-current month ⇒ projection cards degrade gracefully.
+- Tests in `frontend/tests/domain/BudgetInsightsCalculator.test.ts`: per-card happy path, zero-spend, zero-budget, over-budget, month-end subscription clamping, filtered vs unfiltered Card 4, non-current-month.
 
-- **Default State (No Filters):** Total remaining budget minus unpaid, scheduled commitments ("Vows") for the rest of the calendar month.
-- **Filtered State (Account Selected):** Excludes upcoming Vows that are *not* tied to this filtered account.
-- **Calculations:**
-  $$\text{Safe-To-Spend} = \text{Remaining Budget Balance} - \sum(\text{Upcoming Unpaid Vows in Month})$$
-- **The "Human Question" Interaction (Back of Card):**
-  - **Question:** *"How much of my current cash is actually mine to spend freely, and how much is already spoken for by upcoming bills?"*
+**Acceptance criteria**
+- [ ] Each formula matches the PRD math and is covered by boundary unit tests.
+- [ ] No `NaN`/`Infinity` escapes; division-by-zero paths return defined fallback values.
+- [ ] Calculator is pure (no React/DOM/`Date.now` inside — `referenceDate` is injected).
 
-#### Card 3: Exhaustion Projection (Dynamic Runout Date)
+---
 
-- **Default State (No Filters):** Projects the date the user will run out of money based on average daily spending velocity to date.
-- **Filtered State (Account Selected):** Projects when the specific account's allocated ceiling will be exhausted at current usage rates.
-- **Calculations:**
-  $$\text{Daily Burn Average} = \frac{\text{Total Spent in Month to Date}}{\text{Current Day of Month}}$$$$\text{Projected Days to Exhaustion} = \frac{\text{Remaining Budget Balance}}{\text{Daily Burn Average}}$$$$\text{Runout Date} = \text{Current Date} + \text{Projected Days to Exhaustion}$$
-- **The "Human Question" Interaction (Back of Card):**
-  - **Question:** *"At my current spending speed, on what day of the month will this budget run dry?"*
+## Phase 3 — Flip insight card UI + panel
 
-#### Card 4: Account Funding Burden / Budget Slack (Dynamic)
+**Goal:** Presentational components: one card that expand/fades between a metric front and a "Human Question" back, and a panel that lays out the four and owns flip state.
 
-- **Default State (No Filters - "Budget Slack"):** Shows how much budget capacity remains completely unassigned to any specific Allowance or Vow.
-- **Filtered State (Account Selected - "Account Weight"):** Changes to show the percentage of this month's budget activity originating from the selected account.
-- **Calculations (Filtered State):**
-  $$\text{Account Burden \%} = \left( \frac{\text{Transactions on Selected Account within Budget}}{\text{Total Budget Spent}} \right) \times 100$$
-- **The "Human Question" Interaction (Back of Card):**
-  - **Question (Filtered):** *"How much weight is this specific card or account carrying for my lifestyle budget this month?"*
-  - **Question (Unfiltered):** *"Do I have any leftover, unassigned money in this budget that isn't locked down by an allowance envelope?"*
+**Tasks**
+- Add `frontend/src/features/budgets/components/BudgetInsightCard.tsx`: front renders in the `HeroStatCard` visual language (accent, icon, value/suffix, optional pills); back renders the question + a one-line "how to act" using the `AnimatePresence` height+opacity recipe from `CollapsibleSection`/`BankCard`. Whole card is a `button`/toggle with `aria-expanded`; click flips. Accept a `flipped` prop + `onToggle` so the panel owns state (state-preservation requirement).
+- Add `frontend/src/features/budgets/components/BudgetInsightsPanel.tsx`: renders the four cards in the existing `grid-cols-2 lg:grid-cols-3`-style layout, maps `BudgetInsights` → card props, owns `flipped` state as `Record<cardId, boolean>`, and resets all cards to front via `useEffect` keyed on `month` + `selectedAccountIds` (PRD: filter change resets flips). Renders the zero-activity fallback copy (*"No budget activity recorded on this account for {Month} yet."*) when `hasActivity` is false.
+- Storybook + interaction tests in `frontend/tests/features/budgets/components/`: front renders metric; clicking flips to the question; changing a filter-key prop resets to front; zero-activity fallback renders. Follow the `BankCard.stories.tsx` `play`-test pattern.
 
-### 5. Technical Requirements & Performance
+**Acceptance criteria**
+- [ ] Clicking a card smoothly reveals its question; clicking again returns to the metric.
+- [ ] A flipped card stays flipped until re-clicked or until the filter key changes (which resets all).
+- [ ] Zero-activity fallback copy renders when there is no budget activity for the active filter.
+- [ ] Components compose `HeroStatCard`/tokens/recipes — no one-off styling outside the design system.
 
-- **No Server-Side Latency:** Because these updates are mathematical rather than AI/ML-driven, calculations should occur on the client side instantly upon changing filters in the action bar.
-- **Zero Transactions Handling:** If a filtered account has zero transactions associated with the active budget, the cards should gracefully fallback to a state showing: *"No budget activity recorded on this account for [Month] yet."*
-- **State Preservation:** If a card is clicked to reveal its "Human Question," it should remain in that flipped state until clicked again or until the user changes active filters, which resets all cards to their primary visual states.
+---
 
-### 6. Scope Boundaries
+## Phase 4 — Data wiring & page integration
 
-- **In-Scope (Utility Tier):** Real-time client-side calculation, transition animations for dynamic changes, "flip-to-question" micro-interactions, account-filter triggers.
-- **Out-of-Scope (Premium Tier):** Predictive forecasting beyond linear extrapolation (e.g., "Usually your spending spikes on weekends, so you will run out earlier"), merchant-specific hazard alerts, auto-balancing recommendations.
+**Goal:** Feed the panel from `useBudgets`, add the Card 4 denominator query, and replace the three hero cards on the page.
 
+**Tasks**
+- Extend `useBudgets` (`frontend/src/features/budgets/hooks/useBudgets.ts`):
+  - Filter `subscriptions` client-side by `selectedAccountIds` (using new `account_ids`) when an account filter is active; expose both the filtered list and an `isAccountFiltered` flag. Subscriptions whose `account_ids` is empty (null transaction `account_id`) drop out when any account filter is active.
+  - Add an **always-unfiltered** month-transactions query (all accounts, same `range`) and compute `totalBudgetSpend` across budgeted categories from it via `BudgetCalculator.calculateSpent`; compute `filteredBudgetSpend` from the existing (filtered) transactions. Expose both for Card 4.
+  - Expose `selectedAccountIds` (or a derived filter key) so the panel can reset flips.
+  - Reuse `accountIdsCacheKey`/existing query-key conventions; gate the unfiltered query the same way (`enabled` on accounts loaded + budgets success).
+- In `BudgetsPage.tsx`: build `BudgetInsights` via `computeBudgetInsights(...)` (memoized like the current `stats`/`subscriptionHeroStats`), replace the three `HeroStatCard`s in `heroStats` with `<BudgetInsightsPanel … />`, and **keep** `<BudgetSummaryCard />` below it. Remove now-unused `SubscriptionCostsMetric`/overage-pill wiring only if nothing else references it.
+- Update `frontend/tests/views/BudgetsPage.test.tsx` for the new card set and filter behavior.
+
+**Acceptance criteria**
+- [ ] The page shows the four insight cards (Budget Summary card retained); old three hero cards are gone.
+- [ ] Changing the month or account filter recomputes all four cards and resets any flipped cards to front.
+- [ ] Account-filtered Card 4 shows a correct weight `%` (filtered spend ÷ all-account spend); unfiltered shows slack.
+- [ ] Safe-To-Spend subtracts only subscriptions attributed to the selected account when filtered.
+
+---
+
+## Risks & assumptions
+- **No income/budget-pool concept exists.** Unfiltered Card 4 "Budget Slack" is defined as `max(0, remaining − upcomingSubscriptionsTotal)`. A literal "unassigned pool" metric is out of scope (needs an income/total-budget concept).
+- **Extra query cost.** The unfiltered month-transactions query is additive; it shares `range` and React Query caching, so when no account filter is active it overlaps the primary query and stays cheap. Confirm it isn't double-fetching in the all-accounts case (reuse the same query key when `isAllAccountsSelected`).
+- **Subscription account attribution accuracy** depends on transactions having non-null `account_id`; older/imported transactions with null account ids will simply not contribute to any account filter (documented behavior).
+- **Out of scope (premium tier):** predictive/non-linear forecasting, merchant hazard alerts, auto-balancing — unchanged from the PRD.
+
+## Verification (end-to-end)
+1. Backend: `cargo test -p sumurai-backend --locked budgets_overview` then confirm `account_ids` in a live `/budgets/overview` response.
+2. Domain: `npm --prefix frontend test -- tests/domain/BudgetInsightsCalculator.test.ts`.
+3. Components: `npm --prefix frontend test -- tests/features/budgets/components/BudgetInsightCard.test.tsx` and the panel test; `bun test:storybook` for the interaction plays.
+4. Page: `npm --prefix frontend test -- tests/views/BudgetsPage.test.tsx`.
+5. Manual at **`http://localhost:8080`** (Nginx-backed, per CLAUDE.md — not `:3001`): open Budgets, confirm four cards; flip each to its question; change month and an account filter and confirm cards recompute and flips reset; select an account with no budget activity and confirm the fallback copy. Capture a screenshot via the preview tools as proof.

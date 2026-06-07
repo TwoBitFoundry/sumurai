@@ -55,6 +55,7 @@ const makeSubscription = (merchant: string) => ({
   last_charged: '2026-05-01',
   first_charged: '2026-05-01',
   occurrence_count: 3,
+  account_ids: [],
 });
 
 const baseUseBudgetsMock = {
