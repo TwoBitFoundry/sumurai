@@ -12,6 +12,22 @@ function formatIsoDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+function lastDayOfMonth(year: number, monthIndex: number): number {
+  return new Date(year, monthIndex + 1, 0).getDate();
+}
+
+function addMonthsClamped(date: Date, months: number): Date {
+  const target = new Date(date.getFullYear(), date.getMonth() + months, 1);
+  const sourceLastDayOfMonth = lastDayOfMonth(date.getFullYear(), date.getMonth());
+  const targetLastDayOfMonth = lastDayOfMonth(target.getFullYear(), target.getMonth());
+  const preserveMonthEnd = date.getDate() >= 29 && date.getDate() === sourceLastDayOfMonth;
+  const day = preserveMonthEnd
+    ? targetLastDayOfMonth
+    : Math.min(date.getDate(), targetLastDayOfMonth);
+
+  return new Date(target.getFullYear(), target.getMonth(), day);
+}
+
 function ordinalDay(day: number): string {
   const mod100 = day % 100;
   if (mod100 >= 11 && mod100 <= 13) {
@@ -48,22 +64,21 @@ export function formatSubscriptionDateLabel(
 }
 
 function addCadencePeriod(isoDate: string, cadence: string): string {
+  return addCadencePeriods(isoDate, cadence, 1);
+}
+
+function addCadencePeriods(isoDate: string, cadence: string, periods: number): string {
   const date = parseIsoDate(isoDate);
   const normalized = normalizeSubscriptionCadence(cadence) ?? 'monthly';
 
   switch (normalized) {
     case 'quarterly':
-      date.setMonth(date.getMonth() + 3);
-      break;
+      return formatIsoDate(addMonthsClamped(date, 3 * periods));
     case 'annual':
-      date.setFullYear(date.getFullYear() + 1);
-      break;
+      return formatIsoDate(addMonthsClamped(date, 12 * periods));
     default:
-      date.setMonth(date.getMonth() + 1);
-      break;
+      return formatIsoDate(addMonthsClamped(date, periods));
   }
-
-  return formatIsoDate(date);
 }
 
 export function computeSubscriptionNextDueDate(
@@ -76,10 +91,12 @@ export function computeSubscriptionNextDueDate(
     referenceDate.getMonth(),
     referenceDate.getDate()
   );
+  let periods = 1;
   let nextDue = addCadencePeriod(lastCharged, cadence);
 
   while (parseIsoDate(nextDue).getTime() <= reference.getTime()) {
-    nextDue = addCadencePeriod(nextDue, cadence);
+    periods += 1;
+    nextDue = addCadencePeriods(lastCharged, cadence, periods);
   }
 
   return nextDue;

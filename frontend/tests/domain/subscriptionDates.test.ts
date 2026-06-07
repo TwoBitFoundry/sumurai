@@ -27,6 +27,12 @@ describe('subscriptionDates', () => {
     expect(
       computeSubscriptionNextDueDate('2026-05-15', 'monthly', new Date('2026-06-01T12:00:00'))
     ).toBe('2026-06-15');
+    expect(
+      computeSubscriptionNextDueDate('2026-01-31', 'monthly', new Date('2026-02-01T12:00:00'))
+    ).toBe('2026-02-28');
+    expect(
+      computeSubscriptionNextDueDate('2026-01-31', 'monthly', new Date('2026-03-01T12:00:00'))
+    ).toBe('2026-03-31');
   });
 
   it('computes the next due date for quarterly and annual subscriptions', () => {
