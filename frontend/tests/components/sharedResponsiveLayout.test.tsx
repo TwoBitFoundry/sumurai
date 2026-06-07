@@ -142,22 +142,34 @@ describe('shared responsive layout surfaces', () => {
     expect(container.firstElementChild).toHaveClass(uiRadiusRecipes.standard);
   });
 
-  it('keeps total planned right aligned at every breakpoint', () => {
-    render(<BudgetSummaryCard totalBudgeted={1000} totalSpent={250} />);
-
-    expect(screen.getByText('Total Planned').parentElement).toHaveClass('text-right');
-  });
-
-  it('keeps budget summary totals in a two-column grid on mobile and tablet', () => {
+  it('keeps budget summary shell padding symmetric', () => {
     const { container } = render(<BudgetSummaryCard totalBudgeted={1000} totalSpent={250} />);
 
-    const totalsRow = container.querySelector(
-      '[data-testid="budget-summary-card"] .grid.grid-cols-2'
+    const shell = container.querySelector('[data-testid="budget-summary-card"] > div');
+
+    expect(shell).toHaveClass('p-3');
+    expect(shell).toHaveClass('lg:p-4');
+    expect(shell?.className).not.toContain('pt-4');
+    expect(shell?.className).not.toContain('pt-5');
+  });
+
+  it('keeps total planned on the header row and planned amount right aligned', () => {
+    render(<BudgetSummaryCard totalBudgeted={1000} totalSpent={250} />);
+
+    expect(screen.getByText('Total Planned')).toBeInTheDocument();
+    expect(screen.getByText('$1,000.00')).toHaveClass('text-right');
+  });
+
+  it('keeps budget summary captions aligned with the progress bar column', () => {
+    const { container } = render(<BudgetSummaryCard totalBudgeted={1000} totalSpent={250} />);
+
+    const summaryGrid = container.querySelector(
+      '[data-testid="budget-summary-card"] .grid.grid-cols-\\[auto_1fr_auto\\]'
     );
 
-    expect(totalsRow).toHaveClass('grid-cols-2');
-    expect(totalsRow).toHaveClass('gap-x-2');
-    expect(totalsRow).toHaveClass('md:gap-x-3');
+    expect(summaryGrid).toHaveClass('md:gap-x-3');
+    expect(summaryGrid?.querySelector('[role="progressbar"]')).toBeTruthy();
+    expect(summaryGrid?.textContent).toContain('25%');
   });
 
   it('keeps the provider selection title on the md tier', () => {
@@ -201,10 +213,11 @@ describe('shared responsive layout surfaces', () => {
     );
 
     const list = container.querySelector('ul');
-    const editGrid = container.querySelector('div.grid.grid-cols-1.gap-3');
+    const editGrid = container.querySelector('[data-testid="budget-amount-input"]')?.parentElement
+      ?.parentElement;
 
     expect(list).not.toHaveClass('md:px-10');
-    expect(editGrid).toHaveClass('md:grid-cols-[1fr_auto]');
-    expect(editGrid).toHaveClass('md:items-end');
+    expect(editGrid).toHaveClass('grid-cols-[auto_1fr_auto]');
+    expect(editGrid?.querySelector('[role="progressbar"]')).toBeNull();
   });
 });

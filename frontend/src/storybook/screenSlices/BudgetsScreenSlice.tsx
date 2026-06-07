@@ -17,6 +17,7 @@ export type BudgetsScreenSliceState = 'loaded' | 'empty' | 'error' | 'adding';
 export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
   const heroStatsLoaded = (
     <div className="space-y-3">
+      <BudgetSummaryCard totalBudgeted={850} totalSpent={835} />
       <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-3')}>
         <HeroStatCard
           index={1}
@@ -41,12 +42,12 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
           pills={[{ label: 'Entertainment', type: 'category', categoryName: 'entertainment' }]}
         />
       </div>
-      <BudgetSummaryCard totalBudgeted={850} totalSpent={835} />
     </div>
   );
 
   const heroStatsEmpty = (
     <div className="space-y-3">
+      <BudgetSummaryCard totalBudgeted={0} totalSpent={0} />
       <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-3')}>
         <HeroStatCard
           index={1}
@@ -70,7 +71,6 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
           suffix="over budget"
         />
       </div>
-      <BudgetSummaryCard totalBudgeted={0} totalSpent={0} />
     </div>
   );
 
@@ -111,7 +111,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
               sectionId="budgets"
               title="Budgets"
               titleIcon={Target}
-              titleIconClassName={heroAccents.emerald.icon}
+              titleIconClassName={heroAccents.sky.icon}
               description="Add, edit, or delete budgets by transaction categories."
               testId="budgets-section"
               expandLabel="Show budgets"

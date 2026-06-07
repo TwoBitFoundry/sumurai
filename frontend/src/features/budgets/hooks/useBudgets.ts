@@ -32,7 +32,10 @@ export interface UseBudgetsResult {
   validationError: string | null;
   budgets: Budget[];
   subscriptions: SubscriptionSummary[];
+  filteredSubscriptions: SubscriptionSummary[];
+  filterKey: string;
   computedBudgets: BudgetProgressEntry[];
+  transactions: Transaction[];
   load: () => Promise<void>;
   add: (category: string, amount: number) => Promise<void>;
   update: (id: string, amount: number) => Promise<void>;
@@ -94,6 +97,21 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
   const budgets = budgetsQuery.data?.budgets ?? [];
   const subscriptions = budgetsQuery.data?.subscriptions ?? [];
   const transactions = txnsQuery.data ?? [];
+
+  const hasAccountRoster = allAccountIds.length > 0;
+  const hasEmptyAccountSelection = hasAccountRoster && selectedAccountIds.length === 0;
+  const isAccountFiltered =
+    hasAccountRoster && !isAllAccountsSelected && selectedAccountIds.length > 0;
+
+  const filteredSubscriptions = useMemo(() => {
+    if (hasEmptyAccountSelection) {
+      return [];
+    }
+    if (!isAccountFiltered) return subscriptions;
+    return subscriptions.filter((sub) =>
+      sub.account_ids.some((id) => selectedAccountIds.includes(id))
+    );
+  }, [hasEmptyAccountSelection, isAccountFiltered, selectedAccountIds, subscriptions]);
 
   const loadError = useMemo(() => {
     if (!budgetsQuery.isError || budgetsQuery.error == null) {
@@ -313,7 +331,10 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
     validationError,
     budgets,
     subscriptions,
+    filteredSubscriptions,
+    filterKey: cacheKey,
     computedBudgets,
+    transactions,
     load,
     add,
     update,

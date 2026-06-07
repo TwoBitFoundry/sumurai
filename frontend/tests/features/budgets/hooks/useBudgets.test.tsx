@@ -48,6 +48,7 @@ const makeSubscription = (merchant: string, monthlyCost: string) => ({
   first_charged: '2024-01-01',
   last_charged: '2024-03-01',
   occurrence_count: 3,
+  account_ids: [],
 });
 const asTransaction = (id: string, categoryId: string, amount: number, date?: string) => {
   // Use a deterministic date in the middle of current month to avoid timing issues
@@ -554,5 +555,124 @@ describe('useBudgets', () => {
     expect(result.current.budgets).toHaveLength(1);
     expect(result.current.subscriptions).toHaveLength(1);
     expect(result.current.subscriptions[0].merchant).toBe('Spotify');
+  });
+
+  it('returns full subscriptions as filteredSubscriptions when no account filter is active', async () => {
+    const subscriptions = [
+      { ...makeSubscription('Spotify', '9.99'), account_ids: ['account1'] },
+      { ...makeSubscription('Netflix', '15.99'), account_ids: [] },
+    ];
+    fetchMock = installFetchRoutes({
+      'GET /api/budgets/overview': () => asOverview([], subscriptions),
+      'GET /api/transactions': [],
+      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/status': createConnectedStatus(),
+    });
+
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.filteredSubscriptions).toHaveLength(2);
+    });
+  });
+
+  it('filters subscriptions by account_id when account filter is active', async () => {
+    let accountFilterHook: ReturnType<typeof useAccountFilter>;
+    const twoAccounts = [
+      ...mockPlaidAccounts,
+      {
+        id: 'account2',
+        name: 'Mock Savings',
+        account_type: 'depository',
+        balance_ledger: 500,
+        balance_available: 500,
+        balance_current: 500,
+        mask: '2222',
+        plaid_connection_id: 'conn_1',
+        institution_name: 'Mock Bank',
+        provider: 'plaid',
+      },
+    ];
+    const subscriptions = [
+      { ...makeSubscription('Spotify', '9.99'), account_ids: ['account1'] },
+      { ...makeSubscription('Netflix', '15.99'), account_ids: ['account2'] },
+    ];
+    fetchMock = installFetchRoutes({
+      'GET /api/budgets/overview': () => asOverview([], subscriptions),
+      'GET /api/transactions': [],
+      'GET /api/plaid/accounts': twoAccounts,
+      'GET /api/providers/status': createConnectedStatus(),
+    });
+
+    const { result } = renderHook(
+      () => {
+        accountFilterHook = useAccountFilter();
+        return useBudgets();
+      },
+      { wrapper: TestWrapper }
+    );
+
+    await waitFor(() => {
+      expect(accountFilterHook.allAccountIds).toEqual(['account1', 'account2']);
+    });
+
+    await act(async () => {
+      accountFilterHook.setSelectedAccountIds(['account1']);
+    });
+
+    await waitFor(() => {
+      expect(result.current.filteredSubscriptions).toHaveLength(1);
+      expect(result.current.filteredSubscriptions[0].merchant).toBe('Spotify');
+    });
+  });
+
+  it('returns no filtered subscriptions when all accounts are available but none are selected', async () => {
+    let accountFilterHook: ReturnType<typeof useAccountFilter>;
+    const subscriptions = [
+      { ...makeSubscription('Spotify', '9.99'), account_ids: ['account1'] },
+      { ...makeSubscription('Netflix', '15.99'), account_ids: ['account2'] },
+    ];
+    const twoAccounts = [
+      ...mockPlaidAccounts,
+      {
+        id: 'account2',
+        name: 'Mock Savings',
+        account_type: 'depository',
+        balance_ledger: 500,
+        balance_available: 500,
+        balance_current: 500,
+        mask: '2222',
+        plaid_connection_id: 'conn_1',
+        institution_name: 'Mock Bank',
+        provider: 'plaid',
+      },
+    ];
+    fetchMock = installFetchRoutes({
+      'GET /api/budgets/overview': () => asOverview([], subscriptions),
+      'GET /api/transactions': [],
+      'GET /api/plaid/accounts': twoAccounts,
+      'GET /api/providers/status': createConnectedStatus(),
+    });
+
+    const { result } = renderHook(
+      () => {
+        accountFilterHook = useAccountFilter();
+        return useBudgets();
+      },
+      { wrapper: TestWrapper }
+    );
+
+    await waitFor(() => {
+      expect(accountFilterHook.allAccountIds).toEqual(['account1', 'account2']);
+    });
+
+    await act(async () => {
+      accountFilterHook.setSelectedAccountIds([]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.filteredSubscriptions).toEqual([]);
+    });
   });
 });

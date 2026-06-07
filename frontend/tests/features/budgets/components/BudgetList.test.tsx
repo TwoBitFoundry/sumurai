@@ -76,8 +76,8 @@ describe('BudgetList', () => {
     expect(deleteButton).toBeTruthy();
   });
 
-  it('shows spent before planned in the budget stat row', () => {
-    render(
+  it('shows spent before planned with captions above the progress bar', () => {
+    const { container } = render(
       <BudgetList
         items={[
           {
@@ -102,6 +102,9 @@ describe('BudgetList', () => {
     expect(
       spentLabel.compareDocumentPosition(plannedLabel) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
-    expect(plannedLabel.parentElement).toHaveClass('text-right');
+    expect(plannedLabel).toHaveClass('text-right');
+    expect(screen.getByText('25%')).toBeInTheDocument();
+    expect(container.querySelector('[role="progressbar"]')).toBeTruthy();
+    expect(screen.getByText('$100.00')).toHaveClass('text-right');
   });
 });

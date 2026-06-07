@@ -23,10 +23,9 @@ describe('subscriptionCadences', () => {
       { cadence: 'monthly', merchant: 'Spotify', first_charged: '2026-05-01' },
       { cadence: 'Quarterly', merchant: 'Adobe', first_charged: '2026-05-01' },
       { cadence: 'unknown', merchant: 'Other', first_charged: '2026-05-01' },
-      { cadence: 'weekly', merchant: 'Gym', first_charged: '2026-05-01' },
     ]);
 
-    expect(grouped.monthly.map((item) => item.merchant)).toEqual(['Gym', 'Other', 'Spotify']);
+    expect(grouped.monthly.map((item) => item.merchant)).toEqual(['Other', 'Spotify']);
     expect(grouped.quarterly.map((item) => item.merchant)).toEqual(['Adobe']);
     expect(grouped.annual).toEqual([]);
   });

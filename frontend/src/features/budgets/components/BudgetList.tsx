@@ -6,15 +6,47 @@ import React from 'react';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { cn, EmptyState, IconButton, Input, Pill } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import {
+  budgetProgress as budgetProgressRecipes,
+  status,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { getHeroAccentForCategoryKey, getHeroAccentTheme } from '@/ui/tokens';
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
 import { useCategories } from '../../transactions/hooks/useCategories';
 import type { BudgetProgressEntry } from '../hooks/useBudgets';
-import BudgetProgress from './BudgetProgress';
+import BudgetProgress, { getBudgetProgressMetrics } from './BudgetProgress';
 
 export type BudgetWithProgress = BudgetProgressEntry;
+
+const budgetStatGridClass = cn(
+  'grid',
+  'grid-cols-[auto_1fr_auto]',
+  'grid-rows-[auto_auto]',
+  'items-baseline',
+  'gap-x-2',
+  'gap-y-2',
+  'md:gap-x-3',
+  'md:gap-y-2.5'
+);
+
+const budgetAmountClass = cn(
+  uiTypographyRecipes.cardTitle,
+  'tabular-nums',
+  'transition-colors',
+  'duration-300'
+);
+
+const budgetBarSlotClass = cn(
+  'flex',
+  'min-w-0',
+  'w-full',
+  'min-h-8',
+  'items-center',
+  'self-center'
+);
 
 export function BudgetList({
   items,
@@ -59,6 +91,14 @@ export function BudgetList({
         } as CSSProperties;
         const isEditing = editingId === b.id;
         const draft = amountDrafts[b.id] ?? String(b.amount);
+        const parsedDraft = Number(draft);
+        const editPlannedAmount =
+          Number.isFinite(parsedDraft) && draft !== '' ? parsedDraft : b.amount;
+        const {
+          clampedPercent,
+          isOver: isOverBudget,
+          remaining,
+        } = getBudgetProgressMetrics(b.amount, b.spent);
         return (
           <li key={b.id} className={cn(heroStatCardRecipes.base, 'h-full')}>
             <div
@@ -151,139 +191,90 @@ export function BudgetList({
                   )}
                 </div>
               </div>
-              <div
-                className={cn(
-                  'relative z-10 mt-3 flex-1 space-y-3 md:space-y-3.5 lg:mt-2 lg:space-y-4'
-                )}
-              >
-                {isEditing ? (
+              <div className={cn('relative', 'z-10', 'mt-3', 'flex-1', 'lg:mt-2')}>
+                <div className={budgetStatGridClass}>
+                  <div className={cn(uiTypographyRecipes.label, uiTextRecipes.subtle)}>Spent</div>
                   <div
                     className={cn(
-                      'grid',
-                      'grid-cols-1',
-                      'gap-3',
-                      'md:grid-cols-[1fr_auto]',
-                      'md:items-end'
+                      'flex',
+                      'min-w-0',
+                      'items-baseline',
+                      'justify-between',
+                      'text-[0.75rem]',
+                      uiTextRecipes.muted,
+                      isEditing && 'invisible'
                     )}
+                    aria-hidden={isEditing}
                   >
-                    <div className="space-y-2">
-                      <label
-                        htmlFor={`budget-amount-${b.id}`}
-                        className={cn(
-                          'block',
-                          uiTypographyRecipes.label,
-                          uiTextRecipes.subtle,
-                          'transition-colors',
-                          'duration-300'
-                        )}
-                      >
-                        Planned amount
-                      </label>
-                      <Input
-                        id={`budget-amount-${b.id}`}
-                        data-testid="budget-amount-input"
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={draft}
-                        onChange={(e) => setAmountDrafts((d) => ({ ...d, [b.id]: e.target.value }))}
-                        variant="glass"
-                        inputSize="lg"
-                      />
-                    </div>
-                    <div
+                    <span className={cn(...budgetProgressRecipes.captionPercent)}>
+                      {clampedPercent.toFixed(0)}%
+                    </span>
+                    <span
                       className={cn(
-                        'text-right',
-                        uiTypographyRecipes.caption,
-                        uiTextRecipes.subtle,
-                        'transition-colors',
-                        'duration-300'
+                        ...budgetProgressRecipes.captionPercent,
+                        ...(isOverBudget ? status.danger.text : uiTextRecipes.body)
                       )}
                     >
-                      <span
-                        className={cn(
-                          'block',
-                          uiTypographyRecipes.label,
-                          uiTextRecipes.subtle,
-                          'transition-colors',
-                          'duration-300'
-                        )}
-                      >
-                        Spent
-                      </span>
-                      <span
-                        className={cn(
-                          uiTypographyRecipes.bodyStrong,
-                          uiTextRecipes.body,
-                          'transition-colors',
-                          'duration-300'
-                        )}
-                      >
-                        {fmtUSD(b.spent)}
-                      </span>
-                    </div>
+                      {isOverBudget ? fmtUSD(b.spent - b.amount) : fmtUSD(remaining)}
+                    </span>
                   </div>
-                ) : (
+                  <div
+                    className={cn(uiTypographyRecipes.label, uiTextRecipes.subtle, 'text-right')}
+                  >
+                    Planned
+                  </div>
+
                   <div
                     className={cn(
-                      'grid',
-                      'grid-cols-2',
-                      'gap-3',
-                      uiTypographyRecipes.caption,
-                      uiTextRecipes.subtle,
-                      'transition-colors',
-                      'duration-300'
+                      budgetAmountClass,
+                      isOver ? uiTextRecipes.danger : uiTextRecipes.body
                     )}
                   >
-                    <div>
-                      <span
-                        className={cn(
-                          uiTypographyRecipes.label,
-                          uiTextRecipes.subtle,
-                          'transition-colors',
-                          'duration-300'
-                        )}
-                      >
-                        Spent
-                      </span>
-                      <div
-                        className={cn(
-                          'mt-1',
-                          uiTypographyRecipes.cardTitle,
-                          'transition-colors',
-                          'duration-300',
-                          isOver ? uiTextRecipes.danger : uiTextRecipes.body
-                        )}
-                      >
-                        {fmtUSD(b.spent)}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span
-                        className={cn(
-                          uiTypographyRecipes.label,
-                          uiTextRecipes.subtle,
-                          'transition-colors',
-                          'duration-300'
-                        )}
-                      >
-                        Planned
-                      </span>
-                      <div
-                        className={cn(
-                          'mt-1',
-                          uiTypographyRecipes.cardTitle,
-                          uiTextRecipes.primary,
-                          'transition-colors',
-                          'duration-300'
-                        )}
-                      >
-                        {fmtUSD(b.amount)}
-                      </div>
-                    </div>
+                    {fmtUSD(b.spent)}
                   </div>
-                )}
-                <BudgetProgress amount={b.amount} spent={b.spent} />
+                  <div className={budgetBarSlotClass}>
+                    {isEditing ? (
+                      <>
+                        <label htmlFor={`budget-amount-${b.id}`} className="sr-only">
+                          Planned amount
+                        </label>
+                        <Input
+                          id={`budget-amount-${b.id}`}
+                          data-testid="budget-amount-input"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={draft}
+                          placeholder="Planned amount"
+                          onChange={(e) =>
+                            setAmountDrafts((d) => ({ ...d, [b.id]: e.target.value }))
+                          }
+                          variant="glass"
+                          inputSize="sm"
+                          className={cn(
+                            'w-full',
+                            'h-8',
+                            'min-h-8',
+                            'px-2',
+                            'py-0',
+                            'text-center',
+                            budgetAmountClass,
+                            uiTextRecipes.primary,
+                            'placeholder:font-normal',
+                            'placeholder:text-slate-500',
+                            'dark:placeholder:text-slate-400',
+                            'shadow-none'
+                          )}
+                        />
+                      </>
+                    ) : (
+                      <BudgetProgress amount={b.amount} spent={b.spent} showCaptions={false} />
+                    )}
+                  </div>
+                  <div className={cn(budgetAmountClass, uiTextRecipes.primary, 'text-right')}>
+                    {fmtUSD(isEditing ? editPlannedAmount : b.amount)}
+                  </div>
+                </div>
               </div>
             </div>
           </li>

@@ -16,6 +16,7 @@ const makeSubscription = (
   first_charged: firstCharged,
   last_charged: lastCharged,
   occurrence_count: 3,
+  account_ids: [],
 });
 
 describe('SubscriptionList', () => {
@@ -41,6 +42,7 @@ describe('SubscriptionList', () => {
     expect(screen.getByText('Adobe')).toBeInTheDocument();
     expect(screen.getByTestId('subscription-cadence-group-monthly')).toBeInTheDocument();
     expect(screen.getByTestId('subscription-cadence-group-quarterly')).toBeInTheDocument();
+    expect(screen.queryByTestId('subscription-cadence-group-annual')).not.toBeInTheDocument();
     expect(screen.queryByText('monthly')).not.toBeInTheDocument();
     expect(screen.queryByText('quarterly')).not.toBeInTheDocument();
   });
@@ -71,6 +73,7 @@ describe('SubscriptionList', () => {
     render(<SubscriptionList subscriptions={[]} />);
 
     expect(screen.getByTestId('subscriptions-empty-state')).toBeInTheDocument();
-    expect(screen.getByText('Yearly')).toBeInTheDocument();
+    expect(screen.queryByTestId('subscription-cadence-group-monthly')).not.toBeInTheDocument();
+    expect(screen.queryByText('Yearly')).not.toBeInTheDocument();
   });
 });

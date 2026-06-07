@@ -20,8 +20,7 @@ import {
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { getHeroAccentForCategoryKey, getHeroAccentTheme } from '@/ui/tokens';
-import { getTagThemeForCategory } from '@/utils/categories';
+import { getHeroAccentTheme } from '@/ui/tokens';
 import { fmtUSD } from '@/utils/format';
 
 export interface SubscriptionListProps {
@@ -43,8 +42,7 @@ function SubscriptionCadenceGroupHeader({ cadence }: { cadence: SubscriptionCade
 }
 
 function SubscriptionCard({ subscription }: { subscription: SubscriptionSummary }) {
-  const tagTheme = getTagThemeForCategory('SUBSCRIPTION');
-  const heroStyles = getHeroAccentTheme(getHeroAccentForCategoryKey(tagTheme.key));
+  const heroStyles = getHeroAccentTheme('sky');
   const dateRange = getSubscriptionDateRangeDisplay(subscription);
   const dateLabel = formatSubscriptionDateRangeLabel(subscription);
   const ringStyle = {
@@ -144,19 +142,12 @@ export function SubscriptionList({ subscriptions, isLoading = false }: Subscript
 
   if (!isLoading && subscriptions.length === 0) {
     return (
-      <div className={cn('space-y-6')}>
-        <div className={cn('flex', 'flex-wrap', 'gap-3')}>
-          {SUBSCRIPTION_CADENCE_ORDER.map((cadence) => (
-            <SubscriptionCadenceGroupHeader key={cadence} cadence={cadence} />
-          ))}
-        </div>
-        <EmptyState
-          icon={Repeat2}
-          title="No subscriptions detected"
-          description="Subscriptions are detected automatically after a sync or categorization run."
-          data-testid="subscriptions-empty-state"
-        />
-      </div>
+      <EmptyState
+        icon={Repeat2}
+        title="No subscriptions detected"
+        description="Subscriptions are detected automatically after a sync or categorization run."
+        data-testid="subscriptions-empty-state"
+      />
     );
   }
 
@@ -164,6 +155,9 @@ export function SubscriptionList({ subscriptions, isLoading = false }: Subscript
     <div className={cn('space-y-6')} data-testid="subscription-cadence-groups">
       {SUBSCRIPTION_CADENCE_ORDER.map((cadence) => {
         const cadenceSubscriptions = groupedSubscriptions[cadence];
+        if (cadenceSubscriptions.length === 0) {
+          return null;
+        }
 
         return (
           <section
@@ -172,18 +166,14 @@ export function SubscriptionList({ subscriptions, isLoading = false }: Subscript
             data-testid={`subscription-cadence-group-${cadence}`}
           >
             <SubscriptionCadenceGroupHeader cadence={cadence} />
-            {cadenceSubscriptions.length > 0 ? (
-              <ul
-                className={cn('grid', 'grid-cols-1', 'gap-3', 'md:grid-cols-2', 'lg:grid-cols-3')}
-              >
-                {cadenceSubscriptions.map((subscription) => (
-                  <SubscriptionCard
-                    key={subscription.normalized_merchant}
-                    subscription={subscription}
-                  />
-                ))}
-              </ul>
-            ) : null}
+            <ul className={cn('grid', 'grid-cols-1', 'gap-3', 'md:grid-cols-2', 'lg:grid-cols-3')}>
+              {cadenceSubscriptions.map((subscription) => (
+                <SubscriptionCard
+                  key={subscription.normalized_merchant}
+                  subscription={subscription}
+                />
+              ))}
+            </ul>
           </section>
         );
       })}

@@ -27,6 +27,7 @@ describe('BudgetService.getOverview — Given/When/Then', () => {
           first_charged: '2024-01-01',
           last_charged: '2024-03-01',
           occurrence_count: 3,
+          account_ids: [],
         },
       ],
     } as any);
@@ -45,6 +46,7 @@ describe('BudgetService.getOverview — Given/When/Then', () => {
           first_charged: '2024-01-01',
           last_charged: '2024-03-01',
           occurrence_count: 3,
+          account_ids: [],
         },
       ],
     });

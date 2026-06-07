@@ -55,6 +55,7 @@ const makeSubscription = (merchant: string) => ({
   last_charged: '2026-05-01',
   first_charged: '2026-05-01',
   occurrence_count: 3,
+  account_ids: [],
 });
 
 const baseUseBudgetsMock = {
@@ -65,8 +66,13 @@ const baseUseBudgetsMock = {
   add: jest.fn(),
   update: jest.fn(),
   remove: jest.fn(),
-  computedBudgets: [],
+  computedBudgets: [
+    { id: 'b1', category: 'FOOD_AND_DRINK', amount: 200, spent: 80, percentage: 40 },
+  ],
+  transactions: [],
   subscriptions: [],
+  filteredSubscriptions: [],
+  filterKey: 'all',
   categoryOptions: [],
   availableCategoryOptions: [],
   usedCategories: new Set(),
@@ -79,6 +85,7 @@ const baseUseBudgetsMock = {
   goToCurrentMonth: jest.fn(),
   load: jest.fn(),
   categories: [],
+  budgets: [],
 };
 
 describe('BudgetsPage', () => {
@@ -90,25 +97,20 @@ describe('BudgetsPage', () => {
     jest.mocked(useBudgets).mockReturnValue(baseUseBudgetsMock as any);
   });
 
-  it('renders hero row in Days remaining, subscription costs, Overages order', () => {
-    jest.mocked(useBudgets).mockReturnValue({
-      ...baseUseBudgetsMock,
-      subscriptions: [makeSubscription('Spotify')],
-    } as any);
-
+  it('renders four insight cards replacing the old hero cards', () => {
     render(<BudgetsPage monthControl={monthControl} />);
 
-    const titles = screen.getAllByText(/Days remaining|Subscription costs|Overages/);
-    expect(titles.map((node) => node.textContent)).toEqual([
-      'Days remaining',
-      'Subscription costs',
-      'Overages',
-    ]);
-    expect(screen.queryByText('Active budgets')).not.toBeInTheDocument();
-    expect(screen.queryByText('Monitor')).not.toBeInTheDocument();
+    expect(screen.getByText('Runway Pace')).toBeInTheDocument();
+    expect(screen.getByText('Free Spend')).toBeInTheDocument();
+    expect(screen.getByText('Sub Costs')).toBeInTheDocument();
+
+    expect(screen.queryByText('Days remaining')).not.toBeInTheDocument();
+    expect(screen.queryByText('Subscription costs')).not.toBeInTheDocument();
+    expect(screen.queryByText('Overages')).not.toBeInTheDocument();
   });
 
   it('shows subscription and budget glass cards with subscriptions first', async () => {
+    jest.mocked(useBudgets).mockReturnValue({ ...baseUseBudgetsMock, computedBudgets: [] } as any);
     render(<BudgetsPage monthControl={monthControl} />);
 
     await waitFor(() => {
@@ -127,13 +129,12 @@ describe('BudgetsPage', () => {
     expect(budgetsCardIndex).toBeGreaterThan(subscriptionsCardIndex);
   });
 
-  it('keeps the budget stats grid in two columns on mobile', () => {
-    const { container } = render(<BudgetsPage monthControl={monthControl} />);
-    const statsGrid = container.querySelector(
-      '[data-testid="page-layout"] .grid.gap-3'
-    ) as HTMLElement | null;
+  it('keeps the insight grid in one column on mobile, two on tablet, and three on desktop', () => {
+    render(<BudgetsPage monthControl={monthControl} />);
 
-    expect(statsGrid).toHaveClass('grid-cols-2');
+    const statsGrid = screen.getByTestId('budget-insights-grid');
+    expect(statsGrid).toHaveClass('grid-cols-1');
+    expect(statsGrid).toHaveClass('md:grid-cols-2');
     expect(statsGrid).toHaveClass('lg:grid-cols-3');
   });
 });

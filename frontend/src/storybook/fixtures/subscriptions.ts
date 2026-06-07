@@ -9,6 +9,7 @@ export const sampleSubscriptions: SubscriptionSummary[] = [
     first_charged: '2025-12-01',
     last_charged: '2026-05-01',
     occurrence_count: 6,
+    account_ids: [],
   },
   {
     merchant: 'Netflix',
@@ -18,6 +19,7 @@ export const sampleSubscriptions: SubscriptionSummary[] = [
     first_charged: '2026-01-03',
     last_charged: '2026-05-03',
     occurrence_count: 4,
+    account_ids: [],
   },
   {
     merchant: 'Adobe Creative Cloud',
@@ -27,6 +29,7 @@ export const sampleSubscriptions: SubscriptionSummary[] = [
     first_charged: '2025-10-01',
     last_charged: '2026-04-01',
     occurrence_count: 2,
+    account_ids: [],
   },
   {
     merchant: 'Amazon Prime',
@@ -36,5 +39,26 @@ export const sampleSubscriptions: SubscriptionSummary[] = [
     first_charged: '2025-01-15',
     last_charged: '2026-01-15',
     occurrence_count: 2,
+    account_ids: [],
+  },
+  {
+    merchant: 'Adobe Creative Cloud',
+    normalized_merchant: 'adobe-creative-cloud',
+    monthly_cost: '18.33',
+    cadence: 'quarterly',
+    first_charged: '2025-10-01',
+    last_charged: '2026-04-01',
+    occurrence_count: 2,
+    account_ids: [],
+  },
+  {
+    merchant: 'Amazon Prime',
+    normalized_merchant: 'amazon-prime',
+    monthly_cost: '11.58',
+    cadence: 'annual',
+    first_charged: '2025-01-15',
+    last_charged: '2026-01-15',
+    occurrence_count: 2,
+    account_ids: [],
   },
 ];

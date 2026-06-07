@@ -2829,6 +2829,13 @@ impl DatabaseRepository for PostgresRepository {
                 .find_map(|r| r.merchant_name.clone())
                 .unwrap_or_else(|| normalized.clone());
 
+            let mut seen_account_ids = std::collections::HashSet::new();
+            let account_ids: Vec<Uuid> = group
+                .iter()
+                .filter_map(|r| r.account_id)
+                .filter(|id| seen_account_ids.insert(*id))
+                .collect();
+
             summaries.push(SubscriptionSummary {
                 merchant,
                 normalized_merchant: normalized,
@@ -2837,6 +2844,7 @@ impl DatabaseRepository for PostgresRepository {
                 first_charged,
                 last_charged,
                 occurrence_count: group.len() as i64,
+                account_ids,
             });
         }
 

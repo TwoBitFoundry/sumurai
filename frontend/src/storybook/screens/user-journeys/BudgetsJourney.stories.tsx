@@ -101,7 +101,7 @@ export const Journey: Story = {
     const canvas = within(canvasElement);
     await waitFor(() => {
       expect(canvas.getByText(/provision the coffers/i)).toBeVisible();
-      expect(canvas.getByText('Subscription costs')).toBeVisible();
+      expect(canvas.getByText('Sub Costs')).toBeVisible();
     });
 
     await userEvent.click(canvas.getByRole('button', { name: /show subscriptions/i }));
