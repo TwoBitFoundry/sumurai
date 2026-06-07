@@ -1,25 +1,14 @@
 import type React from 'react';
-import {
-  surface as semanticSurfaces,
-  text as semanticTextRecipes,
-  font as uiTypographyRecipes,
-} from '@/ui/recipes';
+import { text as semanticTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { cn } from './utils';
 
 export const emptyStateRecipes = {
   iconWrapper: [
     'flex',
-    'h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20',
     'items-center',
     'justify-center',
-    'rounded-full',
-    ...semanticSurfaces.card,
     semanticTextRecipes.muted,
     'transition-colors duration-300 ease-out',
-    'hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
-    'dark:text-slate-300',
-    'dark:hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
-    'cursor-pointer',
   ],
   title: `${uiTypographyRecipes.cardTitle} ${semanticTextRecipes.primary} transition-colors duration-500`,
   description: `${uiTypographyRecipes.body} max-w-sm ${semanticTextRecipes.body} transition-colors duration-500`,

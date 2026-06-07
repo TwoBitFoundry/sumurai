@@ -23,15 +23,6 @@ describe('generateMonthRange', () => {
 });
 
 describe('chartSeriesStartDate', () => {
-  it('extends current-month by one prior month for chart comparison', () => {
-    const { start, end } = computeDateRange('current-month');
-    expect(start).toBeDefined();
-    expect(end).toBeDefined();
-    const months = generateMonthRange(chartSeriesStartDate(start!), end!);
-    expect(months.length).toBeGreaterThanOrEqual(2);
-    expect(months[months.length - 1]).toMatch(/^\d{4}-\d{2}$/);
-  });
-
   it('extends past-2-months by one prior month', () => {
     const { start, end } = computeDateRange('past-2-months');
     const months = generateMonthRange(chartSeriesStartDate(start!), end!);

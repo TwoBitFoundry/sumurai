@@ -53,8 +53,9 @@ export function BudgetList({
         const displayName = formatCategoryName(b.category);
         const tagTheme = getTagThemeForCategory(b.category, accentIndexByName);
         const heroStyles = getHeroAccentTheme(getHeroAccentForCategoryKey(tagTheme.key));
-        const ringColorStyle = {
-          '--tw-ring-color': `${heroStyles.ringHex}66`,
+        const cardAccentStyle = {
+          borderColor: `${tagTheme.ringHex}99`,
+          '--tw-ring-color': `${tagTheme.ringHex}66`,
         } as CSSProperties;
         const isEditing = editingId === b.id;
         const draft = amountDrafts[b.id] ?? String(b.amount);
@@ -63,12 +64,12 @@ export function BudgetList({
             <div
               className={cn(
                 heroStatCardRecipes.shell,
-                heroStyles.border,
-                heroStyles.borderDark,
+                'border-2',
                 heroStyles.hoverBorder,
                 heroStyles.hoverBorderDark,
                 'flex h-full flex-col p-3.5 pt-4 md:p-3.5 md:pt-4 lg:p-4 lg:pt-5'
               )}
+              style={cardAccentStyle}
             >
               <div
                 className={cn(
@@ -87,12 +88,12 @@ export function BudgetList({
                 }}
               />
               <div className={cn(heroStatCardRecipes.ring)}>
-                <div className={cn(heroStatCardRecipes.ringLine)} style={ringColorStyle} />
+                <div className={cn(heroStatCardRecipes.ringLine)} style={cardAccentStyle} />
               </div>
               <div className={cn('relative z-10 flex items-start justify-between gap-3')}>
                 <Pill
                   variant="category"
-                  categoryName={displayName}
+                  categoryName={b.category}
                   accentIndexByName={accentIndexByName}
                   className={cn(
                     'transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10'

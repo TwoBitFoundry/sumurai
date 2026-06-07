@@ -8,6 +8,7 @@ const SESSION_KEYS = {
   transactionsCategory: 'sumurai.ui.transactionsCategory',
   transactionsSearch: 'sumurai.ui.transactionsSearch',
   accountsBankExpanded: 'sumurai.ui.accountsBankExpanded',
+  budgetsSectionExpanded: 'sumurai.ui.budgetsSectionExpanded',
 } as const;
 
 const DATE_RANGE_KEYS: DateRangeKey[] = [
@@ -178,4 +179,40 @@ export function setSessionBankExpanded(bankId: string, expanded: boolean): void 
   }
 
   writeJson(SESSION_KEYS.accountsBankExpanded, map);
+}
+
+export function getSessionBudgetsSectionExpanded(sectionId: string): boolean {
+  const map = readJson<Record<string, boolean>>(SESSION_KEYS.budgetsSectionExpanded, (value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return null;
+    }
+    return value as Record<string, boolean>;
+  });
+  if (!map || typeof map[sectionId] !== 'boolean') {
+    return false;
+  }
+  return map[sectionId];
+}
+
+export function setSessionBudgetsSectionExpanded(sectionId: string, expanded: boolean): void {
+  const map =
+    readJson<Record<string, boolean>>(SESSION_KEYS.budgetsSectionExpanded, (value) => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return null;
+      }
+      return value as Record<string, boolean>;
+    }) ?? {};
+
+  if (expanded) {
+    map[sectionId] = true;
+  } else {
+    delete map[sectionId];
+  }
+
+  if (Object.keys(map).length === 0) {
+    removeItem(SESSION_KEYS.budgetsSectionExpanded);
+    return;
+  }
+
+  writeJson(SESSION_KEYS.budgetsSectionExpanded, map);
 }

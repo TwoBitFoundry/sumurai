@@ -44,7 +44,7 @@ const SpendingByCategoryChartFn: React.FC<Props> = ({
       <EmptyState
         icon={BarChart3}
         title="No spending yet"
-        description="Nothing to chart in this period."
+        description="No spending recorded for this period."
       />
     );
   }

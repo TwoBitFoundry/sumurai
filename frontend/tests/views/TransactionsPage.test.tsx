@@ -60,6 +60,12 @@ jest.mock('@/features/transactions/components/TransactionsTable', () => ({
   default: () => <div data-testid="transactions-table" />,
 }));
 
+jest.mock('@/features/transactions/components/CategoryCatalogPicker', () => ({
+  __esModule: true,
+  default: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="category-catalog-picker" /> : null,
+}));
+
 jest.mock('@/components/toastStack/ToastStack', () => ({
   ToastStack: ({
     transients,

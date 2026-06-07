@@ -6,6 +6,7 @@ const makeSummary = (merchant: string, monthlyCost: string): SubscriptionSummary
   normalized_merchant: merchant.toLowerCase(),
   monthly_cost: monthlyCost,
   cadence: 'Monthly',
+  first_charged: '2024-03-01',
   last_charged: '2024-03-01',
   occurrence_count: 3,
 });

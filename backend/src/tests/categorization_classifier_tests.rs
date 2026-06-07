@@ -179,6 +179,7 @@ fn given_keyword_matches_when_classifying_then_returns_deterministic_prediction(
         ("[credit] ACME CORP DIRECT DEP", "INCOME"),
         ("[debit] OVERDRAFT FEE", "BANK_FEES"),
         ("[debit] MOBILE CHECK DEPOSIT REVERSAL ATM FEE", "BANK_FEES"),
+        ("[debit] ATM WITHDRAWAL 123 MAIN ST", "BANK_FEES"),
         ("[debit] MORTGAGE PAYMENT", "LOAN_PAYMENTS"),
         ("[debit] APARTMENT RENT", "RENT_AND_UTILITIES"),
         ("[debit] ELECTRIC BILL AUTOPAY", "RENT_AND_UTILITIES"),

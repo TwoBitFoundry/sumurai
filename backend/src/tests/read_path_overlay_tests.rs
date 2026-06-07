@@ -355,3 +355,44 @@ async fn given_insights_when_override_exists_then_aggregates_by_effective_catego
         .iter()
         .any(|c| c == &"Coffee".to_string()));
 }
+
+#[tokio::test]
+async fn given_override_when_fetching_spending_transactions_then_uses_effective_category() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let user_id = Uuid::new_v4();
+
+    db::query("INSERT INTO users (id, email, password_hash, provider) VALUES ($1, $2, $3, $4)")
+        .bind(user_id)
+        .bind(format!("user{}@test.com", user_id))
+        .bind("hash")
+        .bind("plaid")
+        .execute(&pool)
+        .await
+        .unwrap();
+
+    let (_, _, _, _, _) = setup_test_data(&pool, &user_id).await;
+
+    db::query(
+        "INSERT INTO transaction_category_overrides (id, user_id, normalized_merchant, category_name, custom_category_id)
+         VALUES ($1, $2, $3, $4, $5)",
+    )
+    .bind(Uuid::new_v4())
+    .bind(user_id)
+    .bind("starbucks")
+    .bind("TRANSFER_OUT")
+    .bind(Option::<Uuid>::None)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let repo = open_repository(pool);
+    let spending = repo
+        .get_spending_transactions_for_user(&user_id)
+        .await
+        .unwrap();
+
+    assert!(spending.is_empty());
+}

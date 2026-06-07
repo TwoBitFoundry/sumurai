@@ -2,8 +2,8 @@
  * Cash flow chart showing monthly income, expenses, and net savings.
  */
 
-import React from 'react';
-import type { TooltipProps } from 'recharts';
+import React, { useMemo } from 'react';
+import type { TooltipContentProps } from 'recharts';
 import {
   Area,
   AreaChart,
@@ -14,6 +14,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { text as uiTextRecipes } from '@/ui/recipes';
 import { useTheme } from '../../../context/ThemeContext';
 import type { AnalyticsCashFlowPoint } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
@@ -26,18 +27,51 @@ export interface CashFlowChartProps {
   height: number;
 }
 
-const cashFlowTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) => {
+type CashFlowChartDatum = AnalyticsCashFlowPoint & {
+  plottedExpenses: number;
+};
+
+const cashFlowTooltipFormatter: TooltipContentProps<number, string>['formatter'] = (
+  value,
+  name,
+  entry
+) => {
   const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
-  return fmtUSD(Number.isFinite(numericValue) ? numericValue : 0);
+  const normalizedValue =
+    String(entry?.dataKey ?? name ?? '') === 'plottedExpenses'
+      ? Math.abs(numericValue)
+      : numericValue;
+  return fmtUSD(Number.isFinite(normalizedValue) ? normalizedValue : 0);
+};
+
+const cashFlowTooltipValueClassName = (
+  entry: NonNullable<TooltipContentProps<number, string>['payload']>[number]
+) => {
+  const key = String(entry.dataKey ?? entry.name ?? '');
+  if (key === 'income') return uiTextRecipes.success;
+  if (key === 'expenses' || key === 'plottedExpenses') return uiTextRecipes.danger;
+  if (key === 'net') return 'text-violet-500 dark:text-violet-300';
+  return undefined;
 };
 
 const CashFlowChartFn: React.FC<CashFlowChartProps> = ({ data, width, height }) => {
   const { colors } = useTheme();
+  const chartData = useMemo<CashFlowChartDatum[]>(
+    () =>
+      data.map((point) => ({
+        ...point,
+        income: Number(point.income),
+        expenses: Number(point.expenses),
+        net: Number(point.net),
+        plottedExpenses: -Math.abs(Number(point.expenses)),
+      })),
+    [data]
+  );
   return (
     <AreaChart
       width={width}
       height={height}
-      data={data}
+      data={chartData}
       margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
       accessibilityLayer={false}
     >
@@ -81,7 +115,8 @@ const CashFlowChartFn: React.FC<CashFlowChartProps> = ({ data, width, height }) 
           <ChartGlassTooltip
             {...tooltipProps}
             formatter={cashFlowTooltipFormatter}
-            valueClassName="text-success"
+            labelFormatter={(label) => formatChartMonthLabel(String(label))}
+            valueClassNameForEntry={cashFlowTooltipValueClassName}
           />
         )}
         {...chartTooltipRechartsProps}
@@ -101,8 +136,7 @@ const CashFlowChartFn: React.FC<CashFlowChartProps> = ({ data, width, height }) 
       />
       <Area
         type="monotone"
-        dataKey="expenses"
-        stackId="flow"
+        dataKey="plottedExpenses"
         fill="url(#expensesGradient)"
         stroke={colors.semantic.credit}
         strokeWidth={0}

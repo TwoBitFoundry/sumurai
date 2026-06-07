@@ -8,9 +8,8 @@ import { PageLayout } from '@/layouts/PageLayout';
 import { sampleBankConnections } from '@/storybook/fixtures/plaid';
 import { storyProviderPickerPanelProps } from '@/storybook/fixtures/providerPicker';
 import type { FinancialProvider } from '@/types/api';
-import { Button, cn } from '@/ui/primitives';
+import { cn, IconButton } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { font as uiTypographyRecipes } from '@/ui/recipes';
 
 type ProviderPickerSliceProps = {
   loading?: boolean;
@@ -55,23 +54,19 @@ export function AccountsConnectedScreenSlice(props: {
   const actions = (
     <>
       {!props.connectionsEmpty ? (
-        <Button
+        <IconButton
           type="button"
           variant="ghost"
           size="md"
-          className={cn(
-            appTitleBarRecipes.settingsIdle,
-            'normal-case',
-            uiTypographyRecipes.bodyStrong,
-            'px-5'
-          )}
+          aria-label={props.syncingAll ? 'Syncing all institutions' : 'Sync all'}
+          className={cn(appTitleBarRecipes.settingsIdle)}
+          title={props.syncingAll ? 'Syncing all institutions' : 'Sync all'}
         >
           <RefreshCw className={cn(props.syncingAll && 'animate-spin')} />
-          {props.syncingAll ? 'Syncing...' : 'Sync all'}
-        </Button>
+        </IconButton>
       ) : null}
       <ConnectButton onClick={() => {}} disabled={false}>
-        Add account
+        Link Account
       </ConnectButton>
     </>
   );
@@ -88,9 +83,8 @@ export function AccountsConnectedScreenSlice(props: {
   return (
     <div data-testid="accounts-page">
       <PageLayout
-        badge="Plaid Accounts"
-        title="Sworn accounts & allies"
-        subtitle="Bind your financial houses. Link institutions and keep every balance true."
+        title="Unite your financial allies with Plaid"
+        subtitle="Securely link and sync accounts on-demand, view balances, and import or export your data any time."
         actions={actions}
         stats={statsGrid}
       >

@@ -7,13 +7,14 @@ import {
   getTagThemeForCategory,
   getTagThemeForCategoryAtIndex,
   longestFormattedCategoryLabel,
+  mergeTransactionFilterCategories,
   mobileCategoryChipWidthRem,
   sortCategoryNamesAlphabetically,
   validateCustomCategoryName,
 } from '@/utils/categories';
 
 describe('category accent index', () => {
-  it('assigns colors by sorted roster index and repeats', () => {
+  it('assigns colors by sorted filter roster index and repeats', () => {
     const names = sortCategoryNamesAlphabetically(['transportation', 'Coffee', 'food_and_drink']);
     const accentIndex = buildCategoryAccentIndex(names);
 
@@ -25,6 +26,57 @@ describe('category accent index', () => {
     expect(getTagThemeForCategory('food_and_drink', accentIndex).key).toBe(
       getTagThemeForCategoryAtIndex(1).key
     );
+  });
+
+  it('resolves budget and display category aliases to the same accent as transaction slugs', () => {
+    const names = sortCategoryNamesAlphabetically([
+      'ENTERTAINMENT',
+      'FOOD_AND_DRINK',
+      'GENERAL_SERVICES',
+      'SUBSCRIPTION',
+    ]);
+    const accentIndex = buildCategoryAccentIndex(names);
+
+    const subscriptionTheme = getTagThemeForCategory('SUBSCRIPTION', accentIndex);
+    expect(getTagThemeForCategory('Subscriptions', accentIndex).key).toBe(subscriptionTheme.key);
+    expect(getTagThemeForCategory('subscription', accentIndex).key).toBe(subscriptionTheme.key);
+    expect(getTagThemeForCategory('GENERAL_SERVICES', accentIndex).key).toBe(
+      getTagThemeForCategory('Services', accentIndex).key
+    );
+    expect(getTagThemeForCategory('food and drink', accentIndex).key).toBe(
+      getTagThemeForCategory('FOOD_AND_DRINK', accentIndex).key
+    );
+  });
+});
+
+describe('mergeTransactionFilterCategories', () => {
+  it('includes custom categories that are not yet used on transactions', () => {
+    expect(
+      mergeTransactionFilterCategories(
+        ['FOOD_AND_DRINK'],
+        [{ id: '1', display_name: 'Weekend Brunch', lookup_key: 'weekend brunch' }]
+      )
+    ).toEqual(['FOOD_AND_DRINK', 'Weekend Brunch']);
+  });
+
+  it('dedupes custom categories already present in transaction categories', () => {
+    expect(
+      mergeTransactionFilterCategories(
+        ['Coffee'],
+        [{ id: '1', display_name: 'Coffee', lookup_key: 'coffee' }]
+      )
+    ).toEqual(['Coffee']);
+  });
+
+  it('removes custom-only categories when they are deleted from the catalog', () => {
+    expect(
+      mergeTransactionFilterCategories(
+        [],
+        [{ id: '1', display_name: 'Weekend Brunch', lookup_key: 'weekend brunch' }]
+      )
+    ).toEqual(['Weekend Brunch']);
+
+    expect(mergeTransactionFilterCategories([], [])).toEqual([]);
   });
 });
 

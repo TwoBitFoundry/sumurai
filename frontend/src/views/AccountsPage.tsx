@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileDown, RefreshCw } from 'lucide-react';
+import { Download, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, cn, MenuDropdown, MenuItem } from '@/ui/primitives';
+import { Button, cn, IconButton, MenuDropdown, MenuItem } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { control, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { OnboardingProviderConnectModal } from '../components/onboarding/OnboardingProviderConnectModal';
 import { ToastStack } from '../components/toastStack/ToastStack';
 import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToastStack';
@@ -34,11 +34,7 @@ import type { FinancialProvider } from '../types/api';
 import type { ProviderCatalogue } from '../types/providerCatalog';
 import { dispatchAccountsChanged } from '../utils/events';
 import { formatUserFacingApiError } from '../utils/formatUserFacingApiError';
-import {
-  getConnectAccountProviderContent,
-  getProviderCardConfig,
-  getProviderLogoSrc,
-} from '../utils/providerCards';
+import { getProviderCardConfig, getProviderLogoSrc } from '../utils/providerCards';
 import {
   refreshFinancialDataAfterProviderChange,
   type SyncProvider,
@@ -109,8 +105,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     return providerCatalog.resolveConnectProvider(preferred);
   }, [providerCatalog]);
   const primaryProviderCard = getProviderCardConfig(primaryProvider);
-  const primaryConnectContent = getConnectAccountProviderContent(primaryProvider);
   const providerLabel = primaryProviderCard.title;
+  const connectAccountLabel = 'Link Account';
   const providerLogoSrc = getProviderLogoSrc(primaryProvider);
   const { isExporting, error: exportError, toast: exportToast, exportAccounts } = useExport();
 
@@ -681,53 +677,63 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     ? `Refreshed ${formatAbsoluteTime(summary.latestSync)}`
     : '';
   const actions = (
-    <div className="inline-flex max-w-full flex-col items-center gap-2">
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        {summary.institutions > 0 && (
-          <Button
-            type="button"
-            onClick={syncAll}
-            disabled={syncingAll || !isOnline}
-            variant="ghost"
-            size="md"
-            className={cn(appTitleBarRecipes.settingsIdle, 'normal-case')}
-            title={!isOnline ? 'Unavailable while offline' : undefined}
-          >
-            <RefreshCw className={cn(control.glyph.md, syncingAll && 'animate-spin')} />
-            {syncingAll ? 'Syncing...' : !isOnline ? 'Offline' : 'Sync all'}
-          </Button>
-        )}
-        <MenuDropdown
-          trigger={
-            <Button
+    <div className={cn('inline-flex', 'max-w-full', 'w-full', 'flex-col', 'gap-2', 'lg:w-auto')}>
+      <div
+        className={cn('flex', 'w-full', 'flex-wrap', 'items-center', 'justify-between', 'gap-3')}
+      >
+        <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-3')}>
+          {summary.institutions > 0 && (
+            <IconButton
               type="button"
+              onClick={syncAll}
+              disabled={syncingAll || !isOnline}
               variant="ghost"
               size="md"
-              className={cn(appTitleBarRecipes.settingsIdle, 'normal-case')}
-              disabled={isExporting || !isOnline}
+              aria-label={syncingAll ? 'Syncing all institutions' : 'Sync all'}
+              className={cn(appTitleBarRecipes.settingsIdle)}
               title={
-                isExporting
-                  ? 'Export all in progress'
+                syncingAll
+                  ? 'Syncing all institutions'
                   : !isOnline
                     ? 'Unavailable while offline'
-                    : undefined
+                    : 'Sync all'
               }
             >
-              <FileDown className={cn(control.glyph.md, isExporting && 'animate-pulse')} />
-              {isExporting ? 'Exporting...' : 'Export All'}
-            </Button>
-          }
-        >
-          <MenuItem onClick={() => void exportAccounts('csv')}>Export as CSV</MenuItem>
-          <MenuItem onClick={() => void exportAccounts('ofx')}>Export as OFX</MenuItem>
-        </MenuDropdown>
+              <RefreshCw className={cn(syncingAll && 'animate-spin')} />
+            </IconButton>
+          )}
+          <MenuDropdown
+            trigger={
+              <IconButton
+                type="button"
+                variant="ghost"
+                size="md"
+                className={cn(appTitleBarRecipes.settingsIdle)}
+                disabled={isExporting || !isOnline}
+                aria-label={isExporting ? 'Exporting all institutions' : 'Export All'}
+                title={
+                  isExporting
+                    ? 'Export all in progress'
+                    : !isOnline
+                      ? 'Unavailable while offline'
+                      : 'Export all'
+                }
+              >
+                <Download className={cn(isExporting && 'animate-pulse')} />
+              </IconButton>
+            }
+          >
+            <MenuItem onClick={() => void exportAccounts('csv')}>Export as CSV</MenuItem>
+            <MenuItem onClick={() => void exportAccounts('ofx')}>Export as OFX</MenuItem>
+          </MenuDropdown>
+        </div>
         <ConnectButton
           onClick={handlePrimaryConnect}
           disabled={connectDisabled}
           title={!isOnline ? 'Unavailable while offline' : undefined}
           leadingImageSrc={providerLogoSrc}
         >
-          {primaryConnectContent.cta.defaultLabel}
+          {connectAccountLabel}
         </ConnectButton>
       </div>
       {!isOnline && (
@@ -785,9 +791,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     <div data-testid="accounts-page">
       {connectionFlow.connectionMount}
       <PageLayout
-        badge={`${providerLabel} Connections`}
-        title="Unite ally institutions under one domain"
-        subtitle="Keep every account balance in clear view; reporting on demand."
+        title={`Unite your financial allies with ${providerLabel}`}
+        subtitle="Securely link and sync accounts on-demand, view balances, and import or export your data any time."
         actions={actions}
         stats={statsGrid}
       >
@@ -800,7 +805,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           isExporting={isExporting}
           isOnline={isOnline}
           providerName={`${providerLabel} accounts`}
-          connectLabel={primaryConnectContent.cta.defaultLabel}
+          connectLabel={connectAccountLabel}
           connectLogoSrc={providerLogoSrc}
           onImportSuccess={handleImportSuccess}
           emptyState={connectionsEmptyState}

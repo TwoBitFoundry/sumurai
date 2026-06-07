@@ -1,6 +1,7 @@
 import type { Preview } from '@storybook/nextjs-vite';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '../src/context/ThemeContext';
+import { AccountFilterProvider } from '../src/hooks/useAccountFilter';
 import '../src/app/globals.css';
 
 const queryClient = new QueryClient({
@@ -21,7 +22,9 @@ const preview: Preview = {
       return (
         <QueryClientProvider client={queryClient}>
           <ThemeProvider initialPreference={initialPreference}>
-            <Story />
+            <AccountFilterProvider>
+              <Story />
+            </AccountFilterProvider>
           </ThemeProvider>
         </QueryClientProvider>
       );

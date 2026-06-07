@@ -136,9 +136,10 @@ describe('AppTitleBar', () => {
     expect(settingsButton.className).toContain(control.square.md);
     expect(settingsButton.querySelector('span')?.className).toContain(control.glyph.md);
 
-    const logoutButton = screen.getByRole('button', { name: 'Logout' });
-    expect(logoutButton.className).toContain(control.square.md);
-    expect(logoutButton.querySelector('span')?.className).toContain(control.glyph.md);
+    const logoutButton = screen.getByRole('button', { name: 'Log off' });
+    expect(logoutButton.className).toContain('aspect-square');
+    expect(logoutButton.className).toContain('md:aspect-auto');
+    expect(screen.getByText('Log off')).toHaveClass('hidden', 'md:inline');
   });
 
   it('renders settings and logout actions for authenticated users', async () => {
@@ -148,7 +149,7 @@ describe('AppTitleBar', () => {
     render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} onTabChange={onTabChange} />);
 
     expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Logout' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Log off' })).toHaveLength(1);
 
     await user.click(screen.getByRole('button', { name: 'Settings' }));
     expect(onTabChange).toHaveBeenCalledWith('settings');
@@ -214,11 +215,12 @@ describe('AppTitleBar', () => {
       expect(grid?.className).toContain('content-center');
     });
 
-    it('renders a single md-sized logout action', () => {
+    it('renders a single icon-only logout action on mobile', () => {
       render(<AppTitleBar {...mobileProps} />);
 
-      const logoutButton = screen.getByRole('button', { name: 'Logout' });
-      expect(logoutButton.className).toContain(control.square.md);
+      const logoutButton = screen.getByRole('button', { name: 'Log off' });
+      expect(logoutButton.className).toContain('aspect-square');
+      expect(logoutButton.className).toContain('px-0');
     });
   });
 });

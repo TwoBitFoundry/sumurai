@@ -21,6 +21,7 @@ async fn given_authenticated_user_when_get_budgets_overview_then_returns_budgets
         normalized_merchant: "spotify".to_string(),
         monthly_cost: dec!(9.99),
         cadence: "Monthly".to_string(),
+        first_charged: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
         last_charged: NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
         occurrence_count: 3,
     }];
@@ -92,6 +93,7 @@ async fn given_cache_hit_when_get_budgets_overview_then_uses_cached_budgets_and_
         normalized_merchant: "netflix".to_string(),
         monthly_cost: dec!(15.99),
         cadence: "Monthly".to_string(),
+        first_charged: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
         last_charged: NaiveDate::from_ymd_opt(2024, 3, 15).unwrap(),
         occurrence_count: 5,
     }];

@@ -11,7 +11,7 @@ import { Alert, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitiv
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { cn } from '@/ui/primitives/utils';
 import {
-  border as uiBorderRecipes,
+  settingsSecurityLayout,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
@@ -68,9 +68,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         <GlassCard variant="default" padding="lg">
           <div className={cn('space-y-5')}>
             <div className={cn('space-y-2')}>
-              <span className={pageLayoutRecipes.badge}>Settings</span>
               <h1 className={pageLayoutRecipes.title}>Inspect the armory</h1>
-              <p className={pageLayoutRecipes.subtitle}>Take matters into your own hands.</p>
+              <p className={pageLayoutRecipes.subtitle}>
+                Manage your security, profile, and account preferences.
+              </p>
             </div>
 
             {userEmail && (
@@ -83,9 +84,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
             )}
 
             <section className={cn('space-y-3')}>
-              <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-                Choose your banners
-              </h2>
+              <div className={cn(settingsSecurityLayout.sectionIntro)}>
+                <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+                  Brandish your colors
+                </h2>
+                <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
+                  Choose the app theme.
+                </p>
+              </div>
               <ThemeModeSelector value={preference} onChange={setPreference} />
             </section>
 
@@ -94,9 +100,26 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         </GlassCard>
 
         <GlassCard variant="default" padding="lg" className={cn('space-y-4')}>
-          <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-            Retire from service
-          </h2>
+          <div className={cn(settingsSecurityLayout.sectionHeader)}>
+            <div className={cn(settingsSecurityLayout.sectionIntro)}>
+              <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+                Retire from service
+              </h2>
+              <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
+                Delete your Sumurai account including all financial data, app data, and links to
+                financial accounts.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="danger"
+              size="md"
+              onClick={() => setShowDeleteModal(true)}
+              className={cn(settingsSecurityLayout.addTrigger)}
+            >
+              Delete Account
+            </Button>
+          </div>
           <Alert
             variant="error"
             title="Account Deletion Zone"
@@ -104,10 +127,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           >
             Once you delete your account, there is no going back. This action cannot be undone.
           </Alert>
-
-          <Button type="button" variant="danger" size="md" onClick={() => setShowDeleteModal(true)}>
-            Delete Account
-          </Button>
         </GlassCard>
       </div>
 

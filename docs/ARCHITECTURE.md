@@ -45,6 +45,20 @@ Three standalone Compose files at the repo root (`docker-compose.yml`, `docker-c
 
 ---
 
+## Conventions
+
+Business logic uses resolved transaction identity, not raw stored fields alone.
+
+**Category:** effective category → stored `category_primary`. Effective = `transaction_category_overrides.category_name` when an override exists for the transaction’s `normalized_merchant`; otherwise the stored value. SQL: `effective_category_expr()` in `repository_service.rs`. Writes (sync, auto-categorization) update stored `category_primary`; overrides win at read time.
+
+**Merchant:** `normalized_merchant` → `merchant_name` for grouping and matching. `merchant_name` is the normalized display label; `original_merchant_name` is raw provider text (UI detail only).
+
+**Spending analytics:** exclude effective categories in `EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES` (`repository_service.rs`) and non-expense amounts where relevant (e.g. top merchants).
+
+**Frontend:** treat API `category_primary` as effective category; use `merchant_name` for display, not `original_merchant_name`, for charts or filters.
+
+---
+
 ## Data Flow
 
 ### Authentication
@@ -160,7 +174,7 @@ flowchart TD
 
 Returns `None` (skip) if no window fits all gaps. Amount CV must be ≤ `0.15`. Minimum occurrences: 3 for short cadences (weekly/biweekly/monthly), 2 for long (quarterly/annual).
 
-`normalized_merchant` is the canonical grouping key for both detection and category overrides. The `transaction_category_overrides` JOIN matches on `transactions.normalized_merchant = overrides.normalized_merchant` — overridden merchants are excluded from detection at the query level, so user choices are never overwritten.
+Subscription detection follows **Conventions** — it groups by normalized merchant, respects category overrides (merchants with an override row are excluded from Layer 2), and writes default `category_primary` on the transaction row when promoting to `SUBSCRIPTION`.
 
 ---
 

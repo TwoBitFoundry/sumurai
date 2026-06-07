@@ -22,6 +22,7 @@ const defaultCategoriesMock = {
   system: ['FOOD_AND_DRINK', 'ENTERTAINMENT', 'TRANSPORTATION'],
   custom: [{ id: 'custom-1', display_name: 'Coffee', lookup_key: 'coffee' }],
   all: ['Coffee', 'ENTERTAINMENT', 'FOOD_AND_DRINK', 'TRANSPORTATION'],
+  filterCategories: ['Coffee', 'ENTERTAINMENT', 'FOOD_AND_DRINK', 'TRANSPORTATION'],
   accentIndexByName: new Map([
     ['Coffee', 0],
     ['ENTERTAINMENT', 1],
@@ -44,6 +45,7 @@ const makeSubscription = (merchant: string, monthlyCost: string) => ({
   normalized_merchant: merchant.toLowerCase(),
   monthly_cost: monthlyCost,
   cadence: 'Monthly',
+  first_charged: '2024-01-01',
   last_charged: '2024-03-01',
   occurrence_count: 3,
 });

@@ -11,6 +11,7 @@ import {
   storyBudgetRecords,
   storyCategoryList,
   storyProviderAccounts,
+  storyTransactionCategories,
 } from './shared';
 import { jsonResponse, route, StoryApiScope } from './storyApi';
 
@@ -61,6 +62,7 @@ const handlers = [
     return jsonResponse({}, { status: 204 });
   }),
   route('GET', '/categories', () => jsonResponse(storyCategoryList)),
+  route('GET', '/transactions/categories', () => jsonResponse(storyTransactionCategories)),
   route('GET', '/transactions', (request) =>
     jsonResponse(
       getPagedStoryTransactions({
@@ -99,9 +101,13 @@ export const Journey: Story = {
     const canvas = within(canvasElement);
     await waitFor(() => {
       expect(canvas.getByText(/provision the coffers/i)).toBeVisible();
+      expect(canvas.getByText('Subscription costs')).toBeVisible();
+    });
+
+    await userEvent.click(canvas.getByRole('button', { name: /show subscriptions/i }));
+    await waitFor(() => {
       expect(canvas.getByText('Spotify')).toBeVisible();
       expect(canvas.getByText('Netflix')).toBeVisible();
-      expect(canvas.getByText('monthly vows')).toBeVisible();
     });
     await waitFor(() => {
       expect(canvas.getByRole('button', { name: /next month/i })).toBeVisible();
@@ -115,7 +121,8 @@ export const Journey: Story = {
     }).format(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1));
     await expect(canvas.getByText(expectedMonth)).toBeVisible();
 
-    const addBudget = canvas.getByRole('button', { name: /add budget/i });
+    await userEvent.click(canvas.getByRole('button', { name: /show budgets/i }));
+    const addBudget = canvas.getByRole('button', { name: /^budget$/i });
     await userEvent.click(addBudget);
     const picker = await screen.findByTestId('add-budget-picker-content');
     await userEvent.click(within(picker).getByRole('button', { name: /bills and utilities/i }));

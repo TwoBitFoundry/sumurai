@@ -38,8 +38,11 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
     if (!start) {
       return undefined;
     }
+    if (dateRange === 'current-month') {
+      return start;
+    }
     return chartSeriesStartDate(start);
-  }, [start]);
+  }, [dateRange, start]);
 
   const monthsToFetch = useMemo(() => {
     if (!chartStart || !end) {

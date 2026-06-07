@@ -26,7 +26,7 @@ describe('BudgetVsActualChart', () => {
     } as any);
   });
 
-  it('renders a line chart showing variance', () => {
+  it('renders a line chart showing actual spending', () => {
     const data = [
       { month: '2026-05', expenses: 2000 },
       { month: '2026-04', expenses: 2500 },
@@ -38,12 +38,49 @@ describe('BudgetVsActualChart', () => {
     );
 
     expect(container.querySelector('svg')).toBeInTheDocument();
-    expect(container.querySelector('linearGradient')).toBeInTheDocument();
-    const curvePath = container.querySelector('.recharts-line-curve');
-    expect(curvePath?.getAttribute('stroke')).toContain('url(#');
+    const curves = container.querySelectorAll('path.recharts-curve');
+    expect(curves.length).toBeGreaterThan(0);
   });
 
-  it('calculates variance as expenses minus budget', () => {
+  it('switches the line color at the actual budget crossing', () => {
+    const data = [
+      { month: '2026-03', expenses: 40 },
+      { month: '2026-04', expenses: 40 },
+      { month: '2026-05', expenses: 40 },
+      { month: '2026-06', expenses: 573 },
+    ];
+    const totalBudget = 200;
+    const { container } = render(
+      <BudgetVsActualChart data={data} totalBudget={totalBudget} width={400} height={300} />
+    );
+
+    expect(container.querySelector('linearGradient')).toBeInTheDocument();
+    const stops = Array.from(container.querySelectorAll('linearGradient stop'));
+    expect(stops).toHaveLength(4);
+    expect(stops[1]?.getAttribute('offset')).toBe('30.02%');
+    expect(stops[2]?.getAttribute('offset')).toBe('30.02%');
+
+    const curve = container.querySelector('path.recharts-curve');
+    expect(curve?.getAttribute('stroke')).toContain('url(#');
+  });
+
+  it('computes the cutover when runtime expenses arrive as strings', () => {
+    const data = [
+      { month: '2026-04', expenses: '40' },
+      { month: '2026-05', expenses: '40' },
+      { month: '2026-06', expenses: '573' },
+    ] as any;
+    const { container } = render(
+      <BudgetVsActualChart data={data} totalBudget={202} width={400} height={300} />
+    );
+
+    const stops = Array.from(container.querySelectorAll('linearGradient stop'));
+    expect(stops).toHaveLength(4);
+    expect(stops[1]?.getAttribute('offset')).toBe('30.39%');
+    expect(stops[2]?.getAttribute('offset')).toBe('30.39%');
+  });
+
+  it('includes the total budget in the chart scale', () => {
     const data = [
       { month: '2026-05', expenses: 2500 },
       { month: '2026-04', expenses: 1800 },
@@ -57,7 +94,7 @@ describe('BudgetVsActualChart', () => {
     expect(svg).toBeInTheDocument();
   });
 
-  it('displays a reference line at y=0 for on-budget marker', () => {
+  it('displays a reference line at the total budget', () => {
     const data = [{ month: '2026-05', expenses: 2000 }];
     const totalBudget = 2500;
     const { container } = render(
@@ -91,7 +128,7 @@ describe('BudgetVsActualChart', () => {
     expect(visibleVarianceDotCount(container)).toBe(2);
   });
 
-  it('draws a solid line when variance is flat across months', () => {
+  it('draws a solid line when spending is flat across months', () => {
     const data = [
       { month: '2026-04', expenses: 5000 },
       { month: '2026-05', expenses: 5000 },
@@ -102,7 +139,7 @@ describe('BudgetVsActualChart', () => {
 
     const curve = container.querySelector('path.recharts-curve');
     expect(curve?.getAttribute('d')).toBeTruthy();
-    expect(curve?.getAttribute('stroke')).not.toContain('url(#');
+    expect(curve?.getAttribute('stroke')).toBe(getThemeColors('light').semantic.credit);
     expect(visibleVarianceDotCount(container)).toBe(2);
   });
 

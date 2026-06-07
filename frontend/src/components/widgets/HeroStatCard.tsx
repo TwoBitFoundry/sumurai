@@ -36,6 +36,31 @@ export type HeroStatCardProps = {
   layout?: 'stack' | 'row' | 'row-tablet';
 };
 
+export function SubscriptionCostsMetric({
+  monthly,
+  yearly,
+}: {
+  monthly: React.ReactNode;
+  yearly: React.ReactNode;
+}) {
+  return (
+    <div className={cn('flex', 'flex-wrap', 'items-baseline', 'gap-x-3', 'gap-y-1')}>
+      <span
+        className={cn('inline-flex', 'shrink-0', 'items-baseline', 'gap-1.5', 'whitespace-nowrap')}
+      >
+        <span>{monthly}</span>
+        <span className={cn(heroStatCardRecipes.suffix)}>/ mo</span>
+      </span>
+      <span
+        className={cn('inline-flex', 'shrink-0', 'items-baseline', 'gap-1.5', 'whitespace-nowrap')}
+      >
+        <span>{yearly}</span>
+        <span className={cn(heroStatCardRecipes.suffix)}>/ year</span>
+      </span>
+    </div>
+  );
+}
+
 export { heroStatSemanticThemes };
 
 const heroFooterPillRecipes = {
@@ -51,7 +76,7 @@ export const heroStatCardRecipes = {
   base: `hero-stat-card group relative min-w-0 ${uiRadiusRecipes.standard} transition-colors duration-300`,
   shell: `relative h-full w-full overflow-hidden ${uiRadiusRecipes.standard} border-2 bg-white/80 p-3 pt-4 transition-colors duration-200 lg:p-4 lg:pt-5 dark:bg-[#111a2f]/70`,
   title: `${uiTypographyRecipes.label} ${semanticTextRecipes.label} transition-colors duration-500`,
-  value: `${uiTypographyRecipes.cardTitle} ${semanticTextRecipes.primary} transition-colors duration-500`,
+  value: `${uiTypographyRecipes.cardTitle} ${semanticTextRecipes.primary} tabular-nums transition-colors duration-500`,
   suffix: `${uiTypographyRecipes.captionStrong} ${semanticTextRecipes.body} transition-colors duration-500`,
   overlay: `pointer-events-none absolute inset-0 ${uiRadiusRecipes.standard} opacity-0 transition-opacity duration-300 group-hover:opacity-100`,
   ring: 'pointer-events-none absolute inset-[2px] rounded-[calc(var(--radius-standard)-2px)] opacity-70',

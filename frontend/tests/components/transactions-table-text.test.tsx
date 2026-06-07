@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TransactionsTable } from '@/features/transactions/components/TransactionsTable';
 import type { Transaction } from '@/types/api';
@@ -22,7 +22,7 @@ const baseTx = (amount: number): Transaction => ({
 
 describe('TransactionsTable text tokens', () => {
   it('uses semantic danger and success roles for signed amounts', () => {
-    render(
+    const { container } = render(
       <TransactionsTable
         items={[baseTx(42), baseTx(-42), baseTx(0)]}
         total={3}
@@ -34,9 +34,10 @@ describe('TransactionsTable text tokens', () => {
       />
     );
 
-    const positive = screen.getByText('$42.00').closest('td');
-    const negative = screen.getByText('-$42.00').closest('td');
-    const zero = screen.getByText('$0.00').closest('td');
+    const body = within(container.querySelector('tbody')!);
+    const positive = body.getByText('$42.00').closest('td');
+    const negative = body.getByText('-$42.00').closest('td');
+    const zero = body.getByText('$0.00').closest('td');
 
     expect(positive?.className).toContain(uiTextRecipes.success);
     expect(negative?.className).toContain(uiTextRecipes.danger);

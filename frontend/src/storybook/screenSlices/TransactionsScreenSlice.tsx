@@ -6,6 +6,8 @@ import TransactionsToolbar from '@/features/transactions/components/Transactions
 import { PageLayout } from '@/layouts/PageLayout';
 import { denseLabelTransaction, transactionsTablePage } from '@/storybook/fixtures/transactions';
 import { cn, GlassCard } from '@/ui/primitives';
+import { controlIconWell, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { heroAccents } from '@/ui/tokens';
 import { formatCategoryName } from '@/utils/categories';
 import { fmtUSD } from '@/utils/format';
 
@@ -81,7 +83,6 @@ export function TransactionsScreenSlice(props: {
   return (
     <div data-testid="transactions-page">
       <PageLayout
-        badge="Transactions"
         title="Transactions, fully accounted"
         subtitle="Every transaction on the books. Search and filter your complete history."
         error={
@@ -139,6 +140,30 @@ export function TransactionsScreenSlice(props: {
           withInnerEffects={false}
           className={cn('relative', 'z-10')}
         >
+          <div className={cn('space-y-1', 'px-3', 'pt-6', 'md:px-6')}>
+            <h2
+              className={cn(
+                'flex',
+                'min-w-0',
+                'items-center',
+                'gap-2',
+                uiTypographyRecipes.sectionTitle,
+                uiTextRecipes.primary
+              )}
+            >
+              <span
+                className={cn(...controlIconWell.lg, heroAccents.emerald.icon)}
+                aria-hidden="true"
+              >
+                <ReceiptText />
+              </span>
+              Transactions
+            </h2>
+            <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
+              Search or filter your transactions by category or keywords. Add or customize the
+              categories.
+            </p>
+          </div>
           <TransactionsToolbar
             search="coffee"
             onSearch={() => {}}

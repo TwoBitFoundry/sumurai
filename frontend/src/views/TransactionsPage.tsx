@@ -1,12 +1,20 @@
-import { AlertTriangle, Loader2, ReceiptText, TrendingUp, WandSparkles } from 'lucide-react';
+import { AlertTriangle, Loader2, ReceiptText, Tags, TrendingUp, WandSparkles } from 'lucide-react';
 import type React from 'react';
-import { Button, cn, GlassCard } from '@/ui/primitives';
+import { useRef, useState } from 'react';
+import { Button, cn, GlassCard, IconButton } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { control } from '@/ui/recipes';
+import {
+  control,
+  controlIconWell,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
+import { heroAccents } from '@/ui/tokens';
 import { ToastStack } from '../components/toastStack/ToastStack';
 import HeroStatCard from '../components/widgets/HeroStatCard';
 import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToastStack';
 import { useAutoCategorization } from '../features/auto-categorization/hooks/useAutoCategorization';
+import CategoryCatalogPicker from '../features/transactions/components/CategoryCatalogPicker';
 import TransactionsTable from '../features/transactions/components/TransactionsTable';
 import TransactionsToolbar from '../features/transactions/components/TransactionsToolbar';
 import { useCategories } from '../features/transactions/hooks/useCategories';
@@ -35,6 +43,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
     totalPages,
     tableAnimationKey,
     dateRange,
+    categories,
   } = useTransactions({ pageSize: 8, filterControl });
   const {
     insights,
@@ -47,9 +56,8 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
   });
   const isOnline = useOnlineStatus();
   const autoCategorization = useAutoCategorization();
-  const { pinnedToast, transients, dismissTransient, dismissPinned } = useAccountsToastStack(
-    autoCategorization.job
-  );
+  const { pinnedToast, transients, dismissTransient, dismissPinned, pushToast } =
+    useAccountsToastStack(autoCategorization.job);
 
   const loadingMessage = insightsLoading
     ? 'Fetching...'
@@ -61,7 +69,9 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
   const avgTransaction = insights?.average_amount ?? 0;
   const largestTransaction = insights?.largest ?? null;
   const topCategories = insights?.top_categories ?? [];
-  const { all: categories, custom } = useCategories();
+  const { custom } = useCategories();
+  const addCategoryButtonRef = useRef<HTMLButtonElement>(null);
+  const [isCategoryCatalogOpen, setIsCategoryCatalogOpen] = useState(false);
   const categoryDriver =
     loadingMessage || topCategories.length === 0
       ? null
@@ -69,14 +79,38 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
         ? `⚠ ${formatCategoryName(topCategories[0])}`
         : `⚠ ${formatCategoryName(topCategories[0])} & ${formatCategoryName(topCategories[1])}`;
   const actions = (
-    <div className="inline-flex max-w-full flex-col items-center gap-2">
+    <div
+      className={cn(
+        'flex',
+        'w-full',
+        'flex-wrap',
+        'items-center',
+        'justify-between',
+        'gap-3',
+        'lg:w-auto'
+      )}
+    >
+      <IconButton
+        ref={addCategoryButtonRef}
+        type="button"
+        onClick={() => setIsCategoryCatalogOpen((open) => !open)}
+        variant="ghost"
+        size="md"
+        aria-label="Categories"
+        title="Categories"
+        aria-expanded={isCategoryCatalogOpen}
+        aria-haspopup="dialog"
+        className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
+      >
+        <Tags />
+      </IconButton>
       <Button
         type="button"
         onClick={() => void autoCategorization.handleAction()}
         disabled={!isOnline || autoCategorization.isPending}
-        variant="ghost"
+        variant={autoCategorization.isActive ? 'danger' : 'primary'}
         size="md"
-        className={cn(appTitleBarRecipes.settingsIdle, 'normal-case')}
+        className={cn('shrink-0', 'normal-case')}
         title={
           !isOnline ? 'Unavailable while offline' : (autoCategorization.progressLabel ?? undefined)
         }
@@ -94,9 +128,8 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
   return (
     <div data-testid="transactions-page">
       <PageLayout
-        badge="Transactions"
-        title="Tally the ledgers across allies"
-        subtitle="Every movement, accounted for, categorized, and within reach."
+        title="Tally the ledgers across financial allies"
+        subtitle="Review, categorize, and track transactions from all your connected bank accounts."
         actions={actions}
         error={error}
         stats={
@@ -148,6 +181,43 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
           withInnerEffects={false}
           className={cn('relative', 'z-10')}
         >
+          <div className={cn('space-y-1', 'px-3', 'pt-6', 'md:px-6')}>
+            <h2
+              className={cn(
+                'flex',
+                'min-w-0',
+                'items-center',
+                'gap-2',
+                uiTypographyRecipes.sectionTitle,
+                uiTextRecipes.primary
+              )}
+            >
+              <span
+                className={cn(...controlIconWell.lg, heroAccents.emerald.icon)}
+                aria-hidden="true"
+              >
+                <ReceiptText />
+              </span>
+              Transactions
+            </h2>
+            <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
+              Search or filter your transactions by category or keywords. Add or customize the
+              categories.
+            </p>
+          </div>
+          <CategoryCatalogPicker
+            open={isCategoryCatalogOpen}
+            anchorRef={addCategoryButtonRef}
+            onRequestClose={() => setIsCategoryCatalogOpen(false)}
+            onCategoryCreated={(categoryName) => {
+              pushToast(`"${categoryName}" category added`, 'success');
+            }}
+            onCategoryDeleted={(categoryName) => {
+              if (selectedCategory === categoryName) {
+                setSelectedCategory(null);
+              }
+            }}
+          />
           <TransactionsToolbar
             search={search}
             onSearch={setSearch}

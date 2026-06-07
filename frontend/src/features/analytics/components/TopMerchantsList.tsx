@@ -16,7 +16,7 @@ type Props = {
 };
 
 const merchantRow = [
-  'flex items-center justify-between p-2',
+  'grid grid-cols-[minmax(0,1fr)_auto_auto] items-stretch gap-x-3 p-2',
   ...dashboardCategoryCard.shellInteractive,
 ] as const;
 
@@ -33,28 +33,69 @@ const TopMerchantsListFn: React.FC<Props> = ({ merchants, className = '' }) => {
         <div
           className={cn(
             'grid',
-            'grid-cols-[repeat(auto-fit,minmax(min(100%,33rem),1fr))]',
+            'grid-cols-1',
+            'md:grid-cols-2',
             'gap-[length:var(--spacing-compact-gap)]'
           )}
         >
           {merchantsToShow.map((merchant) => (
             <div key={merchant.name} className={cn(merchantRow)} style={hoverBorderStyle}>
-              <div className={cn('min-w-0', 'flex-1')}>
+              <div className={cn('flex', 'h-full', 'min-h-[2.5rem]', 'min-w-0', 'items-center')}>
                 <div
-                  className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary, 'truncate')}
+                  className={cn(
+                    uiTypographyRecipes.cardTitle,
+                    uiTextRecipes.primary,
+                    'min-w-0',
+                    'line-clamp-2',
+                    'break-words'
+                  )}
                 >
                   {merchant.name}
                 </div>
-                <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                  {merchant.count} item{merchant.count !== 1 ? 's' : ''}
-                </div>
               </div>
-              <div className={cn('text-right', 'flex-shrink-0', 'ml-4')}>
-                <div className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
+              <div
+                className={cn('flex', 'h-full', 'min-h-[2.5rem]', 'items-center', 'justify-end')}
+              >
+                <div
+                  className={cn(
+                    uiTypographyRecipes.cardTitle,
+                    uiTextRecipes.primary,
+                    'min-w-0',
+                    'max-w-[8rem]',
+                    'line-clamp-2',
+                    'break-words',
+                    'text-right',
+                    'tabular-nums'
+                  )}
+                >
                   {fmtUSD(merchant.amount)}
                 </div>
-                <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+              </div>
+              <div
+                className={cn(
+                  'flex',
+                  'shrink-0',
+                  'flex-col',
+                  'items-end',
+                  'justify-center',
+                  'gap-0.5',
+                  'self-center',
+                  'text-right'
+                )}
+              >
+                <div
+                  className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted, 'tabular-nums')}
+                >
                   {merchant.percentage}%
+                </div>
+                <div
+                  className={cn(
+                    uiTypographyRecipes.captionStrong,
+                    uiTextRecipes.muted,
+                    'tabular-nums'
+                  )}
+                >
+                  {merchant.count}×
                 </div>
               </div>
             </div>
@@ -65,7 +106,7 @@ const TopMerchantsListFn: React.FC<Props> = ({ merchants, className = '' }) => {
           <EmptyState
             icon={MapPin}
             title="No merchants ranked yet"
-            description="No spending recorded for this period."
+            description="No merchants recorded for this period."
           />
         </div>
       )}

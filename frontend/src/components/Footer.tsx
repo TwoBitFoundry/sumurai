@@ -109,7 +109,7 @@ export function Footer() {
               )}
             >
               <Handshake className={cn('h-3.5', 'w-3.5', 'lg:h-4', 'lg:w-4')} />
-              Forge with us
+              Contribute
             </a>
             <a
               href="https://www.buymeacoffee.com/twobitfoundry"

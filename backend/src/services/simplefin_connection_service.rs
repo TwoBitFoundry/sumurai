@@ -8,6 +8,7 @@ use crate::models::transaction::SyncTransactionsResponse;
 use crate::providers::simplefin_provider::SimpleFinProviderError;
 use crate::providers::{ProviderCredentials, ProviderRegistry};
 use crate::services::cache_service::CacheService;
+use crate::services::categorization::classifier_labels::apply_deterministic_categories;
 use crate::services::connection_service::{
     ProviderSyncError, SimpleFinConnectError, SyncConnectionParams,
 };
@@ -489,6 +490,8 @@ impl SimpleFinConnectionService {
         {
             tracing::warn!("Merchant name normalization failed: {}", e);
         }
+
+        apply_deterministic_categories(&mut valid_transactions);
 
         for chunk in valid_transactions.chunks(500) {
             let _ = self

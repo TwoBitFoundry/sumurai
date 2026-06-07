@@ -1,7 +1,12 @@
-import { AlertTriangle, CalendarClock, Clock, Repeat2, Target } from 'lucide-react';
+import { AlertTriangle, Clock, Repeat2, Target } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
+import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { cn, EmptyState, GlassCard } from '@/ui/primitives';
-import HeroStatCard, { type HeroPill } from '../components/widgets/HeroStatCard';
+import { heroAccents } from '@/ui/tokens';
+import HeroStatCard, {
+  type HeroPill,
+  SubscriptionCostsMetric,
+} from '../components/widgets/HeroStatCard';
 import { BudgetCalculator } from '../domain/BudgetCalculator';
 import { SubscriptionCalculator } from '../domain/SubscriptionCalculator';
 import AddBudgetPicker, {
@@ -15,7 +20,6 @@ import { useBudgets } from '../features/budgets/hooks/useBudgets';
 import { SubscriptionsSection } from '../features/subscriptions/components/SubscriptionsSection';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import { PageLayout } from '../layouts/PageLayout';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '../ui/recipes';
 import { formatCategoryName } from '../utils/categories';
 import { fmtUSD } from '../utils/format';
 
@@ -130,7 +134,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
 
   const heroStats = (
     <div className="space-y-3">
-      <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-4')}>
+      <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-3')}>
         <HeroStatCard
           index={1}
           title="Days remaining"
@@ -141,20 +145,14 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
         />
         <HeroStatCard
           index={2}
-          title="monthly vows"
+          title="Subscription costs"
           icon={<Repeat2 />}
-          value={monthlyRecurringValue}
-          suffix="per month"
+          value={
+            <SubscriptionCostsMetric monthly={monthlyRecurringValue} yearly={annualizedValue} />
+          }
         />
         <HeroStatCard
           index={3}
-          title="annualized vows"
-          icon={<CalendarClock />}
-          value={annualizedValue}
-          suffix="per year"
-        />
-        <HeroStatCard
-          index={4}
           title="Overages"
           icon={<AlertTriangle />}
           value={stats.overBudgetCount}
@@ -171,9 +169,8 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
   return (
     <div data-testid="budgets-page">
       <PageLayout
-        badge="Budgets"
         title="Provision the coffers"
-        subtitle="Name allowances. Honor vows. Life is a succession of single moments; the seasons do not pause for an unready mind."
+        subtitle="Review subscriptions and manage monthly budgets categories from all your connected bank accounts."
         error={errorMessage}
         stats={heroStats}
       >
@@ -196,32 +193,24 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
             containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
             className={cn('space-y-6')}
           >
-            <section className={cn('space-y-4')} data-testid="budgets-section">
-              <div
-                className={cn(
-                  'flex',
-                  'flex-col',
-                  'gap-4',
-                  'sm:flex-row',
-                  'sm:items-start',
-                  'sm:justify-between'
-                )}
-              >
-                <div className={cn('space-y-1')}>
-                  <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-                    Allowances
-                  </h2>
-                  <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
-                    Establish allowances to take command of spending.
-                  </p>
-                </div>
+            <CollapsibleSection
+              sectionId="budgets"
+              title="Budgets"
+              titleIcon={Target}
+              titleIconClassName={heroAccents.emerald.icon}
+              description="Add, edit, or delete budgets by transaction categories."
+              testId="budgets-section"
+              expandLabel="Show budgets"
+              collapseLabel="Hide budgets"
+              actions={
                 <BudgetToolbar
                   loading={budgetsLoading}
                   isPickerOpen={isAdding}
                   addButtonRef={addButtonRef}
                   onAddBudget={toggleAddPicker}
                 />
-              </div>
+              }
+            >
               <AddBudgetPicker
                 open={isAdding}
                 anchorRef={addButtonRef}
@@ -245,11 +234,11 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
                 <EmptyState
                   icon={Target}
                   title="No budgets yet"
-                  description="Establish your first allowance to see your progress."
+                  description="Set your first budget to see your progress."
                   data-testid="budgets-empty-state"
                 />
               )}
-            </section>
+            </CollapsibleSection>
           </GlassCard>
         </div>
       </PageLayout>

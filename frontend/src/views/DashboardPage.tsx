@@ -97,9 +97,8 @@ const DashboardPage: React.FC<{
   return (
     <div data-testid="dashboard-page">
       <PageLayout
-        badge="Dashboard"
-        title="Appraise the warchest"
-        subtitle="Survey the yields across allies."
+        title="Appraise the Treasury"
+        subtitle="Track your total balances and net worth across accounts."
         stats={<BalancesOverview />}
       >
         <div
@@ -196,8 +195,9 @@ const DashboardPage: React.FC<{
                             <div className={cn('flex', 'items-baseline', 'gap-2', 'shrink-0')}>
                               <span
                                 className={cn(
-                                  uiTypographyRecipes.bodyStrong,
-                                  uiTextRecipes.primary
+                                  uiTypographyRecipes.cardTitle,
+                                  uiTextRecipes.primary,
+                                  'tabular-nums'
                                 )}
                               >
                                 {fmtUSD(cat.value)}
@@ -285,7 +285,7 @@ const DashboardPage: React.FC<{
 
           <DashboardChartCard
             className={cn('min-w-0')}
-            title="Budget Allowance x Reality"
+            title="Budget vs reality"
             refreshingLabel="Reviewing allowances..."
             isRefreshing={budgets.transactionsLoading}
           >
@@ -296,7 +296,7 @@ const DashboardPage: React.FC<{
                 <EmptyState
                   icon={TrendingUp}
                   title="No budgets set"
-                  description="Establish your first allowance to see your progress."
+                  description="Set your first budget to see your progress."
                 />
               </div>
             ) : debouncedBudgetVsActualData.length === 0 ? (

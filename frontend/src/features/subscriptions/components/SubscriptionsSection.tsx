@@ -1,6 +1,7 @@
+import { Repeat2 } from 'lucide-react';
+import { CollapsibleSection } from '@/components/CollapsibleSection';
 import type { SubscriptionSummary } from '@/types/api';
-import { cn } from '@/ui/primitives';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { heroAccents } from '@/ui/tokens';
 import { SubscriptionList } from './SubscriptionList';
 
 export interface SubscriptionsSectionProps {
@@ -13,14 +14,17 @@ export function SubscriptionsSection({
   isLoading = false,
 }: SubscriptionsSectionProps) {
   return (
-    <section className={cn('space-y-4')} data-testid="subscriptions-section">
-      <div className={cn('space-y-1')}>
-        <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>Vows</h2>
-        <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
-          Surfaced recurring vows from transaction history.
-        </p>
-      </div>
+    <CollapsibleSection
+      sectionId="subscriptions"
+      title="Subscriptions"
+      titleIcon={Repeat2}
+      titleIconClassName={heroAccents.sky.icon}
+      description="Review subscription cost and renewal dates found in transactions."
+      testId="subscriptions-section"
+      expandLabel="Show subscriptions"
+      collapseLabel="Hide subscriptions"
+    >
       <SubscriptionList subscriptions={subscriptions} isLoading={isLoading} />
-    </section>
+    </CollapsibleSection>
   );
 }

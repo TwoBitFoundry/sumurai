@@ -10,7 +10,8 @@ import {
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { formatCategoryName, getTagThemeForCategoryAtIndex } from '../../../utils/categories';
+import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
+import { useCategories } from '../hooks/useCategories';
 import DeleteCustomCategoryConfirm from './DeleteCustomCategoryConfirm';
 import { transactionsRowRecipes } from './transactionsRowRecipes';
 
@@ -40,6 +41,7 @@ export const TransactionsFilters: React.FC<Props> = ({
   scrollFadeSurface = 'card',
 }) => {
   const scrollFade = pillScrollFadeRecipes[scrollFadeSurface];
+  const { accentIndexByName } = useCategories();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [deleteTarget, setDeleteTarget] = useState<CustomCategory | null>(null);
   const [showLeftFade, setShowLeftFade] = useState(false);
@@ -152,14 +154,15 @@ export const TransactionsFilters: React.FC<Props> = ({
                 'items-center',
                 'gap-1',
                 'overflow-x-auto',
+                'px-1',
                 'pb-1',
                 'pt-1'
               )}
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              {categories.map((name, index) => {
+              {categories.map((name) => {
                 const isSelected = selectedCategory === name;
-                const theme = getTagThemeForCategoryAtIndex(index);
+                const theme = getTagThemeForCategory(name, accentIndexByName);
                 const label = formatCategoryName(name);
                 const customCategory = customCategories.find(
                   (category) => category.display_name === name

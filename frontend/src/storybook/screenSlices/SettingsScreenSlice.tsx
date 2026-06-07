@@ -65,7 +65,7 @@ export function SettingsScreenSlice(props: {
             Once you delete your account, there is no going back. This action cannot be undone.
           </Alert>
 
-          <Button type="button" variant="danger" size="md">
+          <Button type="button" variant="danger" size="md" className={cn('w-full', 'sm:w-auto')}>
             Delete Account
           </Button>
         </GlassCard>

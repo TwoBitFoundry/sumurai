@@ -118,7 +118,7 @@ export function AddBudgetPicker({
           onClose={onRequestClose}
           closeLabel="Close add budget picker"
         >
-          <p className={cn(modalDrawerSectionLabelClassName)}>Add Budget Category</p>
+          <p className={cn(modalDrawerSectionLabelClassName)}>Add budget by category</p>
         </ModalDrawerHeader>
         <div
           className={cn(

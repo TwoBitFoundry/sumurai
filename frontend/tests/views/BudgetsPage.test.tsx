@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import type React from 'react';
 import { useBudgets } from '@/features/budgets/hooks/useBudgets';
+import { setSessionBudgetsSectionExpanded } from '@/utils/sessionPreferences';
 import BudgetsPage from '@/views/BudgetsPage';
 
 jest.mock('@/features/budgets/hooks/useBudgets', () => ({
@@ -27,6 +28,15 @@ jest.mock('@/layouts/PageLayout', () => ({
   ),
 }));
 
+jest.mock('@/utils/sessionPreferences', () => {
+  const actual = jest.requireActual(
+    '@/utils/sessionPreferences'
+  ) as typeof import('@/utils/sessionPreferences');
+  return {
+    ...actual,
+  };
+});
+
 const monthControl = {
   month: new Date('2026-05-01'),
   monthLabel: 'May 2026',
@@ -43,6 +53,7 @@ const makeSubscription = (merchant: string) => ({
   monthly_cost: '9.99',
   cadence: 'Monthly',
   last_charged: '2026-05-01',
+  first_charged: '2026-05-01',
   occurrence_count: 3,
 });
 
@@ -73,10 +84,13 @@ const baseUseBudgetsMock = {
 describe('BudgetsPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    window.sessionStorage.clear();
+    setSessionBudgetsSectionExpanded('subscriptions', true);
+    setSessionBudgetsSectionExpanded('budgets', true);
     jest.mocked(useBudgets).mockReturnValue(baseUseBudgetsMock as any);
   });
 
-  it('renders hero row in Days remaining, monthly vows, annualized vows, Overages order', () => {
+  it('renders hero row in Days remaining, subscription costs, Overages order', () => {
     jest.mocked(useBudgets).mockReturnValue({
       ...baseUseBudgetsMock,
       subscriptions: [makeSubscription('Spotify')],
@@ -84,19 +98,22 @@ describe('BudgetsPage', () => {
 
     render(<BudgetsPage monthControl={monthControl} />);
 
-    const titles = screen.getAllByText(/Days remaining|monthly vows|annualized vows|Overages/);
+    const titles = screen.getAllByText(/Days remaining|Subscription costs|Overages/);
     expect(titles.map((node) => node.textContent)).toEqual([
       'Days remaining',
-      'monthly vows',
-      'annualized vows',
+      'Subscription costs',
       'Overages',
     ]);
     expect(screen.queryByText('Active budgets')).not.toBeInTheDocument();
     expect(screen.queryByText('Monitor')).not.toBeInTheDocument();
   });
 
-  it('shows subscription and budget glass cards with subscriptions first', () => {
+  it('shows subscription and budget glass cards with subscriptions first', async () => {
     render(<BudgetsPage monthControl={monthControl} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('budgets-empty-state')).toBeInTheDocument();
+    });
 
     const cards = Array.from(screen.getByTestId('page-children').firstElementChild?.children ?? []);
     const subscriptionsCardIndex = cards.findIndex((card) =>
@@ -117,6 +134,6 @@ describe('BudgetsPage', () => {
     ) as HTMLElement | null;
 
     expect(statsGrid).toHaveClass('grid-cols-2');
-    expect(statsGrid).toHaveClass('lg:grid-cols-4');
+    expect(statsGrid).toHaveClass('lg:grid-cols-3');
   });
 });

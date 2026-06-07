@@ -17,6 +17,22 @@ const mockUseViewportBreakpoint = useViewportBreakpoint as jest.MockedFunction<
   typeof useViewportBreakpoint
 >;
 
+jest.mock('@/features/transactions/hooks/useCategories', () => ({
+  useCategories: () => ({
+    accentIndexByName: new Map([
+      ['food_and_drink', 0],
+      ['entertainment', 1],
+      ['Coffee', 2],
+    ]),
+    filterCategories: ['food_and_drink', 'entertainment', 'Coffee'],
+    system: [],
+    custom: [],
+    all: [],
+    isLoading: false,
+    error: null,
+  }),
+}));
+
 const filterProps = {
   search: '',
   onSearch: jest.fn(),

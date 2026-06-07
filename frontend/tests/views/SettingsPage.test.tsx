@@ -31,16 +31,17 @@ describe('SettingsPage', () => {
     );
 
     const pageContainer = container.firstElementChild as HTMLElement;
-    const accountSettingsBadge = screen.getByText('Settings');
-    const appearanceLabel = screen.getByText('Choose your banners');
-    const accountSettingsCard = accountSettingsBadge.closest('[class*="space-y-5"]');
+    const pageTitle = screen.getByRole('heading', { level: 1, name: 'Inspect the armory' });
+    const appearanceLabel = screen.getByText('Brandish your colors');
+    const accountSettingsCard = pageTitle.closest('[class*="space-y-5"]');
     const themeSelector = screen.getByRole('radiogroup', { name: 'Theme' });
 
     expect(pageContainer).toHaveClass('w-full');
     expect(pageContainer).toHaveClass('max-w-3xl');
     expect(screen.queryByRole('button', { name: 'Back to Dashboard' })).not.toBeInTheDocument();
     expect(appearanceLabel).toBeInTheDocument();
-    expect(accountSettingsBadge.compareDocumentPosition(appearanceLabel)).toBe(
+    expect(accountSettingsCard).toContainElement(pageTitle);
+    expect(pageTitle.compareDocumentPosition(appearanceLabel)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
     expect(accountSettingsCard).toContainElement(themeSelector);

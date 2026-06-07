@@ -84,8 +84,48 @@ export function sortCategoryNamesAlphabetically(names: string[]): string[] {
   );
 }
 
+export function mergeTransactionFilterCategories(
+  transactionCategories: string[],
+  customCategories: CustomCategory[]
+): string[] {
+  const customNames = customCategories.map((category) => category.display_name);
+  return sortCategoryNamesAlphabetically([...new Set([...transactionCategories, ...customNames])]);
+}
+
 export function buildCategoryAccentIndex(names: readonly string[]): ReadonlyMap<string, number> {
   return new Map(names.map((name, index) => [name, index]));
+}
+
+function toCategorySlug(value: string): string {
+  return value.trim().replace(/\s+/g, '_').toUpperCase();
+}
+
+function findCategoryAccentIndex(
+  name: string,
+  accentIndex: ReadonlyMap<string, number>
+): number | undefined {
+  const direct = accentIndex.get(name);
+  if (direct !== undefined) {
+    return direct;
+  }
+
+  const trimmed = name.trim();
+  const slug = toCategorySlug(trimmed);
+  const display = formatCategoryName(trimmed).toLowerCase();
+
+  for (const [key, index] of accentIndex.entries()) {
+    if (key.trim().toLowerCase() === trimmed.toLowerCase()) {
+      return index;
+    }
+    if (toCategorySlug(key) === slug) {
+      return index;
+    }
+    if (formatCategoryName(key).toLowerCase() === display) {
+      return index;
+    }
+  }
+
+  return undefined;
 }
 
 export function getTagThemeForCategory(
@@ -93,7 +133,7 @@ export function getTagThemeForCategory(
   accentIndex?: ReadonlyMap<string, number>
 ) {
   if (accentIndex && name != null) {
-    const index = accentIndex.get(name);
+    const index = findCategoryAccentIndex(name, accentIndex);
     if (index !== undefined) {
       return getCategoryAccentByIndex(index);
     }

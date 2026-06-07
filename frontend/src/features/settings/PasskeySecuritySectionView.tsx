@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react';
+import { Key, Trash2 } from 'lucide-react';
 import type React from 'react';
 import { ToastStack, type ToastStackTransientItem } from '@/components/toastStack/ToastStack';
 import { PasskeyEnrollmentModalForm } from '@/features/auth/PasskeyEnrollmentModalForm';
@@ -70,13 +70,25 @@ export function PasskeySecuritySectionView({
   return (
     <>
       <section className={cn(settingsSecurityLayout.section)}>
-        <div className={cn('space-y-1')}>
-          <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-            Protect your Domain
-          </h2>
-          <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
-            Manage passkeys used to sign in. You must keep at least one passkey sealed.
-          </p>
+        <div className={cn(settingsSecurityLayout.sectionHeader)}>
+          <div className={cn(settingsSecurityLayout.sectionIntro)}>
+            <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+              Protect your dominion
+            </h2>
+            <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
+              Manage passkeys used to sign in. You must keep at least one passkey active.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="primary"
+            size="lg"
+            className={cn(settingsSecurityLayout.addTrigger)}
+            disabled={isBusy}
+            onClick={onOpenAddModal}
+          >
+            Add passkey
+          </Button>
         </div>
 
         {bannerError ? (
@@ -90,9 +102,12 @@ export function PasskeySecuritySectionView({
         ) : null}
 
         {!showInitialLoading && passkeys.length === 0 ? (
-          <Alert variant="warning" title="No passkey enrolled">
-            Sign out and complete passkey enrollment, or contact your operator if you were locked
-            out of every device.
+          <Alert
+            variant="warning"
+            title="No passkey enrolled"
+            icon={<Key className={cn('h-5', 'w-5')} aria-hidden />}
+          >
+            Add a passkey to secure your account.
           </Alert>
         ) : null}
 
@@ -140,17 +155,6 @@ export function PasskeySecuritySectionView({
             })}
           </ul>
         ) : null}
-
-        <Button
-          type="button"
-          variant="primary"
-          size="lg"
-          className={cn(settingsSecurityLayout.addTrigger)}
-          disabled={isBusy}
-          onClick={onOpenAddModal}
-        >
-          Add passkey
-        </Button>
       </section>
 
       <Modal

@@ -4537,12 +4537,17 @@
           "normalized_merchant",
           "monthly_cost",
           "cadence",
+          "first_charged",
           "last_charged",
           "occurrence_count"
         ],
         "properties": {
           "cadence": {
             "type": "string"
+          },
+          "first_charged": {
+            "type": "string",
+            "format": "date"
           },
           "last_charged": {
             "type": "string",

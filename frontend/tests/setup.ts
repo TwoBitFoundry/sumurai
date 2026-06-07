@@ -22,6 +22,7 @@ mock.module('@/features/transactions/hooks/useCategories', () => ({
     system: [],
     custom: [],
     all: [],
+    filterCategories: [],
     accentIndexByName: new Map<string, number>(),
     isLoading: false,
     error: null,

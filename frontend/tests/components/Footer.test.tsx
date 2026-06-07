@@ -17,7 +17,7 @@ describe('Footer', () => {
     expect(getByText('Forging better systems for founders')).toBeTruthy();
     expect(getByRole('link', { name: 'Contact' })).toBeTruthy();
 
-    const actionButtons = getByRole('link', { name: /forge with us/i }).parentElement;
+    const actionButtons = getByRole('link', { name: /contribute/i }).parentElement;
     expect(actionButtons).toHaveClass('flex-row');
     expect(actionButtons).toHaveClass('flex-nowrap');
     expect(actionButtons).not.toHaveClass('flex-col');

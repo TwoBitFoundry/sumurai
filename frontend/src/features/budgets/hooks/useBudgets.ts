@@ -16,6 +16,7 @@ import type {
 } from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
 import { sortCategoryNamesAlphabetically } from '../../../utils/categories';
+import { invalidateBudgetQueries } from '../../../utils/queryInvalidation';
 import { useCategories } from '../../transactions/hooks/useCategories';
 import { type BudgetMonthControl, useBudgetMonth } from './useBudgetMonth';
 
@@ -128,8 +129,17 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
         queryClient.setQueryData(['budgets'], context.previous);
       }
     },
+    onSuccess: (createdBudget, _variables, context) => {
+      queryClient.setQueryData<BudgetsOverviewResponse>(['budgets'], (old) => ({
+        budgets: [
+          ...(old?.budgets ?? []).filter((budget) => budget.id !== context?.tempId),
+          createdBudget,
+        ],
+        subscriptions: old?.subscriptions ?? [],
+      }));
+    },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      void invalidateBudgetQueries(queryClient);
     },
   });
 
@@ -152,8 +162,22 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
         queryClient.setQueryData(['budgets'], context.previous);
       }
     },
+    onSuccess: (updatedBudget) => {
+      queryClient.setQueryData<BudgetsOverviewResponse>(['budgets'], (old) => ({
+        budgets: (old?.budgets ?? []).map((budget) =>
+          budget.id === updatedBudget.id
+            ? {
+                ...budget,
+                category: updatedBudget.category,
+                amount: updatedBudget.amount,
+              }
+            : budget
+        ),
+        subscriptions: old?.subscriptions ?? [],
+      }));
+    },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      void invalidateBudgetQueries(queryClient);
     },
   });
 
@@ -174,7 +198,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
       }
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      void invalidateBudgetQueries(queryClient);
     },
   });
 

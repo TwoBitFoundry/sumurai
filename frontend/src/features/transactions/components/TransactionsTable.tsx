@@ -38,6 +38,21 @@ const tableHeader = [
 
 const tableFooter = [...uiTransactionsTableRecipes.footer] as const;
 
+const dateColumnClass = cn('w-[1%]', 'whitespace-nowrap', 'px-4', 'py-3');
+
+const amountColumnClass = cn('whitespace-nowrap', 'px-4', 'py-3', 'text-right', 'tabular-nums');
+
+function getWidestFormattedAmount(items: Transaction[]): string {
+  if (items.length === 0) {
+    return fmtUSD(0);
+  }
+
+  return items.reduce((widest, item) => {
+    const label = fmtUSD(item.amount);
+    return label.length > widest.length ? label : widest;
+  }, fmtUSD(items[0]!.amount));
+}
+
 export { transactionsRowRecipes } from './transactionsRowRecipes';
 
 export const TransactionsTable: React.FC<Props> = ({
@@ -65,6 +80,8 @@ export const TransactionsTable: React.FC<Props> = ({
       })),
     [currentPage, placeholderCount]
   );
+
+  const widestAmountLabel = useMemo(() => getWidestFormattedAmount(visibleItems), [visibleItems]);
 
   const paginationFooter = (
     <div className={cn('flex', 'items-center', 'justify-between', tableFooter)}>
@@ -135,17 +152,7 @@ export const TransactionsTable: React.FC<Props> = ({
             <table className={cn('min-w-full', 'table-fixed')}>
               <thead className={cn(tableHeader)}>
                 <tr className={cn('border-b', ...uiBorderRecipes.divider)}>
-                  <th
-                    className={cn(
-                      'w-[18%]',
-                      'md:w-[15%]',
-                      'whitespace-nowrap',
-                      'px-4',
-                      'py-3',
-                      'text-left',
-                      uiTypographyRecipes.label
-                    )}
-                  >
+                  <th className={cn(dateColumnClass, 'text-left', uiTypographyRecipes.label)}>
                     Date
                   </th>
                   <th
@@ -160,17 +167,21 @@ export const TransactionsTable: React.FC<Props> = ({
                   >
                     Merchant
                   </th>
-                  <th
-                    className={cn(
-                      'w-[18%]',
-                      'md:w-[15%]',
-                      'whitespace-nowrap',
-                      'px-4',
-                      'py-3',
-                      'text-right',
-                      uiTypographyRecipes.label
-                    )}
-                  >
+                  <th className={cn('w-[1%]', amountColumnClass, uiTypographyRecipes.label)}>
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        'invisible',
+                        'block',
+                        'h-0',
+                        'overflow-hidden',
+                        'whitespace-nowrap',
+                        'tabular-nums',
+                        uiTypographyRecipes.body
+                      )}
+                    >
+                      {widestAmountLabel}
+                    </span>
                     Amount
                   </th>
                   <th
@@ -221,11 +232,10 @@ export const TransactionsTable: React.FC<Props> = ({
                       >
                         <td
                           className={cn(
+                            dateColumnClass,
                             'relative',
-                            'whitespace-nowrap',
-                            'px-4',
-                            'py-3',
                             'align-middle',
+                            'tabular-nums',
                             uiTypographyRecipes.body,
                             uiTextRecipes.primary,
                             'transition-colors',
@@ -257,12 +267,8 @@ export const TransactionsTable: React.FC<Props> = ({
                         </td>
                         <td
                           className={cn(
-                            'whitespace-nowrap',
-                            'px-4',
-                            'py-3',
-                            'text-right',
+                            amountColumnClass,
                             'align-middle',
-                            'tabular-nums',
                             uiTypographyRecipes.body,
                             'transition-colors',
                             'duration-500',

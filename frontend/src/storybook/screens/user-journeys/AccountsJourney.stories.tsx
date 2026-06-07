@@ -433,7 +433,8 @@ export const SimpleFinConnected: Story = {
       { timeout: storyInteractionTimeoutMs }
     );
     await expect(canvas.queryByPlaceholderText('Paste your token')).not.toBeInTheDocument();
-    await expect(canvas.getByRole('button', { name: /simplefin/i })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: /^disconnect$/i })).toBeVisible();
+    await expect(canvas.queryByRole('button', { name: /sync now/i })).not.toBeInTheDocument();
   },
 };
 
@@ -478,6 +479,6 @@ export const TellerConnected: Story = {
       },
       { timeout: storyInteractionTimeoutMs }
     );
-    await expect(canvas.getByRole('button', { name: /teller/i })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: /sync now/i })).toBeVisible();
   },
 };

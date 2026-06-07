@@ -1,11 +1,13 @@
 import {
   getSessionBankExpanded,
+  getSessionBudgetsSectionExpanded,
   getSessionDashboardDateRange,
   getSessionThemePreference,
   getSessionTransactionsCategory,
   getSessionTransactionsPage,
   getSessionTransactionsSearch,
   setSessionBankExpanded,
+  setSessionBudgetsSectionExpanded,
   setSessionDashboardDateRange,
   setSessionThemePreference,
   setSessionTransactionsCategory,
@@ -63,5 +65,15 @@ describe('sessionPreferences', () => {
 
     setSessionBankExpanded('bank-1', false);
     expect(getSessionBankExpanded('bank-1')).toBe(false);
+  });
+
+  it('defaults budgets sections to collapsed and remembers expansion', () => {
+    expect(getSessionBudgetsSectionExpanded('subscriptions')).toBe(false);
+
+    setSessionBudgetsSectionExpanded('subscriptions', true);
+    expect(getSessionBudgetsSectionExpanded('subscriptions')).toBe(true);
+
+    setSessionBudgetsSectionExpanded('subscriptions', false);
+    expect(getSessionBudgetsSectionExpanded('subscriptions')).toBe(false);
   });
 });

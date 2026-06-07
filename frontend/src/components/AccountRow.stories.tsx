@@ -29,7 +29,7 @@ export const Checking: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText(/everyday checking/i)).toBeVisible();
     await expect(canvas.getByText(/\$2,450\.12/)).toBeVisible();
-    await expect(canvas.getByText(/42 items/i)).toBeVisible();
+    await expect(canvas.getByText('42×')).toBeVisible();
   },
 };
 
@@ -59,7 +59,7 @@ export const MissingBalance: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText(/manual account/i)).toBeVisible();
     await expect(canvas.getByText(/placeholder/i)).toBeVisible();
-    await expect(canvas.getByText(/0 items/i)).toBeVisible();
+    await expect(canvas.getByText('0×')).toBeVisible();
   },
 };
 

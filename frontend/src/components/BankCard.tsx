@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, FileDown, RefreshCw, Unlink } from 'lucide-react';
+import { ChevronDown, Download, RefreshCw, Unlink } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { getSessionBankExpanded, setSessionBankExpanded } from '@/utils/sessionPreferences';
@@ -9,7 +9,7 @@ import {
   accountTypeSortOrder,
 } from '../domain/accountCategories';
 import { getConnectionStatusCaption } from '../domain/connectionStatus';
-import { cn, GlassCard, IconButton, MenuDropdown, MenuItem } from '../ui/primitives';
+import { Button, cn, GlassCard, IconButton, MenuDropdown, MenuItem } from '../ui/primitives';
 import { appTitleBarRecipes } from '../ui/primitives/AppTitleBar';
 import {
   control,
@@ -146,31 +146,37 @@ export const BankCard: React.FC<BankCardProps> = ({
       containerClassName={cn('p-4', 'md:p-5', 'lg:p-5')}
       className={cn('space-y-6')}
     >
-      <div
-        className={cn(
-          'grid',
-          'min-w-0',
-          'grid-cols-[minmax(0,1fr)_auto]',
-          'gap-x-3',
-          'gap-y-2',
-          statusCaption ? 'grid-rows-[auto_auto_auto]' : 'grid-rows-[auto_auto]'
-        )}
-      >
+      <div className={cn('min-w-0', 'space-y-2')}>
         <div
           className={cn(
-            'col-start-1',
-            'row-start-1',
-            'flex',
+            'grid',
             'min-w-0',
-            'items-center',
-            'gap-2',
-            'p-3'
+            'grid-cols-[auto_minmax(0,1fr)]',
+            'gap-x-2',
+            'gap-y-1',
+            'px-3',
+            'pt-3',
+            statusCaption ? 'pb-1' : 'pb-3'
           )}
         >
-          <StatusPill status={bank.status} className={cn('shrink-0')} />
+          <div
+            className={cn(
+              'col-start-1',
+              'row-start-1',
+              'flex',
+              'items-center',
+              'justify-center',
+              control.square.md,
+              'shrink-0'
+            )}
+          >
+            <StatusPill status={bank.status} />
+          </div>
           <h3
             title={bank.name}
             className={cn(
+              'col-start-2',
+              'row-start-1',
               'min-w-0',
               'line-clamp-2',
               'break-words',
@@ -180,108 +186,112 @@ export const BankCard: React.FC<BankCardProps> = ({
           >
             {bank.name}
           </h3>
-        </div>
-        <div
-          className={cn(
-            'col-start-2',
-            'row-start-1',
-            'row-span-2',
-            'flex',
-            'items-center',
-            'self-center',
-            'pr-3'
-          )}
-        >
-          <IconButton
-            type="button"
-            size="md"
-            onClick={handleDisconnectClick}
-            variant="danger"
-            aria-label="Disconnect"
-            className={cn('shrink-0')}
+          <div
+            className={cn(
+              'col-span-2',
+              'col-start-1',
+              'row-start-2',
+              'flex',
+              'min-w-0',
+              'flex-wrap',
+              'items-center',
+              'gap-2'
+            )}
           >
-            <Unlink />
-          </IconButton>
-        </div>
-        <div
-          className={cn(
-            'col-start-1',
-            'row-start-2',
-            'flex',
-            'flex-wrap',
-            'items-center',
-            'gap-2',
-            'px-3',
-            'pb-3'
-          )}
-        >
-          <IconButton
-            type="button"
-            size="md"
-            onClick={() => setExpanded((v) => !v)}
-            variant="ghost"
-            aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
-            className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
-          >
-            <ChevronDown
-              className={cn('transition-transform', 'duration-200', expanded && 'rotate-180')}
-            />
-          </IconButton>
-          {showSyncButton ? (
             <IconButton
               type="button"
               size="md"
-              onClick={handleSync}
-              disabled={loading || !isOnline}
+              onClick={() => setExpanded((v) => !v)}
               variant="ghost"
-              aria-label="Sync now"
-              title={!isOnline ? 'Unavailable while offline' : undefined}
+              aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
               className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
             >
-              <div className={cn('flex', 'flex-col', 'items-center', 'gap-0.5', control.glyph.md)}>
-                <RefreshCw className={cn(loading && 'animate-spin')} />
-                {loading && syncElapsed > 0 && (
-                  <span
-                    className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted, 'tabular-nums')}
-                  >
-                    {syncElapsed}s
-                  </span>
-                )}
-              </div>
+              <ChevronDown
+                className={cn('transition-transform', 'duration-200', expanded && 'rotate-180')}
+              />
             </IconButton>
-          ) : null}
-          <MenuDropdown
-            trigger={
+            {showSyncButton ? (
               <IconButton
                 type="button"
                 size="md"
+                onClick={handleSync}
+                disabled={loading || !isOnline}
                 variant="ghost"
-                aria-label="Export institution data"
-                title={
-                  isExporting
-                    ? 'Exporting...'
-                    : !isOnline
-                      ? 'Unavailable while offline'
-                      : bank.connectionId == null
-                        ? 'Export unavailable'
-                        : 'Export institution data'
-                }
-                disabled={isExporting || !isOnline || bank.connectionId == null}
+                aria-label="Sync now"
+                title={!isOnline ? 'Unavailable while offline' : undefined}
                 className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
               >
-                <FileDown className={cn(isExporting && 'animate-pulse')} />
+                <div
+                  className={cn('flex', 'flex-col', 'items-center', 'gap-0.5', control.glyph.md)}
+                >
+                  <RefreshCw className={cn(loading && 'animate-spin')} />
+                  {loading && syncElapsed > 0 && (
+                    <span
+                      className={cn(
+                        uiTypographyRecipes.caption,
+                        uiTextRecipes.muted,
+                        'tabular-nums'
+                      )}
+                    >
+                      {syncElapsed}s
+                    </span>
+                  )}
+                </div>
               </IconButton>
-            }
-          >
-            <MenuItem onClick={() => void handleExport('csv')}>Export as CSV</MenuItem>
-            <MenuItem onClick={() => void handleExport('ofx')}>Export as OFX</MenuItem>
-          </MenuDropdown>
+            ) : null}
+            <MenuDropdown
+              trigger={
+                <IconButton
+                  type="button"
+                  size="md"
+                  variant="ghost"
+                  aria-label="Export institution data"
+                  title={
+                    isExporting
+                      ? 'Exporting...'
+                      : !isOnline
+                        ? 'Unavailable while offline'
+                        : bank.connectionId == null
+                          ? 'Export unavailable'
+                          : 'Export institution data'
+                  }
+                  disabled={isExporting || !isOnline || bank.connectionId == null}
+                  className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
+                >
+                  <Download className={cn(isExporting && 'animate-pulse')} />
+                </IconButton>
+              }
+            >
+              <MenuItem onClick={() => void handleExport('csv')}>Export as CSV</MenuItem>
+              <MenuItem onClick={() => void handleExport('ofx')}>Export as OFX</MenuItem>
+            </MenuDropdown>
+            <Button
+              type="button"
+              variant="danger"
+              size="md"
+              onClick={handleDisconnectClick}
+              aria-label="Disconnect"
+              className={cn(
+                'ml-auto',
+                'shrink-0',
+                'normal-case',
+                'aspect-square',
+                'px-0',
+                'md:aspect-auto',
+                'md:gap-2',
+                'md:px-3'
+              )}
+            >
+              <Unlink className={cn(control.glyph.md)} />
+              <span className={cn('hidden', 'md:inline')}>Disconnect</span>
+            </Button>
+          </div>
         </div>
         {statusCaption ? (
           <p
             className={cn(
-              'col-span-2',
-              'row-start-3',
+              'px-3',
+              'pb-3',
               uiTypographyRecipes.caption,
               ...(bank.status === 'needs_reauth'
                 ? uiStatusRecipes.warning.text

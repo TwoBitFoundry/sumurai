@@ -238,9 +238,7 @@ export const AppTitleBar = ({
               className={cn(
                 'relative z-10 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300',
                 uiTypographyRecipes.bodyStrong,
-                currentTab === key
-                  ? 'max-w-[5rem] opacity-100 md:max-w-[6rem] lg:max-w-[8rem]'
-                  : 'max-w-0 opacity-0'
+                currentTab === key ? 'max-w-[13ch] opacity-100' : 'max-w-0 opacity-0'
               )}
             >
               <span className={cn(currentTab === key && 'ml-1.5')}>{label}</span>
@@ -311,13 +309,11 @@ export const AppTitleBar = ({
               <IconButton
                 type="button"
                 onClick={() => onTabChange('settings')}
-                variant="ghost"
+                variant={currentTab === 'settings' ? 'ghost' : 'toolbar'}
                 size="md"
                 className={cn(
                   ...appTitleBarRecipes.actionIcon,
-                  currentTab === 'settings'
-                    ? buttonRecipes.tabActive.join(' ')
-                    : appTitleBarRecipes.settingsIdle
+                  currentTab === 'settings' ? buttonRecipes.tabActive.join(' ') : undefined
                 )}
                 aria-label="Settings"
                 title="Settings"
@@ -327,17 +323,26 @@ export const AppTitleBar = ({
             )}
 
             {(state === 'onboarding' || state === 'authenticated') && onLogout && (
-              <IconButton
+              <Button
                 type="button"
                 onClick={onLogout}
                 variant="danger"
                 size="md"
-                className={cn(...appTitleBarRecipes.actionIcon)}
-                aria-label="Logout"
-                title="Logout"
+                className={cn(
+                  ...appTitleBarRecipes.actionIcon,
+                  'normal-case',
+                  'aspect-square',
+                  'px-0',
+                  'md:aspect-auto',
+                  'md:gap-2',
+                  'md:px-3'
+                )}
+                aria-label="Log off"
+                title="Log off"
               >
-                <LogOut />
-              </IconButton>
+                <LogOut className={cn(control.glyph.md)} />
+                <span className={cn('hidden', 'md:inline')}>Log off</span>
+              </Button>
             )}
           </div>
         </div>

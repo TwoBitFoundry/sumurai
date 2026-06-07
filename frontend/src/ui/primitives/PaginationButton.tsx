@@ -1,8 +1,8 @@
 import type React from 'react';
-import { IconButton, type IconButtonProps } from './IconButton';
+import { Button, type ButtonProps } from './Button';
 import { cn } from './utils';
 
-export type PaginationButtonProps = Omit<IconButtonProps, 'variant'>;
+export type PaginationButtonProps = Omit<ButtonProps, 'variant' | 'shape' | 'loading'>;
 
 export function PaginationButton({
   className,
@@ -11,9 +11,9 @@ export function PaginationButton({
   ...props
 }: PaginationButtonProps) {
   return (
-    <IconButton variant="ghost" size={size} className={cn(className)} {...props}>
+    <Button variant="secondary" shape="square" size={size} className={cn(className)} {...props}>
       {children}
-    </IconButton>
+    </Button>
   );
 }
 

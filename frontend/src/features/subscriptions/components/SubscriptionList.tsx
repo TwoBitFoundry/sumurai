@@ -1,10 +1,22 @@
-import { CalendarClock, Repeat2 } from 'lucide-react';
+import { ArrowRight, CalendarClock, Repeat2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
+import { SubscriptionCadenceIcon } from '@/components/SubscriptionCadenceIcon';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
+import {
+  groupSubscriptionsByCadence,
+  SUBSCRIPTION_CADENCE_LABELS,
+  SUBSCRIPTION_CADENCE_ORDER,
+  type SubscriptionCadenceKey,
+} from '@/domain/subscriptionCadences';
+import {
+  formatSubscriptionDateRangeLabel,
+  getSubscriptionDateRangeDisplay,
+} from '@/domain/subscriptionDates';
 import type { SubscriptionSummary } from '@/types/api';
 import { cn, EmptyState } from '@/ui/primitives';
 import {
-  border as semanticBorders,
+  control,
+  controlIconWell,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
@@ -17,100 +29,164 @@ export interface SubscriptionListProps {
   isLoading?: boolean;
 }
 
+const sectionBadgeClass = cn(uiTypographyRecipes.label, uiTextRecipes.muted);
+
+function SubscriptionCadenceGroupHeader({ cadence }: { cadence: SubscriptionCadenceKey }) {
+  return (
+    <span className={cn(sectionBadgeClass, 'inline-flex items-center gap-2')}>
+      <span className={cn(...controlIconWell.lg)}>
+        <SubscriptionCadenceIcon cadence={cadence} />
+      </span>
+      {SUBSCRIPTION_CADENCE_LABELS[cadence]}
+    </span>
+  );
+}
+
+function SubscriptionCard({ subscription }: { subscription: SubscriptionSummary }) {
+  const tagTheme = getTagThemeForCategory('SUBSCRIPTION');
+  const heroStyles = getHeroAccentTheme(getHeroAccentForCategoryKey(tagTheme.key));
+  const dateRange = getSubscriptionDateRangeDisplay(subscription);
+  const dateLabel = formatSubscriptionDateRangeLabel(subscription);
+  const ringStyle = {
+    '--tw-ring-color': `${heroStyles.ringHex}66`,
+  } as CSSProperties;
+
+  return (
+    <li className={cn(heroStatCardRecipes.base, 'min-w-0', 'w-full')}>
+      <div
+        data-testid={`subscription-card-${subscription.normalized_merchant}`}
+        className={cn(
+          heroStatCardRecipes.shell,
+          heroStyles.border,
+          heroStyles.borderDark,
+          'flex w-full flex-col gap-1.5 !px-3.5 !py-2 text-left md:!px-4'
+        )}
+        style={ringStyle}
+      >
+        <div
+          className={cn(
+            'hero-stat-card__gradient',
+            'pointer-events-none',
+            'absolute',
+            'inset-0',
+            'rounded-[length:inherit]',
+            'opacity-0',
+            'group-hover:opacity-100',
+            'transition-opacity',
+            'duration-300'
+          )}
+          style={{
+            background: `radial-gradient(ellipse at 50% 0%, rgba(${heroStyles.glowRgb},0.14) 0%, transparent 70%)`,
+          }}
+        />
+        <span className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary, 'truncate')}>
+          {subscription.merchant}
+        </span>
+        <div
+          className={cn(
+            'flex',
+            'min-w-0',
+            'items-center',
+            'gap-2',
+            uiTypographyRecipes.caption,
+            uiTextRecipes.muted
+          )}
+        >
+          <div
+            className={cn(
+              'flex',
+              'shrink-0',
+              'items-baseline',
+              'justify-start',
+              'gap-1.5',
+              'whitespace-nowrap'
+            )}
+          >
+            <span className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
+              {fmtUSD(subscription.monthly_cost)}
+            </span>
+            <span>/ mo</span>
+          </div>
+          <div
+            className={cn(
+              'flex',
+              'min-w-0',
+              'flex-1',
+              'items-center',
+              'justify-center',
+              'gap-1',
+              'overflow-hidden'
+            )}
+            title={dateLabel}
+          >
+            <CalendarClock className={cn(control.glyph.sm, 'shrink-0')} aria-hidden />
+            {dateRange.since ? (
+              <>
+                <span className={cn('min-w-0', 'truncate')}>{dateRange.since}</span>
+                <ArrowRight className={cn(control.glyph.sm, 'shrink-0')} aria-hidden />
+                <span className={cn('shrink-0', 'whitespace-nowrap')}>{dateRange.nextDue}</span>
+              </>
+            ) : (
+              <span className={cn('min-w-0', 'truncate')}>{dateRange.nextDue}</span>
+            )}
+          </div>
+          <span className={cn('shrink-0', 'tabular-nums', 'whitespace-nowrap')}>
+            {subscription.occurrence_count}×
+          </span>
+        </div>
+      </div>
+    </li>
+  );
+}
+
 export function SubscriptionList({ subscriptions, isLoading = false }: SubscriptionListProps) {
+  const groupedSubscriptions = groupSubscriptionsByCadence(subscriptions);
+
   if (!isLoading && subscriptions.length === 0) {
     return (
-      <EmptyState
-        icon={Repeat2}
-        title="No subscriptions detected"
-        description="Subscriptions are detected automatically after a sync or categorization run."
-        data-testid="subscriptions-empty-state"
-      />
+      <div className={cn('space-y-6')}>
+        <div className={cn('flex', 'flex-wrap', 'gap-3')}>
+          {SUBSCRIPTION_CADENCE_ORDER.map((cadence) => (
+            <SubscriptionCadenceGroupHeader key={cadence} cadence={cadence} />
+          ))}
+        </div>
+        <EmptyState
+          icon={Repeat2}
+          title="No subscriptions detected"
+          description="Subscriptions are detected automatically after a sync or categorization run."
+          data-testid="subscriptions-empty-state"
+        />
+      </div>
     );
   }
 
   return (
-    <ul className={cn('grid', 'grid-cols-1', 'gap-4', 'md:grid-cols-2', 'lg:grid-cols-3')}>
-      {subscriptions.map((s) => {
-        const tagTheme = getTagThemeForCategory('SUBSCRIPTION');
-        const heroStyles = getHeroAccentTheme(getHeroAccentForCategoryKey(tagTheme.key));
-        const ringStyle = {
-          '--tw-ring-color': `${heroStyles.ringHex}66`,
-        } as CSSProperties;
+    <div className={cn('space-y-6')} data-testid="subscription-cadence-groups">
+      {SUBSCRIPTION_CADENCE_ORDER.map((cadence) => {
+        const cadenceSubscriptions = groupedSubscriptions[cadence];
 
         return (
-          <li key={s.normalized_merchant} className={cn(heroStatCardRecipes.base)}>
-            <div
-              data-testid={`subscription-card-${s.normalized_merchant}`}
-              className={cn(
-                heroStatCardRecipes.shell,
-                heroStyles.border,
-                heroStyles.borderDark,
-                'flex w-full flex-col gap-2 p-3.5 pt-4 text-left'
-              )}
-              style={ringStyle}
-            >
-              <div
-                className={cn(
-                  'hero-stat-card__gradient',
-                  'pointer-events-none',
-                  'absolute',
-                  'inset-0',
-                  'rounded-[length:inherit]',
-                  'opacity-0',
-                  'group-hover:opacity-100',
-                  'transition-opacity',
-                  'duration-300'
-                )}
-                style={{
-                  background: `radial-gradient(ellipse at 50% 0%, rgba(${heroStyles.glowRgb},0.14) 0%, transparent 70%)`,
-                }}
-              />
-              <div className={cn('flex', 'items-start', 'justify-between', 'gap-2')}>
-                <span
-                  className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary, 'truncate')}
-                >
-                  {s.merchant}
-                </span>
-                <span
-                  className={cn(
-                    uiTypographyRecipes.badge,
-                    'shrink-0',
-                    'rounded-full',
-                    'px-2',
-                    'py-0.5',
-                    tagTheme.tag
-                  )}
-                >
-                  {s.cadence}
-                </span>
-              </div>
-              <div className={cn('flex', 'items-baseline', 'gap-1.5')}>
-                <span className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>
-                  {fmtUSD(s.monthly_cost)}
-                </span>
-                <span className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>/ mo</span>
-              </div>
-              <div
-                className={cn(
-                  'flex',
-                  'items-center',
-                  'gap-1',
-                  uiTypographyRecipes.caption,
-                  uiTextRecipes.subtle,
-                  'border-t',
-                  'pt-2',
-                  ...semanticBorders.subtle
-                )}
+          <section
+            key={cadence}
+            className={cn('space-y-3')}
+            data-testid={`subscription-cadence-group-${cadence}`}
+          >
+            <SubscriptionCadenceGroupHeader cadence={cadence} />
+            {cadenceSubscriptions.length > 0 ? (
+              <ul
+                className={cn('grid', 'grid-cols-1', 'gap-3', 'md:grid-cols-2', 'lg:grid-cols-3')}
               >
-                <CalendarClock className={cn('h-3', 'w-3', 'shrink-0')} />
-                <span>{s.last_charged}</span>
-                <span className={cn('ml-auto')}>{s.occurrence_count}×</span>
-              </div>
-            </div>
-          </li>
+                {cadenceSubscriptions.map((subscription) => (
+                  <SubscriptionCard
+                    key={subscription.normalized_merchant}
+                    subscription={subscription}
+                  />
+                ))}
+              </ul>
+            ) : null}
+          </section>
         );
       })}
-    </ul>
+    </div>
   );
 }

@@ -3,12 +3,10 @@ import type React from 'react';
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import { ImportModal } from '@/features/import/components/ImportModal';
-import { cn, GlassCard, IconButton, RequirementPill } from '@/ui/primitives';
+import { cn, GlassCard, IconButton } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
-  border as uiBorderRecipes,
   status as uiStatusRecipes,
-  surface as uiSurfaceRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
@@ -56,18 +54,10 @@ const accountMaskClasses = cn(
   'ease-out'
 );
 
-const transactionsPillClasses = cn(
-  'inline-flex',
-  'items-center',
-  'justify-center',
-  'rounded-full',
-  'border',
-  'px-2.5',
-  'py-1',
-  uiTypographyRecipes.label,
-  ...uiBorderRecipes.subtle,
-  ...uiSurfaceRecipes.card,
+const transactionCountClasses = cn(
+  uiTypographyRecipes.captionStrong,
   uiTextRecipes.muted,
+  'tabular-nums',
   'transition-colors',
   'duration-300',
   'ease-out'
@@ -137,9 +127,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
                 <span className={accountMaskClasses}>••{account.mask}</span>
               </div>
               <div className={cn('flex', 'items-center', 'gap-2')}>
-                <RequirementPill className={transactionsPillClasses} status="pending">
-                  {account.transactions ?? 0} items
-                </RequirementPill>
+                <span className={transactionCountClasses}>{account.transactions ?? 0}×</span>
                 <IconButton
                   type="button"
                   variant="ghost"

@@ -10,11 +10,11 @@ describe('ModalDrawerHeader', () => {
 
     render(
       <ModalDrawerHeader onClose={onClose} closeLabel="Close drawer">
-        <p>Customize Category</p>
+        <p>Change Category</p>
       </ModalDrawerHeader>
     );
 
-    expect(screen.getByText('Customize Category')).toBeInTheDocument();
+    expect(screen.getByText('Change Category')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Close drawer' }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -35,7 +35,7 @@ describe('ModalDrawerHeader', () => {
         <Dialog.Portal>
           <Dialog.Content>
             <ModalDrawerHeader closeWithDialog onClose={onClose} closeLabel="Close drawer">
-              <p>Customize Category</p>
+              <p>Change Category</p>
             </ModalDrawerHeader>
           </Dialog.Content>
         </Dialog.Portal>

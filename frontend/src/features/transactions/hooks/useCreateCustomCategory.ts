@@ -11,6 +11,7 @@ export function useCreateCustomCategory() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions', 'categories'] });
     },
   });
 

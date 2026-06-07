@@ -198,7 +198,7 @@ describe('useCashFlow', () => {
     expectSeriesToInclude(result.current.series, [
       { month: '2026-05', income: 900, expenses: 250, net: 650 },
     ]);
-    expect(AnalyticsService.getCashFlow).toHaveBeenLastCalledWith(3, ['account1']);
+    expect(AnalyticsService.getCashFlow).toHaveBeenLastCalledWith(2, ['account1']);
 
     await act(async () => {
       deferred.resolve({
@@ -213,5 +213,18 @@ describe('useCashFlow', () => {
     expectSeriesToInclude(result.current.series, [
       { month: '2026-05', income: 400, expenses: 250, net: 150 },
     ]);
+  });
+
+  it('uses the rolling 1M window without prepending an extra comparison month', async () => {
+    const { result } = renderHook(() => useCashFlow(6, 'current-month'), {
+      wrapper: TestWrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(AnalyticsService.getCashFlow).toHaveBeenCalledWith(2, undefined);
+    expect(result.current.series.map((point) => point.month)).toEqual(['2026-04', '2026-05']);
   });
 });

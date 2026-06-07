@@ -27,7 +27,7 @@ import {
 } from '@/ui/recipes';
 import {
   formatCategoryName,
-  getTagThemeForCategoryAtIndex,
+  getTagThemeForCategory,
   validateCustomCategoryName,
 } from '@/utils/categories';
 
@@ -82,7 +82,7 @@ export function CategoryPicker({
   onSelect,
   onRequestClose,
 }: Props) {
-  const { system, custom, all } = useCategories();
+  const { system, custom, all, accentIndexByName } = useCategories();
   const customByDisplayName = useMemo(
     () => new Map(custom.map((category) => [category.display_name, category])),
     [custom]
@@ -164,7 +164,7 @@ export function CategoryPicker({
           onClose={onRequestClose}
           closeLabel="Close category picker"
         >
-          <p className={cn(modalDrawerSectionLabelClassName)}>Customize Category</p>
+          <p className={cn(modalDrawerSectionLabelClassName)}>Change Category</p>
         </ModalDrawerHeader>
         <div
           className={cn(
@@ -174,14 +174,14 @@ export function CategoryPicker({
           )}
         >
           <div className={cn('flex flex-wrap gap-2')}>
-            {all.map((categoryName, index) => {
+            {all.map((categoryName) => {
               const customCategory = customByDisplayName.get(categoryName);
               const isCustom = customCategory != null;
               const label = formatCategoryName(categoryName);
               const selected = isCustom
                 ? currentCategory.isCustom && currentCategory.name === categoryName
                 : !currentCategory.isCustom && currentCategory.name === categoryName;
-              const theme = getTagThemeForCategoryAtIndex(index);
+              const theme = getTagThemeForCategory(categoryName, accentIndexByName);
 
               return (
                 <button

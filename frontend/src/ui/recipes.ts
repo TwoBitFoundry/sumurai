@@ -542,6 +542,15 @@ export const controlIconWell = {
 
 export const settingsSecurityLayout = {
   section: ['space-y-4', 'border-t', 'pt-5', ...border.divider],
+  sectionHeader: [
+    'flex',
+    'flex-col',
+    'gap-4',
+    'md:flex-row',
+    'md:items-start',
+    'md:justify-between',
+  ],
+  sectionIntro: ['min-w-0', 'space-y-1'],
   list: ['flex', 'flex-col', 'gap-3'],
   passkeyRow: [
     'flex',
@@ -554,7 +563,7 @@ export const settingsSecurityLayout = {
   ],
   passkeyMeta: ['min-w-0', 'flex-1', 'space-y-1'],
   passkeyRemoveWrap: ['inline-flex', 'shrink-0', 'self-end', 'md:self-center'],
-  addTrigger: ['w-full', 'md:w-auto', 'lg:w-auto'],
+  addTrigger: ['w-full', 'shrink-0', 'md:w-auto'],
   modalActions: ['flex', 'flex-col', 'gap-3', 'md:flex-row', 'lg:gap-4'],
   modalAction: ['w-full', 'md:flex-1'],
 } as const;
