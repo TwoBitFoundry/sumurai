@@ -1,9 +1,8 @@
 import React, { useId, useMemo } from 'react';
-import type { TooltipProps } from 'recharts';
+import type { CurveProps, TooltipProps } from 'recharts';
 import {
   CartesianGrid,
   Curve,
-  type CurveProps,
   Line,
   LineChart,
   ReferenceLine,
@@ -13,8 +12,10 @@ import {
 } from 'recharts';
 import { useTheme } from '../../../context/ThemeContext';
 import { fmtUSD } from '../../../utils/format';
-import { varianceChartDomain } from '../utils/budgetChartAxis';
+import { realityChartDomain } from '../utils/budgetChartAxis';
 import { formatChartMonthLabel } from '../utils/chartMonth';
+import { cn } from '@/ui/primitives';
+import { font, text as uiTextRecipes } from '@/ui/recipes';
 import { ChartGlassTooltip, chartTooltipRechartsProps } from './ChartGlassTooltip';
 
 export interface BudgetVsActualChartData {
@@ -29,38 +30,37 @@ export interface BudgetVsActualChartProps {
   height: number;
 }
 
-interface VarianceDataPoint {
-  month: string;
-  variance: number;
-}
-
-function varianceMarkerColor(variance: number, underColor: string, overColor: string) {
-  return variance > 0 ? overColor : underColor;
+function realityMarkerColor(expenses: number, totalBudget: number, underColor: string, overColor: string) {
+  return Number(expenses) > Number(totalBudget) ? overColor : underColor;
 }
 
 const CHART_ANIMATION_MS = 800;
 
-function BudgetVarianceCurve({ curveProps, stroke }: { curveProps: CurveProps; stroke: string }) {
+function BudgetRealityCurve({ curveProps, stroke }: { curveProps: CurveProps; stroke: string }) {
   const { strokeDasharray: _strokeDasharray, ...curveWithoutDash } = curveProps;
   return <Curve {...curveWithoutDash} stroke={stroke} strokeWidth={2} fill="none" />;
 }
 
-const budgetTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) => {
+const budgetRealityTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) => {
   const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
   return fmtUSD(Number.isFinite(numericValue) ? numericValue : 0);
 };
 
-function varianceGradientStopPercent(varianceData: VarianceDataPoint[]): string {
-  if (varianceData.length === 0) {
+function budgetRealityClassName(expenses: number, totalBudget: number) {
+  return Number(expenses) > Number(totalBudget) ? uiTextRecipes.danger : uiTextRecipes.success;
+}
+
+function realityGradientStopPercent(expenses: number[], totalBudget: number): string {
+  if (expenses.length === 0) {
     return '50';
   }
-  const minVariance = Math.min(...varianceData.map((p) => p.variance), 0);
-  const maxVariance = Math.max(...varianceData.map((p) => p.variance), 0);
-  const range = maxVariance - minVariance;
+  const minExpenses = Math.min(...expenses);
+  const maxExpenses = Math.max(...expenses);
+  const range = maxExpenses - minExpenses;
   if (range <= 0) {
     return '50';
   }
-  return ((-minVariance / range) * 100).toFixed(2);
+  return (((Number(totalBudget) - minExpenses) / range) * 100).toFixed(2);
 }
 
 const BudgetVsActualChartFn: React.FC<BudgetVsActualChartProps> = ({
@@ -70,46 +70,47 @@ const BudgetVsActualChartFn: React.FC<BudgetVsActualChartProps> = ({
   height,
 }) => {
   const { colors } = useTheme();
-  const gradientId = useId().replace(/:/g, '');
+  const gradientId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
 
-  const varianceData = useMemo<VarianceDataPoint[]>(
+  const expenses = useMemo(
     () =>
-      data.map((point) => ({
-        month: point.month,
-        variance: point.expenses - totalBudget,
-      })),
-    [data, totalBudget]
+      data
+        .map((point) => Number(point.expenses))
+        .filter((value) => Number.isFinite(value)),
+    [data]
   );
-
-  const zeroPercent = varianceGradientStopPercent(varianceData);
+  const zeroPercent = useMemo(
+    () => realityGradientStopPercent(expenses, totalBudget),
+    [expenses, totalBudget]
+  );
   const gradientStroke = `url(#${gradientId})`;
-  const varianceRange = useMemo(() => {
-    if (varianceData.length === 0) {
+  const expenseRange = useMemo(() => {
+    if (expenses.length === 0) {
       return 0;
     }
-    const values = varianceData.map((point) => point.variance);
-    return Math.max(...values) - Math.min(...values);
-  }, [varianceData]);
+    return Math.max(...expenses) - Math.min(...expenses);
+  }, [expenses]);
   const lineStroke = useMemo(() => {
-    if (varianceRange > 0) {
+    if (expenseRange > 0) {
       return gradientStroke;
     }
-    const last = varianceData[varianceData.length - 1];
-    if (!last) {
+    const lastExpense = expenses[expenses.length - 1];
+    if (lastExpense == null) {
       return gradientStroke;
     }
-    return varianceMarkerColor(last.variance, colors.semantic.cash, colors.semantic.credit);
-  }, [varianceRange, varianceData, gradientStroke, colors.semantic.cash, colors.semantic.credit]);
+    return realityMarkerColor(lastExpense, totalBudget, colors.semantic.cash, colors.semantic.credit);
+  }, [colors.semantic.cash, colors.semantic.credit, expenseRange, expenses, gradientStroke, totalBudget]);
+
   const yDomain = useMemo(
-    () => varianceChartDomain(varianceData.map((point) => point.variance)),
-    [varianceData]
+    () => realityChartDomain(data.map((point) => Number(point.expenses)), Number(totalBudget)),
+    [data, totalBudget]
   );
 
   return (
     <LineChart
       width={width}
       height={height}
-      data={varianceData}
+      data={data}
       margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
       accessibilityLayer={false}
     >
@@ -140,38 +141,56 @@ const BudgetVsActualChartFn: React.FC<BudgetVsActualChartProps> = ({
         tickCount={Math.min(7, Math.max(5, Math.floor(height / 50)))}
         tickFormatter={(v) => {
           const n = Math.abs(Number(v));
-          const sign = Number(v) < 0 ? '-' : '';
-          if (n >= 1e9) return `${sign}$${(n / 1e9).toFixed(0)}b`;
-          if (n >= 1e6) return `${sign}$${(n / 1e6).toFixed(0)}m`;
-          if (n >= 1e3) return `${sign}$${(n / 1e3).toFixed(0)}k`;
-          return `${sign}$${Number(n).toFixed(0)}`;
+          if (n >= 1e9) return `$${(n / 1e9).toFixed(0)}b`;
+          if (n >= 1e6) return `$${(n / 1e6).toFixed(0)}m`;
+          if (n >= 1e3) return `$${(n / 1e3).toFixed(0)}k`;
+          return `$${Number(n).toFixed(0)}`;
         }}
       />
       <Tooltip
         cursor={false}
-        content={(tooltipProps) => (
-          <ChartGlassTooltip
-            {...tooltipProps}
-            formatter={budgetTooltipFormatter}
-            valueClassName="text-muted"
-            labelFormatter={(_label, payload) => {
-              if (!payload?.length) return null;
-              const value = payload[0].value;
-              if (typeof value !== 'number') return null;
-              return value > 0
-                ? `Over budget: ${fmtUSD(value)}`
-                : `Under budget: ${fmtUSD(-value)}`;
-            }}
-          />
-        )}
+        content={(tooltipProps) => {
+          const rawExpenses = tooltipProps.payload?.[0]?.value;
+          const expenses =
+            typeof rawExpenses === 'number' ? rawExpenses : Number(rawExpenses ?? Number.NaN);
+          const realityClassName = Number.isFinite(expenses)
+            ? budgetRealityClassName(expenses, totalBudget)
+            : uiTextRecipes.primary;
+
+          return (
+            <ChartGlassTooltip
+              {...tooltipProps}
+              formatter={budgetRealityTooltipFormatter}
+              valueClassNameForEntry={() => realityClassName}
+              labelFormatter={(label, payload) => {
+                const monthKey = String(
+                  label ?? (payload?.[0]?.payload as { month?: string } | undefined)?.month ?? ''
+                );
+                if (!monthKey) return null;
+                const monthLabel = formatChartMonthLabel(monthKey);
+                return (
+                  <>
+                    <span className={cn('block', font.caption, uiTextRecipes.muted)}>
+                      {monthLabel}
+                    </span>
+                    <span className={cn('block', font.caption, uiTextRecipes.body)}>
+                      <span className={uiTextRecipes.muted}>Total budget: </span>
+                      <span className={uiTextRecipes.primary}>{fmtUSD(totalBudget)}</span>
+                    </span>
+                  </>
+                );
+              }}
+            />
+          );
+        }}
         {...chartTooltipRechartsProps}
       />
       <ReferenceLine
-        y={0}
+        y={totalBudget}
         stroke={colors.chart.axis}
         strokeDasharray="3 3"
         label={{
-          value: 'On Budget',
+          value: 'Budget',
           position: 'insideTopRight',
           fill: colors.chart.axis,
           fontSize: 12,
@@ -179,18 +198,22 @@ const BudgetVsActualChartFn: React.FC<BudgetVsActualChartProps> = ({
       />
       <Line
         type="monotone"
-        dataKey="variance"
+        dataKey="expenses"
         stroke={gradientStroke}
         strokeWidth={2}
+        shape={(curveProps: CurveProps) => (
+          <BudgetRealityCurve curveProps={curveProps} stroke={lineStroke} />
+        )}
         dot={(props) => {
-          const point = props.payload as VarianceDataPoint | undefined;
+          const point = props.payload as BudgetVsActualChartData | undefined;
           const cx = props.cx;
           const cy = props.cy;
           if (!point || cx == null || cy == null) {
             return null;
           }
-          const fill = varianceMarkerColor(
-            point.variance,
+          const fill = realityMarkerColor(
+            point.expenses,
+            totalBudget,
             colors.semantic.cash,
             colors.semantic.credit
           );
@@ -209,14 +232,15 @@ const BudgetVsActualChartFn: React.FC<BudgetVsActualChartProps> = ({
           );
         }}
         activeDot={(props) => {
-          const point = props.payload as VarianceDataPoint | undefined;
+          const point = props.payload as BudgetVsActualChartData | undefined;
           const cx = props.cx;
           const cy = props.cy;
           if (!point || cx == null || cy == null) {
             return null;
           }
-          const fill = varianceMarkerColor(
-            point.variance,
+          const fill = realityMarkerColor(
+            point.expenses,
+            totalBudget,
             colors.semantic.cash,
             colors.semantic.credit
           );
@@ -235,10 +259,7 @@ const BudgetVsActualChartFn: React.FC<BudgetVsActualChartProps> = ({
         animationBegin={0}
         animationDuration={CHART_ANIMATION_MS}
         animateNewValues
-        name="Variance"
-        shape={(curveProps: CurveProps) => (
-          <BudgetVarianceCurve curveProps={curveProps} stroke={lineStroke} />
-        )}
+        name="Reality"
       />
     </LineChart>
   );
