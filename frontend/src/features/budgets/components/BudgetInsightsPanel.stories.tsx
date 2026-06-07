@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import type { BudgetInsights } from '@/domain/BudgetInsightsCalculator';
 import { BudgetInsightsPanel } from './BudgetInsightsPanel';
 
@@ -42,7 +42,9 @@ export const FlipAndReset: Story = {
     const btn = canvas.getByRole('button', { name: /runway pace/i });
     await userEvent.click(btn);
     await expect(btn).toHaveAttribute('aria-expanded', 'true');
-    await expect(canvas.getByText(/how much am i spending per day/i)).toBeVisible();
+    await waitFor(() => {
+      expect(canvas.getByTestId('budget-insight-question')).toBeVisible();
+    });
   },
 };
 

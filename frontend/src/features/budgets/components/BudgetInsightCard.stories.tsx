@@ -34,7 +34,9 @@ export const Back: Story = {
   args: { flipped: true },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText(/how much can i spend every day/i)).toBeVisible();
+    await expect(
+      canvas.getByText(/how much can i spend each day and stay on budget/i)
+    ).toBeVisible();
     await expect(canvas.queryByText('$15.00')).not.toBeInTheDocument();
   },
 };
