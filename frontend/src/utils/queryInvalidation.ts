@@ -38,6 +38,10 @@ export async function refreshFinancialDataAfterProviderChange(
 
 const CATEGORIZATION_DEPENDENT_QUERY_KEYS = [['transactions'], ['analytics'], ['budgets']] as const;
 
+export async function invalidateBudgetQueries(queryClient: QueryClient): Promise<void> {
+  await queryClient.invalidateQueries({ queryKey: ['budgets'], refetchType: 'all' });
+}
+
 export async function invalidateCategorizationDependentQueries(
   queryClient: QueryClient
 ): Promise<void> {

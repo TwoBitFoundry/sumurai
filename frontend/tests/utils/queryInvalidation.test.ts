@@ -1,5 +1,22 @@
-import { invalidateStaleCacheQueries } from '@/utils/queryInvalidation';
+import { invalidateBudgetQueries, invalidateStaleCacheQueries } from '@/utils/queryInvalidation';
 import { createMockFunction } from '../mocks/mockHttpClient';
+
+describe('invalidateBudgetQueries', () => {
+  it('invalidates budgets for active and inactive subscribers', async () => {
+    const invalidateQueries = createMockFunction().mockResolvedValue(undefined);
+    const queryClient = {
+      invalidateQueries,
+    } as any;
+
+    await invalidateBudgetQueries(queryClient);
+
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['budgets'],
+      refetchType: 'all',
+    });
+    expect(invalidateQueries).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('invalidateStaleCacheQueries', () => {
   it('invalidates domain caches and provider connection caches', async () => {

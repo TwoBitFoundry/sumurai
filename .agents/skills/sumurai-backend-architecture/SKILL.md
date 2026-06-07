@@ -13,6 +13,7 @@ Read the relevant reference before backend changes:
 
 - Backend structure: `references/backend-map.md`
 - Architecture rules: `references/backend-rules.md`
+- Transaction identity (category/merchant): **Conventions** in `docs/ARCHITECTURE.md`
 
 ## Operating Rules
 

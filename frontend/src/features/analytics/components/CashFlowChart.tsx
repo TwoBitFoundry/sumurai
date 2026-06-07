@@ -14,11 +14,11 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { text as uiTextRecipes } from '@/ui/recipes';
 import { useTheme } from '../../../context/ThemeContext';
 import type { AnalyticsCashFlowPoint } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
 import { formatChartMonthLabel } from '../utils/chartMonth';
-import { text as uiTextRecipes } from '@/ui/recipes';
 import { ChartGlassTooltip, chartTooltipRechartsProps } from './ChartGlassTooltip';
 
 export interface CashFlowChartProps {
@@ -31,10 +31,16 @@ type CashFlowChartDatum = AnalyticsCashFlowPoint & {
   plottedExpenses: number;
 };
 
-const cashFlowTooltipFormatter: TooltipContentProps<number, string>['formatter'] = (value, name, entry) => {
+const cashFlowTooltipFormatter: TooltipContentProps<number, string>['formatter'] = (
+  value,
+  name,
+  entry
+) => {
   const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
   const normalizedValue =
-    String(entry?.dataKey ?? name ?? '') === 'plottedExpenses' ? Math.abs(numericValue) : numericValue;
+    String(entry?.dataKey ?? name ?? '') === 'plottedExpenses'
+      ? Math.abs(numericValue)
+      : numericValue;
   return fmtUSD(Number.isFinite(normalizedValue) ? normalizedValue : 0);
 };
 

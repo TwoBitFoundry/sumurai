@@ -16,6 +16,7 @@ use crate::providers::{
     FinancialDataProvider, InstitutionInfo, ProviderCredentials, ProviderRegistry,
 };
 use crate::services::categorization::categorization_service::Categorizer;
+use crate::services::categorization::classifier_labels::apply_deterministic_categories;
 use crate::services::merchant_normalization::service::MerchantNormalizationService;
 use crate::services::{
     cache_service::CacheService, repository_service::DatabaseRepository, sync_service::SyncService,
@@ -992,6 +993,8 @@ impl ConnectionService {
             );
         }
 
+        apply_deterministic_categories(&mut valid_transactions);
+
         for chunk in valid_transactions.chunks(500) {
             if let Err(e) = self
                 .db_repository
@@ -1375,6 +1378,8 @@ impl ConnectionService {
             );
         }
 
+        apply_deterministic_categories(&mut valid_transactions);
+
         for chunk in valid_transactions.chunks(500) {
             if let Err(e) = self
                 .db_repository
@@ -1639,6 +1644,8 @@ impl ConnectionService {
         {
             tracing::warn!("Merchant normalization failed for user {}: {}", user_id, e);
         }
+
+        apply_deterministic_categories(&mut synced_transactions);
 
         for chunk in synced_transactions.chunks(500) {
             if let Err(e) = self

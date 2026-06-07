@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Read the relevant doc before editing — don't reinvent what's already specified.
 
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — runtime, data flow, provider flow, cache TTLs, RLS multi-tenancy. **Read first for any non-trivial change.**
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — runtime, data flow, provider flow, cache TTLs, RLS multi-tenancy, **Conventions** (category/merchant identity). **Read first for any non-trivial change.**
 - [AGENTS.md](AGENTS.md) — commands, design guardrails, testing split, security rules.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — local validation, sandbox credentials, env vars, troubleshooting.
 - [DESIGN.md](DESIGN.md) — source of truth for design tokens. Generated Tailwind/DTCG exports are produced by `design:guard`; never hand-edit them.
@@ -29,6 +29,7 @@ These supplement `docs/ARCHITECTURE.md` — not replace it.
 - **Frontend layering.** `services/` wrap [frontend/src/services/ApiClient.ts](frontend/src/services/ApiClient.ts) (auth refresh + retry centralized there — **do not bypass it**). Provider-specific flows live in the service/hook layer, not in pages. `features/<area>/` holds hooks + components per feature. App shell, onboarding, and provider-mismatch handling are in [frontend/src/App.tsx](frontend/src/App.tsx).
 - **Cache TTLs are constants** at the top of [backend/src/services/cache_service.rs](backend/src/services/cache_service.rs) — if you change one, update the Caching section of `docs/ARCHITECTURE.md`.
 - **RLS is real.** Don't write queries that assume the app role can bypass it; the auth middleware sets the user context that every query inherits.
+- **Transaction identity.** Category and merchant business logic follow **Conventions** in `docs/ARCHITECTURE.md` — effective category before stored category; normalized merchant before default merchant name.
 - **Validate UI changes at `http://localhost:8080`** (Nginx-backed). `:3001` bypasses the proxy and won't catch routing/auth issues.
 
 ## When adding a new feature

@@ -1707,7 +1707,8 @@ async fn given_simplefin_sync_with_db_aliases_when_upserting_then_normalizes_mer
 }
 
 #[tokio::test]
-async fn given_simplefin_sync_when_transactions_are_persisted_then_they_stay_other() {
+async fn given_simplefin_sync_when_transactions_are_persisted_then_deterministic_categories_apply()
+{
     let user_id = Uuid::new_v4();
     let mut connection =
         ProviderConnection::new(user_id, &simplefin_org_item_id(&user_id, "org-1"));
@@ -1757,10 +1758,9 @@ async fn given_simplefin_sync_when_transactions_are_persisted_then_they_stay_oth
     };
     let persisted_connection_id = stable_uuid(&format!("simplefin_{}_{}", user_id, "org-1"));
 
-    let (connection_service, sync_service, _, _, upsert_accounts, upsert_transactions) =
-        build_simplefin_sync_service_with_categorizer_and_accounts(
+    let (connection_service, sync_service, captured_transactions) =
+        build_simplefin_normalization_sync_service(
             snapshot,
-            HashSet::new(),
             vec![
                 SimpleFinTransaction {
                     id: "txn-1".to_string(),
@@ -1793,7 +1793,6 @@ async fn given_simplefin_sync_when_transactions_are_persisted_then_they_stay_oth
                 institution_name: None,
                 provider_conn_id: None,
             }],
-            Arc::new(PanicCategorizer),
         );
 
     let result = connection_service
@@ -1811,18 +1810,27 @@ async fn given_simplefin_sync_when_transactions_are_persisted_then_they_stay_oth
         .unwrap();
 
     assert!(!result.transactions.is_empty());
-    assert!(result
-        .transactions
-        .iter()
-        .all(|transaction| transaction.category_primary == "OTHER"));
-    assert!(result
-        .transactions
-        .iter()
-        .all(|transaction| transaction.category_confidence.is_empty()));
-    assert!(*upsert_accounts.lock().unwrap() >= 1);
+    let captured = captured_transactions.lock().unwrap();
+    assert_eq!(captured.len(), result.transactions.len());
     assert_eq!(
-        *upsert_transactions.lock().unwrap(),
-        result.transactions.len()
+        captured
+            .iter()
+            .filter(|transaction| {
+                transaction.category_primary == "FOOD_AND_DRINK"
+                    && transaction.category_confidence == "HIGH"
+            })
+            .count(),
+        2
+    );
+    assert_eq!(
+        captured
+            .iter()
+            .filter(|transaction| {
+                transaction.category_primary == "OTHER"
+                    && transaction.category_confidence.is_empty()
+            })
+            .count(),
+        2
     );
 }
 

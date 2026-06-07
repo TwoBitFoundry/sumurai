@@ -195,8 +195,9 @@ const DashboardPage: React.FC<{
                             <div className={cn('flex', 'items-baseline', 'gap-2', 'shrink-0')}>
                               <span
                                 className={cn(
-                                  uiTypographyRecipes.bodyStrong,
-                                  uiTextRecipes.primary
+                                  uiTypographyRecipes.cardTitle,
+                                  uiTextRecipes.primary,
+                                  'tabular-nums'
                                 )}
                               >
                                 {fmtUSD(cat.value)}

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'bun:test';
-import { varianceChartDomain } from '@/features/analytics/utils/budgetChartAxis';
+import {
+  realityChartDomain,
+  varianceChartDomain,
+} from '@/features/analytics/utils/budgetChartAxis';
 
 describe('varianceChartDomain', () => {
   it('includes negative and positive variance with padding', () => {
@@ -18,5 +21,22 @@ describe('varianceChartDomain', () => {
 
   it('returns zero domain for empty input', () => {
     expect(varianceChartDomain([])).toEqual([0, 0]);
+  });
+});
+
+describe('realityChartDomain', () => {
+  it('includes expenses and total budget with padding', () => {
+    const domain = realityChartDomain([150, 572.53], 202);
+    expect(domain[0]).toBeGreaterThanOrEqual(0);
+    expect(domain[0]).toBeLessThan(150);
+    expect(domain[1]).toBeGreaterThan(572.53);
+    expect(domain[0]).toBeLessThanOrEqual(202);
+    expect(domain[1]).toBeGreaterThanOrEqual(202);
+  });
+
+  it('defaults to budget when there is no expense data', () => {
+    const domain = realityChartDomain([], 202);
+    expect(domain[0]).toBe(0);
+    expect(domain[1]).toBeGreaterThan(202);
   });
 });

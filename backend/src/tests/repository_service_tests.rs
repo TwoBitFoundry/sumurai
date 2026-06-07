@@ -584,12 +584,22 @@ async fn given_spending_only_query_when_fetching_transactions_then_excludes_non_
     );
     transfer_out.category_primary = "TRANSFER_OUT".to_string();
 
+    let mut bank_fee = create_test_transaction(
+        user.id,
+        account.id,
+        "spend_txn_005".to_string(),
+        1200,
+        NaiveDate::from_ymd_opt(2024, 2, 5).unwrap(),
+    );
+    bank_fee.category_primary = "BANK_FEES".to_string();
+
     repo.upsert_transactions_batch(
         &[
             food.clone(),
             income.clone(),
             loan_payment.clone(),
             transfer_out.clone(),
+            bank_fee.clone(),
         ],
         &user.id,
     )
@@ -602,7 +612,7 @@ async fn given_spending_only_query_when_fetching_transactions_then_excludes_non_
         .await
         .unwrap();
 
-    assert_eq!(all_transactions.len(), 4);
+    assert_eq!(all_transactions.len(), 5);
     assert_eq!(spending_transactions.len(), 1);
     assert_eq!(spending_transactions[0].category_primary, "FOOD_AND_DRINK");
     assert_eq!(

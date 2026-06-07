@@ -3257,6 +3257,43 @@ async fn restore_authenticated_simplefin_ignored_institution(
     ))
 }
 
+async fn refresh_session_budget_cache(state: &AppState, jwt_id: &str, user_id: uuid::Uuid) {
+    match state
+        .budget_service
+        .get_budgets_for_user(&*state.db_repository, user_id)
+        .await
+    {
+        Ok(budgets) => match serde_json::to_string(&budgets) {
+            Ok(serialized) => {
+                if let Err(error) = state.cache_service.set_budgets(jwt_id, &serialized).await {
+                    tracing::warn!(
+                        jwt_id,
+                        error = %error,
+                        "Failed to refresh budget cache after mutation"
+                    );
+                }
+            }
+            Err(error) => {
+                tracing::warn!(
+                    jwt_id,
+                    error = %error,
+                    "Failed to serialize budgets for cache refresh"
+                );
+                let _ = state.cache_service.clear_budgets(jwt_id).await;
+            }
+        },
+        Err(error) => {
+            tracing::warn!(
+                jwt_id,
+                user_id = %user_id,
+                error = %error,
+                "Failed to load budgets for cache refresh; clearing budget cache"
+            );
+            let _ = state.cache_service.clear_budgets(jwt_id).await;
+        }
+    }
+}
+
 #[utoipa::path(
     get,
     path = "/api/budgets",
@@ -3420,10 +3457,7 @@ async fn create_authenticated_budget(
         .await
     {
         Ok(created_budget) => {
-            let _ = state
-                .cache_service
-                .clear_budgets(&auth_context.jwt_id)
-                .await;
+            refresh_session_budget_cache(&state, &auth_context.jwt_id, user_id).await;
             Ok(Json(created_budget))
         }
         Err(e) => {
@@ -3485,10 +3519,7 @@ async fn update_authenticated_budget(
         .await
     {
         Ok(updated_budget) => {
-            let _ = state
-                .cache_service
-                .clear_budgets(&auth_context.jwt_id)
-                .await;
+            refresh_session_budget_cache(&state, &auth_context.jwt_id, user_id).await;
             Ok(Json(updated_budget))
         }
         Err(e) => {
@@ -3542,10 +3573,7 @@ async fn delete_authenticated_budget(
         .await
     {
         Ok(_) => {
-            let _ = state
-                .cache_service
-                .clear_budgets(&auth_context.jwt_id)
-                .await;
+            refresh_session_budget_cache(&state, &auth_context.jwt_id, user_id).await;
             Ok(Json(DeleteBudgetResponse {
                 deleted: true,
                 budget_id: budget_id.to_string(),

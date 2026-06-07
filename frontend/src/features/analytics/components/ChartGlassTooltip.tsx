@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
+import { isValidElement } from 'react';
 import type { TooltipContentProps } from 'recharts';
 import {
   type DebouncedFadePresenceOptions,
   useDebouncedFadePresence,
 } from '@/hooks/useDebouncedFadePresence';
 import { cn } from '@/ui/primitives';
-import { chartTooltip, text as uiTextRecipes } from '@/ui/recipes';
+import { chartTooltip, font, text as uiTextRecipes } from '@/ui/recipes';
 
 export function ChartTooltipShell({
   children,
@@ -75,6 +76,11 @@ export const chartTooltipRechartsProps = {
 
 type ChartGlassTooltipProps = TooltipContentProps<number, string> & {
   valueClassName?: string;
+  labelClassName?: string;
+  valueClassNameForEntry?: (
+    entry: NonNullable<TooltipContentProps<number, string>['payload']>[number],
+    index: number
+  ) => string | undefined;
 };
 
 export function ChartGlassTooltip({
@@ -84,21 +90,36 @@ export function ChartGlassTooltip({
   formatter,
   labelFormatter,
   valueClassName,
+  labelClassName,
+  valueClassNameForEntry,
 }: ChartGlassTooltipProps) {
   if (!active || !payload?.length) {
     return null;
   }
 
-  const formattedLabel =
-    label != null && label !== ''
-      ? labelFormatter
-        ? labelFormatter(label, payload)
-        : label
+  const formattedLabel = labelFormatter
+    ? labelFormatter(label ?? '', payload)
+    : label != null && label !== ''
+      ? label
       : null;
+  const labelUsesCustomContent = isValidElement(formattedLabel);
 
   return (
     <ChartTooltipShell>
-      {formattedLabel ? <p className={cn(chartTooltip.label)}>{formattedLabel}</p> : null}
+      {formattedLabel != null && formattedLabel !== '' ? (
+        <p
+          className={cn(
+            labelClassName
+              ? font.caption
+              : labelUsesCustomContent
+                ? font.caption
+                : chartTooltip.label,
+            labelClassName
+          )}
+        >
+          {formattedLabel}
+        </p>
+      ) : null}
       {payload.map((entry, index) => {
         const rawValue = entry.value;
         const numericValue =
@@ -118,10 +139,20 @@ export function ChartGlassTooltip({
           }
         }
 
+        const rowValueClassName =
+          valueClassNameForEntry?.(entry, index) ?? valueClassName ?? uiTextRecipes.primary;
+        const usesColoredValue =
+          valueClassNameForEntry != null ||
+          (valueClassName != null && valueClassName !== uiTextRecipes.primary);
+
         return (
-          <p key={rowKey} className={cn(chartTooltip.row)}>
-            {displayName ? <span>{displayName} : </span> : null}
-            <span className={cn(valueClassName ?? uiTextRecipes.primary)}>{displayValue}</span>
+          <p key={rowKey} className={cn(usesColoredValue ? font.caption : chartTooltip.row)}>
+            {displayName ? (
+              <span className={cn(usesColoredValue ? uiTextRecipes.body : undefined)}>
+                {displayName} :{' '}
+              </span>
+            ) : null}
+            <span className={cn(rowValueClassName)}>{displayValue}</span>
           </p>
         );
       })}

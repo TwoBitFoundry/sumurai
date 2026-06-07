@@ -10,12 +10,12 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { cn } from '@/ui/primitives';
+import { font, text as uiTextRecipes } from '@/ui/recipes';
 import { useTheme } from '../../../context/ThemeContext';
 import { fmtUSD } from '../../../utils/format';
 import { realityChartDomain } from '../utils/budgetChartAxis';
 import { formatChartMonthLabel } from '../utils/chartMonth';
-import { cn } from '@/ui/primitives';
-import { font, text as uiTextRecipes } from '@/ui/recipes';
 import { ChartGlassTooltip, chartTooltipRechartsProps } from './ChartGlassTooltip';
 
 export interface BudgetVsActualChartData {
@@ -30,7 +30,12 @@ export interface BudgetVsActualChartProps {
   height: number;
 }
 
-function realityMarkerColor(expenses: number, totalBudget: number, underColor: string, overColor: string) {
+function realityMarkerColor(
+  expenses: number,
+  totalBudget: number,
+  underColor: string,
+  overColor: string
+) {
   return Number(expenses) > Number(totalBudget) ? overColor : underColor;
 }
 
@@ -73,10 +78,7 @@ const BudgetVsActualChartFn: React.FC<BudgetVsActualChartProps> = ({
   const gradientId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
 
   const expenses = useMemo(
-    () =>
-      data
-        .map((point) => Number(point.expenses))
-        .filter((value) => Number.isFinite(value)),
+    () => data.map((point) => Number(point.expenses)).filter((value) => Number.isFinite(value)),
     [data]
   );
   const zeroPercent = useMemo(
@@ -98,11 +100,27 @@ const BudgetVsActualChartFn: React.FC<BudgetVsActualChartProps> = ({
     if (lastExpense == null) {
       return gradientStroke;
     }
-    return realityMarkerColor(lastExpense, totalBudget, colors.semantic.cash, colors.semantic.credit);
-  }, [colors.semantic.cash, colors.semantic.credit, expenseRange, expenses, gradientStroke, totalBudget]);
+    return realityMarkerColor(
+      lastExpense,
+      totalBudget,
+      colors.semantic.cash,
+      colors.semantic.credit
+    );
+  }, [
+    colors.semantic.cash,
+    colors.semantic.credit,
+    expenseRange,
+    expenses,
+    gradientStroke,
+    totalBudget,
+  ]);
 
   const yDomain = useMemo(
-    () => realityChartDomain(data.map((point) => Number(point.expenses)), Number(totalBudget)),
+    () =>
+      realityChartDomain(
+        data.map((point) => Number(point.expenses)),
+        Number(totalBudget)
+      ),
     [data, totalBudget]
   );
 

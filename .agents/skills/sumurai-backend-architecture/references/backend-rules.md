@@ -19,6 +19,15 @@ Use these rules when changing the Rust backend.
 - Do not log secrets, tokens, private keys, credentials, or raw sensitive financial data.
 - Use `.env.example` for configuration reference; never read `.env` files.
 
+## Transaction identity
+
+Follow **Conventions** in `docs/ARCHITECTURE.md` for category and merchant resolution:
+
+- **Category (business logic):** effective category (override) → stored `category_primary`.
+- **Merchant (business logic):** `normalized_merchant` → `merchant_name`.
+
+Do not group, filter, or aggregate on raw stored category or `original_merchant_name` when resolved values are available. SQL read paths should use override joins (`effective_category_expr()`); in-memory services must match the same order.
+
 ## Database
 
 - Add forward migrations under `backend/migration/src/` and register them in `Migrator::migrations()`.

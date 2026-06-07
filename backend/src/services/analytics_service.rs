@@ -353,6 +353,12 @@ impl AnalyticsService {
         result
     }
 
+    fn is_spending_for_top_merchants(transaction: &Transaction) -> bool {
+        transaction.amount < Decimal::ZERO
+            && !EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES
+                .contains(&transaction.category_primary.as_str())
+    }
+
     pub fn get_top_merchants(
         &self,
         transactions: &[Transaction],
@@ -363,7 +369,7 @@ impl AnalyticsService {
         let mut merchant_map: HashMap<String, (Decimal, u32)> = HashMap::new();
 
         for transaction in transactions {
-            if transaction.amount >= Decimal::ZERO {
+            if !Self::is_spending_for_top_merchants(transaction) {
                 continue;
             }
             let merchant_name = transaction
@@ -380,7 +386,7 @@ impl AnalyticsService {
 
         let total_spend: Decimal = transactions
             .iter()
-            .filter(|t| t.amount < Decimal::ZERO)
+            .filter(|t| Self::is_spending_for_top_merchants(t))
             .map(|t| -t.amount)
             .sum();
 

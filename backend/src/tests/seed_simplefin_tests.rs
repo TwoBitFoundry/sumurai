@@ -140,7 +140,13 @@ async fn skips_when_demo_transactions_already_seeded() {
             let ids = seeded_ids.clone();
             Box::pin(async move { Ok(ids) })
         });
+    mock_db
+        .expect_get_transactions_for_user()
+        .with(mockall::predicate::eq(user_id))
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(Vec::new()) }));
     mock_db.expect_upsert_provider_snapshot_bundle().times(0);
+    mock_db.expect_upsert_transactions_batch().times(0);
 
     let mock_cache = MockCacheService::new();
     let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
@@ -250,6 +256,17 @@ async fn phase8_subscription_scenarios_present_in_simplefin_seed_for_demo_user_o
     let netflix_pred =
         deterministic_prediction("[debit] NETFLIX.COM 866-579-7172 CA").expect("netflix classify");
     assert_eq!(netflix_pred.primary, "SUBSCRIPTION");
+    assert_eq!(netflix.category_primary, "SUBSCRIPTION");
+
+    let atm = by_provider_id
+        .get(seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[3])
+        .expect("atm withdrawal transaction");
+    assert_eq!(atm.category_primary, "BANK_FEES");
+
+    let transfer = by_provider_id
+        .get(seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[16])
+        .expect("transfer transaction");
+    assert_eq!(transfer.category_primary, "TRANSFER_OUT");
 
     let gym_dates = [
         NaiveDate::from_ymd_opt(2026, 2, 15).unwrap(),

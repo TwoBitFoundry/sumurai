@@ -2,12 +2,14 @@ use crate::models::account::Account;
 use crate::models::auth::User;
 use crate::models::plaid::ProviderConnection;
 use crate::models::transaction::Transaction;
+use crate::services::categorization::classifier_labels::apply_deterministic_categories;
 use crate::services::merchant_normalization::service::MerchantNormalizationService;
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::{AuthService, CacheService};
 use chrono::{NaiveDate, Utc};
 use rust_decimal::Decimal;
 use std::collections::hash_map::DefaultHasher;
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 use std::sync::Arc;
@@ -161,7 +163,8 @@ pub async fn maybe_seed_demo_simplefin_data(
         .unwrap_or_default();
 
     if is_demo_simplefin_seeded(&provider_txn_ids) {
-        tracing::info!("Demo SimpleFin data already present, skipping");
+        backfill_demo_transaction_categories(db, &user_id).await?;
+        tracing::info!("Demo SimpleFin data already present, refreshed demo categories");
         return Ok(());
     }
 
@@ -474,11 +477,39 @@ pub async fn maybe_seed_demo_simplefin_data(
         .normalize_batch(&mut transactions)
         .await
         .map_err(|e| anyhow::anyhow!("Demo seed normalization failed: {}", e))?;
+    apply_deterministic_categories(&mut transactions);
 
     db.upsert_provider_snapshot_bundle(&user_id, &connection, &accounts, &transactions)
         .await
         .map_err(|e| anyhow::anyhow!("Failed to seed demo SimpleFin snapshot: {}", e))?;
 
     tracing::info!("Demo SimpleFin data seeded for me@test.com");
+    Ok(())
+}
+
+async fn backfill_demo_transaction_categories(
+    db: &Arc<dyn DatabaseRepository>,
+    user_id: &Uuid,
+) -> anyhow::Result<()> {
+    let demo_ids: HashSet<&str> = DEMO_SIMPLEFIN_PROVIDER_TXN_IDS.iter().copied().collect();
+    let mut transactions = db.get_transactions_for_user(user_id).await.map_err(|e| {
+        anyhow::anyhow!(
+            "Failed to load demo transactions for category backfill: {}",
+            e
+        )
+    })?;
+    transactions.retain(|transaction| {
+        transaction
+            .provider_transaction_id
+            .as_deref()
+            .is_some_and(|id| demo_ids.contains(id))
+    });
+    if transactions.is_empty() {
+        return Ok(());
+    }
+    apply_deterministic_categories(&mut transactions);
+    db.upsert_transactions_batch(&transactions, user_id)
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to backfill demo transaction categories: {}", e))?;
     Ok(())
 }

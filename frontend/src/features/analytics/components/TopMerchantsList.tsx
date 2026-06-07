@@ -16,7 +16,7 @@ type Props = {
 };
 
 const merchantRow = [
-  'flex items-center justify-between p-2',
+  'grid grid-cols-[minmax(0,1fr)_auto_auto] items-stretch gap-x-3 p-2',
   ...dashboardCategoryCard.shellInteractive,
 ] as const;
 
@@ -40,11 +40,53 @@ const TopMerchantsListFn: React.FC<Props> = ({ merchants, className = '' }) => {
         >
           {merchantsToShow.map((merchant) => (
             <div key={merchant.name} className={cn(merchantRow)} style={hoverBorderStyle}>
-              <div className={cn('min-w-0', 'flex-1')}>
+              <div className={cn('flex', 'h-full', 'min-h-[2.5rem]', 'min-w-0', 'items-center')}>
                 <div
-                  className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary, 'truncate')}
+                  className={cn(
+                    uiTypographyRecipes.cardTitle,
+                    uiTextRecipes.primary,
+                    'min-w-0',
+                    'line-clamp-2',
+                    'break-words'
+                  )}
                 >
                   {merchant.name}
+                </div>
+              </div>
+              <div
+                className={cn('flex', 'h-full', 'min-h-[2.5rem]', 'items-center', 'justify-end')}
+              >
+                <div
+                  className={cn(
+                    uiTypographyRecipes.cardTitle,
+                    uiTextRecipes.primary,
+                    'min-w-0',
+                    'max-w-[8rem]',
+                    'line-clamp-2',
+                    'break-words',
+                    'text-right',
+                    'tabular-nums'
+                  )}
+                >
+                  {fmtUSD(merchant.amount)}
+                </div>
+              </div>
+              <div
+                className={cn(
+                  'flex',
+                  'shrink-0',
+                  'flex-col',
+                  'items-end',
+                  'justify-center',
+                  'gap-0.5',
+                  'self-center',
+                  'text-right'
+                )}
+              >
+                <div
+                  className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted, 'tabular-nums')}
+                >
+                  {merchant.percentage}%
                 </div>
                 <div
                   className={cn(
@@ -54,14 +96,6 @@ const TopMerchantsListFn: React.FC<Props> = ({ merchants, className = '' }) => {
                   )}
                 >
                   {merchant.count}×
-                </div>
-              </div>
-              <div className={cn('text-right', 'flex-shrink-0', 'ml-4')}>
-                <div className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
-                  {fmtUSD(merchant.amount)}
-                </div>
-                <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                  {merchant.percentage}%
                 </div>
               </div>
             </div>

@@ -54,3 +54,6 @@
 - Generate local secrets with `openssl rand -hex 32` for `JWT_SECRET` and `ENCRYPTION_KEY`.
 - Redis is mandatory; the backend exits without it.
 - Local E2E demo user: `me@test.com` / `Test1234!`.
+
+## Product rules
+- Transaction category and merchant identity for business logic are defined under **Conventions** in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (effective category → default category; normalized merchant → default merchant name).

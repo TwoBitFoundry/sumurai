@@ -553,6 +553,51 @@ fn given_transactions_when_getting_top_merchants_with_date_range_then_filters_an
 }
 
 #[test]
+fn given_non_spending_categories_when_getting_top_merchants_then_excludes_them() {
+    let analytics = AnalyticsService::new();
+    let txns = vec![
+        create_test_transaction(
+            dec!(-150.00),
+            NaiveDate::from_ymd_opt(2024, 3, 5).unwrap(),
+            "FOOD_AND_DRINK",
+        ),
+        create_test_transaction(
+            dec!(500.00),
+            NaiveDate::from_ymd_opt(2024, 3, 6).unwrap(),
+            "INCOME",
+        ),
+        create_test_transaction(
+            dec!(-200.00),
+            NaiveDate::from_ymd_opt(2024, 3, 7).unwrap(),
+            "TRANSFER_OUT",
+        ),
+        create_test_transaction(
+            dec!(100.00),
+            NaiveDate::from_ymd_opt(2024, 3, 8).unwrap(),
+            "TRANSFER_IN",
+        ),
+        create_test_transaction(
+            dec!(-75.00),
+            NaiveDate::from_ymd_opt(2024, 3, 9).unwrap(),
+            "LOAN_PAYMENTS",
+        ),
+        create_test_transaction(
+            dec!(-12.00),
+            NaiveDate::from_ymd_opt(2024, 3, 10).unwrap(),
+            "BANK_FEES",
+        ),
+    ];
+
+    let result = analytics.get_top_merchants(&txns, 5);
+
+    assert_eq!(result.len(), 1);
+    assert_eq!(result[0].name, "Test Merchant");
+    assert_eq!(result[0].amount, dec!(150.00));
+    assert_eq!(result[0].count, 1);
+    assert_eq!(result[0].percentage, dec!(100.0));
+}
+
+#[test]
 fn given_income_and_expense_transactions_when_calculating_cash_flow_then_buckets_by_month() {
     let analytics = AnalyticsService::new();
     let txns = vec![

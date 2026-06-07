@@ -38,6 +38,26 @@ use std::{future::Future, pin::Pin};
 use uuid::Uuid;
 
 #[derive(FromQueryResult)]
+struct EffectiveCategoryTransactionRow {
+    id: Uuid,
+    account_id: Option<Uuid>,
+    user_id: Option<Uuid>,
+    provider_transaction_id: Option<String>,
+    amount: rust_decimal::Decimal,
+    date: NaiveDate,
+    merchant_name: Option<String>,
+    category_primary: String,
+    category_detailed: String,
+    category_confidence: String,
+    payment_channel: Option<String>,
+    pending: Option<bool>,
+    created_at: Option<chrono::DateTime<chrono::FixedOffset>>,
+    original_merchant_name: Option<String>,
+    normalized_merchant: Option<String>,
+    normalization_source: Option<String>,
+}
+
+#[derive(FromQueryResult)]
 struct MonthlyCashFlowRow {
     month: String,
     income: rust_decimal::Decimal,
@@ -71,8 +91,13 @@ pub(crate) struct TransactionWithAccountRow {
 
 type TransactionsInsightsRow = (i64, f64, f64, Option<f64>, Option<String>, Vec<String>);
 
-pub const EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES: [&str; 4] =
-    ["INCOME", "LOAN_PAYMENTS", "TRANSFER_IN", "TRANSFER_OUT"];
+pub const EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES: [&str; 5] = [
+    "INCOME",
+    "LOAN_PAYMENTS",
+    "TRANSFER_IN",
+    "TRANSFER_OUT",
+    "BANK_FEES",
+];
 
 #[async_trait]
 #[cfg_attr(test, mockall::automock)]
@@ -686,6 +711,65 @@ impl PostgresRepository {
             )
     }
 
+    fn transactions_with_category_override_join() -> Select<transactions::Entity> {
+        transactions::Entity::find().join(
+            JoinType::LeftJoin,
+            transactions::Relation::TransactionCategoryOverrides.def(),
+        )
+    }
+
+    fn spending_category_filter() -> SimpleExpr {
+        Expr::expr(Self::effective_category_expr())
+            .is_not_in(EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES.to_vec())
+    }
+
+    fn transaction_with_effective_category_select(
+        query: Select<transactions::Entity>,
+    ) -> Select<transactions::Entity> {
+        query
+            .select_only()
+            .columns([
+                transactions::Column::Id,
+                transactions::Column::AccountId,
+                transactions::Column::UserId,
+                transactions::Column::ProviderTransactionId,
+                transactions::Column::Amount,
+                transactions::Column::Date,
+                transactions::Column::MerchantName,
+                transactions::Column::CategoryDetailed,
+                transactions::Column::CategoryConfidence,
+                transactions::Column::PaymentChannel,
+                transactions::Column::Pending,
+                transactions::Column::CreatedAt,
+                transactions::Column::OriginalMerchantName,
+                transactions::Column::NormalizedMerchant,
+                transactions::Column::NormalizationSource,
+            ])
+            .column_as(Self::effective_category_expr(), "category_primary")
+    }
+
+    fn map_effective_category_transaction_row(row: EffectiveCategoryTransactionRow) -> Transaction {
+        Transaction {
+            id: row.id,
+            account_id: row.account_id.unwrap_or_default(),
+            user_id: row.user_id,
+            provider_account_id: None,
+            provider_transaction_id: row.provider_transaction_id,
+            amount: row.amount,
+            date: row.date,
+            merchant_name: row.merchant_name,
+            category_primary: row.category_primary,
+            category_detailed: row.category_detailed,
+            category_confidence: row.category_confidence,
+            payment_channel: row.payment_channel,
+            pending: row.pending.unwrap_or(false),
+            created_at: row.created_at.map(|dt| dt.with_timezone(&chrono::Utc)),
+            original_merchant_name: row.original_merchant_name,
+            normalized_merchant: row.normalized_merchant,
+            normalization_source: row.normalization_source,
+        }
+    }
+
     fn monthly_cash_flow_statement(
         user_id: Uuid,
         start_date: NaiveDate,
@@ -700,19 +784,24 @@ impl PostgresRepository {
         let mut sql = format!(
             r#"
             SELECT
-                to_char(date, 'YYYY-MM') AS month,
+                to_char(t.date, 'YYYY-MM') AS month,
                 COALESCE(SUM(CASE
-                    WHEN amount > 0 AND category_primary <> 'TRANSFER_IN' THEN amount
+                    WHEN t.amount > 0
+                        AND COALESCE(o.category_name, t.category_primary) <> 'TRANSFER_IN' THEN t.amount
                     ELSE 0
                 END), 0) AS income,
                 COALESCE(SUM(CASE
-                    WHEN amount < 0 AND category_primary NOT IN ({excluded}) THEN -amount
+                    WHEN t.amount < 0
+                        AND COALESCE(o.category_name, t.category_primary) NOT IN ({excluded}) THEN -t.amount
                     ELSE 0
                 END), 0) AS expenses
-            FROM transactions
-            WHERE user_id = $1
-              AND date >= $2
-              AND date <= $3
+            FROM transactions t
+            LEFT JOIN transaction_category_overrides o
+                ON o.user_id = t.user_id
+               AND o.normalized_merchant = t.normalized_merchant
+            WHERE t.user_id = $1
+              AND t.date >= $2
+              AND t.date <= $3
             "#
         );
         let mut values: Vec<Value> = vec![user_id.into(), start_date.into(), end_date.into()];
@@ -723,7 +812,7 @@ impl PostgresRepository {
                 .map(|offset| format!("${}", start_index + offset))
                 .collect::<Vec<_>>()
                 .join(", ");
-            sql.push_str(&format!(" AND account_id IN ({placeholders})"));
+            sql.push_str(&format!(" AND t.account_id IN ({placeholders})"));
             values.extend(account_ids.iter().copied().map(Value::from));
         }
 
@@ -1344,22 +1433,25 @@ impl DatabaseRepository for PostgresRepository {
         let rows = self
             .with_tenant(&user_id, move |txn| {
                 Box::pin(async move {
-                    Ok(transactions::Entity::find()
-                        .filter(transactions::Column::UserId.eq(user_id))
-                        .filter(
-                            transactions::Column::CategoryPrimary
-                                .is_not_in(EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES),
-                        )
-                        .order_by_desc(transactions::Column::Date)
-                        .order_by_desc(transactions::Column::CreatedAt)
-                        .limit(1000)
-                        .all(txn)
-                        .await?)
+                    Ok(Self::transaction_with_effective_category_select(
+                        Self::transactions_with_category_override_join(),
+                    )
+                    .filter(transactions::Column::UserId.eq(user_id))
+                    .filter(Self::spending_category_filter())
+                    .order_by_desc(transactions::Column::Date)
+                    .order_by_desc(transactions::Column::CreatedAt)
+                    .limit(1000)
+                    .into_model::<EffectiveCategoryTransactionRow>()
+                    .all(txn)
+                    .await?)
                 })
             })
             .await?;
 
-        Ok(rows.into_iter().map(Into::into).collect())
+        Ok(rows
+            .into_iter()
+            .map(Self::map_effective_category_transaction_row)
+            .collect())
     }
 
     async fn get_transactions_with_account_for_user(
@@ -1605,14 +1697,13 @@ impl DatabaseRepository for PostgresRepository {
         let user_id = *user_id;
         self.with_tenant(&user_id, move |txn| {
             Box::pin(async move {
-                Ok(transactions::Entity::find()
+                Ok(Self::transactions_with_category_override_join()
                     .select_only()
-                    .column(transactions::Column::CategoryPrimary)
+                    .column_as(Self::effective_category_expr(), "category_primary")
                     .distinct()
                     .filter(transactions::Column::UserId.eq(user_id))
-                    .filter(transactions::Column::CategoryPrimary.is_not_null())
-                    .filter(transactions::Column::CategoryPrimary.ne(""))
-                    .order_by_asc(transactions::Column::CategoryPrimary)
+                    .filter(Expr::expr(Self::effective_category_expr()).ne(""))
+                    .order_by_asc(Expr::expr(Self::effective_category_expr()))
                     .into_tuple::<String>()
                     .all(txn)
                     .await?)
@@ -1657,24 +1748,27 @@ impl DatabaseRepository for PostgresRepository {
         let rows = self
             .with_tenant(&user_id, move |txn| {
                 Box::pin(async move {
-                    Ok(transactions::Entity::find()
-                        .filter(transactions::Column::UserId.eq(user_id))
-                        .filter(transactions::Column::Date.gte(start_date))
-                        .filter(transactions::Column::Date.lte(end_date))
-                        .filter(
-                            transactions::Column::CategoryPrimary
-                                .is_not_in(EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES),
-                        )
-                        .order_by_desc(transactions::Column::Date)
-                        .order_by_desc(transactions::Column::CreatedAt)
-                        .limit(1000)
-                        .all(txn)
-                        .await?)
+                    Ok(Self::transaction_with_effective_category_select(
+                        Self::transactions_with_category_override_join(),
+                    )
+                    .filter(transactions::Column::UserId.eq(user_id))
+                    .filter(transactions::Column::Date.gte(start_date))
+                    .filter(transactions::Column::Date.lte(end_date))
+                    .filter(Self::spending_category_filter())
+                    .order_by_desc(transactions::Column::Date)
+                    .order_by_desc(transactions::Column::CreatedAt)
+                    .limit(1000)
+                    .into_model::<EffectiveCategoryTransactionRow>()
+                    .all(txn)
+                    .await?)
                 })
             })
             .await?;
 
-        Ok(rows.into_iter().map(Into::into).collect())
+        Ok(rows
+            .into_iter()
+            .map(Self::map_effective_category_transaction_row)
+            .collect())
     }
 
     async fn get_monthly_cash_flow_aggregates_for_user(

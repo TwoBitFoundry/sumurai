@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use crate::models::predicted_category::{Confidence, PredictedCategory};
+use crate::models::transaction::Transaction;
 use crate::services::merchant_normalization::engine::canonical_key;
 use crate::services::subscription_detection::known_merchants::KNOWN_SUBSCRIPTION_MERCHANTS;
 use rust_decimal::Decimal;
@@ -84,6 +85,30 @@ pub fn deterministic_prediction(input: &str) -> Option<PredictedCategory> {
         primary: primary.to_string(),
         confidence: Confidence::High,
     })
+}
+
+pub fn apply_deterministic_category(transaction: &mut Transaction) {
+    let description = transaction
+        .original_merchant_name
+        .as_deref()
+        .or(transaction.merchant_name.as_deref())
+        .unwrap_or("");
+    if description.is_empty() {
+        return;
+    }
+    let input = format_classifier_input(&transaction.amount, description);
+    let Some(prediction) = deterministic_prediction(&input) else {
+        return;
+    };
+    transaction.category_primary = prediction.primary.clone();
+    transaction.category_detailed = prediction.primary;
+    transaction.category_confidence = prediction.confidence.as_str().to_string();
+}
+
+pub fn apply_deterministic_categories(transactions: &mut [Transaction]) {
+    for transaction in transactions {
+        apply_deterministic_category(transaction);
+    }
 }
 
 fn extract_merchant_normalized(input: &str) -> String {
