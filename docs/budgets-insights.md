@@ -139,10 +139,17 @@ which requires a small backend change.
 - Update `frontend/tests/views/BudgetsPage.test.tsx` for the new card set and filter behavior.
 
 **Acceptance criteria**
-- [ ] The page shows the four insight cards (Budget Summary card retained); old three hero cards are gone.
-- [ ] Changing the month or account filter recomputes all four cards and resets any flipped cards to front.
-- [ ] Account-filtered Card 4 shows a correct weight `%` (filtered spend ÷ all-account spend); unfiltered shows slack.
-- [ ] Safe-To-Spend subtracts only subscriptions attributed to the selected account when filtered.
+- [x] The page shows the four insight cards (Budget Summary card retained); old three hero cards are gone.
+- [x] Changing the month or account filter recomputes all four cards and resets any flipped cards to front.
+- [x] Account-filtered Card 4 shows a correct weight `%` (filtered spend ÷ all-account spend); unfiltered shows slack.
+- [x] Safe-To-Spend subtracts only subscriptions attributed to the selected account when filtered.
+
+**TDD log**
+- Extended `useBudgets` with `filteredSubscriptions`, `isAccountFiltered`, `totalBudgetSpend`, `filterKey`, and an always-unfiltered month-transactions query for Card 4 denominator.
+- Fixed `useBudgets.test.tsx` subscription-filter test to use 2 accounts so `isAllAccountsSelected` is correctly `false` when one is selected.
+- Updated `BudgetsPage.tsx`: replaced 3 `HeroStatCard`s with `BudgetInsightsPanel`; removed `SubscriptionCalculator`/overage-pill/`HeroPill`/`fmtUSD`/`formatCategoryName` unused imports.
+- Updated `BudgetsPage.test.tsx`: new card titles asserted; ordering test overrides `computedBudgets: []` so empty state renders as locator.
+- 948 frontend tests pass, lint + typecheck clean.
 
 ---
 

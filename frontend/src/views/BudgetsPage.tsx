@@ -1,17 +1,14 @@
-import { AlertTriangle, Clock, Repeat2, Target } from 'lucide-react';
+import { Target } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { cn, EmptyState, GlassCard } from '@/ui/primitives';
 import { heroAccents } from '@/ui/tokens';
-import HeroStatCard, {
-  type HeroPill,
-  SubscriptionCostsMetric,
-} from '../components/widgets/HeroStatCard';
 import { BudgetCalculator } from '../domain/BudgetCalculator';
-import { SubscriptionCalculator } from '../domain/SubscriptionCalculator';
+import { computeBudgetInsights } from '../domain/BudgetInsightsCalculator';
 import AddBudgetPicker, {
   type BudgetFormValue,
 } from '../features/budgets/components/AddBudgetPicker';
+import { BudgetInsightsPanel } from '../features/budgets/components/BudgetInsightsPanel';
 import { BudgetList, type BudgetWithProgress } from '../features/budgets/components/BudgetList';
 import BudgetSummaryCard from '../features/budgets/components/BudgetSummaryCard';
 import BudgetToolbar from '../features/budgets/components/BudgetToolbar';
@@ -20,8 +17,6 @@ import { useBudgets } from '../features/budgets/hooks/useBudgets';
 import { SubscriptionsSection } from '../features/subscriptions/components/SubscriptionsSection';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import { PageLayout } from '../layouts/PageLayout';
-import { formatCategoryName } from '../utils/categories';
-import { fmtUSD } from '../utils/format';
 
 interface BudgetsPageProps {
   monthControl: BudgetMonthControl;
@@ -38,6 +33,10 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
     remove,
     computedBudgets,
     subscriptions,
+    filteredSubscriptions,
+    isAccountFiltered,
+    totalBudgetSpend,
+    filterKey,
     availableCategoryOptions,
     month,
   } = useBudgets(monthControl);
@@ -90,76 +89,32 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
     [computedBudgets, month]
   );
 
-  const subscriptionHeroStats = useMemo(
-    () => SubscriptionCalculator.computeSubscriptionHeroStats(subscriptions),
-    [subscriptions]
+  const insights = useMemo(
+    () =>
+      computeBudgetInsights({
+        stats,
+        subscriptions: filteredSubscriptions,
+        month,
+        referenceDate: new Date(),
+        isAccountFiltered,
+        filteredBudgetSpend: stats.totalSpent,
+        totalBudgetSpend,
+      }),
+    [stats, filteredSubscriptions, month, isAccountFiltered, totalBudgetSpend]
   );
-
-  const overBudgetCategoryPills: HeroPill[] = useMemo(() => {
-    if (!stats.overBudgetCategories?.length) return [];
-    const unique = Array.from(new Set(stats.overBudgetCategories));
-    return unique
-      .map((category) => ({
-        raw: category,
-        label: formatCategoryName(category),
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label))
-      .map(({ raw, label }) => ({
-        label,
-        type: 'category' as const,
-        categoryName: raw,
-      }));
-  }, [stats.overBudgetCategories]);
-
-  const overBudgetPills: HeroPill[] = useMemo(() => {
-    if (overBudgetCategoryPills.length > 0) {
-      return overBudgetCategoryPills;
-    }
-    if (stats.overBudgetCount === 0 && computedBudgets.length > 0) {
-      return [
-        {
-          label: 'All budgets hold the line',
-          type: 'semantic' as const,
-          tone: 'success' as const,
-        },
-      ];
-    }
-    return [];
-  }, [overBudgetCategoryPills, stats.overBudgetCount, computedBudgets.length]);
 
   const budgetsLoading = isLoading || transactionsLoading;
   const hasBudgets = computedBudgets.length > 0;
-  const monthlyRecurringValue = isLoading ? '—' : fmtUSD(subscriptionHeroStats.monthlyTotal);
-  const annualizedValue = isLoading ? '—' : fmtUSD(subscriptionHeroStats.annualized);
 
   const heroStats = (
     <div className="space-y-3">
-      <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-3')}>
-        <HeroStatCard
-          index={1}
-          title="Days remaining"
-          icon={<Clock />}
-          value={stats.daysRemaining}
-          suffix={`of ${stats.totalDays}`}
-          subtext={`${stats.totalDays} total days`}
-        />
-        <HeroStatCard
-          index={2}
-          title="Subscription costs"
-          icon={<Repeat2 />}
-          value={
-            <SubscriptionCostsMetric monthly={monthlyRecurringValue} yearly={annualizedValue} />
-          }
-        />
-        <HeroStatCard
-          index={3}
-          title="Overages"
-          icon={<AlertTriangle />}
-          value={stats.overBudgetCount}
-          suffix="over budget"
-          pills={overBudgetPills}
-        />
-      </div>
+      <BudgetInsightsPanel
+        insights={insights}
+        stats={stats}
+        month={month}
+        filterKey={filterKey}
+        isAccountFiltered={isAccountFiltered}
+      />
       <BudgetSummaryCard totalBudgeted={stats.totalBudgeted} totalSpent={stats.totalSpent} />
     </div>
   );

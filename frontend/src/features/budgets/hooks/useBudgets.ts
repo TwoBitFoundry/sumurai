@@ -32,6 +32,10 @@ export interface UseBudgetsResult {
   validationError: string | null;
   budgets: Budget[];
   subscriptions: SubscriptionSummary[];
+  filteredSubscriptions: SubscriptionSummary[];
+  isAccountFiltered: boolean;
+  totalBudgetSpend: number;
+  filterKey: string;
   computedBudgets: BudgetProgressEntry[];
   load: () => Promise<void>;
   add: (category: string, amount: number) => Promise<void>;
@@ -94,6 +98,44 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
   const budgets = budgetsQuery.data?.budgets ?? [];
   const subscriptions = budgetsQuery.data?.subscriptions ?? [];
   const transactions = txnsQuery.data ?? [];
+
+  const isAccountFiltered =
+    !isAllAccountsSelected && selectedAccountIds.length > 0 && allAccountIds.length > 0;
+
+  const filteredSubscriptions = useMemo(() => {
+    if (!isAccountFiltered) return subscriptions;
+    return subscriptions.filter((sub) =>
+      sub.account_ids.some((id) => selectedAccountIds.includes(id))
+    );
+  }, [subscriptions, selectedAccountIds, isAccountFiltered]);
+
+  const unfilteredTxnsQuery = useQuery({
+    queryKey: ['transactions', 'budget-month', range, 'all'],
+    queryFn: (): Promise<Transaction[]> =>
+      TransactionService.getTransactions({ startDate: range.start, endDate: range.end }),
+    enabled: !accountsLoading && budgetsQuery.isSuccess && isAccountFiltered,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const unfilteredTransactions = isAccountFiltered
+    ? (unfilteredTxnsQuery.data ?? [])
+    : transactions;
+
+  const totalBudgetSpend = useMemo(
+    () =>
+      budgets.reduce(
+        (sum, b) =>
+          sum +
+          BudgetCalculator.calculateSpent(
+            unfilteredTransactions,
+            b.category,
+            range.start,
+            range.end
+          ),
+        0
+      ),
+    [budgets, unfilteredTransactions, range.start, range.end]
+  );
 
   const loadError = useMemo(() => {
     if (!budgetsQuery.isError || budgetsQuery.error == null) {
@@ -313,6 +355,10 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
     validationError,
     budgets,
     subscriptions,
+    filteredSubscriptions,
+    isAccountFiltered,
+    totalBudgetSpend,
+    filterKey: cacheKey,
     computedBudgets,
     load,
     add,
