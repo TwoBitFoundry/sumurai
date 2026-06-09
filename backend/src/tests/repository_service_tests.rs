@@ -1610,3 +1610,218 @@ async fn given_excluded_category_when_getting_contextual_insights_then_excluded_
     );
     assert_eq!(result.card1.secondary, Some(2.0));
 }
+
+#[tokio::test]
+async fn given_state_a_when_getting_contextual_insights_then_card3_subscription_split() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let acct = create_test_account(&repo, user.id).await;
+    let date = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+
+    let sub = make_contextual_txn(
+        user.id,
+        acct.id,
+        "s1",
+        -999,
+        date,
+        "SUBSCRIPTION",
+        None,
+        None,
+    );
+    let t1 = make_contextual_txn(
+        user.id,
+        acct.id,
+        "s2",
+        -2000,
+        date,
+        "FOOD_AND_DRINK",
+        None,
+        None,
+    );
+    let t2 = make_contextual_txn(
+        user.id,
+        acct.id,
+        "s3",
+        -3000,
+        date,
+        "FOOD_AND_DRINK",
+        None,
+        None,
+    );
+    repo.upsert_transaction(&sub).await.unwrap();
+    repo.upsert_transaction(&t1).await.unwrap();
+    repo.upsert_transaction(&t2).await.unwrap();
+
+    let result = repo
+        .get_transactions_contextual_insights(&user.id, None, None, None, None, None)
+        .await
+        .unwrap();
+
+    assert_eq!(result.state, InsightState::A);
+    let card3 = result.card3.unwrap();
+    assert_eq!(card3.value, Some(1.0), "subscription count should be 1");
+    assert_eq!(
+        card3.secondary,
+        Some(2.0),
+        "non-subscription count should be 2"
+    );
+    assert_eq!(
+        card3.format,
+        crate::models::transaction::InsightFormat::Count
+    );
+}
+
+#[tokio::test]
+async fn given_state_b_when_getting_contextual_insights_then_card3_ratio_and_card1_share() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let acct = create_test_account(&repo, user.id).await;
+    let date = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+
+    for (suffix, cents) in [("r1", -1000_i64), ("r2", -3000), ("r3", -5000)] {
+        let t = make_contextual_txn(user.id, acct.id, suffix, cents, date, "TRAVEL", None, None);
+        repo.upsert_transaction(&t).await.unwrap();
+    }
+    for (suffix, cents) in [("r4", -2000_i64), ("r5", -4000)] {
+        let t = make_contextual_txn(
+            user.id,
+            acct.id,
+            suffix,
+            cents,
+            date,
+            "FOOD_AND_DRINK",
+            None,
+            None,
+        );
+        repo.upsert_transaction(&t).await.unwrap();
+    }
+
+    let result = repo
+        .get_transactions_contextual_insights(&user.id, None, None, None, None, Some("TRAVEL"))
+        .await
+        .unwrap();
+
+    assert_eq!(result.state, InsightState::B);
+    let card1_share = result.card1.share.unwrap();
+    assert!(
+        card1_share > 0.0 && card1_share < 1.0,
+        "share should be between 0 and 1"
+    );
+
+    let card3 = result.card3.unwrap();
+    assert!(card3.value.is_some(), "ratio should be computed");
+    assert_eq!(
+        card3.format,
+        crate::models::transaction::InsightFormat::Ratio
+    );
+    assert!(
+        card3.comparison.is_some(),
+        "parent median should be in comparison"
+    );
+}
+
+#[tokio::test]
+async fn given_state_triple_when_getting_contextual_insights_then_card3_recency_days() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let acct = create_test_account(&repo, user.id).await;
+
+    let old_date = NaiveDate::from_ymd_opt(2024, 5, 1).unwrap();
+    let recent_date = NaiveDate::from_ymd_opt(2024, 6, 10).unwrap();
+
+    let t1 = make_contextual_txn(
+        user.id,
+        acct.id,
+        "tr1",
+        -2000,
+        old_date,
+        "FOOD_AND_DRINK",
+        Some("Starbucks"),
+        Some("starbucks"),
+    );
+    let t2 = make_contextual_txn(
+        user.id,
+        acct.id,
+        "tr2",
+        -1500,
+        recent_date,
+        "FOOD_AND_DRINK",
+        Some("Starbucks"),
+        Some("starbucks"),
+    );
+    repo.upsert_transaction(&t1).await.unwrap();
+    repo.upsert_transaction(&t2).await.unwrap();
+
+    let result = repo
+        .get_transactions_contextual_insights(
+            &user.id,
+            Some("starbucks"),
+            Some(&[acct.id]),
+            None,
+            None,
+            Some("FOOD_AND_DRINK"),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(result.state, InsightState::Triple);
+    let card3 = result.card3.unwrap();
+    assert!(card3.value.is_some(), "recency days should be computed");
+    let days = card3.value.unwrap();
+    assert!(days >= 0.0, "recency should be non-negative");
+    assert_eq!(
+        card3.format,
+        crate::models::transaction::InsightFormat::Days
+    );
+}
+
+#[tokio::test]
+async fn given_empty_parent_when_getting_contextual_insights_then_card3_null_not_nan() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let acct = create_test_account(&repo, user.id).await;
+    let date = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+
+    let t = make_contextual_txn(
+        user.id,
+        acct.id,
+        "ep1",
+        -1000,
+        date,
+        "RARE_CATEGORY_XYZ",
+        None,
+        None,
+    );
+    repo.upsert_transaction(&t).await.unwrap();
+
+    let result = repo
+        .get_transactions_contextual_insights(
+            &user.id,
+            None,
+            None,
+            None,
+            None,
+            Some("RARE_CATEGORY_XYZ"),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(result.state, InsightState::B);
+    let card3 = result.card3.unwrap();
+    assert!(
+        card3.value.is_none(),
+        "ratio should be null when subset < 2 rows"
+    );
+}

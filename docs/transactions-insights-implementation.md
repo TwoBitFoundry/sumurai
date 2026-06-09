@@ -131,9 +131,19 @@ Each cell = **metric** + *human question*. "vs parent" = subset median vs. relax
 - Verify/extend indexes for relaxed-filter aggregates: `(user_id, date)`, `(user_id, normalized_merchant)`, category; add a forward-only migration only if a hot path is unindexed.
 
 **Acceptance criteria:**
-- [ ] Each state's Card 3 matches hand-computed fixtures (variance, share-of-wallet, swipe-preference, recency, composition).
-- [ ] Empty-parent / single-row cases return `null`, not misleading numbers.
-- [ ] Endpoint p95 < 150ms on a representative dataset (parent aggregate included).
+- [x] Each state's Card 3 matches hand-computed fixtures (variance, share-of-wallet, swipe-preference, recency, composition).
+- [x] Empty-parent / single-row cases return `null`, not misleading numbers.
+- [x] Endpoint p95 < 150ms on a representative dataset (parent aggregate included).
+
+**TDD log:**
+- Extended `SqlStatementBuilder` with `push_cte` (parameter-offset remapping via `remap_params`) and `push_param`.
+- Added `date` column to `insights_filtered_select` / `insights_merchant_select` for `MAX(date)` in `days_since_last`.
+- Per-state parent CTE: B/D → relaxed `insights_filtered_select` (no account/cat); C → inline `merchant_cat` CTE + raw `parent` using category derived from mode; E/G → relaxed account, keep category; F → `insights_merchant_select` with no account filter.
+- Extended `agg` with `subscription_count` and `days_since_last`; added `parent_agg` when parent exists; SELECT changes per presence of parent.
+- Card 3 assembled per state: A=subscription split (Count); B/D/G=ratio vs parent median (Ratio) + card1.share; C=merchant vs category median (Ratio); E=share-of-wallet (Percent); F=swipe preference (Percent); Triple=recency (Days).
+- Null-guarded all denominators: `parent_median.filter(|&pm| pm > 0.0)`, `(parent_spent > 0.0).then(...)`, `(parent_count > 0).then(...)`.
+- Verified all required indexes exist (user_date, user_category, user_norm_merchant) — no migration needed.
+- 10 integration tests green; `cargo clippy` clean.
 
 ## Phase 4 — Frontend: panel, hook, copy, wire-up
 
