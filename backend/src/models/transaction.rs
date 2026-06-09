@@ -160,6 +160,57 @@ pub struct TransactionsInsightsResponse {
     pub top_categories: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum InsightFormat {
+    Currency,
+    Count,
+    Days,
+    Percent,
+    Ratio,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+#[schema(example = json!({
+    "value": 184.25,
+    "format": "currency",
+    "secondary": 12.0
+}))]
+pub struct InsightMetric {
+    pub value: Option<f64>,
+    pub format: InsightFormat,
+    pub secondary: Option<f64>,
+    pub comparison: Option<f64>,
+    pub share: Option<f64>,
+    pub label: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, ToSchema)]
+pub enum InsightState {
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    Triple,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+#[schema(example = json!({
+    "state": "A",
+    "card1": { "value": 184.25, "format": "currency", "secondary": 12.0 },
+    "card2": { "value": 15.35, "format": "currency" },
+    "card3": null
+}))]
+pub struct ContextualInsightsResponse {
+    pub state: InsightState,
+    pub card1: InsightMetric,
+    pub card2: InsightMetric,
+    pub card3: Option<InsightMetric>,
+}
+
 pub struct TransactionsQuery {
     pub search: Option<String>,
     pub account_ids: Vec<String>,

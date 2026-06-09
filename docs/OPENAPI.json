@@ -2385,6 +2385,94 @@
         ]
       }
     },
+    "/api/transactions/contextual-insights": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "description": "Returns contextual transaction insights driven by the active filter state.",
+        "operationId": "get_authenticated_transactions_contextual_insights",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search transactions by merchant, category, or account",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account_ids",
+            "in": "query",
+            "description": "Filter by account IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "Start date in YYYY-MM-DD format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "End date in YYYY-MM-DD format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category_primary",
+            "in": "query",
+            "description": "Filter by primary category",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contextual transaction insights",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextualInsightsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid date or account filter"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Account filter references another user"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
     "/api/transactions/import": {
       "post": {
         "tags": [
@@ -3199,6 +3287,48 @@
           "user_id": "99999999-8888-7777-6666-555555555555"
         }
       },
+      "ContextualInsightsResponse": {
+        "type": "object",
+        "required": [
+          "state",
+          "card1",
+          "card2"
+        ],
+        "properties": {
+          "card1": {
+            "$ref": "#/components/schemas/InsightMetric"
+          },
+          "card2": {
+            "$ref": "#/components/schemas/InsightMetric"
+          },
+          "card3": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/InsightMetric"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/InsightState"
+          }
+        },
+        "example": {
+          "card1": {
+            "format": "currency",
+            "secondary": 12.0,
+            "value": 184.25
+          },
+          "card2": {
+            "format": "currency",
+            "value": 15.35
+          },
+          "card3": null,
+          "state": "A"
+        }
+      },
       "CreateBudgetRequest": {
         "type": "object",
         "required": [
@@ -3726,6 +3856,79 @@
             "format": "int64"
           }
         }
+      },
+      "InsightFormat": {
+        "type": "string",
+        "enum": [
+          "currency",
+          "count",
+          "days",
+          "percent",
+          "ratio"
+        ]
+      },
+      "InsightMetric": {
+        "type": "object",
+        "required": [
+          "format"
+        ],
+        "properties": {
+          "comparison": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "format": {
+            "$ref": "#/components/schemas/InsightFormat"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "secondary": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "share": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          }
+        },
+        "example": {
+          "format": "currency",
+          "secondary": 12.0,
+          "value": 184.25
+        }
+      },
+      "InsightState": {
+        "type": "string",
+        "enum": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G",
+          "Triple"
+        ]
       },
       "LargestTransaction": {
         "type": "object",

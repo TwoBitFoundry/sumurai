@@ -108,10 +108,17 @@ Each cell = **metric** + *human question*. "vs parent" = subset median vs. relax
 - Register schema in `backend/src/openapi/mod.rs`; regenerate `backend/openapi/` + `docs/OPENAPI.json`.
 
 **Acceptance criteria:**
-- [ ] Endpoint returns the correct `state` for all 8 filter combinations.
-- [ ] Card 1 (sum+count) and Card 2 (median/mode) correct for each state; merchant search resolves via normalization with regex fallback.
-- [ ] Lifetime scope (State C) ignores the date-range filter; exclusion categories respected.
-- [ ] OpenAPI regenerated and committed; `cargo test -p sumurai-backend --locked contextual` green.
+- [x] Endpoint returns the correct `state` for all 8 filter combinations.
+- [x] Card 1 (sum+count) and Card 2 (median/mode) correct for each state; merchant search resolves via normalization with regex fallback.
+- [x] Lifetime scope (State C) ignores the date-range filter; exclusion categories respected.
+- [x] OpenAPI regenerated and committed; `cargo test -p sumurai-backend --locked contextual` green.
+
+**TDD log:**
+- Added `InsightFormat`, `InsightMetric`, `InsightState`, `ContextualInsightsResponse` to `backend/src/models/transaction.rs`.
+- Implemented `get_transactions_contextual_insights` in `repository_service.rs`: two-step merchant resolution (EXISTS count → `m`), `derive_insight_state`, `insights_merchant_select` CTE, `percentile_cont`/`mode()` aggregation, State C lifetime scope.
+- Added handler `get_authenticated_transactions_contextual_insights` and route `GET /api/transactions/contextual-insights` in `main.rs`.
+- Registered schemas and path in `openapi/mod.rs`; ran `regenerate_openapi_artifacts` to update `docs/OPENAPI.json`.
+- 6 integration tests green; `cargo clippy` clean.
 
 ## Phase 3 — Backend: Context (subset-vs-parent) metrics
 

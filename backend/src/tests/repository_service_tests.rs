@@ -1,6 +1,10 @@
 use crate::connection_pool::RepositoryPool;
 use crate::db;
-use crate::models::{account::Account, auth::User, transaction::Transaction};
+use crate::models::{
+    account::Account,
+    auth::User,
+    transaction::{InsightState, Transaction},
+};
 use crate::services::repository_service::{DatabaseRepository, PostgresRepository};
 use crate::utils::encryption_key::parse_encryption_key_hex;
 use crate::utils::tenant_context::tenant_set_config_statement;
@@ -1323,4 +1327,286 @@ async fn given_multiple_accounts_when_get_monthly_cash_flow_aggregates_with_acco
         .await
         .unwrap();
     assert!(none_selected.is_empty());
+}
+
+#[allow(clippy::too_many_arguments)]
+fn make_contextual_txn(
+    user_id: Uuid,
+    account_id: Uuid,
+    id_suffix: &str,
+    amount_cents: i64,
+    date: NaiveDate,
+    category: &str,
+    merchant: Option<&str>,
+    normalized_merchant: Option<&str>,
+) -> Transaction {
+    let mut t = create_test_transaction(
+        user_id,
+        account_id,
+        format!("ctx_{}", id_suffix),
+        amount_cents,
+        date,
+    );
+    t.category_primary = category.to_string();
+    t.merchant_name = merchant.map(str::to_string);
+    t.normalized_merchant = normalized_merchant.map(str::to_string);
+    t
+}
+
+#[tokio::test]
+async fn given_no_filters_when_getting_contextual_insights_then_state_a_with_sum_and_median() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let acct = create_test_account(&repo, user.id).await;
+    let date = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+
+    for (suffix, cents) in [("a1", -1000_i64), ("a2", -2000), ("a3", -3000)] {
+        let t = make_contextual_txn(
+            user.id,
+            acct.id,
+            suffix,
+            cents,
+            date,
+            "FOOD_AND_DRINK",
+            None,
+            None,
+        );
+        repo.upsert_transaction(&t).await.unwrap();
+    }
+
+    let result = repo
+        .get_transactions_contextual_insights(&user.id, None, None, None, None, None)
+        .await
+        .unwrap();
+
+    assert_eq!(result.state, InsightState::A);
+    let spent = result.card1.value.unwrap();
+    assert!((spent - 60.0).abs() < 0.01, "expected 60.0, got {}", spent);
+    assert_eq!(result.card1.secondary, Some(3.0));
+    let median = result.card2.value.unwrap();
+    assert!(
+        (median - 20.0).abs() < 0.01,
+        "expected median 20.0, got {}",
+        median
+    );
+    assert!(result.card3.is_none());
+}
+
+#[tokio::test]
+async fn given_category_filter_when_getting_contextual_insights_then_state_b() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let acct = create_test_account(&repo, user.id).await;
+    let date = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+
+    let food = make_contextual_txn(
+        user.id,
+        acct.id,
+        "b1",
+        -1500,
+        date,
+        "FOOD_AND_DRINK",
+        None,
+        None,
+    );
+    let travel = make_contextual_txn(user.id, acct.id, "b2", -5000, date, "TRAVEL", None, None);
+    repo.upsert_transaction(&food).await.unwrap();
+    repo.upsert_transaction(&travel).await.unwrap();
+
+    let result = repo
+        .get_transactions_contextual_insights(
+            &user.id,
+            None,
+            None,
+            None,
+            None,
+            Some("FOOD_AND_DRINK"),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(result.state, InsightState::B);
+    let spent = result.card1.value.unwrap();
+    assert!((spent - 15.0).abs() < 0.01);
+    assert_eq!(result.card1.secondary, Some(1.0));
+}
+
+#[tokio::test]
+async fn given_single_account_filter_when_getting_contextual_insights_then_state_d() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let acct1 = create_test_account(&repo, user.id).await;
+    let acct2 = create_test_account(&repo, user.id).await;
+    let date = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+
+    let t1 = make_contextual_txn(
+        user.id,
+        acct1.id,
+        "d1",
+        -2000,
+        date,
+        "FOOD_AND_DRINK",
+        None,
+        None,
+    );
+    let t2 = make_contextual_txn(
+        user.id,
+        acct2.id,
+        "d2",
+        -4000,
+        date,
+        "FOOD_AND_DRINK",
+        None,
+        None,
+    );
+    repo.upsert_transaction(&t1).await.unwrap();
+    repo.upsert_transaction(&t2).await.unwrap();
+
+    let result = repo
+        .get_transactions_contextual_insights(&user.id, None, Some(&[acct1.id]), None, None, None)
+        .await
+        .unwrap();
+
+    assert_eq!(result.state, InsightState::D);
+    let spent = result.card1.value.unwrap();
+    assert!((spent - 20.0).abs() < 0.01);
+    assert_eq!(result.card1.secondary, Some(1.0));
+}
+
+#[tokio::test]
+async fn given_normalized_merchant_search_when_getting_contextual_insights_then_state_c_lifetime() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let acct = create_test_account(&repo, user.id).await;
+
+    let in_range = NaiveDate::from_ymd_opt(2024, 6, 15).unwrap();
+    let before_range = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+
+    let t_in = make_contextual_txn(
+        user.id,
+        acct.id,
+        "c1",
+        -1000,
+        in_range,
+        "FOOD_AND_DRINK",
+        Some("Starbucks"),
+        Some("starbucks"),
+    );
+    let t_before = make_contextual_txn(
+        user.id,
+        acct.id,
+        "c2",
+        -2000,
+        before_range,
+        "FOOD_AND_DRINK",
+        Some("Starbucks"),
+        Some("starbucks"),
+    );
+    repo.upsert_transaction(&t_in).await.unwrap();
+    repo.upsert_transaction(&t_before).await.unwrap();
+
+    let start = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+    let end = NaiveDate::from_ymd_opt(2024, 6, 30).unwrap();
+
+    let result = repo
+        .get_transactions_contextual_insights(
+            &user.id,
+            Some("starbucks"),
+            None,
+            Some(start),
+            Some(end),
+            None,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(result.state, InsightState::C);
+    let spent = result.card1.value.unwrap();
+    assert!(
+        (spent - 30.0).abs() < 0.01,
+        "expected lifetime sum 30.0, got {}",
+        spent
+    );
+    assert_eq!(result.card1.secondary, Some(2.0));
+}
+
+#[tokio::test]
+async fn given_unresolved_search_when_getting_contextual_insights_then_state_a() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let acct = create_test_account(&repo, user.id).await;
+    let date = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+
+    let t = make_contextual_txn(
+        user.id,
+        acct.id,
+        "z1",
+        -1000,
+        date,
+        "FOOD_AND_DRINK",
+        Some("Starbucks"),
+        Some("starbucks"),
+    );
+    repo.upsert_transaction(&t).await.unwrap();
+
+    let result = repo
+        .get_transactions_contextual_insights(&user.id, Some("zzznomatch"), None, None, None, None)
+        .await
+        .unwrap();
+
+    assert_eq!(result.state, InsightState::A);
+}
+
+#[tokio::test]
+async fn given_excluded_category_when_getting_contextual_insights_then_excluded_from_sum() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let acct = create_test_account(&repo, user.id).await;
+    let date = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+
+    let spending = make_contextual_txn(
+        user.id,
+        acct.id,
+        "ex1",
+        -5000,
+        date,
+        "FOOD_AND_DRINK",
+        None,
+        None,
+    );
+    let income = make_contextual_txn(user.id, acct.id, "ex2", 10000, date, "INCOME", None, None);
+    repo.upsert_transaction(&spending).await.unwrap();
+    repo.upsert_transaction(&income).await.unwrap();
+
+    let result = repo
+        .get_transactions_contextual_insights(&user.id, None, None, None, None, None)
+        .await
+        .unwrap();
+
+    assert_eq!(result.state, InsightState::A);
+    let spent = result.card1.value.unwrap();
+    assert!(
+        (spent - 50.0).abs() < 0.01,
+        "expected 50.0 (INCOME excluded), got {}",
+        spent
+    );
+    assert_eq!(result.card1.secondary, Some(2.0));
 }
