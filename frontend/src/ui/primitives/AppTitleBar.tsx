@@ -216,10 +216,10 @@ export const AppTitleBar = ({
             aria-current={currentTab === key ? 'page' : undefined}
             className={cn(
               ...appTitleBarRecipes.contextPillTab,
-              ...appTitleBarRecipes.contextPillTabSize,
               'shrink-0',
-              'gap-1.5',
-              currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
+              currentTab === key
+                ? [...appTitleBarRecipes.contextPillTabSize, 'gap-1.5', semanticTextRecipes.inverse]
+                : ['!px-0', 'aspect-square', '!gap-0', semanticTextRecipes.muted]
             )}
           >
             {currentTab === key ? (
@@ -332,10 +332,10 @@ export const AppTitleBar = ({
                   ...appTitleBarRecipes.actionIcon,
                   'normal-case',
                   'aspect-square',
-                  'px-0',
+                  '!px-0',
                   'md:aspect-auto',
                   'md:gap-2',
-                  'md:px-3'
+                  'md:!px-3'
                 )}
                 aria-label="Log off"
                 title="Log off"

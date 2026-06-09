@@ -189,9 +189,10 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
                       onClick={onStartEdit}
                       variant="secondary"
                       size="md"
+                      shape="square"
                       aria-label="Edit budgets"
                       title="Edit budgets"
-                      className={cn('w-auto', 'shrink-0', 'whitespace-nowrap')}
+                      className={cn('shrink-0')}
                     >
                       <Pencil />
                     </Button>
@@ -206,10 +207,11 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
                     onClick={toggleAddPicker}
                     variant="primary"
                     size="md"
+                    shape="square"
                     aria-label="Budget"
                     aria-expanded={isAdding}
                     aria-haspopup="dialog"
-                    className={cn('w-auto', 'shrink-0', 'whitespace-nowrap')}
+                    className={cn('shrink-0')}
                   >
                     <Plus />
                   </Button>

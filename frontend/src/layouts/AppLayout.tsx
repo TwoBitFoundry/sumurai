@@ -137,10 +137,14 @@ export function AppLayout({
                   aria-current={currentTab === key ? 'page' : undefined}
                   className={cn(
                     ...appTitleBarRecipes.contextPillTab,
-                    ...appTitleBarRecipes.contextPillTabSize,
                     'shrink-0',
-                    'gap-1.5',
-                    currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
+                    currentTab === key
+                      ? [
+                          ...appTitleBarRecipes.contextPillTabSize,
+                          'gap-1.5',
+                          semanticTextRecipes.inverse,
+                        ]
+                      : ['!px-0', 'aspect-square', '!gap-0', semanticTextRecipes.muted]
                   )}
                 >
                   {currentTab === key ? (

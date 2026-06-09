@@ -13,8 +13,11 @@ interface BudgetMonthPillSliderProps {
 
 const pillControlClassName = cn(
   ...appTitleBarRecipes.pillTab,
-  ...appTitleBarRecipes.pillTabSize,
   'h-full',
+  'w-9',
+  'md:w-8',
+  'lg:w-7',
+  '!px-0',
   'shrink-0',
   uiTextRecipes.muted
 );

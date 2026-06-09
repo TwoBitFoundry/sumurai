@@ -409,7 +409,7 @@ export const transactionsTable = {
 
 export const buttonChrome = {
   ghost: ['border', ...border.floatingChrome],
-  secondary: ['border', ...border.elevatedGlass],
+  secondary: ['border', ...border.control, 'dark:border-[var(--color-border-divider)]'],
   muted: ['border', ...border.control],
   settingsIdle: [
     'border',
