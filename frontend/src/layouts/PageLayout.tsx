@@ -114,7 +114,7 @@ export function PageLayout({
             </div>
 
             {actions && (
-              <div className={cn('flex', 'flex-wrap', 'items-center', 'justify-start', 'gap-3')}>
+              <div className={cn('flex', 'flex-wrap', 'items-center', 'justify-between', 'gap-3')}>
                 {actions}
               </div>
             )}

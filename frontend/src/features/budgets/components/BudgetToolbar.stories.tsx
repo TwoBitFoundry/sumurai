@@ -14,6 +14,10 @@ const meta = {
     isPickerOpen: false,
     addButtonRef,
     onAddBudget: fn(),
+    isEditing: false,
+    canEdit: true,
+    onStartEdit: fn(),
+    onSaveEdit: fn(),
   },
 } satisfies Meta<typeof BudgetToolbar>;
 

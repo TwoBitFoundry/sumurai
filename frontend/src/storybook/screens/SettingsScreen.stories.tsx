@@ -4,7 +4,20 @@ import {
   type SettingsScreenScenario,
   SettingsScreenSlice,
 } from '@/storybook/screenSlices/SettingsScreenSlice';
-import { storyDarkTheme } from '@/storybook/storyDarkTheme';
+import { jsonResponse, route, StoryApiScope } from '@/storybook/screens/user-journeys/storyApi';
+
+const passkeyHandlers = [
+  route('GET', '/auth/passkey', () =>
+    jsonResponse([
+      {
+        id: 'pk-story-01',
+        name: 'MacBook Pro',
+        created_at: '2026-04-15T10:00:00.000Z',
+        last_used_at: '2026-06-01T08:30:00.000Z',
+      },
+    ])
+  ),
+];
 
 const meta = {
   title: 'App/Screens/Settings',
@@ -15,9 +28,11 @@ const meta = {
   decorators: [
     (Story) => (
       <AuthenticatedScreenShell currentTab="settings">
-        <div className="px-4 py-8">
-          <Story />
-        </div>
+        <StoryApiScope handlers={passkeyHandlers}>
+          <div className="px-4 py-8">
+            <Story />
+          </div>
+        </StoryApiScope>
       </AuthenticatedScreenShell>
     ),
   ],
@@ -34,11 +49,6 @@ function scenarioStory(scenario: SettingsScreenScenario): Story {
 }
 
 export const Default: Story = scenarioStory('default');
-
-export const DefaultDark: Story = {
-  ...storyDarkTheme,
-  render: () => <SettingsScreenSlice scenario="default" />,
-};
 
 export const DeleteModal: Story = scenarioStory('deleteModal');
 

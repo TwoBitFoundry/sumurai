@@ -6,7 +6,6 @@ import {
   AccountsProviderPickerSlice,
 } from '@/storybook/screenSlices/AccountsScreenSlice';
 import { AuthenticatedScreenShell } from '@/storybook/screenSlices/AuthenticatedScreenShell';
-import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import type { FinancialProvider } from '@/types/api';
 
 const pickerDecorator = [
@@ -101,22 +100,11 @@ export const Connected: Story = {
   render: () => <AccountsConnectedScreenSlice />,
 };
 
-export const ConnectedDark: Story = {
-  ...storyDarkTheme,
-  decorators: connectedDecorator,
-  render: () => <AccountsConnectedScreenSlice />,
-};
-
 export const ConnectedFlowError: Story = {
   decorators: connectedDecorator,
   render: () => (
     <AccountsConnectedScreenSlice flowError="Institution sync paused until you reconnect." />
   ),
-};
-
-export const ConnectedEmptyConnections: Story = {
-  decorators: connectedDecorator,
-  render: () => <AccountsConnectedScreenSlice connectionsEmpty />,
 };
 
 export const ConnectedToast: Story = {

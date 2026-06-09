@@ -26,10 +26,9 @@ describe('BudgetList', () => {
             percentage: 25,
           },
         ]}
-        editingId={null}
-        onStartEdit={jest.fn()}
-        onCancelEdit={jest.fn()}
-        onSaveEdit={jest.fn()}
+        isEditing={false}
+        drafts={{}}
+        onDraftChange={jest.fn()}
         onDelete={jest.fn()}
       />
     );
@@ -45,7 +44,7 @@ describe('BudgetList', () => {
     expect(card).toHaveClass(uiRadiusRecipes.standard);
   });
 
-  it('keeps budget actions in the header without a dedicated footer block', () => {
+  it('hides per-card actions in the view state', () => {
     const { container } = render(
       <BudgetList
         items={[
@@ -57,26 +56,22 @@ describe('BudgetList', () => {
             percentage: 25,
           },
         ]}
-        editingId={null}
-        onStartEdit={jest.fn()}
-        onCancelEdit={jest.fn()}
-        onSaveEdit={jest.fn()}
+        isEditing={false}
+        drafts={{}}
+        onDraftChange={jest.fn()}
         onDelete={jest.fn()}
       />
     );
 
     const card = container.querySelector('li');
-    const header = card?.querySelector('.relative.z-10.flex.items-start.justify-between.gap-3');
-    const editButton = header?.querySelector('[aria-label="Edit budget"]');
-    const deleteButton = header?.querySelector('[aria-label="Delete budget"]');
 
     expect(card?.textContent).toContain('Food & Drink');
     expect(card?.querySelector('.mt-4.space-y-2')).toBeNull();
-    expect(editButton).toBeTruthy();
-    expect(deleteButton).toBeTruthy();
+    expect(card?.querySelector('[aria-label="Edit budget"]')).toBeNull();
+    expect(card?.querySelector('[aria-label="Delete budget"]')).toBeNull();
   });
 
-  it('shows spent before planned with captions above the progress bar', () => {
+  it('shows only the delete action in the edit state', () => {
     const { container } = render(
       <BudgetList
         items={[
@@ -88,10 +83,35 @@ describe('BudgetList', () => {
             percentage: 25,
           },
         ]}
-        editingId={null}
-        onStartEdit={jest.fn()}
-        onCancelEdit={jest.fn()}
-        onSaveEdit={jest.fn()}
+        isEditing
+        drafts={{}}
+        onDraftChange={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+
+    const card = container.querySelector('li');
+
+    expect(card?.querySelector('[aria-label="Delete budget"]')).toBeTruthy();
+    expect(card?.querySelector('[aria-label="Edit budget"]')).toBeNull();
+    expect(container.querySelector('[data-testid="budget-amount-input"]')).toBeTruthy();
+  });
+
+  it('shows spent before planned around the progress bar', () => {
+    const { container } = render(
+      <BudgetList
+        items={[
+          {
+            id: 'budget-1',
+            category: 'food and drink',
+            amount: 100,
+            spent: 25,
+            percentage: 25,
+          },
+        ]}
+        isEditing={false}
+        drafts={{}}
+        onDraftChange={jest.fn()}
         onDelete={jest.fn()}
       />
     );
@@ -103,7 +123,7 @@ describe('BudgetList', () => {
       spentLabel.compareDocumentPosition(plannedLabel) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
     expect(plannedLabel).toHaveClass('text-right');
-    expect(screen.getByText('25%')).toBeInTheDocument();
+    expect(screen.queryByText('25%')).not.toBeInTheDocument();
     expect(container.querySelector('[role="progressbar"]')).toBeTruthy();
     expect(screen.getByText('$100.00')).toHaveClass('text-right');
   });

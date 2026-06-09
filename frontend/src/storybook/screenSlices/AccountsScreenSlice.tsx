@@ -10,6 +10,7 @@ import { storyProviderPickerPanelProps } from '@/storybook/fixtures/providerPick
 import type { FinancialProvider } from '@/types/api';
 import { cn, IconButton } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
+import { getProviderLogoSrc } from '@/utils/providerCards';
 
 type ProviderPickerSliceProps = {
   loading?: boolean;
@@ -40,32 +41,32 @@ export function AccountsProviderPickerSlice({
 export function AccountsConnectedScreenSlice(props: {
   flowError?: string | null;
   toastMessage?: string | null;
-  connectionsEmpty?: boolean;
   syncingAll?: boolean;
 }) {
-  const banks = props.connectionsEmpty ? [] : sampleBankConnections;
   const summary = {
-    institutions: props.connectionsEmpty ? 0 : 2,
-    connectedInstitutions: props.connectionsEmpty ? 0 : 2,
-    accounts: props.connectionsEmpty ? 0 : 5,
-    latestSync: props.connectionsEmpty ? null : '2026-05-01T12:00:00.000Z',
+    institutions: 2,
+    connectedInstitutions: 2,
+    accounts: 5,
+    latestSync: '2026-05-01T12:00:00.000Z',
   };
 
   const actions = (
     <>
-      {!props.connectionsEmpty ? (
-        <IconButton
-          type="button"
-          variant="ghost"
-          size="md"
-          aria-label={props.syncingAll ? 'Syncing all institutions' : 'Sync all'}
-          className={cn(appTitleBarRecipes.settingsIdle)}
-          title={props.syncingAll ? 'Syncing all institutions' : 'Sync all'}
-        >
-          <RefreshCw className={cn(props.syncingAll && 'animate-spin')} />
-        </IconButton>
-      ) : null}
-      <ConnectButton onClick={() => {}} disabled={false}>
+      <IconButton
+        type="button"
+        variant="ghost"
+        size="md"
+        aria-label={props.syncingAll ? 'Syncing all institutions' : 'Sync all'}
+        className={cn(appTitleBarRecipes.settingsIdle)}
+        title={props.syncingAll ? 'Syncing all institutions' : 'Sync all'}
+      >
+        <RefreshCw className={cn(props.syncingAll && 'animate-spin')} />
+      </IconButton>
+      <ConnectButton
+        onClick={() => {}}
+        disabled={false}
+        leadingImageSrc={getProviderLogoSrc('plaid')}
+      >
         Link Account
       </ConnectButton>
     </>
@@ -89,7 +90,7 @@ export function AccountsConnectedScreenSlice(props: {
         stats={statsGrid}
       >
         <ConnectionsList
-          banks={banks}
+          banks={sampleBankConnections}
           onConnect={() => {}}
           onSync={async () => {}}
           onDisconnect={async () => {}}

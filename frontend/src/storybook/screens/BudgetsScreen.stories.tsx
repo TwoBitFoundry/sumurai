@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { AuthenticatedScreenShell } from '@/storybook/screenSlices/AuthenticatedScreenShell';
 import { BudgetsScreenSlice } from '@/storybook/screenSlices/BudgetsScreenSlice';
-import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 
 const meta = {
   title: 'App/Screens/Budgets',
@@ -23,11 +22,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Loaded: Story = {
-  render: () => <BudgetsScreenSlice state="loaded" />,
-};
-
-export const LoadedDark: Story = {
-  ...storyDarkTheme,
   render: () => <BudgetsScreenSlice state="loaded" />,
 };
 

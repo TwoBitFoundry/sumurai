@@ -1,10 +1,9 @@
-import { AlertTriangle, Clock, Plus, Repeat2, Target } from 'lucide-react';
+import { AlertTriangle, Clock, Pencil, Plus, Repeat2, Target } from 'lucide-react';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import HeroStatCard, { SubscriptionCostsMetric } from '@/components/widgets/HeroStatCard';
 import AddBudgetPicker from '@/features/budgets/components/AddBudgetPicker';
+import { BudgetInsightsPanel } from '@/features/budgets/components/BudgetInsightsPanel';
 import { BudgetList } from '@/features/budgets/components/BudgetList';
-import BudgetSummaryCard from '@/features/budgets/components/BudgetSummaryCard';
-import BudgetToolbar from '@/features/budgets/components/BudgetToolbar';
 import { SubscriptionsSection } from '@/features/subscriptions/components/SubscriptionsSection';
 import { PageLayout } from '@/layouts/PageLayout';
 import { sampleBudgetProgressEntries } from '@/storybook/fixtures/budgets';
@@ -15,66 +14,23 @@ import { heroAccents } from '@/ui/tokens';
 export type BudgetsScreenSliceState = 'loaded' | 'empty' | 'error' | 'adding';
 
 export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
-  const heroStatsLoaded = (
-    <div className="space-y-3">
-      <BudgetSummaryCard totalBudgeted={850} totalSpent={835} />
-      <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-3')}>
-        <HeroStatCard
-          index={1}
-          title="Days remaining"
-          icon={<Clock />}
-          value="16"
-          suffix="of 31"
-          subtext="31 total days"
-        />
-        <HeroStatCard
-          index={2}
-          title="Subscription costs"
-          icon={<Repeat2 />}
-          value={<SubscriptionCostsMetric monthly="$25.98" yearly="$311.76" />}
-        />
-        <HeroStatCard
-          index={3}
-          title="Overages"
-          icon={<AlertTriangle />}
-          value="1"
-          suffix="over budget"
-          pills={[{ label: 'Entertainment', type: 'category', categoryName: 'entertainment' }]}
-        />
-      </div>
-    </div>
+  const heroStats = (
+    <BudgetInsightsPanel
+      totalBudgeted={props.state === 'empty' ? 0 : 850}
+      totalSpent={props.state === 'empty' ? 0 : 835}
+      insights={{
+        dailyPacing: props.state === 'empty' ? 0 : 18.55,
+        income: props.state === 'empty' ? 0 : 462.47,
+        freeSpend: props.state === 'empty' ? 0 : 107.59,
+        runoutDate: props.state === 'empty' ? null : new Date(2026, 5, 17),
+        hasActivity: props.state !== 'empty',
+      }}
+      subscriptions={props.state === 'empty' ? [] : sampleSubscriptions}
+      month={new Date(2026, 5, 1)}
+      filterKey={props.state}
+    />
   );
 
-  const heroStatsEmpty = (
-    <div className="space-y-3">
-      <BudgetSummaryCard totalBudgeted={0} totalSpent={0} />
-      <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-3')}>
-        <HeroStatCard
-          index={1}
-          title="Days remaining"
-          icon={<Clock />}
-          value="16"
-          suffix="of 31"
-          subtext="31 total days"
-        />
-        <HeroStatCard
-          index={2}
-          title="Subscription costs"
-          icon={<Repeat2 />}
-          value={<SubscriptionCostsMetric monthly="$0.00" yearly="$0.00" />}
-        />
-        <HeroStatCard
-          index={3}
-          title="Overages"
-          icon={<AlertTriangle />}
-          value="0"
-          suffix="over budget"
-        />
-      </div>
-    </div>
-  );
-
-  const heroStats = props.state === 'empty' ? heroStatsEmpty : heroStatsLoaded;
   const subscriptions = props.state === 'empty' ? [] : sampleSubscriptions;
 
   const errorMessage =
@@ -112,18 +68,38 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
               title="Budgets"
               titleIcon={Target}
               titleIconClassName={heroAccents.sky.icon}
-              description="Add, edit, or delete budgets by transaction categories."
               testId="budgets-section"
               expandLabel="Show budgets"
               collapseLabel="Hide budgets"
-              actions={
+              actionsStart={
                 props.state === 'loaded' || props.state === 'adding' ? (
-                  <BudgetToolbar
-                    loading={false}
-                    isPickerOpen={props.state === 'adding'}
-                    addButtonRef={{ current: null }}
-                    onAddBudget={() => {}}
-                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="md"
+                    aria-label="Edit budgets"
+                    title="Edit budgets"
+                    className={cn('w-auto', 'shrink-0', 'whitespace-nowrap')}
+                    onClick={() => {}}
+                  >
+                    <Pencil />
+                  </Button>
+                ) : undefined
+              }
+              actionsEnd={
+                props.state === 'loaded' || props.state === 'adding' ? (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="md"
+                    aria-label="Budget"
+                    aria-expanded={props.state === 'adding'}
+                    aria-haspopup="dialog"
+                    className={cn('w-auto', 'shrink-0', 'whitespace-nowrap')}
+                    onClick={() => {}}
+                  >
+                    <Plus />
+                  </Button>
                 ) : undefined
               }
             >
@@ -148,10 +124,9 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
                   ) : null}
                   <BudgetList
                     items={sampleBudgetProgressEntries}
-                    editingId={null}
-                    onStartEdit={() => {}}
-                    onCancelEdit={() => {}}
-                    onSaveEdit={() => {}}
+                    isEditing={false}
+                    drafts={{}}
+                    onDraftChange={() => {}}
                     onDelete={() => {}}
                   />
                 </>
