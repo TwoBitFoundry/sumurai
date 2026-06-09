@@ -2,8 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, type LucideIcon } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { cn, IconButton } from '@/ui/primitives';
-import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
+import { cn } from '@/ui/primitives';
 import {
   control,
   controlIconWell,
@@ -23,6 +22,8 @@ export interface CollapsibleSectionProps {
   titleIconClassName?: string;
   description?: string;
   actions?: React.ReactNode;
+  actionsStart?: React.ReactNode;
+  actionsEnd?: React.ReactNode;
   children: React.ReactNode;
   testId?: string;
   expandLabel: string;
@@ -36,6 +37,8 @@ export function CollapsibleSection({
   titleIconClassName,
   description,
   actions,
+  actionsStart,
+  actionsEnd,
   children,
   testId,
   expandLabel,
@@ -55,93 +58,87 @@ export function CollapsibleSection({
     });
   };
 
+  const hasSplitActions = actionsStart != null || actionsEnd != null;
+
+  const chevron = (
+    <ChevronDown
+      className={cn(
+        'h-4',
+        'w-4',
+        'shrink-0',
+        'transition-transform',
+        'duration-200',
+        expanded && 'rotate-180',
+        'text-slate-500',
+        'dark:text-slate-500'
+      )}
+    />
+  );
+
+  const titleRow = (
+    <div className={cn('flex', 'min-w-0', 'items-center', 'gap-x-2')}>
+      {TitleIcon ? (
+        <div
+          className={cn('flex', 'items-center', 'justify-center', control.square.md, 'shrink-0')}
+          aria-hidden="true"
+        >
+          <span className={cn(...controlIconWell.lg, titleIconClassName)}>
+            <TitleIcon />
+          </span>
+        </div>
+      ) : null}
+      <h2 className={cn('min-w-0', uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+        {title}
+      </h2>
+    </div>
+  );
+
   return (
     <section className={cn('space-y-4')} data-testid={testId}>
-      <div
-        className={cn(
-          'flex',
-          'flex-col',
-          'gap-4',
-          'sm:flex-row',
-          'sm:items-start',
-          'sm:justify-between'
-        )}
-      >
-        <div
-          className={cn(
-            'grid',
-            'min-w-0',
-            'flex-1',
-            'grid-cols-[auto_minmax(0,1fr)]',
-            'items-center',
-            'gap-x-2',
-            'gap-y-1'
-          )}
-        >
-          {TitleIcon ? (
-            <div
-              className={cn(
-                'col-start-1',
-                'row-start-1',
-                'flex',
-                'items-center',
-                'justify-center',
-                control.square.md,
-                'shrink-0'
-              )}
-              aria-hidden="true"
-            >
-              <span className={cn(...controlIconWell.lg, titleIconClassName)}>
-                <TitleIcon />
-              </span>
-            </div>
-          ) : null}
-          <h2
-            className={cn(
-              'col-start-2',
-              'row-start-1',
-              'min-w-0',
-              uiTypographyRecipes.sectionTitle,
-              uiTextRecipes.primary
-            )}
-          >
-            {title}
-          </h2>
-          <IconButton
-            type="button"
-            size="md"
-            onClick={handleToggle}
-            variant="ghost"
-            aria-label={expanded ? collapseLabel : expandLabel}
-            aria-expanded={expanded}
-            className={cn(
-              appTitleBarRecipes.settingsIdle,
-              'col-start-1',
-              'row-start-2',
-              'shrink-0',
-              'justify-self-center'
-            )}
-          >
-            <ChevronDown
-              className={cn('transition-transform', 'duration-200', expanded && 'rotate-180')}
-            />
-          </IconButton>
+      {hasSplitActions ? (
+        <div className={cn('min-w-0')}>
+          {titleRow}
           {description ? (
-            <p
-              className={cn(
-                'col-start-2',
-                'row-start-2',
-                'min-w-0',
-                uiTypographyRecipes.body,
-                uiTextRecipes.muted
-              )}
-            >
+            <p className={cn('mt-1', 'min-w-0', uiTypographyRecipes.body, uiTextRecipes.muted)}>
               {description}
             </p>
           ) : null}
+          <div className={cn('relative', 'mt-2', 'flex', 'items-center', 'pb-1')}>
+            <div className={cn('shrink-0')}>{actionsStart}</div>
+            <button
+              type="button"
+              onClick={handleToggle}
+              aria-label={expanded ? collapseLabel : expandLabel}
+              aria-expanded={expanded}
+              className={cn('absolute', 'left-1/2', '-translate-x-1/2')}
+            >
+              {chevron}
+            </button>
+            <div className={cn('ml-auto', 'shrink-0')}>{actionsEnd}</div>
+          </div>
         </div>
-        {actions ? <div className={cn('shrink-0')}>{actions}</div> : null}
-      </div>
+      ) : (
+        <div className={cn('relative')}>
+          <button
+            type="button"
+            onClick={handleToggle}
+            aria-label={expanded ? collapseLabel : expandLabel}
+            aria-expanded={expanded}
+            className={cn('w-full', 'text-left')}
+          >
+            {titleRow}
+            {description ? (
+              <p className={cn('mt-1', 'min-w-0', uiTypographyRecipes.body, uiTextRecipes.muted)}>
+                {description}
+              </p>
+            ) : null}
+            <div className={cn('flex', 'justify-center')}>{chevron}</div>
+          </button>
+          {actions ? (
+            <div className={cn('absolute', 'right-0', 'top-0', 'shrink-0')}>{actions}</div>
+          ) : null}
+        </div>
+      )}
       <AnimatePresence initial={false}>
         {expanded ? (
           <motion.div

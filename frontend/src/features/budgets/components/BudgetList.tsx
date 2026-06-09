@@ -1,23 +1,15 @@
-import { CheckIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { TrashIcon as TrashSolidIcon } from '@heroicons/react/24/solid';
 import { Target } from 'lucide-react';
 import type { CSSProperties } from 'react';
-import React from 'react';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { cn, EmptyState, IconButton, Input, Pill } from '@/ui/primitives';
-import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import {
-  budgetProgress as budgetProgressRecipes,
-  status,
-  text as uiTextRecipes,
-  font as uiTypographyRecipes,
-} from '@/ui/recipes';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { getHeroAccentForCategoryKey, getHeroAccentTheme } from '@/ui/tokens';
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
 import { useCategories } from '../../transactions/hooks/useCategories';
 import type { BudgetProgressEntry } from '../hooks/useBudgets';
-import BudgetProgress, { getBudgetProgressMetrics } from './BudgetProgress';
+import BudgetProgress from './BudgetProgress';
 
 export type BudgetWithProgress = BudgetProgressEntry;
 
@@ -50,21 +42,18 @@ const budgetBarSlotClass = cn(
 
 export function BudgetList({
   items,
-  editingId,
-  onStartEdit,
-  onCancelEdit,
-  onSaveEdit,
+  isEditing,
+  drafts,
+  onDraftChange,
   onDelete,
 }: {
   items: BudgetWithProgress[];
-  editingId: string | null;
-  onStartEdit: (b: BudgetWithProgress) => void;
-  onCancelEdit: () => void;
-  onSaveEdit: (id: string, amount: number) => void;
+  isEditing: boolean;
+  drafts: Record<string, string>;
+  onDraftChange: (id: string, value: string) => void;
   onDelete: (id: string) => void;
 }) {
   const { accentIndexByName } = useCategories();
-  const [amountDrafts, setAmountDrafts] = React.useState<Record<string, string>>({});
 
   if (items.length === 0) {
     return (
@@ -89,16 +78,10 @@ export function BudgetList({
           borderColor: `${tagTheme.ringHex}99`,
           '--tw-ring-color': `${tagTheme.ringHex}66`,
         } as CSSProperties;
-        const isEditing = editingId === b.id;
-        const draft = amountDrafts[b.id] ?? String(b.amount);
+        const draft = drafts[b.id] ?? String(b.amount);
         const parsedDraft = Number(draft);
         const editPlannedAmount =
           Number.isFinite(parsedDraft) && draft !== '' ? parsedDraft : b.amount;
-        const {
-          clampedPercent,
-          isOver: isOverBudget,
-          remaining,
-        } = getBudgetProgressMetrics(b.amount, b.spent);
         return (
           <li key={b.id} className={cn(heroStatCardRecipes.base, 'h-full')}>
             <div
@@ -141,83 +124,29 @@ export function BudgetList({
                 >
                   {displayName}
                 </Pill>
-                <div
-                  className={cn('flex items-center justify-end gap-1.5', uiTypographyRecipes.label)}
-                >
-                  {isEditing ? (
-                    <>
-                      <IconButton
-                        variant="ghost"
-                        size="sm"
-                        className={cn(appTitleBarRecipes.settingsIdle)}
-                        onClick={onCancelEdit}
-                        title="Cancel"
-                        aria-label="Cancel edit"
-                      >
-                        <XMarkIcon />
-                      </IconButton>
-                      <IconButton
-                        variant="success"
-                        size="sm"
-                        onClick={() => onSaveEdit(b.id, Number(draft))}
-                        title="Save"
-                        aria-label="Save budget"
-                      >
-                        <CheckIcon />
-                      </IconButton>
-                    </>
-                  ) : (
-                    <>
-                      <IconButton
-                        variant="ghost"
-                        size="sm"
-                        className={cn(appTitleBarRecipes.settingsIdle)}
-                        onClick={() => onStartEdit(b)}
-                        title="Edit budget"
-                        aria-label="Edit budget"
-                      >
-                        <PencilSquareIcon />
-                      </IconButton>
-                      <IconButton
-                        variant="danger"
-                        size="sm"
-                        onClick={() => onDelete(b.id)}
-                        title="Delete budget"
-                        aria-label="Delete budget"
-                      >
-                        <TrashSolidIcon />
-                      </IconButton>
-                    </>
-                  )}
-                </div>
+                {isEditing ? (
+                  <div
+                    className={cn(
+                      'flex items-center justify-end gap-1.5',
+                      uiTypographyRecipes.label
+                    )}
+                  >
+                    <IconButton
+                      variant="danger"
+                      size="sm"
+                      onClick={() => onDelete(b.id)}
+                      title="Delete budget"
+                      aria-label="Delete budget"
+                    >
+                      <TrashSolidIcon />
+                    </IconButton>
+                  </div>
+                ) : null}
               </div>
               <div className={cn('relative', 'z-10', 'mt-3', 'flex-1', 'lg:mt-2')}>
                 <div className={budgetStatGridClass}>
                   <div className={cn(uiTypographyRecipes.label, uiTextRecipes.subtle)}>Spent</div>
-                  <div
-                    className={cn(
-                      'flex',
-                      'min-w-0',
-                      'items-baseline',
-                      'justify-between',
-                      'text-[0.75rem]',
-                      uiTextRecipes.muted,
-                      isEditing && 'invisible'
-                    )}
-                    aria-hidden={isEditing}
-                  >
-                    <span className={cn(...budgetProgressRecipes.captionPercent)}>
-                      {clampedPercent.toFixed(0)}%
-                    </span>
-                    <span
-                      className={cn(
-                        ...budgetProgressRecipes.captionPercent,
-                        ...(isOverBudget ? status.danger.text : uiTextRecipes.body)
-                      )}
-                    >
-                      {isOverBudget ? fmtUSD(b.spent - b.amount) : fmtUSD(remaining)}
-                    </span>
-                  </div>
+                  <div aria-hidden />
                   <div
                     className={cn(uiTypographyRecipes.label, uiTextRecipes.subtle, 'text-right')}
                   >
@@ -227,6 +156,7 @@ export function BudgetList({
                   <div
                     className={cn(
                       budgetAmountClass,
+                      'self-center',
                       isOver ? uiTextRecipes.danger : uiTextRecipes.body
                     )}
                   >
@@ -246,9 +176,7 @@ export function BudgetList({
                           step="0.01"
                           value={draft}
                           placeholder="Planned amount"
-                          onChange={(e) =>
-                            setAmountDrafts((d) => ({ ...d, [b.id]: e.target.value }))
-                          }
+                          onChange={(e) => onDraftChange(b.id, e.target.value)}
                           variant="glass"
                           inputSize="sm"
                           className={cn(
@@ -271,7 +199,14 @@ export function BudgetList({
                       <BudgetProgress amount={b.amount} spent={b.spent} showCaptions={false} />
                     )}
                   </div>
-                  <div className={cn(budgetAmountClass, uiTextRecipes.primary, 'text-right')}>
+                  <div
+                    className={cn(
+                      budgetAmountClass,
+                      uiTextRecipes.primary,
+                      'self-center',
+                      'text-right'
+                    )}
+                  >
                     {fmtUSD(isEditing ? editPlannedAmount : b.amount)}
                   </div>
                 </div>

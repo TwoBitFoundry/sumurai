@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { useState } from 'react';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { sampleBudgetProgressEntries } from '@/storybook/fixtures/budgets';
 import { BudgetList } from './BudgetList';
@@ -8,10 +9,9 @@ const meta = {
   component: BudgetList,
   tags: ['autodocs', 'test'],
   args: {
-    editingId: null,
-    onStartEdit: fn(),
-    onCancelEdit: fn(),
-    onSaveEdit: fn(),
+    isEditing: false,
+    drafts: {},
+    onDraftChange: fn(),
     onDelete: fn(),
   },
 } satisfies Meta<typeof BudgetList>;
@@ -24,12 +24,9 @@ export const Populated: Story = {
   args: {
     items: sampleBudgetProgressEntries,
   },
-  play: async ({ args, canvasElement }) => {
+  play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getAllByLabelText(/edit budget/i)[0]);
-    await expect(args.onStartEdit).toHaveBeenCalledWith(sampleBudgetProgressEntries[0]);
-    await userEvent.click(canvas.getAllByLabelText(/delete budget/i)[0]);
-    await expect(args.onDelete).toHaveBeenCalledWith(sampleBudgetProgressEntries[0].id);
+    await expect(canvas.queryByLabelText(/delete budget/i)).not.toBeInTheDocument();
   },
 };
 
@@ -39,19 +36,38 @@ export const Empty: Story = {
   },
 };
 
-export const EditingRow: Story = {
-  args: {
-    items: sampleBudgetProgressEntries,
-    editingId: sampleBudgetProgressEntries[0].id,
-  },
+function EditingWrapper({
+  onDraftChange,
+  onDelete,
+}: {
+  onDraftChange: (id: string, v: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  return (
+    <BudgetList
+      items={sampleBudgetProgressEntries}
+      isEditing={true}
+      drafts={drafts}
+      onDraftChange={(id, v) => {
+        setDrafts((d) => ({ ...d, [id]: v }));
+        onDraftChange(id, v);
+      }}
+      onDelete={onDelete}
+    />
+  );
+}
+
+export const Editing: Story = {
+  args: { items: sampleBudgetProgressEntries },
+  render: (args) => <EditingWrapper onDraftChange={args.onDraftChange} onDelete={args.onDelete} />,
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    const amount = canvas.getByTestId('budget-amount-input');
+    const amount = canvas.getAllByTestId('budget-amount-input')[0];
     await userEvent.clear(amount);
     await userEvent.type(amount, '275');
-    await userEvent.click(canvas.getByLabelText(/save budget/i));
-    await expect(args.onSaveEdit).toHaveBeenCalledWith(sampleBudgetProgressEntries[0].id, 275);
-    await userEvent.click(canvas.getByLabelText(/cancel edit/i));
-    await expect(args.onCancelEdit).toHaveBeenCalledTimes(1);
+    await expect(args.onDraftChange).toHaveBeenCalledWith(sampleBudgetProgressEntries[0].id, '275');
+    await userEvent.click(canvas.getAllByLabelText(/delete budget/i)[0]);
+    await expect(args.onDelete).toHaveBeenCalledWith(sampleBudgetProgressEntries[0].id);
   },
 };

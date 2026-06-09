@@ -146,37 +146,16 @@ export const BankCard: React.FC<BankCardProps> = ({
       containerClassName={cn('p-4', 'md:p-5', 'lg:p-5')}
       className={cn('space-y-6')}
     >
-      <div className={cn('min-w-0', 'space-y-2')}>
-        <div
-          className={cn(
-            'grid',
-            'min-w-0',
-            'grid-cols-[auto_minmax(0,1fr)]',
-            'gap-x-2',
-            'gap-y-1',
-            'px-3',
-            'pt-3',
-            statusCaption ? 'pb-1' : 'pb-3'
-          )}
-        >
+      <div className={cn('min-w-0', 'px-3', 'pt-3', 'pb-0')}>
+        <div className={cn('flex', 'min-w-0', 'items-center', 'gap-x-2')}>
           <div
-            className={cn(
-              'col-start-1',
-              'row-start-1',
-              'flex',
-              'items-center',
-              'justify-center',
-              control.square.md,
-              'shrink-0'
-            )}
+            className={cn('flex', 'items-center', 'justify-center', control.square.md, 'shrink-0')}
           >
             <StatusPill status={bank.status} />
           </div>
           <h3
             title={bank.name}
             className={cn(
-              'col-start-2',
-              'row-start-1',
               'min-w-0',
               'line-clamp-2',
               'break-words',
@@ -186,30 +165,22 @@ export const BankCard: React.FC<BankCardProps> = ({
           >
             {bank.name}
           </h3>
-          <div
+        </div>
+        {statusCaption ? (
+          <p
             className={cn(
-              'col-span-2',
-              'col-start-1',
-              'row-start-2',
-              'flex',
-              'min-w-0',
-              'flex-wrap',
-              'items-center',
-              'gap-2'
+              'mt-1',
+              uiTypographyRecipes.caption,
+              ...(bank.status === 'needs_reauth'
+                ? uiStatusRecipes.warning.text
+                : uiStatusRecipes.danger.text)
             )}
           >
-            <IconButton
-              type="button"
-              size="md"
-              onClick={() => setExpanded((v) => !v)}
-              variant="ghost"
-              aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
-              className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
-            >
-              <ChevronDown
-                className={cn('transition-transform', 'duration-200', expanded && 'rotate-180')}
-              />
-            </IconButton>
+            {statusCaption}
+          </p>
+        ) : null}
+        <div className={cn('relative', 'mt-2', 'flex', 'items-center', 'pb-3')}>
+          <div className={cn('flex', 'shrink-0', 'items-center', 'gap-2')}>
             {showSyncButton ? (
               <IconButton
                 type="button"
@@ -265,42 +236,48 @@ export const BankCard: React.FC<BankCardProps> = ({
               <MenuItem onClick={() => void handleExport('csv')}>Export as CSV</MenuItem>
               <MenuItem onClick={() => void handleExport('ofx')}>Export as OFX</MenuItem>
             </MenuDropdown>
-            <Button
-              type="button"
-              variant="danger"
-              size="md"
-              onClick={handleDisconnectClick}
-              aria-label="Disconnect"
-              className={cn(
-                'ml-auto',
-                'shrink-0',
-                'normal-case',
-                'aspect-square',
-                'px-0',
-                'md:aspect-auto',
-                'md:gap-2',
-                'md:px-3'
-              )}
-            >
-              <Unlink className={cn(control.glyph.md)} />
-              <span className={cn('hidden', 'md:inline')}>Disconnect</span>
-            </Button>
           </div>
-        </div>
-        {statusCaption ? (
-          <p
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
+            aria-expanded={expanded}
+            className={cn('absolute', 'left-1/2', '-translate-x-1/2')}
+          >
+            <ChevronDown
+              className={cn(
+                'h-4',
+                'w-4',
+                'shrink-0',
+                'transition-transform',
+                'duration-200',
+                expanded && 'rotate-180',
+                'text-slate-500',
+                'dark:text-slate-500'
+              )}
+            />
+          </button>
+          <Button
+            type="button"
+            variant="danger"
+            size="md"
+            onClick={handleDisconnectClick}
+            aria-label="Disconnect"
             className={cn(
-              'px-3',
-              'pb-3',
-              uiTypographyRecipes.caption,
-              ...(bank.status === 'needs_reauth'
-                ? uiStatusRecipes.warning.text
-                : uiStatusRecipes.danger.text)
+              'ml-auto',
+              'shrink-0',
+              'normal-case',
+              'aspect-square',
+              'px-0',
+              'md:aspect-auto',
+              'md:gap-2',
+              'md:px-3'
             )}
           >
-            {statusCaption}
-          </p>
-        ) : null}
+            <Unlink className={cn(control.glyph.md)} />
+            <span className={cn('hidden', 'md:inline')}>Disconnect</span>
+          </Button>
+        </div>
       </div>
       <AnimatePresence initial={false}>
         {expanded ? (

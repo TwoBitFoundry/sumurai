@@ -16,6 +16,8 @@ const meta = {
   component: BudgetInsightsPanel,
   tags: ['autodocs', 'test'],
   args: {
+    totalBudgeted: 500,
+    totalSpent: 250,
     insights: sampleInsights,
     subscriptions: [],
     month: new Date(2026, 5, 1),
@@ -30,7 +32,7 @@ type Story = StoryObj<typeof meta>;
 export const AllCards: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('Runway Pace')).toBeVisible();
+    await expect(canvas.getByText('Runway')).toBeVisible();
     await expect(canvas.getByText('Free Spend')).toBeVisible();
     await expect(canvas.getByText('Sub Costs')).toBeVisible();
   },
@@ -39,7 +41,7 @@ export const AllCards: Story = {
 export const FlipAndReset: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const btn = canvas.getByRole('button', { name: /runway pace/i });
+    const btn = canvas.getByRole('button', { name: /runway/i });
     await userEvent.click(btn);
     await expect(btn).toHaveAttribute('aria-expanded', 'true');
     await waitFor(() => {
@@ -50,6 +52,8 @@ export const FlipAndReset: Story = {
 
 export const NegativeFreeSpend: Story = {
   args: {
+    totalBudgeted: 500,
+    totalSpent: 250,
     insights: { ...sampleInsights, income: 1000, freeSpend: -150 },
   },
   play: async ({ canvasElement }) => {
@@ -61,12 +65,14 @@ export const NegativeFreeSpend: Story = {
 
 export const ZeroActivity: Story = {
   args: {
+    totalBudgeted: 0,
+    totalSpent: 0,
     insights: { ...sampleInsights, hasActivity: false },
     subscriptions: [],
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByTestId('budget-insights-empty')).toBeVisible();
-    await expect(canvas.queryByText('Runway Pace')).not.toBeInTheDocument();
+    await expect(canvas.queryByText('Runway')).not.toBeInTheDocument();
   },
 };

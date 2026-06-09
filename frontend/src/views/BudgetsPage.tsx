@@ -1,7 +1,7 @@
-import { Target } from 'lucide-react';
+import { Check, Loader2, Pencil, Plus, Target } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
-import { cn, EmptyState, GlassCard } from '@/ui/primitives';
+import { Button, cn, EmptyState, GlassCard } from '@/ui/primitives';
 import { heroAccents } from '@/ui/tokens';
 import { BudgetCalculator } from '../domain/BudgetCalculator';
 import { computeBudgetInsights } from '../domain/BudgetInsightsCalculator';
@@ -9,9 +9,7 @@ import AddBudgetPicker, {
   type BudgetFormValue,
 } from '../features/budgets/components/AddBudgetPicker';
 import { BudgetInsightsPanel } from '../features/budgets/components/BudgetInsightsPanel';
-import { BudgetList, type BudgetWithProgress } from '../features/budgets/components/BudgetList';
-import BudgetSummaryCard from '../features/budgets/components/BudgetSummaryCard';
-import BudgetToolbar from '../features/budgets/components/BudgetToolbar';
+import { BudgetList } from '../features/budgets/components/BudgetList';
 import type { BudgetMonthControl } from '../features/budgets/hooks/useBudgetMonth';
 import { useBudgets } from '../features/budgets/hooks/useBudgets';
 import { SubscriptionsSection } from '../features/subscriptions/components/SubscriptionsSection';
@@ -43,7 +41,8 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
   const { accentIndexByName } = useCategories();
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [form, setForm] = useState<BudgetFormValue>({ category: '', amount: '' });
 
   const toggleAddPicker = () => {
@@ -51,13 +50,15 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
       cancel();
       return;
     }
-    setEditingId(null);
+    setIsEditing(false);
+    setDrafts({});
     setForm({ category: '', amount: '' });
     setIsAdding(true);
   };
   const cancel = () => {
     setIsAdding(false);
-    setEditingId(null);
+    setIsEditing(false);
+    setDrafts({});
     setForm({ category: '', amount: '' });
   };
   const onSaveAdd = async () => {
@@ -69,13 +70,25 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
       cancel();
     }
   };
-  const onStartEdit = (b: BudgetWithProgress) => {
-    setEditingId(b.id);
+  const onStartEdit = () => {
+    setIsAdding(false);
+    setForm({ category: '', amount: '' });
+    setDrafts(Object.fromEntries(computedBudgets.map((b) => [b.id, String(b.amount)])));
+    setIsEditing(true);
   };
-  const onSaveEdit = async (id: string, amount: number) => {
-    if (!Number.isFinite(amount) || amount <= 0) return;
+  const onDraftChange = (id: string, value: string) => {
+    setDrafts((d) => ({ ...d, [id]: value }));
+  };
+  const onSaveEdit = async () => {
+    const updates = computedBudgets.flatMap((b) => {
+      const draft = drafts[b.id];
+      if (draft === undefined) return [];
+      const amount = Number(draft);
+      if (!Number.isFinite(amount) || amount <= 0 || amount === b.amount) return [];
+      return [update(b.id, amount)];
+    });
     try {
-      await update(id, amount);
+      await Promise.all(updates);
     } finally {
       cancel();
     }
@@ -106,15 +119,14 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
   const hasBudgets = computedBudgets.length > 0;
 
   const heroStats = (
-    <div className="space-y-3">
-      <BudgetSummaryCard totalBudgeted={stats.totalBudgeted} totalSpent={stats.totalSpent} />
-      <BudgetInsightsPanel
-        insights={insights}
-        subscriptions={filteredSubscriptions}
-        month={month}
-        filterKey={filterKey}
-      />
-    </div>
+    <BudgetInsightsPanel
+      totalBudgeted={stats.totalBudgeted}
+      totalSpent={stats.totalSpent}
+      insights={insights}
+      subscriptions={filteredSubscriptions}
+      month={month}
+      filterKey={filterKey}
+    />
   );
 
   const errorMessage = error || (validationError && !error ? validationError : null);
@@ -151,17 +163,57 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
               title="Budgets"
               titleIcon={Target}
               titleIconClassName={heroAccents.sky.icon}
-              description="Add, edit, or delete budgets by transaction categories."
               testId="budgets-section"
               expandLabel="Show budgets"
               collapseLabel="Hide budgets"
-              actions={
-                <BudgetToolbar
-                  loading={budgetsLoading}
-                  isPickerOpen={isAdding}
-                  addButtonRef={addButtonRef}
-                  onAddBudget={toggleAddPicker}
-                />
+              actionsStart={
+                <div className={cn('flex', 'items-center', 'gap-2')}>
+                  {budgetsLoading && (
+                    <Loader2 className={cn('h-3.5', 'w-3.5', 'animate-spin')} aria-hidden="true" />
+                  )}
+                  {isEditing ? (
+                    <Button
+                      type="button"
+                      onClick={onSaveEdit}
+                      variant="success"
+                      size="md"
+                      aria-label="Save budgets"
+                      title="Save budgets"
+                      className={cn('w-auto', 'shrink-0', 'whitespace-nowrap')}
+                    >
+                      <Check />
+                    </Button>
+                  ) : hasBudgets ? (
+                    <Button
+                      type="button"
+                      onClick={onStartEdit}
+                      variant="secondary"
+                      size="md"
+                      aria-label="Edit budgets"
+                      title="Edit budgets"
+                      className={cn('w-auto', 'shrink-0', 'whitespace-nowrap')}
+                    >
+                      <Pencil />
+                    </Button>
+                  ) : null}
+                </div>
+              }
+              actionsEnd={
+                !isEditing ? (
+                  <Button
+                    ref={addButtonRef}
+                    type="button"
+                    onClick={toggleAddPicker}
+                    variant="primary"
+                    size="md"
+                    aria-label="Budget"
+                    aria-expanded={isAdding}
+                    aria-haspopup="dialog"
+                    className={cn('w-auto', 'shrink-0', 'whitespace-nowrap')}
+                  >
+                    <Plus />
+                  </Button>
+                ) : null
               }
             >
               <AddBudgetPicker
@@ -177,10 +229,9 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
               {hasBudgets ? (
                 <BudgetList
                   items={computedBudgets}
-                  editingId={editingId}
-                  onStartEdit={onStartEdit}
-                  onCancelEdit={cancel}
-                  onSaveEdit={onSaveEdit}
+                  isEditing={isEditing}
+                  drafts={drafts}
+                  onDraftChange={onDraftChange}
                   onDelete={onDelete}
                 />
               ) : (

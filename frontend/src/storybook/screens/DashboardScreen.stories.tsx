@@ -1,7 +1,26 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { useState } from 'react';
+import { BottomContextualBar } from '@/components/BottomContextualBar';
+import { DateRangePillSlider } from '@/features/analytics/components/DateRangePillSlider';
 import { AuthenticatedScreenShell } from '@/storybook/screenSlices/AuthenticatedScreenShell';
 import { DashboardScreenSlice } from '@/storybook/screenSlices/DashboardScreenSlice';
-import { storyDarkTheme } from '@/storybook/storyDarkTheme';
+import type { DateRangeKey } from '@/utils/dateRanges';
+
+function DashboardShell({ children }: { children: React.ReactNode }) {
+  const [dateRange, setDateRange] = useState<DateRangeKey>('current-month');
+  return (
+    <AuthenticatedScreenShell
+      currentTab="dashboard"
+      bottomBarContent={
+        <BottomContextualBar>
+          <DateRangePillSlider dateRange={dateRange} onChange={setDateRange} />
+        </BottomContextualBar>
+      }
+    >
+      {children}
+    </AuthenticatedScreenShell>
+  );
+}
 
 const meta = {
   title: 'App/Screens/Dashboard',
@@ -11,9 +30,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <AuthenticatedScreenShell currentTab="dashboard">
+      <DashboardShell>
         <Story />
-      </AuthenticatedScreenShell>
+      </DashboardShell>
     ),
   ],
 } satisfies Meta;
@@ -23,11 +42,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const HappyPath: Story = {
-  render: () => <DashboardScreenSlice variant="happy" />,
-};
-
-export const HappyPathDark: Story = {
-  ...storyDarkTheme,
   render: () => <DashboardScreenSlice variant="happy" />,
 };
 

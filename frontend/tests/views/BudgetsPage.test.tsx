@@ -100,7 +100,12 @@ describe('BudgetsPage', () => {
   it('renders four insight cards replacing the old hero cards', () => {
     render(<BudgetsPage monthControl={monthControl} />);
 
-    expect(screen.getByText('Runway Pace')).toBeInTheDocument();
+    expect(screen.getByTestId('budget-insights-shell')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /budget summary/i })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    );
+    expect(screen.getByText('Runway')).toBeInTheDocument();
     expect(screen.getByText('Free Spend')).toBeInTheDocument();
     expect(screen.getByText('Sub Costs')).toBeInTheDocument();
 
@@ -129,12 +134,10 @@ describe('BudgetsPage', () => {
     expect(budgetsCardIndex).toBeGreaterThan(subscriptionsCardIndex);
   });
 
-  it('keeps the insight grid in one column on mobile, two on tablet, and three on desktop', () => {
+  it('keeps the insight shell visible in the page stats area', () => {
     render(<BudgetsPage monthControl={monthControl} />);
 
-    const statsGrid = screen.getByTestId('budget-insights-grid');
-    expect(statsGrid).toHaveClass('grid-cols-1');
-    expect(statsGrid).toHaveClass('md:grid-cols-2');
-    expect(statsGrid).toHaveClass('lg:grid-cols-3');
+    expect(screen.getByTestId('budget-insights-shell')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /budget summary/i })).toBeInTheDocument();
   });
 });

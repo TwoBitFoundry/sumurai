@@ -13,34 +13,103 @@ const baseInsights: BudgetInsights = {
 };
 
 const defaultProps = {
+  totalBudgeted: 500,
+  totalSpent: 250,
   insights: baseInsights,
   subscriptions: [],
   month: new Date(2026, 5, 1),
   filterKey: 'all',
 };
 
+function setViewportWidth(width: number) {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+  window.dispatchEvent(new Event('resize'));
+}
+
 describe('BudgetInsightsPanel', () => {
-  it('renders all four insight cards', () => {
+  beforeEach(() => {
+    setViewportWidth(1280);
+  });
+
+  it('renders the combined shell expanded by default', () => {
     render(<BudgetInsightsPanel {...defaultProps} />);
-    expect(screen.getByText('Runway Pace')).toBeInTheDocument();
+
+    expect(screen.getByTestId('budget-insights-shell')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /budget summary/i })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    );
+    expect(screen.getByText('Runway')).toBeInTheDocument();
     expect(screen.getByText('Free Spend')).toBeInTheDocument();
     expect(screen.getByText('Sub Costs')).toBeInTheDocument();
   });
 
-  it('uses a single column on mobile, two on tablet, and three on desktop', () => {
+  it('toggles the shell open and closed from the summary', async () => {
     render(<BudgetInsightsPanel {...defaultProps} />);
 
-    const grid = screen.getByTestId('budget-insights-grid');
-    expect(grid).toHaveClass('grid-cols-1');
-    expect(grid).toHaveClass('md:grid-cols-2');
-    expect(grid).toHaveClass('lg:grid-cols-3');
-    expect(grid).toHaveClass('[&>*:last-child]:md:col-span-2');
-    expect(grid).toHaveClass('[&>*:last-child]:lg:col-span-1');
+    const summaryButton = screen.getByRole('button', { name: /budget summary/i });
+    expect(summaryButton).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Runway')).toBeInTheDocument();
+
+    await userEvent.click(summaryButton);
+
+    expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('lays out the detail cards as three content-fit tiles on tablet and desktop', () => {
+    render(<BudgetInsightsPanel {...defaultProps} />);
+
+    const body = screen.getByTestId('budget-insights-panel-body');
+    expect(body.querySelector('.border-t')).toBeTruthy();
+    const tileGrid = body.children.item(1) as HTMLElement | null;
+    expect(tileGrid).toBeTruthy();
+    expect(tileGrid).toHaveClass('flex-row');
+    expect(tileGrid).toHaveClass('items-start');
+    expect(tileGrid).toHaveClass('gap-3');
+
+    const runwayTile = screen.getByTestId('budget-insight-card-runway');
+    expect(runwayTile).toHaveClass('md:flex-1');
+    expect(runwayTile).toHaveClass('md:min-w-0');
+    expect(runwayTile.firstElementChild).toHaveClass('md:self-start');
+    const runwayLabel = within(runwayTile).getByText('Runway');
+    expect(runwayLabel.className).toContain('whitespace-nowrap');
+    expect(runwayLabel.parentElement).toHaveClass('items-center');
+    expect(runwayLabel.parentElement).not.toHaveClass('flex-col');
+  });
+
+  it('renders mobile detail cards as inline rows', () => {
+    setViewportWidth(390);
+
+    render(<BudgetInsightsPanel {...defaultProps} />);
+
+    const runwayTile = screen.getByTestId('budget-insight-card-runway');
+    expect(runwayTile).not.toHaveClass('md:flex-1');
+    expect(runwayTile).toHaveClass('contents');
+    const frontFace = runwayTile.querySelector('.grid-cols-subgrid');
+    expect(frontFace).toBeTruthy();
+    expect(frontFace?.className).toContain('items-baseline');
+    expect(frontFace?.className).not.toContain('flex-col');
+  });
+
+  it('aligns the mobile detail rows in a shared content-fit grid', () => {
+    setViewportWidth(390);
+
+    render(<BudgetInsightsPanel {...defaultProps} />);
+
+    const body = screen.getByTestId('budget-insights-panel-body');
+    const grid = body.children.item(1) as HTMLElement | null;
+    expect(grid).toBeTruthy();
+    expect(grid).toHaveClass('grid');
+    expect(grid?.className).toContain('grid-cols-[auto_1fr_auto_auto_auto]');
   });
 
   it('clicking a card flips it to show the question', async () => {
     render(<BudgetInsightsPanel {...defaultProps} />);
-    const dailyPacingButton = screen.getByRole('button', { name: /runway pace/i });
+    const dailyPacingButton = screen.getByRole('button', { name: /runway/i });
     expect(dailyPacingButton).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(dailyPacingButton);
     expect(dailyPacingButton).toHaveAttribute('aria-expanded', 'true');
@@ -48,7 +117,7 @@ describe('BudgetInsightsPanel', () => {
 
   it('clicking a flipped card returns it to the front', async () => {
     render(<BudgetInsightsPanel {...defaultProps} />);
-    const btn = screen.getByRole('button', { name: /runway pace/i });
+    const btn = screen.getByRole('button', { name: /runway/i });
     await userEvent.click(btn);
     await userEvent.click(btn);
     expect(btn).toHaveAttribute('aria-expanded', 'false');
@@ -56,7 +125,7 @@ describe('BudgetInsightsPanel', () => {
 
   it('a different card is not affected when one is flipped', async () => {
     render(<BudgetInsightsPanel {...defaultProps} />);
-    await userEvent.click(screen.getByRole('button', { name: /runway pace/i }));
+    await userEvent.click(screen.getByRole('button', { name: /runway/i }));
     expect(screen.getByRole('button', { name: /free spend/i })).toHaveAttribute(
       'aria-expanded',
       'false'
@@ -65,13 +134,13 @@ describe('BudgetInsightsPanel', () => {
 
   it('resets all flipped cards when filterKey changes', async () => {
     const { rerender } = render(<BudgetInsightsPanel {...defaultProps} />);
-    await userEvent.click(screen.getByRole('button', { name: /runway pace/i }));
-    expect(screen.getByRole('button', { name: /runway pace/i })).toHaveAttribute(
+    await userEvent.click(screen.getByRole('button', { name: /runway/i }));
+    expect(screen.getByRole('button', { name: /runway/i })).toHaveAttribute(
       'aria-expanded',
       'true'
     );
     rerender(<BudgetInsightsPanel {...defaultProps} filterKey="account-123" />);
-    expect(screen.getByRole('button', { name: /runway pace/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /runway/i })).toHaveAttribute(
       'aria-expanded',
       'false'
     );
@@ -90,11 +159,13 @@ describe('BudgetInsightsPanel', () => {
     expect(freeSpendAmount).toHaveClass(uiTextRecipes.danger);
   });
 
-  it('shows zero-activity fallback when hasActivity is false', () => {
+  it('shows zero-activity fallback while keeping the shell visible', () => {
     render(
       <BudgetInsightsPanel {...defaultProps} insights={{ ...baseInsights, hasActivity: false }} />
     );
+
+    expect(screen.getByTestId('budget-insights-shell')).toBeInTheDocument();
     expect(screen.getByTestId('budget-insights-empty')).toBeInTheDocument();
-    expect(screen.queryByText('Runway Pace')).not.toBeInTheDocument();
+    expect(screen.queryByText('Runway')).not.toBeInTheDocument();
   });
 });

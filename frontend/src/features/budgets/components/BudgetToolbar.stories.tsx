@@ -14,6 +14,10 @@ const meta = {
     isPickerOpen: false,
     addButtonRef,
     onAddBudget: fn(),
+    isEditing: false,
+    canEdit: true,
+    onStartEdit: fn(),
+    onSaveEdit: fn(),
   },
 } satisfies Meta<typeof BudgetToolbar>;
 
@@ -24,7 +28,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: /budget/i }));
+    await userEvent.click(canvas.getByRole('button', { name: /^budget$/i }));
     await expect(args.onAddBudget).toHaveBeenCalledTimes(1);
   },
 };

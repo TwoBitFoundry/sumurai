@@ -81,7 +81,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
   const balanceText = formatMoney(rawBalance);
 
   const balanceColor = cn(
-    uiTypographyRecipes.bodyStrong,
+    uiTypographyRecipes.cardTitle,
     'tabular-nums',
     'transition-colors duration-300 ease-out',
     rawBalance == null && uiTextRecipes.subtle,
@@ -106,40 +106,36 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
         containerClassName={cardContainerClasses}
         style={hoverBorderStyle}
       >
-        <div className={cn('relative', 'p-6')}>
-          <div className={cn('relative', 'z-10', 'space-y-3')}>
-            <div className={cn('flex', 'items-center', 'justify-between')}>
-              <div
-                className={cn(
-                  uiTypographyRecipes.bodyStrong,
-                  uiTextRecipes.primary,
-                  'transition-colors',
-                  'duration-300',
-                  'ease-out'
-                )}
-              >
-                {account.name}
-              </div>
-              <div className={balanceColor}>{balanceText}</div>
+        <div className={cn('relative', 'flex', 'min-h-[6rem]', 'items-center', 'p-6')}>
+          <div className={cn('relative', 'z-10', 'w-full', 'space-y-3')}>
+            <div
+              className={cn(
+                uiTypographyRecipes.cardTitle,
+                uiTextRecipes.primary,
+                'transition-colors',
+                'duration-300',
+                'ease-out'
+              )}
+            >
+              {account.name}
             </div>
-            <div className={cn('flex', 'items-center', 'justify-between', 'gap-3')}>
-              <div className={accountMetaClasses}>
+            <div className={cn('flex', 'items-center', 'gap-3')}>
+              <IconButton
+                type="button"
+                variant="ghost"
+                aria-label="Import transactions"
+                title="Import transactions"
+                disabled={!isOnline}
+                onClick={() => setIsImportOpen(true)}
+                className={cn(!isOnline && 'opacity-45')}
+              >
+                <Upload />
+              </IconButton>
+              <div className={cn('flex', 'flex-col', 'gap-0.5')}>
                 <span className={accountMaskClasses}>••{account.mask}</span>
-              </div>
-              <div className={cn('flex', 'items-center', 'gap-2')}>
                 <span className={transactionCountClasses}>{account.transactions ?? 0}×</span>
-                <IconButton
-                  type="button"
-                  variant="ghost"
-                  aria-label="Import transactions"
-                  title="Import transactions"
-                  disabled={!isOnline}
-                  onClick={() => setIsImportOpen(true)}
-                  className={cn(!isOnline && 'opacity-45')}
-                >
-                  <Upload />
-                </IconButton>
               </div>
+              <div className={cn('ml-auto', balanceColor)}>{balanceText}</div>
             </div>
           </div>
         </div>

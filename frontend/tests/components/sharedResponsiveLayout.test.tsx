@@ -204,10 +204,9 @@ describe('shared responsive layout surfaces', () => {
     const { container } = render(
       <BudgetList
         items={items}
-        editingId="budget-1"
-        onStartEdit={jest.fn()}
-        onCancelEdit={jest.fn()}
-        onSaveEdit={jest.fn()}
+        isEditing={true}
+        drafts={{ 'budget-1': '100' }}
+        onDraftChange={jest.fn()}
         onDelete={jest.fn()}
       />
     );

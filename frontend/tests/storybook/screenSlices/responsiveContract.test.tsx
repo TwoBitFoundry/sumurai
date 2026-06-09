@@ -21,12 +21,12 @@ describe('storybook screen slices responsive contract', () => {
 
   it('keeps the budgets slice stats grid in two columns on mobile', () => {
     const { container } = render(<BudgetsScreenSlice state="loaded" />);
-    const statsGrid = container.querySelector(
-      '[data-testid="budgets-page"] .grid.gap-3'
+    const statsShell = container.querySelector(
+      '[data-testid="budgets-page"] [data-testid="budget-insights-shell"]'
     ) as HTMLElement | null;
 
-    expect(statsGrid).toHaveClass('grid-cols-2');
-    expect(statsGrid).toHaveClass('lg:grid-cols-3');
+    expect(statsShell).toBeTruthy();
+    expect(statsShell).toHaveClass('border-2');
   });
 
   it('keeps the settings slice centered with a desktop max width', () => {

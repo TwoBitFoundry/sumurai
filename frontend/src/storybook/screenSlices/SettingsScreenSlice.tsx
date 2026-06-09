@@ -1,10 +1,15 @@
 import { AlertTriangle } from 'lucide-react';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
+import { PasskeySecuritySection } from '@/features/settings/PasskeySecuritySection';
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
-import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
+import { Alert, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { cn } from '@/ui/primitives/utils';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import {
+  settingsSecurityLayout,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { settingsConfirmationCodeTypography } from '@/views/SettingsPage';
 
 export type SettingsScreenScenario =
@@ -43,31 +48,65 @@ export function SettingsScreenSlice(props: {
       <div className={cn('flex', 'flex-col', 'gap-6')}>
         <GlassCard variant="default" padding="lg">
           <div className={cn('space-y-5')}>
-            <div className={cn('space-y-3')}>
-              <Badge size="md">ACCOUNT SETTINGS</Badge>
+            <div className={cn('space-y-2')}>
+              <h1 className={pageLayoutRecipes.title}>Inspect the armory</h1>
+              <p className={pageLayoutRecipes.subtitle}>
+                Manage your security, profile, and account preferences.
+              </p>
             </div>
 
             <section className={cn('space-y-3')}>
               <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-                Appearance
+                Designated as
               </h2>
+              <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
+                commander@sumurai.app
+              </p>
+            </section>
+
+            <section className={cn('space-y-3')}>
+              <div className={cn(settingsSecurityLayout.sectionIntro)}>
+                <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+                  Brandish your colors
+                </h2>
+                <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
+                  Choose the app theme.
+                </p>
+              </div>
               <ThemeModeSelector value="dark" onChange={() => {}} />
             </section>
+
+            <PasskeySecuritySection />
           </div>
         </GlassCard>
 
         <GlassCard variant="default" padding="lg" className={cn('space-y-4')}>
+          <div className={cn(settingsSecurityLayout.sectionHeader)}>
+            <div className={cn(settingsSecurityLayout.sectionIntro)}>
+              <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+                Retire from service
+              </h2>
+              <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
+                Delete your Sumurai account including all financial data, app data, and links to
+                financial accounts.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="danger"
+              size="md"
+              className={cn(settingsSecurityLayout.addTrigger)}
+            >
+              Delete Account
+            </Button>
+          </div>
           <Alert
             variant="error"
-            title="Danger Zone"
+            title="Account Deletion Zone"
             icon={<AlertTriangle className={cn('h-5', 'w-5')} />}
           >
             Once you delete your account, there is no going back. This action cannot be undone.
           </Alert>
-
-          <Button type="button" variant="danger" size="md" className={cn('w-full', 'sm:w-auto')}>
-            Delete Account
-          </Button>
         </GlassCard>
       </div>
 
@@ -87,20 +126,20 @@ export function SettingsScreenSlice(props: {
 
           <Alert
             variant="error"
-            title="This will permanently delete:"
+            title="All to be severed:"
             icon={<AlertTriangle className={cn('h-5', 'w-5')} />}
             className={cn('mb-6')}
           >
-            <ul className={cn('space-y-1', 'text-xs')}>
-              <li>• All bank connections (Plaid/Teller)</li>
-              <li>• All transactions and accounts</li>
+            <ul className={cn('space-y-1', uiTypographyRecipes.caption)}>
+              <li>• All bank connections</li>
+              <li>• All transactions and bank information</li>
               <li>• All budgets and settings</li>
               <li>• Your user account and login credentials</li>
             </ul>
           </Alert>
 
           {deleteError ? (
-            <Alert variant="error" title="Delete failed" className={cn('mb-4')}>
+            <Alert variant="error" title="Deletion failed" className={cn('mb-4')}>
               {deleteError}
             </Alert>
           ) : null}
@@ -125,7 +164,7 @@ export function SettingsScreenSlice(props: {
               variant="ghost"
               className={cn(appTitleBarRecipes.settingsIdle, 'flex-1', 'normal-case')}
             >
-              Cancel
+              Exit
             </Button>
             <Button
               type="button"
@@ -134,7 +173,7 @@ export function SettingsScreenSlice(props: {
               disabled={confirmText !== 'DELETE'}
               className={cn('flex-1')}
             >
-              Delete Forever
+              Delete forever
             </Button>
           </div>
         </GlassCard>

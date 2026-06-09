@@ -19,7 +19,6 @@ export function SubscriptionsSection({
       title="Subscriptions"
       titleIcon={Repeat2}
       titleIconClassName={heroAccents.sky.icon}
-      description="Review subscription cost and renewal dates found in transactions."
       testId="subscriptions-section"
       expandLabel="Show subscriptions"
       collapseLabel="Hide subscriptions"

@@ -153,7 +153,7 @@ describe('BankCard', () => {
     expect(groupIcon?.parentElement?.className).toContain(control.glyph.lg);
   });
 
-  it('places the status icon and bank name on the first header row', () => {
+  it('renders bank name, status, expand toggle, and action buttons in the header', () => {
     render(
       <BankCard
         bank={{
@@ -169,28 +169,12 @@ describe('BankCard', () => {
       />
     );
 
-    const heading = screen.getByRole('heading', { name: 'Chase' });
-    const headerGrid = heading.parentElement;
-    expect(headerGrid).toHaveClass('grid');
-    expect(headerGrid).toHaveClass('grid-cols-[auto_minmax(0,1fr)]');
-    expect(headerGrid).toHaveClass('px-3');
-    expect(heading).toHaveClass('col-start-2');
-    expect(heading).toHaveClass('row-start-1');
-    expect(
-      within(headerGrid as HTMLElement).getByRole('status', { name: 'Connected' })
-    ).toBeVisible();
-    expect(
-      within(headerGrid as HTMLElement).getByRole('button', { name: 'Show accounts' })
-    ).toBeVisible();
-    expect(
-      within(headerGrid as HTMLElement).getByRole('button', { name: 'Sync now' })
-    ).toBeVisible();
-    expect(
-      within(headerGrid as HTMLElement).getByRole('button', { name: 'Export institution data' })
-    ).toBeVisible();
-    expect(
-      within(headerGrid as HTMLElement).getByRole('button', { name: 'Disconnect' })
-    ).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Chase' })).toBeVisible();
+    expect(screen.getByRole('status', { name: 'Connected' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Show accounts' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Sync now' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Export institution data' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Disconnect' })).toBeVisible();
   });
 
   it('shows connection status before the bank name', () => {
@@ -345,14 +329,10 @@ describe('BankCard', () => {
 
     await user.click(screen.getByRole('button', { name: 'Show accounts' }));
 
-    const count = await screen.findByText('7×');
-    const actions = count.parentElement;
-
-    expect(actions).toContainElement(screen.getByRole('button', { name: 'Import transactions' }));
-    expect(screen.getByRole('button', { name: 'Import transactions' })).toHaveAttribute(
-      'title',
-      'Import transactions'
-    );
+    expect(await screen.findByText('7×')).toBeVisible();
+    const importBtn = screen.getByRole('button', { name: 'Import transactions' });
+    expect(importBtn).toBeVisible();
+    expect(importBtn).toHaveAttribute('title', 'Import transactions');
   });
 
   it('disables account import buttons while offline', async () => {
