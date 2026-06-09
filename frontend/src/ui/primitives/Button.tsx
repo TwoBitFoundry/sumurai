@@ -35,12 +35,12 @@ export const connectButtonRecipes = {
   ],
   secondary: [
     ...buttonChrome.secondary,
-    ...semanticSurfaces.card,
+    ...semanticSurfaces.mutedChip,
     semanticTextRecipes.muted,
     ...semanticEffects.glassShadow,
-    'hover:border-[var(--color-border-default)] hover:text-[var(--color-text-primary)]',
+    'hover:border-[var(--color-border-default)] hover:bg-[var(--color-surface-hover-row)] hover:text-[var(--color-text-primary)]',
     'dark:text-[#cbd5e1]',
-    'dark:hover:border-[var(--color-border-default)] dark:hover:text-white',
+    'dark:hover:border-[var(--color-border-default)] dark:hover:bg-[var(--color-surface-hover-row)] dark:hover:text-white',
   ],
 } as const;
 
@@ -64,15 +64,15 @@ export const buttonRecipes = {
   ],
   secondary: [
     ...buttonChrome.secondary,
-    ...semanticSurfaces.card,
+    ...semanticSurfaces.mutedChip,
     semanticTextRecipes.muted,
     ...semanticEffects.glassShadow,
     'hover:-translate-y-0.5',
-    'hover:border-[var(--color-border-default)] hover:text-slate-900',
+    'hover:border-[var(--color-border-default)] hover:bg-[var(--color-surface-hover-row)] hover:text-slate-900',
     'hover:shadow-[0_14px_32px_-18px_var(--color-effect-accent-hover)]',
     'disabled:hover:translate-y-0',
     'dark:text-slate-300',
-    'dark:hover:border-[var(--color-border-default)] dark:hover:text-white',
+    'dark:hover:border-[var(--color-border-default)] dark:hover:bg-[var(--color-surface-hover-row)] dark:hover:text-white',
   ],
   ghost: [
     ...buttonChrome.ghost,

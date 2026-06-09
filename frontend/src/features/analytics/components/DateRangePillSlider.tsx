@@ -43,9 +43,10 @@ export function DateRangePillSlider({
             size="inherit"
             className={cn(
               ...appTitleBarRecipes.contextPillTab,
-              ...appTitleBarRecipes.contextPillTabSize,
               'shrink-0',
-              isActive ? uiTextRecipes.inverse : uiTextRecipes.primary
+              isActive
+                ? [...appTitleBarRecipes.contextPillTabSize, uiTextRecipes.inverse]
+                : ['!px-0', 'aspect-square', uiTextRecipes.primary]
             )}
             aria-pressed={isActive}
           >

@@ -77,9 +77,24 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionSummary 
             background: `radial-gradient(ellipse at 50% 0%, rgba(${heroStyles.glowRgb},0.14) 0%, transparent 70%)`,
           }}
         />
-        <span className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary, 'truncate')}>
-          {subscription.merchant}
-        </span>
+        <div className={cn('flex', 'min-w-0', 'items-baseline', 'justify-between', 'gap-2')}>
+          <span
+            className={cn(
+              uiTypographyRecipes.cardTitle,
+              uiTextRecipes.primary,
+              'min-w-0',
+              'truncate'
+            )}
+          >
+            {subscription.merchant}
+          </span>
+          <div className={cn('flex', 'shrink-0', 'items-baseline', 'gap-1.5', 'whitespace-nowrap')}>
+            <span className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>
+              {fmtUSD(subscription.monthly_cost)}
+            </span>
+            <span className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>/ mo</span>
+          </div>
+        </div>
         <div
           className={cn(
             'flex',
@@ -93,25 +108,10 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionSummary 
           <div
             className={cn(
               'flex',
-              'shrink-0',
-              'items-baseline',
-              'justify-start',
-              'gap-1.5',
-              'whitespace-nowrap'
-            )}
-          >
-            <span className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
-              {fmtUSD(subscription.monthly_cost)}
-            </span>
-            <span>/ mo</span>
-          </div>
-          <div
-            className={cn(
-              'flex',
               'min-w-0',
               'flex-1',
               'items-center',
-              'justify-center',
+              'justify-start',
               'gap-1',
               'overflow-hidden'
             )}

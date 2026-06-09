@@ -77,9 +77,10 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
                     type="button"
                     variant="secondary"
                     size="md"
+                    shape="square"
                     aria-label="Edit budgets"
                     title="Edit budgets"
-                    className={cn('w-auto', 'shrink-0', 'whitespace-nowrap')}
+                    className={cn('shrink-0')}
                     onClick={() => {}}
                   >
                     <Pencil />
@@ -92,10 +93,11 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
                     type="button"
                     variant="primary"
                     size="md"
+                    shape="square"
                     aria-label="Budget"
                     aria-expanded={props.state === 'adding'}
                     aria-haspopup="dialog"
-                    className={cn('w-auto', 'shrink-0', 'whitespace-nowrap')}
+                    className={cn('shrink-0')}
                     onClick={() => {}}
                   >
                     <Plus />

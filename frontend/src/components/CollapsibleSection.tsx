@@ -96,25 +96,28 @@ export function CollapsibleSection({
   return (
     <section className={cn('space-y-4')} data-testid={testId}>
       {hasSplitActions ? (
-        <div className={cn('min-w-0')}>
-          {titleRow}
-          {description ? (
-            <p className={cn('mt-1', 'min-w-0', uiTypographyRecipes.body, uiTextRecipes.muted)}>
-              {description}
-            </p>
-          ) : null}
-          <div className={cn('relative', 'mt-2', 'flex', 'items-center', 'pb-1')}>
-            <div className={cn('shrink-0')}>{actionsStart}</div>
-            <button
-              type="button"
-              onClick={handleToggle}
-              aria-label={expanded ? collapseLabel : expandLabel}
-              aria-expanded={expanded}
-              className={cn('absolute', 'left-1/2', '-translate-x-1/2')}
-            >
-              {chevron}
-            </button>
-            <div className={cn('ml-auto', 'shrink-0')}>{actionsEnd}</div>
+        <div className={cn('relative')}>
+          <button
+            type="button"
+            onClick={handleToggle}
+            aria-label={expanded ? collapseLabel : expandLabel}
+            aria-expanded={expanded}
+            className={cn('absolute', 'inset-0', 'cursor-pointer')}
+          />
+          <div className={cn('pointer-events-none')}>
+            <div className={cn('min-w-0')}>
+              {titleRow}
+              {description ? (
+                <p className={cn('mt-1', 'min-w-0', uiTypographyRecipes.body, uiTextRecipes.muted)}>
+                  {description}
+                </p>
+              ) : null}
+            </div>
+            <div className={cn('mt-2', 'flex', 'items-center', 'justify-between', 'pb-1')}>
+              <div className={cn('shrink-0', 'pointer-events-auto')}>{actionsStart}</div>
+              <div className={cn('flex', 'justify-center')}>{chevron}</div>
+              <div className={cn('shrink-0', 'pointer-events-auto')}>{actionsEnd}</div>
+            </div>
           </div>
         </div>
       ) : (
