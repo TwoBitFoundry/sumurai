@@ -4568,7 +4568,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "sumurai-backend"
-version = "6.7.1"
+version = "6.7.2"
 dependencies = [
  "aes-gcm",
  "anyhow",
