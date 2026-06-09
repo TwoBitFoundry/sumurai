@@ -186,6 +186,7 @@ pub struct InsightMetric {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, ToSchema)]
+#[serde(rename_all = "lowercase")]
 pub enum InsightState {
     A,
     B,
@@ -199,7 +200,7 @@ pub enum InsightState {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 #[schema(example = json!({
-    "state": "A",
+    "state": "a",
     "card1": { "value": 184.25, "format": "currency", "secondary": 12.0 },
     "card2": { "value": 15.35, "format": "currency" },
     "card3": null

@@ -3326,7 +3326,7 @@
             "value": 15.35
           },
           "card3": null,
-          "state": "A"
+          "state": "a"
         }
       },
       "CreateBudgetRequest": {
@@ -3920,14 +3920,14 @@
       "InsightState": {
         "type": "string",
         "enum": [
-          "A",
-          "B",
-          "C",
-          "D",
-          "E",
-          "F",
-          "G",
-          "Triple"
+          "a",
+          "b",
+          "c",
+          "d",
+          "e",
+          "f",
+          "g",
+          "triple"
         ]
       },
       "LargestTransaction": {
