@@ -1,4 +1,4 @@
-import { AlertTriangle, Loader2, ReceiptText, Tags, TrendingUp, WandSparkles } from 'lucide-react';
+import { Loader2, ReceiptText, Tags, WandSparkles } from 'lucide-react';
 import type React from 'react';
 import { useRef, useState } from 'react';
 import { Button, cn, GlassCard, IconButton } from '@/ui/primitives';
@@ -11,20 +11,18 @@ import {
 } from '@/ui/recipes';
 import { heroAccents } from '@/ui/tokens';
 import { ToastStack } from '../components/toastStack/ToastStack';
-import HeroStatCard from '../components/widgets/HeroStatCard';
 import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToastStack';
 import { useAutoCategorization } from '../features/auto-categorization/hooks/useAutoCategorization';
 import CategoryCatalogPicker from '../features/transactions/components/CategoryCatalogPicker';
+import { TransactionInsightsPanel } from '../features/transactions/components/TransactionInsightsPanel';
 import TransactionsTable from '../features/transactions/components/TransactionsTable';
 import TransactionsToolbar from '../features/transactions/components/TransactionsToolbar';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import type { TransactionFilterControl } from '../features/transactions/hooks/useTransactionFilterState';
 import { useTransactions } from '../features/transactions/hooks/useTransactions';
-import { useTransactionsInsights } from '../features/transactions/hooks/useTransactionsInsights';
+import { useTransactionsContextualInsights } from '../features/transactions/hooks/useTransactionsContextualInsights';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { PageLayout } from '../layouts/PageLayout';
-import { formatCategoryName } from '../utils/categories';
-import { fmtUSD } from '../utils/format';
 
 const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = ({
   filterControl,
@@ -48,8 +46,8 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
   const {
     insights,
     isLoading: insightsLoading,
-    error: insightsError,
-  } = useTransactionsInsights({
+    accountKey,
+  } = useTransactionsContextualInsights({
     search,
     selectedCategory,
     dateRange,
@@ -59,25 +57,11 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
   const { pinnedToast, transients, dismissTransient, dismissPinned, pushToast } =
     useAccountsToastStack(autoCategorization.job);
 
-  const loadingMessage = insightsLoading
-    ? 'Fetching...'
-    : !insights && insightsError
-      ? 'Unavailable'
-      : null;
-  const totalCount = insights?.total_count ?? 0;
-  const totalSpent = insights?.total_spent ?? 0;
-  const avgTransaction = insights?.average_amount ?? 0;
-  const largestTransaction = insights?.largest ?? null;
-  const topCategories = insights?.top_categories ?? [];
   const { custom } = useCategories();
   const addCategoryButtonRef = useRef<HTMLButtonElement>(null);
   const [isCategoryCatalogOpen, setIsCategoryCatalogOpen] = useState(false);
-  const categoryDriver =
-    loadingMessage || topCategories.length === 0
-      ? null
-      : topCategories.length === 1
-        ? `⚠ ${formatCategoryName(topCategories[0])}`
-        : `⚠ ${formatCategoryName(topCategories[0])} & ${formatCategoryName(topCategories[1])}`;
+
+  const insightsResetKey = `${insights?.state ?? 'a'}-${search}-${selectedCategory ?? ''}-${accountKey}-${dateRange ?? ''}`;
   const actions = (
     <div
       className={cn(
@@ -133,47 +117,11 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
         actions={actions}
         error={error}
         stats={
-          <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-3')}>
-            <HeroStatCard
-              index={1}
-              title="Total shown"
-              icon={<ReceiptText />}
-              value={loadingMessage ?? totalCount}
-              suffix={loadingMessage ? undefined : totalCount === 1 ? 'item' : 'items'}
-              subtext={loadingMessage ? undefined : fmtUSD(totalSpent)}
-            />
-
-            <HeroStatCard
-              index={2}
-              accent="emerald"
-              title="Average size"
-              icon={<TrendingUp />}
-              value={loadingMessage ?? fmtUSD(avgTransaction)}
-              subtext={loadingMessage ? undefined : categoryDriver || undefined}
-            />
-
-            <HeroStatCard
-              index={3}
-              accent="emerald"
-              title="Largest size"
-              icon={<AlertTriangle />}
-              value={
-                loadingMessage ??
-                (largestTransaction ? fmtUSD(Math.abs(largestTransaction.amount)) : '$0')
-              }
-              pills={
-                loadingMessage
-                  ? []
-                  : largestTransaction && totalCount > 1
-                    ? [
-                        {
-                          label: largestTransaction.merchant,
-                        },
-                      ]
-                    : []
-              }
-            />
-          </div>
+          <TransactionInsightsPanel
+            insights={insights}
+            isLoading={insightsLoading}
+            resetKey={insightsResetKey}
+          />
         }
       >
         <GlassCard

@@ -157,10 +157,10 @@ Each cell = **metric** + *human question*. "vs parent" = subset median vs. relax
 - Wire into `views/TransactionsPage.tsx`: replace the `stats` `HeroStatCard` grid (136-176) with `<TransactionInsightsPanel/>`; remove dead `topCategories`/`categoryDriver`/`largestTransaction` derivations (67-80).
 
 **Acceptance criteria:**
-- [ ] All three cards render correct metric + flip to the correct question per state.
-- [ ] Changing any filter resets flipped cards to the data face.
-- [ ] Neutral slate cards in the accent shell visually match `BudgetInsightsPanel`; mobile + dark mode correct.
-- [ ] Old static-card derivations removed; no dead code.
+- [x] All three cards render correct metric + flip to the correct question per state.
+- [x] Changing any filter resets flipped cards to the data face.
+- [x] Neutral slate cards in the accent shell visually match `BudgetInsightsPanel`; mobile + dark mode correct.
+- [x] Old static-card derivations removed; no dead code.
 
 ## Phase 5 — Tests & end-to-end verification
 
@@ -172,9 +172,9 @@ Each cell = **metric** + *human question*. "vs parent" = subset median vs. relax
 - Manual at **`http://localhost:8080`** (Nginx — not `:3001`): walk A→B→C→D→E→F→G→Triple, tap each card (question cross-fades), change filters (cards reset), verify aesthetic parity, mobile/dark via `preview_resize`, endpoint timing via `preview_network`, capture `preview_screenshot`s for the PR.
 
 **Acceptance criteria:**
-- [ ] `cargo test -p sumurai-backend --locked` and `npm --prefix frontend test` green.
-- [ ] Storybook stories exist for every state and pass Vitest.
-- [ ] Manual walkthrough confirms morph, flip, reset, parity, responsive/dark, <150ms.
+- [x] `cargo test -p sumurai-backend --locked` and `npm --prefix frontend test` green.
+- [x] Storybook stories exist for every state and pass Vitest.
+- [x] Manual walkthrough confirms morph, flip, reset, parity, responsive/dark, <150ms.
 
 ---
 

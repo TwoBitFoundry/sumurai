@@ -4,7 +4,7 @@ import { useAccountsToastStack } from '@/features/accounts/hooks/useAccountsToas
 import { useAutoCategorization } from '@/features/auto-categorization/hooks/useAutoCategorization';
 import { useCategories } from '@/features/transactions/hooks/useCategories';
 import { useTransactions } from '@/features/transactions/hooks/useTransactions';
-import { useTransactionsInsights } from '@/features/transactions/hooks/useTransactionsInsights';
+import { useTransactionsContextualInsights } from '@/features/transactions/hooks/useTransactionsContextualInsights';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import TransactionsPage from '@/views/TransactionsPage';
 
@@ -12,8 +12,8 @@ jest.mock('@/features/transactions/hooks/useTransactions', () => ({
   useTransactions: jest.fn(),
 }));
 
-jest.mock('@/features/transactions/hooks/useTransactionsInsights', () => ({
-  useTransactionsInsights: jest.fn(),
+jest.mock('@/features/transactions/hooks/useTransactionsContextualInsights', () => ({
+  useTransactionsContextualInsights: jest.fn(),
 }));
 
 jest.mock('@/features/transactions/hooks/useCategories', () => ({
@@ -47,6 +47,23 @@ jest.mock('@/layouts/PageLayout', () => ({
       <div data-testid="page-stats">{stats}</div>
       <div data-testid="page-children">{children}</div>
     </div>
+  ),
+}));
+
+jest.mock('@/features/transactions/components/TransactionInsightsPanel', () => ({
+  TransactionInsightsPanel: ({
+    isLoading,
+    insights,
+  }: {
+    isLoading: boolean;
+    insights: { state: string } | null;
+    resetKey: string;
+  }) => (
+    <div
+      data-testid="transaction-insights-panel"
+      data-loading={String(isLoading)}
+      data-state={insights?.state ?? ''}
+    />
   ),
 }));
 
@@ -126,22 +143,35 @@ describe('TransactionsPage', () => {
       totalItems: 0,
       totalPages: 1,
     } as any);
-    jest.mocked(useTransactionsInsights).mockReturnValue({
+    jest.mocked(useTransactionsContextualInsights).mockReturnValue({
       insights: {
-        total_count: 0,
-        total_spent: 0,
-        average_amount: 0,
-        largest: null,
-        top_categories: [],
+        state: 'a',
+        card1: {
+          value: 0,
+          format: 'currency',
+          secondary: 0,
+          comparison: null,
+          share: null,
+          label: null,
+        },
+        card2: {
+          value: null,
+          format: 'currency',
+          secondary: null,
+          comparison: null,
+          share: null,
+          label: null,
+        },
+        card3: null,
       },
       isLoading: false,
-      loading: false,
       error: null,
+      accountKey: '',
     } as any);
   });
 
-  it('keeps the transaction stats grid in two columns on mobile', () => {
-    const { container } = render(
+  it('renders the insights panel in the stats slot', () => {
+    render(
       <TransactionsPage
         filterControl={{
           search: '',
@@ -151,12 +181,11 @@ describe('TransactionsPage', () => {
         }}
       />
     );
-    const statsGrid = container.querySelector(
-      '[data-testid="page-layout"] .grid.gap-3'
-    ) as HTMLElement | null;
 
-    expect(statsGrid).toHaveClass('grid-cols-2');
-    expect(statsGrid).toHaveClass('lg:grid-cols-3');
+    const panel = screen.getByTestId('transaction-insights-panel');
+    expect(panel).toBeInTheDocument();
+    expect(panel).toHaveAttribute('data-state', 'a');
+    expect(panel).toHaveAttribute('data-loading', 'false');
   });
 
   it('renders the auto-categorize action in the hero actions slot', () => {
@@ -174,15 +203,15 @@ describe('TransactionsPage', () => {
     expect(getByRole('button', { name: /categorize/i })).toBeEnabled();
   });
 
-  it('shows the insights loading state independently from the table', () => {
-    jest.mocked(useTransactionsInsights).mockReturnValue({
+  it('passes loading state to the insights panel independently from the table', () => {
+    jest.mocked(useTransactionsContextualInsights).mockReturnValue({
       insights: null,
       isLoading: true,
-      loading: true,
       error: null,
+      accountKey: '',
     } as any);
 
-    const { getAllByText } = render(
+    render(
       <TransactionsPage
         filterControl={{
           search: '',
@@ -193,7 +222,11 @@ describe('TransactionsPage', () => {
       />
     );
 
-    expect(getAllByText('Fetching...')).toHaveLength(3);
+    expect(screen.getByTestId('transaction-insights-panel')).toHaveAttribute(
+      'data-loading',
+      'true'
+    );
+    expect(screen.getByTestId('transactions-table')).toBeInTheDocument();
   });
 
   it('renders the shared toast stack for auto-categorization job state', () => {

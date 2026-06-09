@@ -65,6 +65,26 @@ export interface TransactionsInsightsResponse {
   top_categories: string[];
 }
 
+export type InsightFormat = 'currency' | 'count' | 'days' | 'percent' | 'ratio';
+
+export type InsightState = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'triple';
+
+export interface InsightMetric {
+  value: number | null;
+  format: InsightFormat;
+  secondary: number | null;
+  comparison: number | null;
+  share: number | null;
+  label: string | null;
+}
+
+export interface ContextualInsightsResponse {
+  state: InsightState;
+  card1: InsightMetric;
+  card2: InsightMetric;
+  card3: InsightMetric | null;
+}
+
 export interface Budget {
   id: string;
   category: string;

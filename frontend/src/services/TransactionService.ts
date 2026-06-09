@@ -4,6 +4,7 @@
 
 import { type BackendTransaction, TransactionTransformer } from '../domain/TransactionTransformer';
 import type {
+  ContextualInsightsResponse,
   PaginatedTransactionsResponse,
   Transaction,
   TransactionsInsightsResponse,
@@ -66,6 +67,17 @@ export class TransactionService {
     filters: TransactionFilters = {}
   ): Promise<TransactionsInsightsResponse> {
     return ApiClient.get<TransactionsInsightsResponse>(buildTransactionsInsightsEndpoint(filters));
+  }
+
+  static async getTransactionsContextualInsights(
+    filters: TransactionFilters = {}
+  ): Promise<ContextualInsightsResponse> {
+    const params = buildTransactionFiltersParams(filters);
+    const queryString = params.toString();
+    const url = queryString
+      ? `/transactions/contextual-insights?${queryString}`
+      : '/transactions/contextual-insights';
+    return ApiClient.get<ContextualInsightsResponse>(url);
   }
 
   static async updateTransactionCategory(
