@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, Flame, Repeat2, Wallet } from 'lucide-react';
 import { type CSSProperties, useState } from 'react';
+import { InsightCard } from '@/components/widgets/InsightCard';
 import type { BudgetInsights } from '@/domain/BudgetInsightsCalculator';
 import { SubscriptionCalculator } from '@/domain/SubscriptionCalculator';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
@@ -13,7 +14,6 @@ import {
 import { heroAccents } from '@/ui/tokens';
 import type { SubscriptionSummary } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
-import { BudgetInsightCard } from './BudgetInsightCard';
 import { BudgetProgress } from './BudgetProgress';
 
 export interface BudgetInsightsPanelProps {
@@ -63,7 +63,7 @@ export function BudgetInsightsPanel({
 
   const bodyContent = insights.hasActivity ? (
     <>
-      <BudgetInsightCard
+      <InsightCard
         title="Runway"
         icon={<Flame />}
         value={
@@ -107,7 +107,7 @@ export function BudgetInsightsPanel({
         tileLayout={!isMobile}
         subgridRow={isMobile}
       />
-      <BudgetInsightCard
+      <InsightCard
         title="Free Spend"
         icon={<Wallet />}
         value={
@@ -140,7 +140,7 @@ export function BudgetInsightsPanel({
         tileLayout={!isMobile}
         subgridRow={isMobile}
       />
-      <BudgetInsightCard
+      <InsightCard
         title="Sub Costs"
         icon={<Repeat2 />}
         value={

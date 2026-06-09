@@ -45,7 +45,7 @@ export const FlipAndReset: Story = {
     await userEvent.click(btn);
     await expect(btn).toHaveAttribute('aria-expanded', 'true');
     await waitFor(() => {
-      expect(canvas.getByTestId('budget-insight-question')).toBeVisible();
+      expect(canvas.getByTestId('insight-question')).toBeVisible();
     });
   },
 };

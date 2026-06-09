@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
-import { BudgetInsightCard } from './BudgetInsightCard';
+import { InsightCard } from './InsightCard';
 
 const meta = {
-  title: 'Features/Budgets/BudgetInsightCard',
-  component: BudgetInsightCard,
+  title: 'Widgets/InsightCard',
+  component: InsightCard,
   tags: ['autodocs', 'test'],
   args: {
     title: 'Daily Pacing',
@@ -15,7 +15,7 @@ const meta = {
     flipped: false,
     onToggle: fn(),
   },
-} satisfies Meta<typeof BudgetInsightCard>;
+} satisfies Meta<typeof InsightCard>;
 
 export default meta;
 

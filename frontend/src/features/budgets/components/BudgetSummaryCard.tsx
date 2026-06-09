@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
+import { InsightQuestion } from '@/components/widgets/InsightQuestion';
 import { cn } from '@/ui/primitives';
 import {
   budgetProgress as budgetProgressRecipes,
@@ -11,7 +12,6 @@ import {
 } from '@/ui/recipes';
 import { heroAccents } from '@/ui/tokens';
 import { fmtUSD } from '../../../utils/format';
-import { BudgetInsightQuestion } from './BudgetInsightQuestion';
 import BudgetProgress, { getBudgetProgressMetrics } from './BudgetProgress';
 
 const FADE = { duration: 0.24, ease: [0.22, 0.61, 0.36, 1] } as const;
@@ -91,7 +91,7 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
                 exit={{ opacity: 0 }}
                 transition={FADE}
               >
-                <BudgetInsightQuestion question="How is my overall spending tracking against my plan this month?" />
+                <InsightQuestion question="How is my overall spending tracking against my plan this month?" />
               </motion.div>
             ) : (
               <motion.div

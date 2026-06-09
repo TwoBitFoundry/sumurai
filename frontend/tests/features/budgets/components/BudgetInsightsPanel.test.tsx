@@ -71,7 +71,7 @@ describe('BudgetInsightsPanel', () => {
     expect(tileGrid).toHaveClass('items-start');
     expect(tileGrid).toHaveClass('gap-3');
 
-    const runwayTile = screen.getByTestId('budget-insight-card-runway');
+    const runwayTile = screen.getByTestId('insight-card-runway');
     expect(runwayTile).toHaveClass('md:flex-1');
     expect(runwayTile).toHaveClass('md:min-w-0');
     expect(runwayTile.firstElementChild).toHaveClass('md:self-start');
@@ -86,7 +86,7 @@ describe('BudgetInsightsPanel', () => {
 
     render(<BudgetInsightsPanel {...defaultProps} />);
 
-    const runwayTile = screen.getByTestId('budget-insight-card-runway');
+    const runwayTile = screen.getByTestId('insight-card-runway');
     expect(runwayTile).not.toHaveClass('md:flex-1');
     expect(runwayTile).toHaveClass('contents');
     const frontFace = runwayTile.querySelector('.grid-cols-subgrid');
@@ -154,7 +154,7 @@ describe('BudgetInsightsPanel', () => {
       />
     );
 
-    const freeSpendCard = screen.getByTestId('budget-insight-card-free-spend');
+    const freeSpendCard = screen.getByTestId('insight-card-free-spend');
     const freeSpendAmount = within(freeSpendCard).getByText('-$150.00');
     expect(freeSpendAmount).toHaveClass(uiTextRecipes.danger);
   });

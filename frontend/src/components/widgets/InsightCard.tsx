@@ -3,11 +3,11 @@ import type React from 'react';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { cn } from '@/ui/primitives';
 import { type HeroAccent, heroAccents } from '@/ui/tokens';
-import { BudgetInsightQuestion } from './BudgetInsightQuestion';
+import { InsightQuestion } from './InsightQuestion';
 
 const FADE = { duration: 0.24, ease: [0.22, 0.61, 0.36, 1] } as const;
 
-export const budgetInsightCardRecipes = {
+export const insightCardRecipes = {
   frontRow: 'flex w-full min-w-0 items-center justify-between gap-x-1.5 whitespace-nowrap',
   tileRow: 'flex w-full min-w-0 flex-col gap-1.5 whitespace-normal',
   leading: 'flex min-w-0 flex-1 items-center gap-x-1.5',
@@ -30,7 +30,7 @@ export const budgetInsightCardRecipes = {
 
 const SUBGRID_PASS = 'grid grid-cols-subgrid col-span-full';
 
-export interface BudgetInsightCardProps {
+export interface InsightCardProps {
   title: string;
   icon?: React.ReactNode;
   value: React.ReactNode;
@@ -45,7 +45,7 @@ export interface BudgetInsightCardProps {
   className?: string;
 }
 
-export function BudgetInsightCard({
+export function InsightCard({
   title,
   icon,
   value,
@@ -58,7 +58,7 @@ export function BudgetInsightCard({
   tileLayout = false,
   subgridRow = false,
   className,
-}: BudgetInsightCardProps) {
+}: InsightCardProps) {
   const styles = heroAccents[accent];
   let shellClassName: string;
   if (outlined) {
@@ -100,7 +100,7 @@ export function BudgetInsightCard({
         tileLayout && 'md:flex-1 md:min-w-0',
         className
       )}
-      data-testid={`budget-insight-card-${title.toLowerCase().replace(/\s+/g, '-')}`}
+      data-testid={`insight-card-${title.toLowerCase().replace(/\s+/g, '-')}`}
     >
       <div className={shellClassName}>
         {outlined ? (
@@ -141,7 +141,7 @@ export function BudgetInsightCard({
                 transition={FADE}
                 className={cn(subgridRow && 'col-span-full')}
               >
-                <BudgetInsightQuestion question={question} />
+                <InsightQuestion question={question} />
               </motion.div>
             ) : subgridRow ? (
               <motion.div
@@ -159,7 +159,7 @@ export function BudgetInsightCard({
                 ) : (
                   <span />
                 )}
-                <div className={cn(budgetInsightCardRecipes.title, 'self-center')}>{title}</div>
+                <div className={cn(insightCardRecipes.title, 'self-center')}>{title}</div>
                 {value}
               </motion.div>
             ) : (
@@ -170,14 +170,12 @@ export function BudgetInsightCard({
                 exit={{ opacity: 0 }}
                 transition={FADE}
                 className={cn(
-                  tileLayout ? budgetInsightCardRecipes.tileRow : budgetInsightCardRecipes.frontRow
+                  tileLayout ? insightCardRecipes.tileRow : insightCardRecipes.frontRow
                 )}
               >
                 <div
                   className={cn(
-                    tileLayout
-                      ? budgetInsightCardRecipes.tileLeading
-                      : budgetInsightCardRecipes.leading
+                    tileLayout ? insightCardRecipes.tileLeading : insightCardRecipes.leading
                   )}
                 >
                   {icon ? (
@@ -185,9 +183,7 @@ export function BudgetInsightCard({
                   ) : null}
                   <div
                     className={cn(
-                      tileLayout
-                        ? budgetInsightCardRecipes.tileTitle
-                        : budgetInsightCardRecipes.title
+                      tileLayout ? insightCardRecipes.tileTitle : insightCardRecipes.title
                     )}
                   >
                     {title}
@@ -196,22 +192,18 @@ export function BudgetInsightCard({
                 <div
                   className={cn(
                     tileLayout
-                      ? budgetInsightCardRecipes.tileMetricCluster
-                      : budgetInsightCardRecipes.metricCluster
+                      ? insightCardRecipes.tileMetricCluster
+                      : insightCardRecipes.metricCluster
                   )}
                 >
                   <div
                     className={cn(
-                      tileLayout
-                        ? budgetInsightCardRecipes.tileValue
-                        : budgetInsightCardRecipes.value
+                      tileLayout ? insightCardRecipes.tileValue : insightCardRecipes.value
                     )}
                   >
                     {value}
                   </div>
-                  {suffix ? (
-                    <div className={cn(budgetInsightCardRecipes.suffix)}>{suffix}</div>
-                  ) : null}
+                  {suffix ? <div className={cn(insightCardRecipes.suffix)}>{suffix}</div> : null}
                 </div>
               </motion.div>
             )}

@@ -2,19 +2,19 @@ import { Info } from 'lucide-react';
 import { cn } from '@/ui/primitives';
 import { controlIconWell, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
-export const budgetInsightQuestionRecipes = {
+export const insightQuestionRecipes = {
   row: 'flex items-center gap-2',
   icon: cn(...controlIconWell.sm, uiTextRecipes.subtle, '[&_svg]:stroke-[2]'),
   text: cn(uiTypographyRecipes.label, uiTextRecipes.subtle, 'min-w-0'),
 } as const;
 
-export function BudgetInsightQuestion({ question }: { question: string }) {
+export function InsightQuestion({ question }: { question: string }) {
   return (
-    <div className={cn(budgetInsightQuestionRecipes.row)} data-testid="budget-insight-question">
-      <span className={cn(budgetInsightQuestionRecipes.icon)} aria-hidden="true">
+    <div className={cn(insightQuestionRecipes.row)} data-testid="insight-question">
+      <span className={cn(insightQuestionRecipes.icon)} aria-hidden="true">
         <Info />
       </span>
-      <p className={cn(budgetInsightQuestionRecipes.text)}>{question}</p>
+      <p className={cn(insightQuestionRecipes.text)}>{question}</p>
     </div>
   );
 }
