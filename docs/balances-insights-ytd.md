@@ -119,6 +119,13 @@ The `/api/analytics/cash-flow` endpoint already returns per-month `{ income, exp
 
 **Acceptance criteria**
 
-- [ ] All new tests pass with `npm --prefix frontend test`.
-- [ ] No existing tests are broken.
-- [ ] `npm --prefix frontend run typecheck` passes.
+- [x] All new tests pass with `npm --prefix frontend test`.
+- [x] No existing tests are broken.
+- [x] `npm --prefix frontend run typecheck` passes.
+
+**TDD log**
+
+- Utility tests added in Phase 1 (`AnalyticsService.ytd.test.ts`, 4 cases).
+- Component tests added in Phase 2 (`BalancesInsightsPanel.test.tsx`, 3 YTD cases).
+- Integration tests added in Phase 3 (`BalancesOverview.test.tsx`, 2 cases).
+- Verify: `npm --prefix frontend test` — 999 pass, 0 fail; typecheck clean.
