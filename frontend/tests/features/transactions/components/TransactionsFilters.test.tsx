@@ -62,6 +62,10 @@ describe('TransactionsFilters', () => {
     expect(foodButton.className).toContain('rounded-full');
     expect(foodButton.className).toContain('cursor-pointer');
     expect(foodButton.className).toContain('py-0');
+    expect(foodButton.className).toContain('text-sky-500');
+    expect(foodButton.className).toContain('!bg-sky-500/20');
+    expect(foodButton.className).not.toContain('linear-gradient');
+    expect(foodButton.className).not.toContain('text-slate-800');
     expect(foodButton.className).not.toContain('h-11');
     expect(foodButton).toHaveAttribute('aria-pressed', 'false');
 
@@ -99,6 +103,9 @@ describe('TransactionsFilters', () => {
     expect(screen.getByRole('button', { name: 'Entertainment' })).toHaveAttribute(
       'aria-pressed',
       'true'
+    );
+    expect(screen.getByRole('button', { name: 'Entertainment' }).className).toContain(
+      'ring-emerald-400'
     );
   });
 

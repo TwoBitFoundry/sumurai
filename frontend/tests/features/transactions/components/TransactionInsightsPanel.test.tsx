@@ -43,6 +43,9 @@ describe('TransactionInsightsPanel', () => {
     render(<TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="k1" />);
     expect(screen.getByTestId('transaction-insights-shell')).toBeInTheDocument();
     expect(screen.getByText('All transactions')).toBeInTheDocument();
+    expect(screen.getByTestId('transaction-insights-shell').className).toContain(
+      'border-emerald-300'
+    );
   });
 
   it('shows Loading… indicator when isLoading is true', () => {
@@ -61,6 +64,60 @@ describe('TransactionInsightsPanel', () => {
     expect(screen.getByText('Typical')).toBeInTheDocument();
   });
 
+  it('renders insight currency as signed outflows with expense styling', () => {
+    render(<TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="k1" />);
+    const volumeAmount = screen.getByText('-$1,200.00');
+    const typicalAmount = screen.getByText('-$45.50');
+    expect(volumeAmount.className).toContain('text-red-600');
+    expect(typicalAmount.className).toContain('text-red-600');
+  });
+
+  it('renders zero volume as unsigned $0.00 with muted styling', () => {
+    const insights = makeInsights({
+      card1: {
+        value: 0,
+        format: 'currency',
+        secondary: 0,
+        comparison: null,
+        share: null,
+        label: null,
+      },
+      card2: {
+        value: 0,
+        format: 'currency',
+        secondary: null,
+        comparison: null,
+        share: null,
+        label: null,
+      },
+    });
+    render(<TransactionInsightsPanel insights={insights} isLoading={false} resetKey="k1" />);
+    const zeroAmounts = screen.getAllByText('$0.00');
+    expect(zeroAmounts).toHaveLength(2);
+    for (const amount of zeroAmounts) {
+      expect(amount.className).toContain('text-slate-600');
+      expect(amount.className).not.toContain('text-red-600');
+      expect(amount.className).not.toContain('text-emerald-600');
+    }
+    expect(screen.queryByText('-$0.00')).not.toBeInTheDocument();
+  });
+
+  it('renders net income insight totals with income styling', () => {
+    const insights = makeInsights({
+      card1: {
+        value: -500,
+        format: 'currency',
+        secondary: 2,
+        comparison: null,
+        share: null,
+        label: null,
+      },
+    });
+    render(<TransactionInsightsPanel insights={insights} isLoading={false} resetKey="k1" />);
+    const amount = screen.getByText('$500.00');
+    expect(amount.className).toContain('text-emerald-600');
+  });
+
   it('renders Card 1 title Category Total for state B', () => {
     render(
       <TransactionInsightsPanel
@@ -71,6 +128,12 @@ describe('TransactionInsightsPanel', () => {
     );
     expect(screen.getByText('Category Total')).toBeInTheDocument();
     expect(screen.getByText('Category filter')).toBeInTheDocument();
+    expect(screen.getByTestId('transaction-insights-shell').className).toContain(
+      'border-emerald-300'
+    );
+    expect(
+      screen.getByTestId('insight-card-category-total').querySelector('svg')?.parentElement
+    ).toHaveClass('text-emerald-500');
   });
 
   it('renders state C label Merchant view', () => {
@@ -235,6 +298,9 @@ describe('TransactionInsightsPanel', () => {
     render(<TransactionInsightsPanel insights={insights} isLoading={false} resetKey="k1" />);
     expect(screen.getByText('1.8×')).toBeInTheDocument();
     expect(screen.getByText('vs')).toBeInTheDocument();
+    const comparisonAmount = screen.getByText('-$25.00');
+    expect(comparisonAmount.className).toContain('text-red-600');
+    expect(comparisonAmount.className).not.toContain('font-caption');
   });
 
   it('renders the correct state label for Full filter (triple)', () => {

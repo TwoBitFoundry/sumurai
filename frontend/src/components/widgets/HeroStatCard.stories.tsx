@@ -36,7 +36,7 @@ export const LastSync: Story = {
 export const LongFooter: Story = {
   args: {
     index: 2,
-    title: 'Accounts tracked',
+    title: 'Accounts',
     value: 3,
     suffix: 'accounts',
     subtext: 'Balances stay in sync automatically',

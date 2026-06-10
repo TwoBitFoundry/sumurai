@@ -1,15 +1,11 @@
 import { Activity, BarChart3, Layers } from 'lucide-react';
-import { type CSSProperties, useState } from 'react';
+import { useState } from 'react';
 import { InsightCard } from '@/components/widgets/InsightCard';
+import { InsightsPanel } from '@/components/widgets/InsightsPanel';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import type { ContextualInsightsResponse, InsightMetric, InsightState } from '@/types/api';
 import { cn } from '@/ui/primitives';
-import {
-  text as semanticTextRecipes,
-  border as uiBorderRecipes,
-  font as uiTypographyRecipes,
-} from '@/ui/recipes';
-import { heroAccents } from '@/ui/tokens';
+import { text as semanticTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { fmtUSD } from '../../../utils/format';
 import { INSIGHT_COPY } from '../copy/insightCopy';
 
@@ -47,12 +43,36 @@ function fmtDays(v: number): string {
   return d === 1 ? '1 day' : `${d} days`;
 }
 
+function signedInsightAmount(value: number): number {
+  const signed = -value;
+  return signed === 0 ? 0 : signed;
+}
+
+function insightAmountClassName(signed: number): string {
+  if (signed < 0) {
+    return semanticTextRecipes.danger;
+  }
+  if (signed > 0) {
+    return semanticTextRecipes.success;
+  }
+  return semanticTextRecipes.muted;
+}
+
+function InsightCurrency({ value, className }: { value: number; className?: string }) {
+  const signed = signedInsightAmount(value);
+  return (
+    <span className={cn('justify-self-start', insightAmountClassName(signed), className)}>
+      {fmtUSD(signed)}
+    </span>
+  );
+}
+
 function Card1Value({ metric }: { metric: InsightMetric }) {
   const spent = metric.value ?? 0;
   const count = metric.secondary ?? 0;
   return (
     <>
-      <span className="justify-self-start">{fmtUSD(spent)}</span>
+      <InsightCurrency value={spent} />
       <span
         className={cn(
           uiTypographyRecipes.caption,
@@ -77,7 +97,7 @@ function Card2Value({ metric }: { metric: InsightMetric }) {
   if (v == null) {
     return <span className="justify-self-start col-span-3">—</span>;
   }
-  return <span className="justify-self-start col-span-3">{fmtUSD(v)}</span>;
+  return <InsightCurrency value={v} className="col-span-3" />;
 }
 
 function Card3Value({ metric }: { metric: InsightMetric }) {
@@ -131,11 +151,7 @@ function Card3Value({ metric }: { metric: InsightMetric }) {
             >
               vs
             </span>
-            <span className="justify-self-start">
-              <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.body)}>
-                {fmtUSD(comparison)}
-              </span>
-            </span>
+            <InsightCurrency value={comparison} />
           </>
         ) : (
           <>
@@ -184,7 +200,7 @@ function Card3Value({ metric }: { metric: InsightMetric }) {
   if (value == null) {
     return <span className="justify-self-start col-span-3">—</span>;
   }
-  return <span className="justify-self-start col-span-3">{fmtUSD(value)}</span>;
+  return <InsightCurrency value={value} className="col-span-3" />;
 }
 
 export function TransactionInsightsPanel({
@@ -202,9 +218,9 @@ export function TransactionInsightsPanel({
   }
 
   const toggle = (id: string) => setFlipped((prev) => ({ ...prev, [id]: !prev[id] }));
-  const shellAccent = heroAccents.sky;
 
   const state: InsightState = insights?.state ?? 'a';
+  const cardAccent = 'emerald' as const;
   const copy = INSIGHT_COPY[state];
   const stateLabel = STATE_LABEL[state];
 
@@ -234,119 +250,51 @@ export function TransactionInsightsPanel({
     ) : undefined;
 
   return (
-    <section
-      data-testid="transaction-insights-shell"
-      className={cn(
-        'relative',
-        'overflow-hidden',
-        'rounded-[0.75rem]',
-        'border-2',
-        shellAccent.border,
-        shellAccent.borderDark,
-        'bg-white/80',
-        'transition-colors',
-        'duration-200',
-        'dark:bg-[#111a2f]/70'
-      )}
+    <InsightsPanel
+      testId="transaction-insights-shell"
+      accent="emerald"
+      headerLabel={stateLabel}
+      isLoading={isLoading}
     >
-      <div
-        className={cn(
-          'hero-stat-card__gradient',
-          'pointer-events-none',
-          'absolute',
-          'inset-0',
-          'rounded-[inherit]',
-          'opacity-0',
-          'transition-opacity',
-          'duration-300',
-          'group-hover:opacity-100'
-        )}
-        style={{
-          backgroundImage: `linear-gradient(135deg, ${shellAccent.gradFrom}33, ${shellAccent.gradVia}1f, transparent 70%)`,
-        }}
+      <InsightCard
+        title={copy.card1.title}
+        icon={<BarChart3 />}
+        value={<Card1Value metric={card1} />}
+        suffix={card1ShareSuffix}
+        question={copy.card1.question}
+        accent={cardAccent}
+        flipped={!!flipped.card1}
+        onToggle={() => toggle('card1')}
+        outlined={false}
+        tileLayout={!isMobile}
+        subgridRow={isMobile}
       />
-      <div
-        className={cn(
-          'pointer-events-none',
-          'absolute',
-          'inset-[2px]',
-          'rounded-[calc(0.75rem-2px)]'
-        )}
-      >
-        <div
-          className={cn('absolute', 'inset-0', 'rounded-[inherit]', 'ring-2')}
-          style={{ '--tw-ring-color': `${shellAccent.ringHex}66` } as CSSProperties}
+      <InsightCard
+        title={copy.card2.title}
+        icon={<Activity />}
+        value={<Card2Value metric={card2} />}
+        question={copy.card2.question}
+        accent={cardAccent}
+        flipped={!!flipped.card2}
+        onToggle={() => toggle('card2')}
+        outlined={false}
+        tileLayout={!isMobile}
+        subgridRow={isMobile}
+      />
+      {card3 != null ? (
+        <InsightCard
+          title={copy.card3.title}
+          icon={<Layers />}
+          value={<Card3Value metric={card3} />}
+          question={copy.card3.question}
+          accent={cardAccent}
+          flipped={!!flipped.card3}
+          onToggle={() => toggle('card3')}
+          outlined={false}
+          tileLayout={!isMobile}
+          subgridRow={isMobile}
         />
-      </div>
-
-      <div className={cn('relative', 'z-10', 'px-3', 'py-2', 'md:px-4', 'md:py-3')}>
-        <div
-          className={cn(
-            'mb-2',
-            'flex',
-            'items-center',
-            'justify-between',
-            'gap-2',
-            uiTypographyRecipes.label,
-            semanticTextRecipes.subtle
-          )}
-        >
-          <span>{stateLabel}</span>
-          {isLoading ? (
-            <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.muted)}>
-              Loading…
-            </span>
-          ) : null}
-        </div>
-        <div className={cn('border-b', ...uiBorderRecipes.divider, 'mb-2')} />
-        <div
-          className={cn(
-            isMobile
-              ? 'grid grid-cols-[auto_1fr_auto_auto_auto] items-baseline gap-x-2 gap-y-1.5'
-              : 'flex flex-row items-start gap-3'
-          )}
-        >
-          <InsightCard
-            title={copy.card1.title}
-            icon={<BarChart3 />}
-            value={<Card1Value metric={card1} />}
-            suffix={card1ShareSuffix}
-            question={copy.card1.question}
-            accent="slate"
-            flipped={!!flipped.card1}
-            onToggle={() => toggle('card1')}
-            outlined={false}
-            tileLayout={!isMobile}
-            subgridRow={isMobile}
-          />
-          <InsightCard
-            title={copy.card2.title}
-            icon={<Activity />}
-            value={<Card2Value metric={card2} />}
-            question={copy.card2.question}
-            accent="slate"
-            flipped={!!flipped.card2}
-            onToggle={() => toggle('card2')}
-            outlined={false}
-            tileLayout={!isMobile}
-            subgridRow={isMobile}
-          />
-          {card3 != null ? (
-            <InsightCard
-              title={copy.card3.title}
-              icon={<Layers />}
-              value={<Card3Value metric={card3} />}
-              question={copy.card3.question}
-              accent="slate"
-              flipped={!!flipped.card3}
-              onToggle={() => toggle('card3')}
-              outlined={false}
-              tileLayout={!isMobile}
-              subgridRow={isMobile}
-            />
-          ) : null}
-        </div>
-      </div>
-    </section>
+      ) : null}
+    </InsightsPanel>
   );
 }

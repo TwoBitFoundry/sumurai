@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { expect, within } from 'storybook/test';
 import { AccountsSummaryStats } from './AccountsSummaryStats';
 
 const meta = {
@@ -13,9 +12,7 @@ const meta = {
       accounts: 5,
       latestSync: '2026-05-01T12:00:00.000Z',
     },
-    syncingAll: false,
     lastSyncValue: '12m ago',
-    lastSyncDetail: 'Balances refreshed',
   },
 } satisfies Meta<typeof AccountsSummaryStats>;
 
@@ -27,8 +24,18 @@ export const Healthy: Story = {};
 
 export const SyncInProgress: Story = {
   args: {
-    syncingAll: true,
-    lastSyncValue: '…',
-    lastSyncDetail: 'Sync in progress',
+    lastSyncValue: 'Syncing...',
+  },
+};
+
+export const NoConnections: Story = {
+  args: {
+    summary: {
+      institutions: 0,
+      connectedInstitutions: 0,
+      accounts: 0,
+      latestSync: null,
+    },
+    lastSyncValue: 'Never',
   },
 };

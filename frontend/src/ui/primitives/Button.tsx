@@ -64,9 +64,8 @@ export const buttonRecipes = {
   ],
   secondary: [
     ...buttonChrome.secondary,
-    ...semanticSurfaces.mutedChip,
+    ...semanticSurfaces.card,
     semanticTextRecipes.muted,
-    ...semanticEffects.glassShadow,
     'hover:-translate-y-0.5',
     'hover:border-[var(--color-border-default)] hover:bg-[var(--color-surface-hover-row)] hover:text-slate-900',
     'hover:shadow-[0_14px_32px_-18px_var(--color-effect-accent-hover)]',
@@ -95,10 +94,6 @@ export const buttonRecipes = {
     'dark:hover:border-[var(--color-border-default)] dark:hover:text-white',
   ],
   filterChip: [
-    'border',
-    'border-transparent',
-    'bg-transparent',
-    'shadow-none',
     'backdrop-blur-sm',
     'hover:-translate-y-[2px]',
     'hover:shadow-lg',

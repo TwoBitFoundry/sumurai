@@ -133,7 +133,12 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
               </IconButton>
               <div className={cn('flex', 'flex-col', 'gap-0.5')}>
                 <span className={accountMaskClasses}>••{account.mask}</span>
-                <span className={transactionCountClasses}>{account.transactions ?? 0}×</span>
+                <span className={transactionCountClasses}>
+                  {account.transactions ?? 0}
+                  <span className={cn(uiTypographyRecipes.caption, uiTextRecipes.body, 'ml-0.5')}>
+                    tx
+                  </span>
+                </span>
               </div>
               <div className={cn('ml-auto', balanceColor)}>{balanceText}</div>
             </div>

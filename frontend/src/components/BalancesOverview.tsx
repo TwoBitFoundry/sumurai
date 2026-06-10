@@ -1,10 +1,11 @@
-import { CircleDollarSign, Landmark, RefreshCcw } from 'lucide-react';
+import { Landmark, RefreshCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, XAxis, YAxis } from 'recharts';
 import { useTheme } from '../context/ThemeContext';
 import { ACCOUNT_GROUP_LABELS } from '../domain/accountCategories';
 import { BalancesChartXAxisTick } from '../features/analytics/components/BalancesChartXAxisTick';
 import { BalancesChartYAxisTick } from '../features/analytics/components/BalancesChartYAxisTick';
+import { BalancesInsightsPanel } from '../features/analytics/components/BalancesInsightsPanel';
 import {
   ChartTooltipFadeHost,
   ChartTooltipShell,
@@ -35,9 +36,7 @@ import {
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '../ui/recipes';
-import { AccountGroupIcon } from './AccountGroupIcon';
-import { Amount, fmtUSD } from './Amount';
-import HeroStatCard from './widgets/HeroStatCard';
+import { fmtUSD } from './Amount';
 
 const dashboardSummaryShellLoading = [
   `h-16 ${uiRadiusRecipes.standard} border`,
@@ -221,70 +220,6 @@ export function BalancesOverview() {
     [chartData]
   );
 
-  const overviewCards = useMemo(
-    () => [
-      {
-        key: 'net',
-        title: 'Net',
-        accent: 'violet' as const,
-        icon: <CircleDollarSign />,
-        value: (
-          <span data-testid="overall-net">
-            <Amount
-              value={overall?.net ?? 0}
-              className={cn('text-violet-500', 'dark:text-violet-300')}
-            />
-          </span>
-        ),
-      },
-      {
-        key: 'cash',
-        title: ACCOUNT_GROUP_LABELS.cash,
-        accent: 'emerald' as const,
-        icon: <AccountGroupIcon group="cash" />,
-        value: (
-          <span data-testid="overall-cash" className={cn(uiStatusRecipes.success.text)}>
-            {fmtUSD(overall?.cash ?? 0)}
-          </span>
-        ),
-      },
-      {
-        key: 'investments',
-        title: ACCOUNT_GROUP_LABELS.investments,
-        accent: 'sky' as const,
-        icon: <AccountGroupIcon group="investments" />,
-        value: (
-          <span data-testid="overall-investments" className={cn(uiStatusRecipes.info.text)}>
-            {fmtUSD(overall?.investments ?? 0)}
-          </span>
-        ),
-      },
-      {
-        key: 'credit',
-        title: ACCOUNT_GROUP_LABELS.credit,
-        accent: 'rose' as const,
-        icon: <AccountGroupIcon group="credit" />,
-        value: (
-          <span data-testid="overall-credit" className={cn(uiStatusRecipes.danger.text)}>
-            {fmtUSD(overall?.credit ?? 0)}
-          </span>
-        ),
-      },
-      {
-        key: 'loan',
-        title: ACCOUNT_GROUP_LABELS.loans,
-        accent: 'amber' as const,
-        icon: <AccountGroupIcon group="loans" />,
-        value: (
-          <span data-testid="overall-loan" className={cn(uiStatusRecipes.warning.text)}>
-            {fmtUSD(overall?.loan ?? 0)}
-          </span>
-        ),
-      },
-    ],
-    [overall?.cash, overall?.credit, overall?.investments, overall?.loan, overall?.net]
-  );
-
   return (
     <div className="space-y-4">
       {!loading && refreshing ? (
@@ -299,17 +234,8 @@ export function BalancesOverview() {
       {loading && (
         <div
           data-testid="balances-loading"
-          className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-5')}
-        >
-          {[1, 2, 3, 4, 5].map((id) => {
-            return (
-              <div
-                key={id}
-                className={cn(dashboardSummaryShellLoading, id === 1 && 'col-span-2 lg:col-span-1')}
-              />
-            );
-          })}
-        </div>
+          className={cn(dashboardSummaryShellLoading, 'h-16', 'w-full')}
+        />
       )}
 
       {!loading && error && (
@@ -327,20 +253,9 @@ export function BalancesOverview() {
       )}
 
       <div className={cn('space-y-5')}>
-        <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-5')}>
-          {overviewCards.map((card) => (
-            <HeroStatCard
-              key={card.key}
-              title={card.title}
-              value={card.value}
-              icon={card.icon}
-              accent={card.accent}
-              className={cn('h-full', card.key === 'net' && 'col-span-2 lg:col-span-1')}
-              minHeightClassName="min-h-0"
-              layout={card.key === 'net' ? 'row' : 'row-tablet'}
-            />
-          ))}
-        </div>
+        {!loading && overall ? (
+          <BalancesInsightsPanel overall={overall} resetKey={data?.asOf ?? 'default'} />
+        ) : null}
 
         <div
           ref={chartContainerRef}

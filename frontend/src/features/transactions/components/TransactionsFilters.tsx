@@ -187,7 +187,8 @@ export const TransactionsFilters: React.FC<Props> = ({
                         transactionsRowRecipes.categoryFilterPill,
                         isCustom &&
                           'pr-10 hover:translate-y-0 hover:shadow-none group-hover:shadow-lg',
-                        theme.tag,
+                        theme.inlineLabel,
+                        isSelected ? theme.chipSurfaceSelected : theme.chipSurface,
                         isSelected
                           ? ['ring-2', theme.ring]
                           : 'ring-1 ring-white/60 dark:ring-white/10'

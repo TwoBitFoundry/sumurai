@@ -28,6 +28,8 @@ describe('TopMerchantsList', () => {
     expect(grid).toHaveClass('grid-cols-1');
     expect(grid).toHaveClass('md:grid-cols-2');
     expect(screen.getByText('Corner Market')).toBeInTheDocument();
-    expect(screen.getByText('14×')).toBeInTheDocument();
+    expect(
+      screen.getByText('Corner Market').closest('div[class*="grid-cols-[minmax"]')
+    ).toHaveTextContent('14tx');
   });
 });

@@ -1,6 +1,10 @@
 import { Building2, Clock, CreditCard } from 'lucide-react';
+import { useState } from 'react';
+import { InsightCard } from '@/components/widgets/InsightCard';
+import { InsightsPanel } from '@/components/widgets/InsightsPanel';
+import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import { cn } from '@/ui/primitives';
-import HeroStatCard from '../../../components/widgets/HeroStatCard';
+import { text as semanticTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
 interface AccountsSummaryStatsProps {
   summary: {
@@ -9,56 +13,78 @@ interface AccountsSummaryStatsProps {
     accounts: number;
     latestSync: string | null;
   };
-  syncingAll: boolean;
   lastSyncValue: string;
-  lastSyncDetail: string;
 }
 
-export const AccountsSummaryStats = ({
-  summary,
-  syncingAll,
-  lastSyncValue,
-  lastSyncDetail,
-}: AccountsSummaryStatsProps) => {
-  const pendingInstitutions = Math.max(0, summary.institutions - summary.connectedInstitutions);
+export const AccountsSummaryStats = ({ summary, lastSyncValue }: AccountsSummaryStatsProps) => {
+  const [flipped, setFlipped] = useState<Record<string, boolean>>({});
+  const { isMobile } = useViewportBreakpoint();
+  const toggle = (id: string) => setFlipped((prev) => ({ ...prev, [id]: !prev[id] }));
   const hasConnections = summary.institutions > 0;
+  const cardAccent = 'violet' as const;
 
   return (
-    <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-3')}>
-      <HeroStatCard
-        index={1}
-        title="Active institutions"
+    <InsightsPanel testId="accounts-summary-shell" accent="violet" headerLabel="Account summary">
+      <InsightCard
+        title="Institutions"
         icon={<Building2 />}
-        value={hasConnections ? summary.connectedInstitutions : 0}
-        suffix={`out of ${summary.institutions}`}
-        subtext={
-          hasConnections
-            ? summary.connectedInstitutions === summary.institutions
-              ? 'All connections healthy'
-              : `${pendingInstitutions} ${pendingInstitutions === 1 ? 'needs' : 'need'} attention`
-            : 'Link your first institution'
+        value={
+          <>
+            <span className="justify-self-start">
+              {hasConnections ? summary.connectedInstitutions : 0}
+            </span>
+            <span
+              className={cn(
+                uiTypographyRecipes.caption,
+                semanticTextRecipes.body,
+                'justify-self-center'
+              )}
+            >
+              out of
+            </span>
+            <span className="justify-self-start">{summary.institutions}</span>
+          </>
         }
+        question="How many of your linked institutions are currently connected?"
+        accent={cardAccent}
+        flipped={!!flipped.institutions}
+        onToggle={() => toggle('institutions')}
+        outlined={false}
+        tileLayout={!isMobile}
+        subgridRow={isMobile}
       />
-
-      <HeroStatCard
-        index={2}
-        title="Accounts tracked"
+      <InsightCard
+        title="Accounts"
         icon={<CreditCard />}
-        value={summary.accounts}
-        suffix={summary.accounts === 1 ? 'account' : 'accounts'}
-        subtext={
-          summary.accounts ? 'Balances stay in sync automatically' : 'Connect to start syncing'
+        value={
+          <span className="justify-self-start col-span-3">
+            {summary.accounts}
+            <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.body, 'ml-0.5')}>
+              {summary.accounts === 1 ? 'account' : 'accounts'}
+            </span>
+          </span>
         }
+        question="How many accounts are you tracking across linked institutions?"
+        accent={cardAccent}
+        flipped={!!flipped.accounts}
+        onToggle={() => toggle('accounts')}
+        outlined={false}
+        tileLayout={!isMobile}
+        subgridRow={isMobile}
       />
-
-      <HeroStatCard
-        index={3}
+      <InsightCard
         title="Last sync"
         icon={<Clock />}
-        value={lastSyncValue}
-        subtext={syncingAll ? 'Sync in progress' : lastSyncDetail}
+        value={<span className="justify-self-start col-span-3">{lastSyncValue}</span>}
+        question="When did your accounts last sync with the provider?"
+        accent={cardAccent}
+        flipped={!!flipped['last-sync']}
+        onToggle={() => toggle('last-sync')}
+        outlined={false}
+        tileLayout={!isMobile}
+        subgridRow={isMobile}
       />
-    </div>
+    </InsightsPanel>
   );
 };
 

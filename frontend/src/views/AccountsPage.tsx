@@ -63,20 +63,6 @@ const formatRelativeTime = (iso: string): string => {
   return `${Math.round(diff / year)}y ago`;
 };
 
-const formatAbsoluteTime = (iso: string): string => {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) {
-    return 'Unknown timestamp';
-  }
-
-  return date.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-};
-
 interface AccountsPageProps {
   onError?: (message: string | null) => void;
 }
@@ -673,9 +659,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         : summary.institutions > 0
           ? 'Just now'
           : 'Awaiting first ledger.';
-  const lastSyncDetail = summary.latestSync
-    ? `Refreshed ${formatAbsoluteTime(summary.latestSync)}`
-    : '';
   const actions = (
     <div className={cn('inline-flex', 'max-w-full', 'w-full', 'flex-col', 'gap-2', 'lg:w-auto')}>
       <div
@@ -746,14 +729,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     </div>
   );
 
-  const statsGrid = (
-    <AccountsSummaryStats
-      summary={summary}
-      syncingAll={syncingAll}
-      lastSyncValue={lastSyncValue}
-      lastSyncDetail={lastSyncDetail}
-    />
-  );
+  const statsGrid = <AccountsSummaryStats summary={summary} lastSyncValue={lastSyncValue} />;
 
   if (needsProviderPick) {
     return (

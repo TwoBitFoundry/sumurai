@@ -67,7 +67,7 @@ export const TransactionsMobileList: React.FC<Props> = ({
       <motion.ul
         key={animationKey}
         data-testid="transactions-mobile-list"
-        className={cn('list-none')}
+        className="list-none px-1"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -12 }}
@@ -78,6 +78,7 @@ export const TransactionsMobileList: React.FC<Props> = ({
           const metaTitle = accountLabel
             ? `${formatMobileDate(transaction.date)} · ${accountLabel}`
             : formatMobileDate(transaction.date);
+          const merchantDisplay = transaction.name || '-';
 
           return (
             <li
@@ -86,64 +87,55 @@ export const TransactionsMobileList: React.FC<Props> = ({
                 transactionsRowRecipes.shell,
                 index % 2 ? transactionsRowRecipes.odd : transactionsRowRecipes.even,
                 'px-3',
-                'py-2.5',
-                'touch-manipulation'
+                'py-2.5'
               )}
             >
-              <div
-                className={cn(
-                  'flex',
-                  'min-w-0',
-                  'items-baseline',
-                  'justify-between',
-                  'gap-2',
-                  'overflow-hidden'
-                )}
-              >
-                <p className={cn('flex-1', 'min-w-0')}>
-                  <TransactionMerchantLabel
-                    merchantName={transaction.name}
-                    originalMerchantName={transaction.originalMerchantName}
-                    className={cn(
-                      'block',
-                      transactionsRowRecipes.merchantEllipsis,
-                      uiTypographyRecipes.bodyStrong,
-                      'leading-snug',
-                      uiTextRecipes.primary
-                    )}
-                  />
-                </p>
-                <p
-                  className={cn(
-                    'shrink-0',
-                    'tabular-nums',
-                    uiTypographyRecipes.bodyStrong,
-                    'leading-snug',
-                    amountClassName(transaction.amount)
-                  )}
-                >
-                  {fmtUSD(transaction.amount)}
-                </p>
-              </div>
-              <div className={cn('mt-1', 'flex', 'min-w-0', 'items-center', 'gap-2')}>
-                <div className={cn('min-w-0', 'flex-1')}>
-                  <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                    {formatMobileDate(transaction.date)}
-                  </p>
-                  {accountLabel ? (
+              <TransactionMerchantLabel
+                merchantName={transaction.name}
+                originalMerchantName={transaction.originalMerchantName}
+                surfaceContent={
+                  <>
                     <p
                       className={cn(
-                        'min-w-0',
-                        'truncate',
-                        uiTypographyRecipes.caption,
-                        uiTextRecipes.muted
+                        transactionsRowRecipes.mobileMerchantLine,
+                        transactionsRowRecipes.merchantEllipsis,
+                        uiTypographyRecipes.cardTitle,
+                        uiTextRecipes.primary
                       )}
-                      title={metaTitle}
                     >
-                      {accountLabel}
+                      {merchantDisplay}
                     </p>
-                  ) : null}
-                </div>
+                    <div className={cn(transactionsRowRecipes.mobileMetaBlock)}>
+                      <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+                        {formatMobileDate(transaction.date)}
+                      </p>
+                      {accountLabel ? (
+                        <p
+                          className={cn(
+                            'min-w-0',
+                            'truncate',
+                            uiTypographyRecipes.caption,
+                            uiTextRecipes.muted
+                          )}
+                          title={metaTitle}
+                        >
+                          {accountLabel}
+                        </p>
+                      ) : null}
+                    </div>
+                  </>
+                }
+              />
+              <p
+                className={cn(
+                  transactionsRowRecipes.mobileAmount,
+                  uiTypographyRecipes.cardTitle,
+                  amountClassName(transaction.amount)
+                )}
+              >
+                {fmtUSD(transaction.amount)}
+              </p>
+              <div className={cn(transactionsRowRecipes.mobileCategoryAnchor)}>
                 <InlineCategoryCell transaction={transaction} dense={isMobile} />
               </div>
             </li>

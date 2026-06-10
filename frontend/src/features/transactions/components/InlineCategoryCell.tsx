@@ -51,18 +51,14 @@ export function InlineCategoryCell({ transaction, dense: _dense = false }: Props
       <Button
         ref={anchorRef}
         type="button"
-        variant="filterChip"
+        variant="tab"
         size="sm"
-        shape="pill"
         aria-label={`Edit category: ${label}`}
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
         className={cn(
           transactionsRowRecipes.categoryPill,
-          themeTagClasses(categoryName, isCustom, accentIndexByName),
-          isCustom
-            ? 'ring-2 ring-[color:color-mix(in_srgb,var(--color-border-focus-active)_70%,white)]'
-            : 'ring-1 ring-white/60 dark:ring-white/10'
+          themeInlineLabelClasses(categoryName, accentIndexByName)
         )}
       >
         <span className={cn(transactionsRowRecipes.categoryLabel)}>{label}</span>
@@ -92,11 +88,10 @@ export function InlineCategoryCell({ transaction, dense: _dense = false }: Props
 
 export default InlineCategoryCell;
 
-function themeTagClasses(
+function themeInlineLabelClasses(
   categoryName: string,
-  _isCustom: boolean,
   accentIndexByName: ReadonlyMap<string, number>
 ): string {
   const theme = getTagThemeForCategory(categoryName, accentIndexByName);
-  return theme.tag;
+  return theme.inlineLabel;
 }

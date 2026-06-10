@@ -79,7 +79,7 @@ describe('shared responsive layout surfaces', () => {
     expect(searchWrapper).not.toHaveClass('sm:w-64');
   });
 
-  it('keeps account summary stats in two columns until the lg tier', () => {
+  it('lays out account summary stats in the insights panel format on desktop', () => {
     const { container } = render(
       <AccountsSummaryStats
         summary={{
@@ -88,15 +88,13 @@ describe('shared responsive layout surfaces', () => {
           accounts: 3,
           latestSync: null,
         }}
-        syncingAll={false}
         lastSyncValue="5d ago"
-        lastSyncDetail="Refreshed recently"
       />
     );
 
-    expect(container.firstElementChild).toHaveClass('grid-cols-2');
-    expect(container.firstElementChild).toHaveClass('lg:grid-cols-3');
-    expect(container.firstElementChild).not.toHaveClass('md:grid-cols-3');
+    const shell = screen.getByTestId('accounts-summary-shell');
+    expect(shell).toBeInTheDocument();
+    expect(container.querySelector('.flex.flex-row')).toBeTruthy();
   });
 
   it('matches hero card radius in account rows', () => {
