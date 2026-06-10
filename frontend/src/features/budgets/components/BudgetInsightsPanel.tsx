@@ -62,130 +62,141 @@ export function BudgetInsightsPanel({
     month
   );
 
-  const bodyContent = insights.hasActivity ? (
-    <>
-      <InsightCard
-        title="Runway"
-        icon={<Flame />}
-        value={
-          insights.dailyPacing != null ? (
+  const bodyContent = (() => {
+    if (!insights.hasActivity) {
+      return (
+        <div
+          data-testid="budget-insights-empty"
+          className={cn('py-4', 'text-center', uiTypographyRecipes.body, semanticTextRecipes.muted)}
+        >
+          No budget activity recorded for {fmtMonthName(month)} yet.
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <InsightCard
+          title="Runway"
+          icon={<Flame />}
+          value={
+            insights.dailyPacing != null ? (
+              <>
+                <span className="justify-self-start">
+                  {fmtUSD(insights.dailyPacing)}
+                  <span
+                    className={cn(uiTypographyRecipes.caption, semanticTextRecipes.body, 'ml-1')}
+                  >
+                    d
+                  </span>
+                </span>
+                {insights.runoutDate ? (
+                  <>
+                    <span
+                      className={cn(
+                        uiTypographyRecipes.caption,
+                        semanticTextRecipes.body,
+                        'justify-self-center'
+                      )}
+                    >
+                      until
+                    </span>
+                    <span className="justify-self-start">{fmtRunoutDate(insights.runoutDate)}</span>
+                  </>
+                ) : (
+                  <>
+                    <span />
+                    <span />
+                  </>
+                )}
+              </>
+            ) : (
+              '—'
+            )
+          }
+          question="How much am I spending per day, and when will I run out at this pace?"
+          accent="slate"
+          flipped={!!flipped.pacing}
+          onToggle={() => toggle('pacing')}
+          outlined={false}
+          tileLayout={!isMobile}
+          tileAlign="start"
+          subgridRow={isMobile}
+        />
+        <InsightCard
+          title="Free Spend"
+          icon={<Wallet />}
+          value={
+            <>
+              <span
+                className={cn(
+                  'justify-self-start',
+                  insights.freeSpend < 0 && semanticTextRecipes.danger
+                )}
+              >
+                {fmtUSD(insights.freeSpend)}
+              </span>
+              <span
+                className={cn(
+                  uiTypographyRecipes.caption,
+                  semanticTextRecipes.body,
+                  'justify-self-center'
+                )}
+              >
+                /
+              </span>
+              <span className="justify-self-start">{fmtUSD(insights.income)}</span>
+            </>
+          }
+          question="How much income is left after planned budgets and overages?"
+          accent="slate"
+          flipped={!!flipped['free-spend']}
+          onToggle={() => toggle('free-spend')}
+          outlined={false}
+          tileLayout={!isMobile}
+          tileAlign="center"
+          subgridRow={isMobile}
+        />
+        <InsightCard
+          title="Sub Costs"
+          icon={<Repeat2 />}
+          value={
             <>
               <span className="justify-self-start">
-                {fmtUSD(insights.dailyPacing)}
+                {fmtUSD(monthlyTotal)}
                 <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.body, 'ml-1')}>
-                  d
+                  m
                 </span>
               </span>
-              {insights.runoutDate ? (
-                <>
-                  <span
-                    className={cn(
-                      uiTypographyRecipes.caption,
-                      semanticTextRecipes.body,
-                      'justify-self-center'
-                    )}
-                  >
-                    until
-                  </span>
-                  <span className="justify-self-start">{fmtRunoutDate(insights.runoutDate)}</span>
-                </>
-              ) : (
-                <>
-                  <span />
-                  <span />
-                </>
-              )}
+              <span
+                className={cn(
+                  uiTypographyRecipes.caption,
+                  semanticTextRecipes.body,
+                  'justify-self-center'
+                )}
+              >
+                of
+              </span>
+              <span className="justify-self-start">
+                {fmtUSD(yearToDate)}
+                <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.body, 'ml-1')}>
+                  ytd
+                </span>
+              </span>
             </>
-          ) : (
-            '—'
-          )
-        }
-        question="How much am I spending per day, and when will I run out at this pace?"
-        accent="slate"
-        flipped={!!flipped.pacing}
-        onToggle={() => toggle('pacing')}
-        outlined={false}
-        tileLayout={!isMobile}
-        subgridRow={isMobile}
-      />
-      <InsightCard
-        title="Free Spend"
-        icon={<Wallet />}
-        value={
-          <>
-            <span
-              className={cn(
-                'justify-self-start',
-                insights.freeSpend < 0 && semanticTextRecipes.danger
-              )}
-            >
-              {fmtUSD(insights.freeSpend)}
-            </span>
-            <span
-              className={cn(
-                uiTypographyRecipes.caption,
-                semanticTextRecipes.body,
-                'justify-self-center'
-              )}
-            >
-              /
-            </span>
-            <span className="justify-self-start">{fmtUSD(insights.income)}</span>
-          </>
-        }
-        question="How much income is left after planned budgets and overages?"
-        accent="slate"
-        flipped={!!flipped['free-spend']}
-        onToggle={() => toggle('free-spend')}
-        outlined={false}
-        tileLayout={!isMobile}
-        subgridRow={isMobile}
-      />
-      <InsightCard
-        title="Sub Costs"
-        icon={<Repeat2 />}
-        value={
-          <>
-            <span className="justify-self-start">
-              {fmtUSD(monthlyTotal)}
-              <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.body, 'ml-1')}>
-                m
-              </span>
-            </span>
-            <span
-              className={cn(
-                uiTypographyRecipes.caption,
-                semanticTextRecipes.body,
-                'justify-self-center'
-              )}
-            >
-              of
-            </span>
-            <span className="justify-self-start">
-              {fmtUSD(yearToDate)}
-              <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.body, 'ml-1')}>
-                ytd
-              </span>
-            </span>
-          </>
-        }
-        question="What do my subscriptions cost per month and year to date?"
-        accent="slate"
-        flipped={!!flipped['subscription-costs']}
-        onToggle={() => toggle('subscription-costs')}
-        outlined={false}
-        tileLayout={!isMobile}
-        subgridRow={isMobile}
-      />
-    </>
-  ) : (
-    <div
-      data-testid="budget-insights-empty"
-      className={cn('py-4', 'text-center', uiTypographyRecipes.body, semanticTextRecipes.muted)}
-    >
-      No budget activity recorded for {fmtMonthName(month)} yet.
-    </div>
-  );
+          }
+          question="What do my subscriptions cost per month and year to date?"
+          accent="slate"
+          flipped={!!flipped['subscription-costs']}
+          onToggle={() => toggle('subscription-costs')}
+          outlined={false}
+          tileLayout={!isMobile}
+          tileAlign="end"
+          subgridRow={isMobile}
+        />
+      </>
+    );
+  })();
 
   return (
     <section

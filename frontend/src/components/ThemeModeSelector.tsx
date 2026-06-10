@@ -1,8 +1,11 @@
+import { motion } from 'framer-motion';
 import type { ThemePreference } from '@/context/ThemeContext';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { Button } from '@/ui/primitives/Button';
 import { cn } from '@/ui/primitives/utils';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+
+export const THEME_MODE_SELECTOR_ACTIVE_PILL_LAYOUT_ID = 'theme-mode-selector-pill-active';
 
 const themeModes: Array<{ value: ThemePreference; label: string }> = [
   { value: 'system', label: 'System' },
@@ -52,6 +55,15 @@ export function ThemeModeSelector({ value, onChange }: ThemeModeSelectorProps) {
               active ? uiTextRecipes.inverse : uiTextRecipes.muted
             )}
           >
+            {active ? (
+              <motion.div
+                layout
+                layoutId={THEME_MODE_SELECTOR_ACTIVE_PILL_LAYOUT_ID}
+                data-slot="active-pill"
+                className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
+                transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+              />
+            ) : null}
             <span className={cn('relative', 'z-10', uiTypographyRecipes.bodyStrong)}>{label}</span>
           </Button>
         );

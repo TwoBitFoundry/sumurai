@@ -10,6 +10,7 @@ import {
   successCta,
   radius as uiRadiusRecipes,
 } from '@/ui/recipes';
+import { buttonRecipes } from './Button';
 import { cn } from './utils';
 
 export const iconButtonRecipes = {
@@ -23,7 +24,7 @@ export const iconButtonRecipes = {
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]',
   ],
   primary: [
-    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} bg-gradient-to-r from-sky-500 via-sky-400 to-violet-500 text-white disabled:cursor-not-allowed`,
+    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} bg-[var(--color-brand-sky)] text-white disabled:cursor-not-allowed`,
     'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)]',
     'transition-all duration-200 ease-out hover:-translate-y-[2px] active:scale-[0.98] disabled:active:scale-100 disabled:hover:translate-y-0',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-[#0f172a]',
@@ -61,6 +62,12 @@ export const iconButtonRecipes = {
     'dark:hover:bg-[var(--color-surface-hover-row)]',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]',
   ],
+  tabActive: [
+    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} disabled:cursor-not-allowed`,
+    ...buttonRecipes.tabActive,
+    'transition-all duration-200 ease-out hover:-translate-y-0.5 active:scale-[0.98] disabled:active:scale-100 disabled:hover:translate-y-0',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-[#0f172a]',
+  ],
 } as const;
 
 const iconButtonVariants = cva('', {
@@ -71,6 +78,7 @@ const iconButtonVariants = cva('', {
       success: iconButtonRecipes.success.join(' '),
       danger: iconButtonRecipes.danger.join(' '),
       toolbar: iconButtonRecipes.toolbar.join(' '),
+      tabActive: iconButtonRecipes.tabActive.join(' '),
     },
     size: {
       sm: control.square.sm,

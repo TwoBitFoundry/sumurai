@@ -9,6 +9,7 @@ import {
   getHeroAccentTheme,
   getThemeColors,
   heroAccents,
+  status,
 } from '@/ui/tokens';
 
 describe('ui tokens runtime map', () => {
@@ -33,6 +34,14 @@ describe('ui tokens runtime map', () => {
     });
     expect(finance.light.cash).toBeDefined();
     expect(finance.dark.netWorth).toBeDefined();
+    expect(status.light).toEqual({
+      successIcon: '#10b981',
+      dangerIcon: '#ef4444',
+    });
+    expect(status.dark).toEqual({
+      successIcon: '#34d399',
+      dangerIcon: '#f87171',
+    });
   });
 
   it('keeps the category and hero maps stable', () => {

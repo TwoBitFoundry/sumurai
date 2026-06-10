@@ -7,6 +7,32 @@ import { InsightQuestion } from './InsightQuestion';
 
 const FADE = { duration: 0.24, ease: [0.22, 0.61, 0.36, 1] } as const;
 
+export type InsightTileAlign = 'start' | 'center' | 'end';
+
+const tileAlignRecipes: Record<
+  InsightTileAlign,
+  { row: string; leading: string; metric: string; text: string }
+> = {
+  start: {
+    row: 'md:items-start',
+    leading: 'md:justify-start',
+    metric: 'md:justify-start',
+    text: 'text-left',
+  },
+  center: {
+    row: 'md:items-center',
+    leading: 'md:justify-center',
+    metric: 'md:justify-center',
+    text: 'text-left md:text-center',
+  },
+  end: {
+    row: 'md:items-end',
+    leading: 'md:justify-end',
+    metric: 'md:justify-end',
+    text: 'text-left md:text-right',
+  },
+};
+
 export const insightCardRecipes = {
   frontRow: 'flex w-full min-w-0 items-center justify-between gap-x-1.5 whitespace-nowrap',
   tileRow: 'flex w-full min-w-0 flex-col gap-1.5 whitespace-normal',
@@ -41,6 +67,7 @@ export interface InsightCardProps {
   onToggle: () => void;
   outlined?: boolean;
   tileLayout?: boolean;
+  tileAlign?: InsightTileAlign;
   subgridRow?: boolean;
   className?: string;
 }
@@ -56,10 +83,12 @@ export function InsightCard({
   onToggle,
   outlined = true,
   tileLayout = false,
+  tileAlign = 'start',
   subgridRow = false,
   className,
 }: InsightCardProps) {
   const styles = heroAccents[accent];
+  const tileAlignStyles = tileLayout ? tileAlignRecipes[tileAlign] : null;
   let shellClassName: string;
   if (outlined) {
     shellClassName = cn(
@@ -95,7 +124,7 @@ export function InsightCard({
       aria-label={title}
       className={cn(
         heroStatCardRecipes.base,
-        'text-left',
+        tileAlignStyles?.text ?? 'text-left',
         subgridRow ? 'contents' : 'w-full',
         tileLayout && 'md:flex-1 md:min-w-0',
         className
@@ -170,12 +199,14 @@ export function InsightCard({
                 exit={{ opacity: 0 }}
                 transition={FADE}
                 className={cn(
-                  tileLayout ? insightCardRecipes.tileRow : insightCardRecipes.frontRow
+                  tileLayout ? insightCardRecipes.tileRow : insightCardRecipes.frontRow,
+                  tileAlignStyles?.row
                 )}
               >
                 <div
                   className={cn(
-                    tileLayout ? insightCardRecipes.tileLeading : insightCardRecipes.leading
+                    tileLayout ? insightCardRecipes.tileLeading : insightCardRecipes.leading,
+                    tileAlignStyles?.leading
                   )}
                 >
                   {icon ? (
@@ -193,7 +224,8 @@ export function InsightCard({
                   className={cn(
                     tileLayout
                       ? insightCardRecipes.tileMetricCluster
-                      : insightCardRecipes.metricCluster
+                      : insightCardRecipes.metricCluster,
+                    tileAlignStyles?.metric
                   )}
                 >
                   <div

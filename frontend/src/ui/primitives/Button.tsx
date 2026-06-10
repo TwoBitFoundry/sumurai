@@ -56,7 +56,7 @@ export const buttonRecipes = {
     'disabled:cursor-not-allowed disabled:opacity-60',
   ],
   primary: [
-    'bg-gradient-to-r from-sky-500 via-sky-400 to-violet-500',
+    'bg-[var(--color-brand-sky)]',
     semanticTextRecipes.inverse,
     'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)]',
     'hover:-translate-y-0.5',

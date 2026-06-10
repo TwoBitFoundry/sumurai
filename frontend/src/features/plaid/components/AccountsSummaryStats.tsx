@@ -23,8 +23,8 @@ export const AccountsSummaryStats = ({ summary, lastSyncValue }: AccountsSummary
   const hasConnections = summary.institutions > 0;
   const cardAccent = 'violet' as const;
 
-  return (
-    <InsightsPanel testId="accounts-summary-shell" accent="violet" headerLabel="Account summary">
+  const summaryCards = (
+    <>
       <InsightCard
         title="Institutions"
         icon={<Building2 />}
@@ -51,6 +51,7 @@ export const AccountsSummaryStats = ({ summary, lastSyncValue }: AccountsSummary
         onToggle={() => toggle('institutions')}
         outlined={false}
         tileLayout={!isMobile}
+        tileAlign="start"
         subgridRow={isMobile}
       />
       <InsightCard
@@ -70,6 +71,7 @@ export const AccountsSummaryStats = ({ summary, lastSyncValue }: AccountsSummary
         onToggle={() => toggle('accounts')}
         outlined={false}
         tileLayout={!isMobile}
+        tileAlign="center"
         subgridRow={isMobile}
       />
       <InsightCard
@@ -82,8 +84,15 @@ export const AccountsSummaryStats = ({ summary, lastSyncValue }: AccountsSummary
         onToggle={() => toggle('last-sync')}
         outlined={false}
         tileLayout={!isMobile}
+        tileAlign="end"
         subgridRow={isMobile}
       />
+    </>
+  );
+
+  return (
+    <InsightsPanel testId="accounts-summary-shell" accent="violet" headerLabel="Account summary">
+      {summaryCards}
     </InsightsPanel>
   );
 };

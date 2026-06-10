@@ -279,6 +279,7 @@ export function TransactionInsightsPanel({
         onToggle={() => toggle('card2')}
         outlined={false}
         tileLayout={!isMobile}
+        tileAlign="center"
         subgridRow={isMobile}
       />
       {card3 != null ? (
@@ -292,6 +293,7 @@ export function TransactionInsightsPanel({
           onToggle={() => toggle('card3')}
           outlined={false}
           tileLayout={!isMobile}
+          tileAlign="end"
           subgridRow={isMobile}
         />
       ) : null}

@@ -1,10 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDownLeft, ArrowUpRight, ChevronDown, CircleDollarSign } from 'lucide-react';
-import { type CSSProperties, useState } from 'react';
+import { type CSSProperties, type ReactNode, useState } from 'react';
 import { AccountGroupIcon } from '@/components/AccountGroupIcon';
 import { Amount } from '@/components/Amount';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
-import { InsightCard } from '@/components/widgets/InsightCard';
+import { InsightCard, type InsightTileAlign } from '@/components/widgets/InsightCard';
 import { ACCOUNT_GROUP_ACCENT, ACCOUNT_GROUP_LABELS } from '@/domain/accountCategories';
 import { useSessionCollapsible } from '@/hooks/useSessionCollapsible';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
@@ -73,7 +73,15 @@ export function BalancesInsightsPanel({
     </div>
   );
 
-  const subCategories = [
+  const subCategories: Array<{
+    key: 'cash' | 'investments' | 'credit' | 'loan';
+    title: string;
+    accent: (typeof ACCOUNT_GROUP_ACCENT)[keyof typeof ACCOUNT_GROUP_ACCENT];
+    icon: ReactNode;
+    value: ReactNode;
+    question: string;
+    tileAlign: InsightTileAlign;
+  }> = [
     {
       key: 'cash',
       title: ACCOUNT_GROUP_LABELS.cash,
@@ -85,6 +93,7 @@ export function BalancesInsightsPanel({
         </span>
       ),
       question: 'How much liquid cash do you have across checking and savings?',
+      tileAlign: 'start',
     },
     {
       key: 'investments',
@@ -97,6 +106,7 @@ export function BalancesInsightsPanel({
         </span>
       ),
       question: 'What is the total value of your investment accounts?',
+      tileAlign: 'center',
     },
     {
       key: 'credit',
@@ -109,6 +119,7 @@ export function BalancesInsightsPanel({
         </span>
       ),
       question: 'What is your total credit card balance?',
+      tileAlign: 'center',
     },
     {
       key: 'loan',
@@ -121,8 +132,9 @@ export function BalancesInsightsPanel({
         </span>
       ),
       question: 'What is your total outstanding loan balance?',
+      tileAlign: 'end',
     },
-  ] as const;
+  ];
 
   return (
     <section
@@ -189,8 +201,24 @@ export function BalancesInsightsPanel({
                 {netAmount}
               </div>
               <div className={cn('flex', 'shrink-0', 'items-start', 'gap-x-4', 'md:gap-x-6')}>
-                <div className={cn('flex', 'shrink-0', 'flex-col', 'items-center', 'gap-y-1.5')}>
-                  <div className={cn('flex', 'items-center', 'gap-x-1.5')}>
+                <div
+                  className={cn(
+                    'inline-grid',
+                    'shrink-0',
+                    'grid-cols-[1fr_auto]',
+                    'gap-x-1',
+                    'gap-y-1.5'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'col-start-1',
+                      'flex',
+                      'items-center',
+                      'justify-end',
+                      'gap-x-1.5'
+                    )}
+                  >
                     <span
                       className={cn(...heroStatCardRecipes.iconWell, heroAccents.emerald.icon)}
                       aria-hidden
@@ -203,11 +231,20 @@ export function BalancesInsightsPanel({
                   </div>
                   <div
                     data-testid="balances-ytd-income"
-                    className={cn('flex', 'items-baseline', 'gap-x-1')}
+                    className={cn(
+                      'col-start-1',
+                      'col-end-3',
+                      'row-start-2',
+                      'grid',
+                      'grid-cols-[1fr_auto]',
+                      'items-baseline',
+                      'gap-x-1'
+                    )}
                   >
                     <span
                       data-testid="balances-ytd-income-value"
                       className={cn(
+                        'justify-self-end',
                         uiTypographyRecipes.cardTitle,
                         uiStatusRecipes.success.text,
                         'tabular-nums'
@@ -220,8 +257,24 @@ export function BalancesInsightsPanel({
                     </span>
                   </div>
                 </div>
-                <div className={cn('flex', 'shrink-0', 'flex-col', 'items-center', 'gap-y-1.5')}>
-                  <div className={cn('flex', 'items-center', 'gap-x-1.5')}>
+                <div
+                  className={cn(
+                    'inline-grid',
+                    'shrink-0',
+                    'grid-cols-[1fr_auto]',
+                    'gap-x-1',
+                    'gap-y-1.5'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'col-start-1',
+                      'flex',
+                      'items-center',
+                      'justify-end',
+                      'gap-x-1.5'
+                    )}
+                  >
                     <span
                       className={cn(...heroStatCardRecipes.iconWell, heroAccents.rose.icon)}
                       aria-hidden
@@ -234,11 +287,20 @@ export function BalancesInsightsPanel({
                   </div>
                   <div
                     data-testid="balances-ytd-expenses"
-                    className={cn('flex', 'items-baseline', 'gap-x-1')}
+                    className={cn(
+                      'col-start-1',
+                      'col-end-3',
+                      'row-start-2',
+                      'grid',
+                      'grid-cols-[1fr_auto]',
+                      'items-baseline',
+                      'gap-x-1'
+                    )}
                   >
                     <span
                       data-testid="balances-ytd-expenses-value"
                       className={cn(
+                        'justify-self-end',
                         uiTypographyRecipes.cardTitle,
                         uiStatusRecipes.danger.text,
                         'tabular-nums'
@@ -296,7 +358,7 @@ export function BalancesInsightsPanel({
                 'md:py-3',
                 isMobile
                   ? 'grid grid-cols-[auto_1fr_auto_auto_auto] items-baseline gap-x-2 gap-y-1.5'
-                  : 'flex flex-row items-start gap-3'
+                  : 'flex w-full flex-row items-start gap-3'
               )}
             >
               {showYtd && isMobile ? (
@@ -378,6 +440,7 @@ export function BalancesInsightsPanel({
                   onToggle={() => toggle(category.key)}
                   outlined={false}
                   tileLayout={!isMobile}
+                  tileAlign={category.tileAlign}
                   subgridRow={isMobile}
                 />
               ))}

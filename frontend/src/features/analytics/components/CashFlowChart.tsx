@@ -15,6 +15,7 @@ import {
   YAxis,
 } from 'recharts';
 import { text as uiTextRecipes } from '@/ui/recipes';
+import { status as statusColors } from '@/ui/tokens';
 import { useTheme } from '../../../context/ThemeContext';
 import type { AnalyticsCashFlowPoint } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
@@ -55,7 +56,9 @@ const cashFlowTooltipValueClassName = (
 };
 
 const CashFlowChartFn: React.FC<CashFlowChartProps> = ({ data, width, height }) => {
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
+  const incomeColor = statusColors[mode].successIcon;
+  const expenseColor = statusColors[mode].dangerIcon;
   const chartData = useMemo<CashFlowChartDatum[]>(
     () =>
       data.map((point) => ({
@@ -77,12 +80,12 @@ const CashFlowChartFn: React.FC<CashFlowChartProps> = ({ data, width, height }) 
     >
       <defs>
         <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor={colors.semantic.cash} stopOpacity={0.6} />
-          <stop offset="95%" stopColor={colors.semantic.cash} stopOpacity={0.1} />
+          <stop offset="5%" stopColor={incomeColor} stopOpacity={0.6} />
+          <stop offset="95%" stopColor={incomeColor} stopOpacity={0.1} />
         </linearGradient>
         <linearGradient id="expensesGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor={colors.semantic.credit} stopOpacity={0.6} />
-          <stop offset="95%" stopColor={colors.semantic.credit} stopOpacity={0.1} />
+          <stop offset="5%" stopColor={expenseColor} stopOpacity={0.6} />
+          <stop offset="95%" stopColor={expenseColor} stopOpacity={0.1} />
         </linearGradient>
       </defs>
       <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
@@ -127,7 +130,7 @@ const CashFlowChartFn: React.FC<CashFlowChartProps> = ({ data, width, height }) 
         dataKey="income"
         stackId="flow"
         fill="url(#incomeGradient)"
-        stroke={colors.semantic.cash}
+        stroke={incomeColor}
         strokeWidth={0}
         name="Income"
         isAnimationActive={true}
@@ -138,7 +141,7 @@ const CashFlowChartFn: React.FC<CashFlowChartProps> = ({ data, width, height }) 
         type="monotone"
         dataKey="plottedExpenses"
         fill="url(#expensesGradient)"
-        stroke={colors.semantic.credit}
+        stroke={expenseColor}
         strokeWidth={0}
         name="Expenses"
         isAnimationActive={true}
