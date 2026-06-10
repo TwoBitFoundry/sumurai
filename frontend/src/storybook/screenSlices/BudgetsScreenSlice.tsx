@@ -53,16 +53,6 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
             containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
             className={cn('space-y-6')}
           >
-            <FixedExpensesSection fixedExpenses={fixedExpenses} isLoading={false} />
-          </GlassCard>
-          <GlassCard
-            variant="accent"
-            rounded="lg"
-            padding="none"
-            withInnerEffects={false}
-            containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
-            className={cn('space-y-6')}
-          >
             <CollapsibleSection
               sectionId="budgets"
               title="Budgets"
@@ -148,6 +138,20 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
                 />
               ) : null}
             </CollapsibleSection>
+          </GlassCard>
+          <GlassCard
+            variant="accent"
+            rounded="lg"
+            padding="none"
+            withInnerEffects={false}
+            containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
+            className={cn('space-y-6')}
+          >
+            <FixedExpensesSection
+              fixedExpenses={fixedExpenses}
+              month={new Date(2026, 5, 1)}
+              isLoading={false}
+            />
           </GlassCard>
         </div>
       </PageLayout>

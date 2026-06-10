@@ -5,6 +5,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
 import { BudgetCalculator } from '../../../domain/BudgetCalculator';
+import { hasFixedExpenseChargeInMonth } from '../../../domain/FixedExpenseCalculator';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { BudgetService } from '../../../services/BudgetService';
 import { TransactionService } from '../../../services/TransactionService';
@@ -107,11 +108,19 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
     if (hasEmptyAccountSelection) {
       return [];
     }
-    if (!isAccountFiltered) return fixedExpenses;
-    return fixedExpenses.filter((item) =>
+
+    const inSelectedMonth = fixedExpenses.filter((item) =>
+      hasFixedExpenseChargeInMonth(item, month)
+    );
+
+    if (!isAccountFiltered) {
+      return inSelectedMonth;
+    }
+
+    return inSelectedMonth.filter((item) =>
       item.account_ids.some((id) => selectedAccountIds.includes(id))
     );
-  }, [hasEmptyAccountSelection, isAccountFiltered, selectedAccountIds, fixedExpenses]);
+  }, [hasEmptyAccountSelection, isAccountFiltered, selectedAccountIds, fixedExpenses, month]);
 
   const loadError = useMemo(() => {
     if (!budgetsQuery.isError || budgetsQuery.error == null) {

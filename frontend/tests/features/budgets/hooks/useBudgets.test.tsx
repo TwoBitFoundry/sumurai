@@ -40,16 +40,21 @@ const asOverview = (budgets: ReturnType<typeof asBudget>[], fixed_expenses: unkn
   budgets,
   fixed_expenses,
 });
-const makeSubscription = (merchant: string, monthlyCost: string) => ({
-  merchant,
-  normalized_merchant: merchant.toLowerCase(),
-  monthly_cost: monthlyCost,
-  cadence: 'Monthly',
-  first_charged: '2024-01-01',
-  last_charged: '2024-03-01',
-  occurrence_count: 3,
-  account_ids: [],
-});
+const makeSubscription = (merchant: string, monthlyCost: string) => {
+  const today = new Date();
+  const chargeDate = new Date(today.getFullYear(), today.getMonth(), 15).toISOString().slice(0, 10);
+
+  return {
+    merchant,
+    normalized_merchant: merchant.toLowerCase(),
+    monthly_cost: monthlyCost,
+    cadence: 'Monthly',
+    first_charged: chargeDate,
+    last_charged: chargeDate,
+    occurrence_count: 3,
+    account_ids: [],
+  };
+};
 const asTransaction = (id: string, categoryId: string, amount: number, date?: string) => {
   // Use a deterministic date in the middle of current month to avoid timing issues
   const today = new Date();

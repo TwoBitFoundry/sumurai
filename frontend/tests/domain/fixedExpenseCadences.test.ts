@@ -10,6 +10,7 @@ describe('fixedExpenseCadences', () => {
     expect(normalizeFixedExpenseCadence('Monthly')).toBe('monthly');
     expect(normalizeFixedExpenseCadence('quarterly')).toBe('quarterly');
     expect(normalizeFixedExpenseCadence('yearly')).toBe('annual');
+    expect(normalizeFixedExpenseCadence('weekly')).toBe('weekly');
     expect(normalizeFixedExpenseCadence('Biweekly')).toBe('biweekly');
     expect(normalizeFixedExpenseCadence('bi-weekly')).toBe('biweekly');
     expect(normalizeFixedExpenseCadence('bi_weekly')).toBe('biweekly');
@@ -17,17 +18,26 @@ describe('fixedExpenseCadences', () => {
   });
 
   it('exposes all cadence categories in display order including biweekly', () => {
-    expect(FIXED_EXPENSE_CADENCE_ORDER).toEqual(['biweekly', 'monthly', 'quarterly', 'annual']);
+    expect(FIXED_EXPENSE_CADENCE_ORDER).toEqual([
+      'weekly',
+      'biweekly',
+      'monthly',
+      'quarterly',
+      'annual',
+    ]);
     expect(FIXED_EXPENSE_CADENCE_LABELS.biweekly).toBe('Biweekly');
     expect(FIXED_EXPENSE_CADENCE_LABELS.annual).toBe('Yearly');
   });
 
   it('groups items by cadence with monthly as the fallback for unknown cadences', () => {
-    const grouped = groupFixedExpensesByCadence([
-      { cadence: 'monthly', merchant: 'Spotify', first_charged: '2026-05-01' },
-      { cadence: 'Quarterly', merchant: 'Adobe', first_charged: '2026-05-01' },
-      { cadence: 'unknown', merchant: 'Other', first_charged: '2026-05-01' },
-    ]);
+    const grouped = groupFixedExpensesByCadence(
+      [
+        { cadence: 'monthly', merchant: 'Spotify', first_charged: '2026-05-01' },
+        { cadence: 'Quarterly', merchant: 'Adobe', first_charged: '2026-05-01' },
+        { cadence: 'unknown', merchant: 'Other', first_charged: '2026-05-01' },
+      ],
+      new Date(2026, 5, 1)
+    );
 
     expect(grouped.monthly.map((item) => item.merchant)).toEqual(['Other', 'Spotify']);
     expect(grouped.quarterly.map((item) => item.merchant)).toEqual(['Adobe']);
@@ -36,38 +46,46 @@ describe('fixedExpenseCadences', () => {
   });
 
   it('places biweekly items into the biweekly group', () => {
-    const grouped = groupFixedExpensesByCadence([
-      { cadence: 'biweekly', merchant: 'Gym', first_charged: '2026-05-01' },
-      { cadence: 'monthly', merchant: 'Spotify', first_charged: '2026-05-01' },
-    ]);
+    const grouped = groupFixedExpensesByCadence(
+      [
+        { cadence: 'biweekly', merchant: 'Gym', first_charged: '2026-05-01' },
+        { cadence: 'monthly', merchant: 'Spotify', first_charged: '2026-05-01' },
+      ],
+      new Date(2026, 5, 1)
+    );
 
     expect(grouped.biweekly.map((item) => item.merchant)).toEqual(['Gym']);
     expect(grouped.monthly.map((item) => item.merchant)).toEqual(['Spotify']);
   });
 
   it('omits cadence groups that have no items when filtered externally', () => {
-    const grouped = groupFixedExpensesByCadence([
-      { cadence: 'monthly', merchant: 'Spotify', first_charged: '2026-05-01' },
-    ]);
+    const grouped = groupFixedExpensesByCadence(
+      [{ cadence: 'monthly', merchant: 'Spotify', first_charged: '2026-05-01' }],
+      new Date(2026, 5, 1)
+    );
 
     expect(grouped.biweekly).toEqual([]);
     expect(grouped.quarterly).toEqual([]);
     expect(grouped.annual).toEqual([]);
   });
 
-  it('sorts items within a cadence by since date then merchant name', () => {
-    const grouped = groupFixedExpensesByCadence([
-      { cadence: 'monthly', merchant: 'Walmart', first_charged: '2026-06-01' },
-      { cadence: 'monthly', merchant: 'Costco', first_charged: '2026-06-01' },
-      { cadence: 'monthly', merchant: 'Pdxfit Gym', first_charged: '2026-05-15' },
-      { cadence: 'monthly', merchant: 'Netflix', first_charged: '2026-06-01' },
-    ]);
+  it('sorts items within a cadence by first due date in the month then merchant name', () => {
+    const june2026 = new Date(2026, 5, 1);
+    const grouped = groupFixedExpensesByCadence(
+      [
+        { cadence: 'monthly', merchant: 'Walmart', first_charged: '2026-06-01' },
+        { cadence: 'monthly', merchant: 'Costco', first_charged: '2026-06-01' },
+        { cadence: 'monthly', merchant: 'Pdxfit Gym', first_charged: '2026-05-15' },
+        { cadence: 'monthly', merchant: 'Netflix', first_charged: '2026-06-01' },
+      ],
+      june2026
+    );
 
     expect(grouped.monthly.map((item) => item.merchant)).toEqual([
-      'Pdxfit Gym',
       'Costco',
       'Netflix',
       'Walmart',
+      'Pdxfit Gym',
     ]);
   });
 });

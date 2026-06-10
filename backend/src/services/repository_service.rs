@@ -3247,7 +3247,7 @@ impl DatabaseRepository for PostgresRepository {
     ) -> Result<Vec<crate::models::subscription::FixedExpenseSummary>> {
         use crate::models::subscription::FixedExpenseSummary;
         use crate::services::subscription_detection::cadence::{
-            classify_cadence, normalize_to_monthly_cost, Cadence,
+            normalize_to_monthly_cost, reconcile_cadence_with_span, resolve_cadence,
         };
         use rust_decimal::Decimal;
         use std::collections::HashMap;
@@ -3293,7 +3293,16 @@ impl DatabaseRepository for PostgresRepository {
             let dates: Vec<chrono::NaiveDate> = group.iter().map(|r| r.date).collect();
             let day_gaps: Vec<i64> = dates.windows(2).map(|w| (w[1] - w[0]).num_days()).collect();
 
-            let cadence = classify_cadence(&day_gaps).unwrap_or(Cadence::Monthly);
+            let first_charged = group
+                .iter()
+                .map(|r| r.date)
+                .min()
+                .unwrap_or_else(|| chrono::Local::now().naive_local().date());
+
+            let last_charged = group.iter().map(|r| r.date).max().unwrap_or(first_charged);
+            let span_days = (last_charged - first_charged).num_days();
+            let cadence =
+                reconcile_cadence_with_span(resolve_cadence(&day_gaps), group.len(), span_days);
 
             let amounts: Vec<f64> = group
                 .iter()
@@ -3303,14 +3312,6 @@ impl DatabaseRepository for PostgresRepository {
             let monthly_f64 = normalize_to_monthly_cost(representative, cadence.clone());
             let monthly_cost = Decimal::try_from(monthly_f64)
                 .unwrap_or(Decimal::try_from(representative).unwrap_or(Decimal::ZERO));
-
-            let first_charged = group
-                .iter()
-                .map(|r| r.date)
-                .min()
-                .unwrap_or_else(|| chrono::Local::now().naive_local().date());
-
-            let last_charged = group.iter().map(|r| r.date).max().unwrap_or(first_charged);
 
             let merchant = group
                 .iter()

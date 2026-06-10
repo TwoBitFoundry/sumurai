@@ -30,7 +30,6 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
     update,
     remove,
     computedBudgets,
-    fixedExpenses,
     filteredFixedExpenses,
     filterKey,
     availableCategoryOptions,
@@ -148,16 +147,6 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
             containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
             className={cn('space-y-6')}
           >
-            <FixedExpensesSection fixedExpenses={fixedExpenses} isLoading={isLoading} />
-          </GlassCard>
-          <GlassCard
-            variant="accent"
-            rounded="lg"
-            padding="none"
-            withInnerEffects={false}
-            containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
-            className={cn('space-y-6')}
-          >
             <CollapsibleSection
               sectionId="budgets"
               title="Budgets"
@@ -177,9 +166,10 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
                       onClick={onSaveEdit}
                       variant="success"
                       size="md"
+                      shape="square"
                       aria-label="Save budgets"
                       title="Save budgets"
-                      className={cn('w-auto', 'shrink-0', 'whitespace-nowrap')}
+                      className={cn('shrink-0')}
                     >
                       <Check />
                     </Button>
@@ -245,6 +235,20 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
                 />
               )}
             </CollapsibleSection>
+          </GlassCard>
+          <GlassCard
+            variant="accent"
+            rounded="lg"
+            padding="none"
+            withInnerEffects={false}
+            containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
+            className={cn('space-y-6')}
+          >
+            <FixedExpensesSection
+              fixedExpenses={filteredFixedExpenses}
+              month={month}
+              isLoading={isLoading}
+            />
           </GlassCard>
         </div>
       </PageLayout>

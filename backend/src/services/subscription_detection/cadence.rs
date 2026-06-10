@@ -10,6 +10,8 @@ const BIWEEKLY_TARGET: i64 = 14;
 const BIWEEKLY_TOLERANCE: i64 = 2;
 const MONTHLY_TARGET: i64 = 30;
 const MONTHLY_TOLERANCE: i64 = 5;
+const MONTHLY_GAP_TOLERANCE: i64 = 6;
+const SHORT_MONTHLY_AVG_GAP_DAYS: i64 = 22;
 const QUARTERLY_TARGET: i64 = 91;
 const QUARTERLY_TOLERANCE: i64 = 10;
 const ANNUAL_TARGET: i64 = 365;
@@ -59,7 +61,9 @@ pub fn classify_cadence(day_gaps: &[i64]) -> Option<Cadence> {
     } else if all_fit(BIWEEKLY_TARGET, BIWEEKLY_TOLERANCE) {
         Some(Cadence::Biweekly)
     } else if within(mean as i64, MONTHLY_TARGET, MONTHLY_TOLERANCE)
-        && day_gaps.iter().all(|&g| within(g, MONTHLY_TARGET, 10))
+        && day_gaps
+            .iter()
+            .all(|&g| within(g, MONTHLY_TARGET, MONTHLY_GAP_TOLERANCE))
     {
         Some(Cadence::Monthly)
     } else if all_fit(QUARTERLY_TARGET, QUARTERLY_TOLERANCE) {
@@ -69,6 +73,68 @@ pub fn classify_cadence(day_gaps: &[i64]) -> Option<Cadence> {
     } else {
         None
     }
+}
+
+fn median_gap(day_gaps: &[i64]) -> i64 {
+    let mut sorted = day_gaps.to_vec();
+    sorted.sort_unstable();
+    let mid = sorted.len() / 2;
+    if sorted.is_empty() {
+        return MONTHLY_TARGET;
+    }
+    if sorted.len().is_multiple_of(2) {
+        (sorted[mid - 1] + sorted[mid]) / 2
+    } else {
+        sorted[mid]
+    }
+}
+
+pub fn nearest_cadence_for_gap(gap_days: i64) -> Cadence {
+    const CANDIDATES: [(Cadence, i64); 5] = [
+        (Cadence::Weekly, WEEKLY_TARGET),
+        (Cadence::Biweekly, BIWEEKLY_TARGET),
+        (Cadence::Monthly, MONTHLY_TARGET),
+        (Cadence::Quarterly, QUARTERLY_TARGET),
+        (Cadence::Annual, ANNUAL_TARGET),
+    ];
+
+    CANDIDATES
+        .into_iter()
+        .min_by_key(|(_, target)| (gap_days - target).abs())
+        .map(|(cadence, _)| cadence)
+        .unwrap_or(Cadence::Monthly)
+}
+
+pub fn resolve_cadence(day_gaps: &[i64]) -> Cadence {
+    if day_gaps.is_empty() {
+        return Cadence::Monthly;
+    }
+
+    if let Some(cadence) = classify_cadence(day_gaps) {
+        if cadence == Cadence::Monthly && median_gap(day_gaps) < SHORT_MONTHLY_AVG_GAP_DAYS {
+            return nearest_cadence_for_gap(median_gap(day_gaps));
+        }
+        return cadence;
+    }
+
+    nearest_cadence_for_gap(median_gap(day_gaps))
+}
+
+pub fn reconcile_cadence_with_span(
+    cadence: Cadence,
+    occurrence_count: usize,
+    span_days: i64,
+) -> Cadence {
+    if occurrence_count < 2 || span_days <= 0 {
+        return cadence;
+    }
+
+    let avg_gap = span_days as f64 / (occurrence_count - 1) as f64;
+    if cadence == Cadence::Monthly && avg_gap < SHORT_MONTHLY_AVG_GAP_DAYS as f64 {
+        return nearest_cadence_for_gap(avg_gap.round() as i64);
+    }
+
+    cadence
 }
 
 pub fn amount_coefficient_of_variation(amounts: &[f64]) -> f64 {

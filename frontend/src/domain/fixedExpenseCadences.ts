@@ -1,6 +1,8 @@
+import { listScheduledChargeDatesInMonth } from '@/domain/FixedExpenseCalculator';
 import type { HeroAccent } from '@/ui/tokens';
 
 export const FIXED_EXPENSE_CADENCE_LABELS = {
+  weekly: 'Weekly',
   biweekly: 'Biweekly',
   monthly: 'Monthly',
   quarterly: 'Quarterly',
@@ -10,6 +12,7 @@ export const FIXED_EXPENSE_CADENCE_LABELS = {
 export type FixedExpenseCadenceKey = keyof typeof FIXED_EXPENSE_CADENCE_LABELS;
 
 export const FIXED_EXPENSE_CADENCE_ORDER: FixedExpenseCadenceKey[] = [
+  'weekly',
   'biweekly',
   'monthly',
   'quarterly',
@@ -17,6 +20,7 @@ export const FIXED_EXPENSE_CADENCE_ORDER: FixedExpenseCadenceKey[] = [
 ];
 
 export const FIXED_EXPENSE_CADENCE_ACCENT = {
+  weekly: 'sky',
   biweekly: 'sky',
   monthly: 'sky',
   quarterly: 'sky',
@@ -41,10 +45,12 @@ export function normalizeFixedExpenseCadence(cadence: string): FixedExpenseCaden
   return null;
 }
 
-export function compareFixedExpensesBySinceDateThenMerchant<
-  T extends { first_charged: string; merchant: string },
->(left: T, right: T): number {
-  const dateCompare = left.first_charged.localeCompare(right.first_charged);
+export function compareFixedExpensesByFirstDueDateInMonth<
+  T extends { cadence: string; first_charged: string; merchant: string },
+>(month: Date, left: T, right: T): number {
+  const leftDue = listScheduledChargeDatesInMonth(left, month)[0] ?? '9999-12-31';
+  const rightDue = listScheduledChargeDatesInMonth(right, month)[0] ?? '9999-12-31';
+  const dateCompare = leftDue.localeCompare(rightDue);
   if (dateCompare !== 0) {
     return dateCompare;
   }
@@ -54,7 +60,7 @@ export function compareFixedExpensesBySinceDateThenMerchant<
 
 export function groupFixedExpensesByCadence<
   T extends { cadence: string; first_charged: string; merchant: string },
->(items: T[]): Record<FixedExpenseCadenceKey, T[]> {
+>(items: T[], month: Date): Record<FixedExpenseCadenceKey, T[]> {
   const grouped = Object.fromEntries(
     FIXED_EXPENSE_CADENCE_ORDER.map((cadence) => [cadence, [] as T[]])
   ) as Record<FixedExpenseCadenceKey, T[]>;
@@ -65,7 +71,9 @@ export function groupFixedExpensesByCadence<
   }
 
   for (const cadence of FIXED_EXPENSE_CADENCE_ORDER) {
-    grouped[cadence].sort(compareFixedExpensesBySinceDateThenMerchant);
+    grouped[cadence].sort((left, right) =>
+      compareFixedExpensesByFirstDueDateInMonth(month, left, right)
+    );
   }
 
   return grouped;

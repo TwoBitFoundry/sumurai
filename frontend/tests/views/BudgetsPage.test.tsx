@@ -118,7 +118,7 @@ describe('BudgetsPage', () => {
     expect(screen.queryByText('Overages')).not.toBeInTheDocument();
   });
 
-  it('shows subscription and budget glass cards with subscriptions first', async () => {
+  it('shows budget and fixed expense glass cards with budgets first', async () => {
     jest.mocked(useBudgets).mockReturnValue({ ...baseUseBudgetsMock, computedBudgets: [] } as any);
     render(<BudgetsPage monthControl={monthControl} />);
 
@@ -134,8 +134,8 @@ describe('BudgetsPage', () => {
       card.querySelector('[data-testid="budgets-empty-state"]')
     );
 
-    expect(subscriptionsCardIndex).toBeGreaterThanOrEqual(0);
-    expect(budgetsCardIndex).toBeGreaterThan(subscriptionsCardIndex);
+    expect(budgetsCardIndex).toBeGreaterThanOrEqual(0);
+    expect(subscriptionsCardIndex).toBeGreaterThan(budgetsCardIndex);
   });
 
   it('keeps the insight shell visible in the page stats area', () => {

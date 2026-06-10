@@ -6,11 +6,13 @@ import { FixedExpenseList } from './FixedExpenseList';
 
 export interface FixedExpensesSectionProps {
   fixedExpenses: FixedExpenseSummary[];
+  month: Date;
   isLoading?: boolean;
 }
 
 export function FixedExpensesSection({
   fixedExpenses,
+  month,
   isLoading = false,
 }: FixedExpensesSectionProps) {
   return (
@@ -23,7 +25,7 @@ export function FixedExpensesSection({
       expandLabel="Show fixed expenses"
       collapseLabel="Hide fixed expenses"
     >
-      <FixedExpenseList fixedExpenses={fixedExpenses} isLoading={isLoading} />
+      <FixedExpenseList fixedExpenses={fixedExpenses} month={month} isLoading={isLoading} />
     </CollapsibleSection>
   );
 }

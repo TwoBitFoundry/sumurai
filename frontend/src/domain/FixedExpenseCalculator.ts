@@ -46,6 +46,8 @@ function advanceFixedExpenseChargeDate(isoDate: string, cadence: string): string
   const date = parseIsoDate(isoDate);
   const normalized = normalizeFixedExpenseCadence(cadence) ?? 'monthly';
   switch (normalized) {
+    case 'weekly':
+      return formatIsoDate(addDays(date, 7));
     case 'biweekly':
       return formatIsoDate(addDays(date, 14));
     case 'quarterly':
@@ -60,6 +62,8 @@ function advanceFixedExpenseChargeDate(isoDate: string, cadence: string): string
 function chargeAmountFromMonthly(monthlyCost: number, cadence: string): number {
   const normalized = normalizeFixedExpenseCadence(cadence) ?? 'monthly';
   switch (normalized) {
+    case 'weekly':
+      return monthlyCost * (12 / 52);
     case 'biweekly':
       return monthlyCost * (12 / 26);
     case 'quarterly':
@@ -116,6 +120,177 @@ function fastForwardToChargeWindow(
   }
 
   return { chargeDate, advances };
+}
+
+function isIsoDateInMonth(isoDate: string, month: Date): boolean {
+  const { start, end } = monthBounds(month);
+  return isoDate >= start && isoDate <= end;
+}
+
+function resolveMonthReferenceIso(month: Date, today: Date): string {
+  const { start: monthStart, end: monthEnd } = monthBounds(month);
+  const todayIso = formatIsoDate(startOfDay(today));
+  if (todayIso < monthStart) {
+    return monthStart;
+  }
+  if (todayIso > monthEnd) {
+    return monthEnd;
+  }
+  return todayIso;
+}
+
+export function listScheduledChargeDatesInMonth(
+  summary: Pick<FixedExpenseSummary, 'first_charged' | 'cadence'>,
+  month: Date
+): string[] {
+  const { start: monthStart, end: monthEnd } = monthBounds(month);
+  const dueDates: string[] = [];
+  let chargeDate = summary.first_charged;
+  let guard = 0;
+
+  while (chargeDate < monthStart && guard < 512) {
+    const next = advanceFixedExpenseChargeDate(chargeDate, summary.cadence);
+    if (next <= chargeDate) {
+      break;
+    }
+    chargeDate = next;
+    guard += 1;
+  }
+
+  while (chargeDate <= monthEnd && guard < 512) {
+    if (chargeDate >= monthStart) {
+      dueDates.push(chargeDate);
+    }
+    const next = advanceFixedExpenseChargeDate(chargeDate, summary.cadence);
+    if (next <= chargeDate) {
+      break;
+    }
+    chargeDate = next;
+    guard += 1;
+  }
+
+  return dueDates;
+}
+
+function listActualChargeDates(summary: FixedExpenseSummary): ReadonlySet<string> {
+  const charges = new Set<string>();
+  if (summary.occurrence_count <= 0) {
+    return charges;
+  }
+
+  let chargeDate = summary.first_charged;
+  let advances = 0;
+
+  while (chargeDate <= summary.last_charged) {
+    charges.add(chargeDate);
+
+    if (advances >= summary.occurrence_count) {
+      break;
+    }
+
+    const next = advanceFixedExpenseChargeDate(chargeDate, summary.cadence);
+    if (next <= chargeDate) {
+      break;
+    }
+
+    advances += 1;
+    chargeDate = next;
+  }
+
+  return charges;
+}
+
+export type FixedExpenseDueDateStatus = 'paid' | 'upcoming' | 'missed';
+
+export type FixedExpenseDueDateInMonth = {
+  isoDate: string;
+  day: number;
+  status: FixedExpenseDueDateStatus;
+};
+
+export function listFixedExpenseDueDatesInMonth(
+  summary: FixedExpenseSummary,
+  month: Date,
+  today: Date = new Date()
+): FixedExpenseDueDateInMonth[] {
+  const dueDates = listScheduledChargeDatesInMonth(summary, month);
+  if (dueDates.length === 0) {
+    return [];
+  }
+
+  const actualCharges = listActualChargeDates(summary);
+  const { start: monthStart } = monthBounds(month);
+  const todayIso = formatIsoDate(startOfDay(today));
+  const isFutureMonth = todayIso < monthStart;
+  const referenceIso = isFutureMonth ? null : resolveMonthReferenceIso(month, today);
+
+  return dueDates.map((isoDate) => {
+    const day = parseIsoDate(isoDate).getDate();
+
+    if (actualCharges.has(isoDate)) {
+      return { isoDate, day, status: 'paid' as const };
+    }
+
+    if (isFutureMonth || (referenceIso !== null && isoDate > referenceIso)) {
+      return { isoDate, day, status: 'upcoming' as const };
+    }
+
+    return { isoDate, day, status: 'missed' as const };
+  });
+}
+
+export function formatFixedExpenseDueDatesInMonth(
+  summary: FixedExpenseSummary,
+  month: Date,
+  today: Date = new Date()
+): string {
+  const dueDates = listFixedExpenseDueDatesInMonth(summary, month, today);
+  if (dueDates.length === 0) {
+    return '';
+  }
+
+  const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(month);
+
+  return `${monthLabel} ${dueDates.map((entry) => entry.day).join(', ')}`;
+}
+
+function hasScheduledChargeInMonth(summary: FixedExpenseSummary, month: Date): boolean {
+  return listScheduledChargeDatesInMonth(summary, month).length > 0;
+}
+
+export type FixedExpenseMonthState = 'paid' | 'due' | 'missed';
+
+export function resolveFixedExpenseMonthState(
+  summary: FixedExpenseSummary,
+  month: Date,
+  today: Date = new Date()
+): FixedExpenseMonthState {
+  const dueDates = listFixedExpenseDueDatesInMonth(summary, month, today);
+  if (dueDates.length === 0) {
+    return 'due';
+  }
+
+  if (dueDates.some((entry) => entry.status === 'missed')) {
+    return 'missed';
+  }
+
+  if (dueDates.some((entry) => entry.status === 'upcoming')) {
+    return 'due';
+  }
+
+  return 'paid';
+}
+
+export function hasFixedExpenseChargeInMonth(summary: FixedExpenseSummary, month: Date): boolean {
+  if (summary.occurrence_count <= 0) {
+    return false;
+  }
+
+  if (isIsoDateInMonth(summary.last_charged, month)) {
+    return true;
+  }
+
+  return hasScheduledChargeInMonth(summary, month);
 }
 
 export function computeFixedExpenseMonthCost(
