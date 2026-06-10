@@ -28,14 +28,13 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Expanded: Story = {
+export const CollapsedByDefault: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const summaryButton = canvas.getByRole('button', { name: /net worth summary/i });
     await expect(canvas.getByText('Net')).toBeVisible();
-    await expect(canvas.getByText('Cash')).toBeVisible();
-    await expect(canvas.getByText('Investments')).toBeVisible();
-    await expect(canvas.getByText('Credit')).toBeVisible();
-    await expect(canvas.getByText('Loans')).toBeVisible();
+    await expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
+    await expect(canvas.queryByText('Cash')).not.toBeInTheDocument();
   },
 };
 
@@ -43,17 +42,20 @@ export const CollapseAndExpand: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const summaryButton = canvas.getByRole('button', { name: /net worth summary/i });
-    await expect(summaryButton).toHaveAttribute('aria-expanded', 'true');
-    await userEvent.click(summaryButton);
     await expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(summaryButton);
+    await expect(summaryButton).toHaveAttribute('aria-expanded', 'true');
     await expect(canvas.getByText('Cash')).toBeVisible();
+    await userEvent.click(summaryButton);
+    await expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
   },
 };
 
 export const FlipCategory: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const summaryButton = canvas.getByRole('button', { name: /net worth summary/i });
+    await userEvent.click(summaryButton);
     const cashButton = canvas.getByRole('button', { name: /cash/i });
     await userEvent.click(cashButton);
     await expect(cashButton).toHaveAttribute('aria-expanded', 'true');

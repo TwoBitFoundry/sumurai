@@ -1,18 +1,16 @@
 import { Landmark, RefreshCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts';
 import { useTheme } from '../context/ThemeContext';
 import { ACCOUNT_GROUP_LABELS } from '../domain/accountCategories';
+import { BalancesBankTooltip } from '../features/analytics/components/BalancesBankTooltip';
 import { BalancesChartXAxisTick } from '../features/analytics/components/BalancesChartXAxisTick';
 import { BalancesChartYAxisTick } from '../features/analytics/components/BalancesChartYAxisTick';
 import { BalancesInsightsPanel } from '../features/analytics/components/BalancesInsightsPanel';
-import {
-  ChartTooltipFadeHost,
-  ChartTooltipShell,
-} from '../features/analytics/components/ChartGlassTooltip';
-import { useCashFlow } from '../features/analytics/hooks/useCashFlow';
+import { chartTooltipRechartsProps } from '../features/analytics/components/ChartGlassTooltip';
 import { useChartContainerSize } from '../features/analytics/hooks/useChartContainerSize';
 import { useDebouncedChartRecalc } from '../features/analytics/hooks/useDebouncedChartRecalc';
+import { useYtdIncomeExpenses } from '../features/analytics/hooks/useYtdIncomeExpenses';
 import {
   balancesYTickCount,
   formatBalancesAxisValue,
@@ -27,18 +25,14 @@ import {
   maxCharsPerInstitutionSlot,
 } from '../features/analytics/utils/wrapInstitutionLabel';
 import { useBalancesOverview } from '../hooks/useBalancesOverview';
-import { computeYtdTotals } from '../services/AnalyticsService';
 import { Alert, Button, cn, EmptyState } from '../ui/primitives';
 import {
   control,
   surface as semanticSurfaces,
   border as uiBorderRecipes,
   radius as uiRadiusRecipes,
-  status as uiStatusRecipes,
   text as uiTextRecipes,
-  font as uiTypographyRecipes,
 } from '../ui/recipes';
-import { fmtUSD } from './Amount';
 
 const dashboardSummaryShellLoading = [
   `h-16 ${uiRadiusRecipes.standard} border`,
@@ -56,16 +50,12 @@ type BankBarDatum = {
 
 export function BalancesOverview() {
   const { loading, refreshing, error, data, refresh } = useBalancesOverview();
-  const { series: cashFlowSeries } = useCashFlow(12);
+  const { incomeYtd, expensesYtd, loading: ytdLoading } = useYtdIncomeExpenses();
   const { colors } = useTheme();
 
   const banks = data?.banks || [];
   const debouncedBanks = useDebouncedChartRecalc(banks);
   const overall = data?.overall;
-  const { incomeYtd, expensesYtd } = useMemo(
-    () => computeYtdTotals(cashFlowSeries, new Date().getFullYear()),
-    [cashFlowSeries]
-  );
 
   const { ref: chartSizeRef, width: chartContainerWidth } = useChartContainerSize();
   const chartInnerHeight = Math.max(220, Math.round(chartContainerWidth * 0.35));
@@ -125,6 +115,7 @@ export function BalancesOverview() {
 
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [tooltipAnchor, setTooltipAnchor] = useState<{ x: number; y: number } | null>(null);
   const [isTouchPrimary, setIsTouchPrimary] = useState(
     () =>
       typeof window !== 'undefined' &&
@@ -152,27 +143,26 @@ export function BalancesOverview() {
         return;
       }
       setSelectedIndex(null);
+      setTooltipAnchor(null);
     };
     document.addEventListener('pointerdown', handlePointerDown);
     return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, [isTouchPrimary, selectedIndex]);
 
   const highlightIndex = isTouchPrimary ? selectedIndex : (hoverIndex ?? selectedIndex);
-  const menuIndex = isTouchPrimary ? selectedIndex : hoverIndex;
 
-  const hoverInfo = useMemo(() => {
-    if (menuIndex == null || !chartData[menuIndex]) {
-      return null;
-    }
-    const payload = chartData[menuIndex];
-    return {
-      bank: payload.bank,
-      cash: payload.cash,
-      investments: payload.investments,
-      credit: payload.credit,
-      loan: payload.loan,
-    };
-  }, [chartData, menuIndex]);
+  const touchTooltipDatum =
+    isTouchPrimary && selectedIndex != null ? chartData[selectedIndex] : undefined;
+
+  const touchTooltipProps =
+    touchTooltipDatum && tooltipAnchor
+      ? {
+          active: true as const,
+          coordinate: tooltipAnchor,
+          payload: [{ payload: touchTooltipDatum }],
+          label: touchTooltipDatum.bank,
+        }
+      : {};
 
   const cancelHoverClear = useCallback(() => {
     if (hoverClearTimeoutRef.current) {
@@ -216,13 +206,30 @@ export function BalancesOverview() {
     setHoverIndex(null);
   }, [cancelHoverClear]);
 
-  const handleBarClick = useCallback(
-    (_: unknown, index: number) => {
-      if (!chartData[index]) {
+  const handleChartClick = useCallback(
+    (state: {
+      activeTooltipIndex?: string | number;
+      activeCoordinate?: { x?: number; y?: number };
+    }) => {
+      const rawIndex = state.activeTooltipIndex;
+      const index = typeof rawIndex === 'number' ? rawIndex : Number(rawIndex);
+      if (!Number.isFinite(index) || !chartData[index]) {
         return;
       }
+
       setHoverIndex(null);
-      setSelectedIndex((prev) => (prev === index ? null : index));
+      setSelectedIndex((prev) => {
+        const next = prev === index ? null : index;
+        if (next === null) {
+          setTooltipAnchor(null);
+        } else if (state.activeCoordinate?.x != null && state.activeCoordinate?.y != null) {
+          setTooltipAnchor({
+            x: state.activeCoordinate.x,
+            y: state.activeCoordinate.y,
+          });
+        }
+        return next;
+      });
     },
     [chartData]
   );
@@ -264,8 +271,8 @@ export function BalancesOverview() {
           <BalancesInsightsPanel
             overall={overall}
             resetKey={data?.asOf ?? 'default'}
-            incomeYtd={incomeYtd}
-            expensesYtd={expensesYtd}
+            incomeYtd={ytdLoading ? undefined : incomeYtd}
+            expensesYtd={ytdLoading ? undefined : expensesYtd}
           />
         ) : null}
 
@@ -293,55 +300,6 @@ export function BalancesOverview() {
             style={{ height: 1 }}
             aria-hidden
           />
-          <ChartTooltipFadeHost
-            active={hoverInfo}
-            presence={{ showDelayMs: 60, hideDelayMs: 80, fadeDurationMs: 200 }}
-            wrapperClassName={cn(
-              'pointer-events-none',
-              'absolute',
-              'bottom-full',
-              'left-0',
-              'right-0',
-              'z-10',
-              'mb-4',
-              '-translate-y-1',
-              'flex',
-              'justify-center',
-              'px-2'
-            )}
-          >
-            {(info) => (
-              <ChartTooltipShell
-                className={cn(
-                  'flex flex-col gap-2',
-                  uiTypographyRecipes.caption,
-                  uiTextRecipes.body
-                )}
-              >
-                <p className={cn(uiTypographyRecipes.captionStrong, uiTextRecipes.primary)}>
-                  {info.bank}
-                </p>
-                <div className={cn('grid grid-cols-2 gap-x-4 gap-y-2')}>
-                  <span className={cn('flex items-center gap-1', uiStatusRecipes.success.text)}>
-                    <span className={cn('h-2 w-2 shrink-0 rounded-full bg-emerald-500')} />
-                    {ACCOUNT_GROUP_LABELS.cash}: {fmtUSD(info.cash ?? 0)}
-                  </span>
-                  <span className={cn('flex items-center gap-1', uiStatusRecipes.info.text)}>
-                    <span className={cn('h-2 w-2 shrink-0 rounded-full bg-cyan-500')} />
-                    {ACCOUNT_GROUP_LABELS.investments}: {fmtUSD(info.investments ?? 0)}
-                  </span>
-                  <span className={cn('flex items-center gap-1', uiStatusRecipes.danger.text)}>
-                    <span className={cn('h-2 w-2 shrink-0 rounded-full bg-rose-500')} />
-                    {ACCOUNT_GROUP_LABELS.credit}: {fmtUSD(info.credit ?? 0)}
-                  </span>
-                  <span className={cn('flex items-center gap-1', uiStatusRecipes.warning.text)}>
-                    <span className={cn('h-2 w-2 shrink-0 rounded-full bg-amber-500')} />
-                    {ACCOUNT_GROUP_LABELS.loans}: {fmtUSD(info.loan ?? 0)}
-                  </span>
-                </div>
-              </ChartTooltipShell>
-            )}
-          </ChartTooltipFadeHost>
           {chartContainerWidth > 0 && chartData.length === 0 && (
             <div
               className={cn('w-full', 'min-w-0', 'flex', 'items-center', 'justify-center')}
@@ -375,6 +333,7 @@ export function BalancesOverview() {
                 }}
                 onMouseDown={(_state, event) => event.preventDefault()}
                 onMouseLeave={handleChartMouseLeave}
+                onClick={handleChartClick}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
                 <XAxis
@@ -409,6 +368,12 @@ export function BalancesOverview() {
                   )}
                 />
                 <ReferenceLine y={0} stroke={colors.chart.grid} strokeWidth={1} />
+                <Tooltip
+                  cursor={false}
+                  content={(tooltipProps) => <BalancesBankTooltip {...tooltipProps} />}
+                  {...chartTooltipRechartsProps}
+                  {...touchTooltipProps}
+                />
                 <Bar
                   dataKey="cash"
                   name={ACCOUNT_GROUP_LABELS.cash}
@@ -417,7 +382,6 @@ export function BalancesOverview() {
                   legendType="circle"
                   onMouseEnter={handleBarMouseEnter}
                   onMouseLeave={handleBarMouseLeave}
-                  onClick={handleBarClick}
                 >
                   {chartData.map((entry, index) => (
                     <Cell key={`cash-${entry.bank}`} {...institutionCellProps(index)} />
@@ -431,7 +395,6 @@ export function BalancesOverview() {
                   legendType="circle"
                   onMouseEnter={handleBarMouseEnter}
                   onMouseLeave={handleBarMouseLeave}
-                  onClick={handleBarClick}
                 >
                   {chartData.map((entry, index) => (
                     <Cell key={`investments-${entry.bank}`} {...institutionCellProps(index)} />
@@ -445,7 +408,6 @@ export function BalancesOverview() {
                   legendType="circle"
                   onMouseEnter={handleBarMouseEnter}
                   onMouseLeave={handleBarMouseLeave}
-                  onClick={handleBarClick}
                 >
                   {chartData.map((entry, index) => (
                     <Cell key={`credit-${entry.bank}`} {...institutionCellProps(index)} />
@@ -459,7 +421,6 @@ export function BalancesOverview() {
                   legendType="circle"
                   onMouseEnter={handleBarMouseEnter}
                   onMouseLeave={handleBarMouseLeave}
-                  onClick={handleBarClick}
                 >
                   {chartData.map((entry, index) => (
                     <Cell key={`loan-${entry.bank}`} {...institutionCellProps(index)} />

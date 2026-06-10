@@ -9,7 +9,34 @@ const SESSION_KEYS = {
   transactionsSearch: 'sumurai.ui.transactionsSearch',
   accountsBankExpanded: 'sumurai.ui.accountsBankExpanded',
   budgetsSectionExpanded: 'sumurai.ui.budgetsSectionExpanded',
+  collapsibleExpanded: 'sumurai.ui.collapsibleExpanded',
 } as const;
+
+function readBooleanRecord(key: string): Record<string, boolean> | null {
+  return readJson<Record<string, boolean>>(key, (value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return null;
+    }
+    return value as Record<string, boolean>;
+  });
+}
+
+function readCollapsibleExpandedMap(): Record<string, boolean> {
+  const current = readBooleanRecord(SESSION_KEYS.collapsibleExpanded) ?? {};
+  const legacy = readBooleanRecord(SESSION_KEYS.budgetsSectionExpanded);
+  if (!legacy) {
+    return current;
+  }
+  return { ...legacy, ...current };
+}
+
+function writeCollapsibleExpandedMap(map: Record<string, boolean>): void {
+  if (Object.keys(map).length === 0) {
+    removeItem(SESSION_KEYS.collapsibleExpanded);
+    return;
+  }
+  writeJson(SESSION_KEYS.collapsibleExpanded, map);
+}
 
 const DATE_RANGE_KEYS: DateRangeKey[] = [
   'current-month',
@@ -181,27 +208,13 @@ export function setSessionBankExpanded(bankId: string, expanded: boolean): void 
   writeJson(SESSION_KEYS.accountsBankExpanded, map);
 }
 
-export function getSessionBudgetsSectionExpanded(sectionId: string): boolean {
-  const map = readJson<Record<string, boolean>>(SESSION_KEYS.budgetsSectionExpanded, (value) => {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-      return null;
-    }
-    return value as Record<string, boolean>;
-  });
-  if (!map || typeof map[sectionId] !== 'boolean') {
-    return false;
-  }
-  return map[sectionId];
+export function getSessionCollapsibleExpanded(sectionId: string): boolean {
+  const map = readCollapsibleExpandedMap();
+  return map[sectionId] === true;
 }
 
-export function setSessionBudgetsSectionExpanded(sectionId: string, expanded: boolean): void {
-  const map =
-    readJson<Record<string, boolean>>(SESSION_KEYS.budgetsSectionExpanded, (value) => {
-      if (!value || typeof value !== 'object' || Array.isArray(value)) {
-        return null;
-      }
-      return value as Record<string, boolean>;
-    }) ?? {};
+export function setSessionCollapsibleExpanded(sectionId: string, expanded: boolean): void {
+  const map = readBooleanRecord(SESSION_KEYS.collapsibleExpanded) ?? {};
 
   if (expanded) {
     map[sectionId] = true;
@@ -209,10 +222,13 @@ export function setSessionBudgetsSectionExpanded(sectionId: string, expanded: bo
     delete map[sectionId];
   }
 
-  if (Object.keys(map).length === 0) {
-    removeItem(SESSION_KEYS.budgetsSectionExpanded);
-    return;
-  }
+  writeCollapsibleExpandedMap(map);
+}
 
-  writeJson(SESSION_KEYS.budgetsSectionExpanded, map);
+export function getSessionBudgetsSectionExpanded(sectionId: string): boolean {
+  return getSessionCollapsibleExpanded(sectionId);
+}
+
+export function setSessionBudgetsSectionExpanded(sectionId: string, expanded: boolean): void {
+  setSessionCollapsibleExpanded(sectionId, expanded);
 }

@@ -19,14 +19,23 @@ import TransactionsTable from '../features/transactions/components/TransactionsT
 import TransactionsToolbar from '../features/transactions/components/TransactionsToolbar';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import type { TransactionFilterControl } from '../features/transactions/hooks/useTransactionFilterState';
-import { useTransactions } from '../features/transactions/hooks/useTransactions';
+import {
+  type UseTransactionsResult,
+  useTransactions,
+} from '../features/transactions/hooks/useTransactions';
 import { useTransactionsContextualInsights } from '../features/transactions/hooks/useTransactionsContextualInsights';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { PageLayout } from '../layouts/PageLayout';
 
-const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = ({
-  filterControl,
-}) => {
+const TransactionsPage: React.FC<{
+  filterControl: TransactionFilterControl;
+  transactionsControl?: UseTransactionsResult;
+}> = ({ filterControl, transactionsControl }) => {
+  const ownedTransactions = useTransactions({
+    pageSize: 8,
+    filterControl,
+    enabled: !transactionsControl,
+  });
   const {
     isLoading,
     error,
@@ -35,14 +44,13 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
     selectedCategory,
     setSelectedCategory,
     currentPage,
-    setCurrentPage,
     pageItems,
     totalItems,
     totalPages,
     tableAnimationKey,
     dateRange,
     categories,
-  } = useTransactions({ pageSize: 8, filterControl });
+  } = transactionsControl ?? ownedTransactions;
   const {
     insights,
     isLoading: insightsLoading,
@@ -150,10 +158,6 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
               </span>
               Transactions
             </h2>
-            <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
-              Search or filter your transactions by category or keywords. Add or customize the
-              categories.
-            </p>
           </div>
           <CategoryCatalogPicker
             open={isCategoryCatalogOpen}
@@ -184,8 +188,6 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
             pageSize={8}
             isLoading={isLoading}
             bodyAnimationKey={tableAnimationKey}
-            onPrev={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            onNext={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
           />
         </GlassCard>
         <ToastStack

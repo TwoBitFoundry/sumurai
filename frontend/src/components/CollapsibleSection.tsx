@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, type LucideIcon } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useSessionCollapsible } from '@/hooks/useSessionCollapsible';
 import { cn } from '@/ui/primitives';
 import {
   control,
@@ -10,10 +10,6 @@ import {
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import {
-  getSessionBudgetsSectionExpanded,
-  setSessionBudgetsSectionExpanded,
-} from '@/utils/sessionPreferences';
 
 export interface CollapsibleSectionProps {
   sectionId: string;
@@ -44,19 +40,7 @@ export function CollapsibleSection({
   expandLabel,
   collapseLabel,
 }: CollapsibleSectionProps) {
-  const [expanded, setExpanded] = useState(false);
-
-  useEffect(() => {
-    setExpanded(getSessionBudgetsSectionExpanded(sectionId));
-  }, [sectionId]);
-
-  const handleToggle = () => {
-    setExpanded((value) => {
-      const next = !value;
-      setSessionBudgetsSectionExpanded(sectionId, next);
-      return next;
-    });
-  };
+  const { expanded, toggleExpanded } = useSessionCollapsible(sectionId);
 
   const hasSplitActions = actionsStart != null || actionsEnd != null;
 
@@ -99,7 +83,7 @@ export function CollapsibleSection({
         <div className={cn('relative')}>
           <button
             type="button"
-            onClick={handleToggle}
+            onClick={toggleExpanded}
             aria-label={expanded ? collapseLabel : expandLabel}
             aria-expanded={expanded}
             className={cn('absolute', 'inset-0', 'cursor-pointer')}
@@ -124,7 +108,7 @@ export function CollapsibleSection({
         <div className={cn('relative')}>
           <button
             type="button"
-            onClick={handleToggle}
+            onClick={toggleExpanded}
             aria-label={expanded ? collapseLabel : expandLabel}
             aria-expanded={expanded}
             className={cn('w-full', 'text-left')}

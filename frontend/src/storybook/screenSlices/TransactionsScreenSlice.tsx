@@ -161,10 +161,6 @@ export function TransactionsScreenSlice(props: {
               </span>
               Transactions
             </h2>
-            <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
-              Search or filter your transactions by category or keywords. Add or customize the
-              categories.
-            </p>
           </div>
           <TransactionsToolbar
             search="coffee"
@@ -180,8 +176,6 @@ export function TransactionsScreenSlice(props: {
             totalPages={props.state === 'empty' ? 1 : tableModel.totalPages}
             pageSize={8}
             isLoading={props.state === 'loading'}
-            onPrev={() => {}}
-            onNext={() => {}}
           />
         </GlassCard>
       </PageLayout>

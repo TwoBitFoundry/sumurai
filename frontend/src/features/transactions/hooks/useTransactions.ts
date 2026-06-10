@@ -23,6 +23,7 @@ export interface UseTransactionsOptions {
   initialDateRange?: DateRangeKey;
   pageSize?: number;
   filterControl?: TransactionFilterControl;
+  enabled?: boolean;
 }
 
 export interface UseTransactionsResult {
@@ -53,6 +54,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     initialDateRange,
     pageSize = 10,
     filterControl,
+    enabled = true,
   } = options;
 
   const [internalSearch, setSearchState] = useState(initialSearch);
@@ -62,11 +64,15 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
   const search = filterControl?.search ?? internalSearch;
   const selectedCategory = filterControl?.selectedCategory ?? internalSelectedCategory;
   const [dateRange, setDateRangeState] = useState<DateRangeKey>(initialDateRange);
-  const [currentPage, setCurrentPageState] = useState(() => getSessionTransactionsPage() ?? 1);
-  const setCurrentPage = useCallback((page: number) => {
-    setCurrentPageState(page);
+  const [internalCurrentPage, setInternalCurrentPage] = useState(
+    () => getSessionTransactionsPage() ?? 1
+  );
+  const setInternalCurrentPageWithSession = useCallback((page: number) => {
+    setInternalCurrentPage(page);
     setSessionTransactionsPage(page);
   }, []);
+  const currentPage = filterControl?.currentPage ?? internalCurrentPage;
+  const setCurrentPage = filterControl?.setCurrentPage ?? setInternalCurrentPageWithSession;
 
   const {
     selectedAccountIds,
@@ -134,7 +140,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
 
       return result;
     },
-    enabled: !accountsLoading,
+    enabled: enabled && !accountsLoading,
     staleTime: 60 * 1000,
     gcTime: 60 * 1000,
   });

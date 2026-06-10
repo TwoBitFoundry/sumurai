@@ -4,6 +4,7 @@ import { type CSSProperties, useState } from 'react';
 import { InsightCard } from '@/components/widgets/InsightCard';
 import type { BudgetInsights } from '@/domain/BudgetInsightsCalculator';
 import { SubscriptionCalculator } from '@/domain/SubscriptionCalculator';
+import { useSessionCollapsible } from '@/hooks/useSessionCollapsible';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import { cn } from '@/ui/primitives';
 import {
@@ -43,7 +44,7 @@ export function BudgetInsightsPanel({
 }: BudgetInsightsPanelProps) {
   const resetKey = `${month.getFullYear()}-${month.getMonth()}-${filterKey}`;
   const [lastResetKey, setLastResetKey] = useState(resetKey);
-  const [expanded, setExpanded] = useState(true);
+  const { expanded, toggleExpanded } = useSessionCollapsible('budget-insights');
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
   const { isMobile } = useViewportBreakpoint();
 
@@ -237,7 +238,7 @@ export function BudgetInsightsPanel({
         aria-expanded={expanded}
         aria-controls="budget-insights-panel-body"
         aria-label="Budget summary"
-        onClick={() => setExpanded((value) => !value)}
+        onClick={toggleExpanded}
         className={cn('relative', 'z-10', 'w-full', 'text-left', 'p-3', 'md:p-4')}
       >
         <div

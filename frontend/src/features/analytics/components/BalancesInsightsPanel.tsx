@@ -1,11 +1,12 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, CircleDollarSign } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ChevronDown, CircleDollarSign } from 'lucide-react';
 import { type CSSProperties, useState } from 'react';
 import { AccountGroupIcon } from '@/components/AccountGroupIcon';
 import { Amount } from '@/components/Amount';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { InsightCard } from '@/components/widgets/InsightCard';
 import { ACCOUNT_GROUP_ACCENT, ACCOUNT_GROUP_LABELS } from '@/domain/accountCategories';
+import { useSessionCollapsible } from '@/hooks/useSessionCollapsible';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import type { Totals } from '@/types/analytics';
 import { cn } from '@/ui/primitives';
@@ -32,7 +33,7 @@ export function BalancesInsightsPanel({
   expensesYtd,
 }: BalancesInsightsPanelProps) {
   const [lastResetKey, setLastResetKey] = useState(resetKey);
-  const [expanded, setExpanded] = useState(true);
+  const { expanded, toggleExpanded } = useSessionCollapsible('balances-insights');
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
   const { isMobile } = useViewportBreakpoint();
   const shellAccent = heroAccents.violet;
@@ -44,6 +45,33 @@ export function BalancesInsightsPanel({
 
   const toggle = (id: string) => setFlipped((prev) => ({ ...prev, [id]: !prev[id] }));
   const showYtd = incomeYtd != null && expensesYtd != null;
+  const showYtdInHeader = showYtd && !isMobile;
+
+  const netLabel = (
+    <div className={cn('flex', 'items-center', 'gap-x-1.5')}>
+      <span className={cn(...heroStatCardRecipes.iconWell, shellAccent.icon)} aria-hidden>
+        <CircleDollarSign />
+      </span>
+      <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.label)}>Net</div>
+    </div>
+  );
+
+  const netAmount = (
+    <div
+      data-testid="overall-net"
+      className={cn(
+        'text-[1.45rem]',
+        'font-semibold',
+        'leading-none',
+        'tracking-[-0.02em]',
+        'md:text-[1.65rem]',
+        'lg:text-2xl',
+        'tabular-nums'
+      )}
+    >
+      <Amount value={overall.net} className={cn('text-violet-500', 'dark:text-violet-300')} />
+    </div>
+  );
 
   const subCategories = [
     {
@@ -147,96 +175,93 @@ export function BalancesInsightsPanel({
         aria-expanded={expanded}
         aria-controls="balances-insights-panel-body"
         aria-label="Net worth summary"
-        onClick={() => setExpanded((value) => !value)}
+        onClick={toggleExpanded}
         className={cn('relative', 'z-10', 'w-full', 'text-left', 'p-3', 'md:p-4')}
       >
-        <div
-          className={cn(
-            'grid',
-            'grid-cols-[auto_1fr_auto]',
-            'items-center',
-            'gap-x-2',
-            'md:gap-x-3'
+        <div className={cn('flex', 'flex-col', 'gap-y-1.5', 'w-full')}>
+          {showYtdInHeader ? (
+            <div
+              data-testid="balances-ytd-row"
+              className={cn('flex', 'w-full', 'items-start', 'justify-between', 'gap-x-4')}
+            >
+              <div className={cn('flex', 'shrink-0', 'flex-col', 'items-start', 'gap-y-1.5')}>
+                {netLabel}
+                {netAmount}
+              </div>
+              <div className={cn('flex', 'shrink-0', 'items-start', 'gap-x-4', 'md:gap-x-6')}>
+                <div className={cn('flex', 'shrink-0', 'flex-col', 'items-center', 'gap-y-1.5')}>
+                  <div className={cn('flex', 'items-center', 'gap-x-1.5')}>
+                    <span
+                      className={cn(...heroStatCardRecipes.iconWell, heroAccents.emerald.icon)}
+                      aria-hidden
+                    >
+                      <ArrowUpRight />
+                    </span>
+                    <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.label)}>
+                      income
+                    </div>
+                  </div>
+                  <div
+                    data-testid="balances-ytd-income"
+                    className={cn('flex', 'items-baseline', 'gap-x-1')}
+                  >
+                    <span
+                      data-testid="balances-ytd-income-value"
+                      className={cn(
+                        uiTypographyRecipes.cardTitle,
+                        uiStatusRecipes.success.text,
+                        'tabular-nums'
+                      )}
+                    >
+                      {fmtUSD(incomeYtd)}
+                    </span>
+                    <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}>
+                      ytd
+                    </span>
+                  </div>
+                </div>
+                <div className={cn('flex', 'shrink-0', 'flex-col', 'items-center', 'gap-y-1.5')}>
+                  <div className={cn('flex', 'items-center', 'gap-x-1.5')}>
+                    <span
+                      className={cn(...heroStatCardRecipes.iconWell, heroAccents.rose.icon)}
+                      aria-hidden
+                    >
+                      <ArrowDownLeft />
+                    </span>
+                    <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.label)}>
+                      expenses
+                    </div>
+                  </div>
+                  <div
+                    data-testid="balances-ytd-expenses"
+                    className={cn('flex', 'items-baseline', 'gap-x-1')}
+                  >
+                    <span
+                      data-testid="balances-ytd-expenses-value"
+                      className={cn(
+                        uiTypographyRecipes.cardTitle,
+                        uiStatusRecipes.danger.text,
+                        'tabular-nums'
+                      )}
+                    >
+                      {fmtUSD(expensesYtd)}
+                    </span>
+                    <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}>
+                      ytd
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className={cn('flex', 'flex-col', 'items-start', 'gap-y-1.5', 'w-full')}>
+              {netLabel}
+              {netAmount}
+            </div>
           )}
-        >
-          <div className={cn('flex', 'min-w-0', 'items-center', 'gap-2')}>
-            <span className={cn(...heroStatCardRecipes.iconWell, shellAccent.icon)}>
-              <CircleDollarSign />
-            </span>
-            <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.subtle)}>Net</div>
-          </div>
-          <div aria-hidden />
-          <div
-            data-testid="overall-net"
-            className={cn(
-              'shrink-0',
-              'text-[1.45rem]',
-              'font-semibold',
-              'leading-none',
-              'tracking-[-0.02em]',
-              'md:text-[1.65rem]',
-              'lg:text-2xl',
-              'text-right',
-              'tabular-nums'
-            )}
-          >
-            <Amount value={overall.net} className={cn('text-violet-500', 'dark:text-violet-300')} />
-          </div>
-        </div>
-        {showYtd ? (
-          <div
-            data-testid="balances-ytd-row"
-            className={cn(
-              'mt-1.5',
-              'flex',
-              'flex-wrap',
-              'items-baseline',
-              'justify-center',
-              'gap-x-4',
-              'gap-y-1'
-            )}
-          >
-            <div
-              data-testid="balances-ytd-income"
-              className={cn('inline-flex', 'items-baseline', 'gap-x-1')}
-            >
-              <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}>
-                income ytd
-              </span>
-              <span
-                data-testid="balances-ytd-income-value"
-                className={cn(
-                  uiTypographyRecipes.caption,
-                  uiStatusRecipes.success.text,
-                  'tabular-nums'
-                )}
-              >
-                {fmtUSD(incomeYtd)}
-              </span>
-            </div>
-            <div
-              data-testid="balances-ytd-expenses"
-              className={cn('inline-flex', 'items-baseline', 'gap-x-1')}
-            >
-              <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}>
-                expenses ytd
-              </span>
-              <span
-                data-testid="balances-ytd-expenses-value"
-                className={cn(
-                  uiTypographyRecipes.caption,
-                  uiStatusRecipes.danger.text,
-                  'tabular-nums'
-                )}
-              >
-                {fmtUSD(expensesYtd)}
-              </span>
-            </div>
-          </div>
-        ) : null}
-        <div className={cn('mt-2', 'flex', 'justify-center')}>
           <ChevronDown
             className={cn(
+              'mx-auto',
               'h-4',
               'w-4',
               'shrink-0',
@@ -274,6 +299,73 @@ export function BalancesInsightsPanel({
                   : 'flex flex-row items-start gap-3'
               )}
             >
+              {showYtd && isMobile ? (
+                <>
+                  <InsightCard
+                    title="income"
+                    icon={<ArrowUpRight />}
+                    value={
+                      <span
+                        data-testid="balances-ytd-income"
+                        className="justify-self-start col-span-3 inline-flex items-baseline gap-x-1"
+                      >
+                        <span
+                          data-testid="balances-ytd-income-value"
+                          className={cn(uiStatusRecipes.success.text, 'tabular-nums')}
+                        >
+                          {fmtUSD(incomeYtd)}
+                        </span>
+                        <span
+                          className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}
+                        >
+                          ytd
+                        </span>
+                      </span>
+                    }
+                    question="How much income have you received year to date?"
+                    accent="emerald"
+                    flipped={!!flipped['income-ytd']}
+                    onToggle={() => toggle('income-ytd')}
+                    outlined={false}
+                    tileLayout={false}
+                    subgridRow
+                  />
+                  <InsightCard
+                    title="expenses"
+                    icon={<ArrowDownLeft />}
+                    value={
+                      <span
+                        data-testid="balances-ytd-expenses"
+                        className="justify-self-start col-span-3 inline-flex items-baseline gap-x-1"
+                      >
+                        <span
+                          data-testid="balances-ytd-expenses-value"
+                          className={cn(uiStatusRecipes.danger.text, 'tabular-nums')}
+                        >
+                          {fmtUSD(expensesYtd)}
+                        </span>
+                        <span
+                          className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}
+                        >
+                          ytd
+                        </span>
+                      </span>
+                    }
+                    question="How much have you spent year to date?"
+                    accent="rose"
+                    flipped={!!flipped['expenses-ytd']}
+                    onToggle={() => toggle('expenses-ytd')}
+                    outlined={false}
+                    tileLayout={false}
+                    subgridRow
+                  />
+                  <div
+                    data-testid="balances-ytd-divider"
+                    className={cn('col-span-full', 'border-t', ...uiBorderRecipes.divider)}
+                    aria-hidden
+                  />
+                </>
+              ) : null}
               {subCategories.map((category) => (
                 <InsightCard
                   key={category.key}

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { BalancesOverview } from '@/components/BalancesOverview';
 import { useTheme } from '@/context/ThemeContext';
-import { useCashFlow } from '@/features/analytics/hooks/useCashFlow';
+import { useYtdIncomeExpenses } from '@/features/analytics/hooks/useYtdIncomeExpenses';
 import { useBalancesOverview } from '@/hooks/useBalancesOverview';
 import { getThemeColors } from '@/ui/tokens';
 
@@ -13,8 +13,8 @@ jest.mock('@/hooks/useBalancesOverview', () => ({
   useBalancesOverview: jest.fn(),
 }));
 
-jest.mock('@/features/analytics/hooks/useCashFlow', () => ({
-  useCashFlow: jest.fn(),
+jest.mock('@/features/analytics/hooks/useYtdIncomeExpenses', () => ({
+  useYtdIncomeExpenses: jest.fn(),
 }));
 
 jest.mock('@/features/analytics/hooks/useChartContainerSize', () => ({
@@ -37,8 +37,6 @@ const sampleOverall = {
 };
 
 describe('BalancesOverview', () => {
-  const year = new Date().getFullYear();
-
   beforeEach(() => {
     jest.mocked(useTheme).mockReturnValue({
       preference: 'light',
@@ -62,16 +60,11 @@ describe('BalancesOverview', () => {
       refresh: jest.fn(),
     });
 
-    jest.mocked(useCashFlow).mockReturnValue({
-      series: [
-        { month: `${year}-01`, income: 3000, expenses: 800, net: 2200 },
-        { month: `${year}-02`, income: 2500, expenses: 600, net: 1900 },
-        { month: `${year - 1}-12`, income: 2000, expenses: 500, net: 1500 },
-      ],
+    jest.mocked(useYtdIncomeExpenses).mockReturnValue({
+      incomeYtd: 5500,
+      expensesYtd: 1400,
       loading: false,
-      refreshing: false,
       error: null,
-      reload: jest.fn(),
     });
   });
 
@@ -82,9 +75,17 @@ describe('BalancesOverview', () => {
     expect(screen.getByTestId('balances-ytd-expenses')).toHaveTextContent('$1,400.00');
   });
 
-  it('requests twelve months of cash flow data', () => {
+  it('omits YTD totals while they are loading', () => {
+    jest.mocked(useYtdIncomeExpenses).mockReturnValue({
+      incomeYtd: 0,
+      expensesYtd: 0,
+      loading: true,
+      error: null,
+    });
+
     render(<BalancesOverview />);
 
-    expect(useCashFlow).toHaveBeenCalledWith(12);
+    expect(screen.queryByTestId('balances-ytd-income')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('balances-ytd-expenses')).not.toBeInTheDocument();
   });
 });

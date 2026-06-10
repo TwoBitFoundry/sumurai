@@ -8,8 +8,6 @@ const meta = {
   tags: ['autodocs', 'test'],
   args: {
     pageSize: 8,
-    onPrev: () => {},
-    onNext: () => {},
   },
 } satisfies Meta<typeof TransactionsTable>;
 

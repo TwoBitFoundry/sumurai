@@ -29,9 +29,17 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+async function expandBudgetInsights(canvas: ReturnType<typeof within>) {
+  const summaryButton = canvas.getByRole('button', { name: /budget summary/i });
+  if (summaryButton.getAttribute('aria-expanded') !== 'true') {
+    await userEvent.click(summaryButton);
+  }
+}
+
 export const AllCards: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    await expandBudgetInsights(canvas);
     await expect(canvas.getByText('Runway')).toBeVisible();
     await expect(canvas.getByText('Free Spend')).toBeVisible();
     await expect(canvas.getByText('Sub Costs')).toBeVisible();
@@ -41,6 +49,7 @@ export const AllCards: Story = {
 export const FlipAndReset: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    await expandBudgetInsights(canvas);
     const btn = canvas.getByRole('button', { name: /runway/i });
     await userEvent.click(btn);
     await expect(btn).toHaveAttribute('aria-expanded', 'true');
@@ -58,6 +67,7 @@ export const NegativeFreeSpend: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    await expandBudgetInsights(canvas);
     await expect(canvas.getByText('-$150.00')).toBeVisible();
     await expect(canvas.getByText('$1,000.00')).toBeVisible();
   },
@@ -72,6 +82,7 @@ export const ZeroActivity: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    await expandBudgetInsights(canvas);
     await expect(canvas.getByTestId('budget-insights-empty')).toBeVisible();
     await expect(canvas.queryByText('Runway')).not.toBeInTheDocument();
   },

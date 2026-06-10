@@ -90,6 +90,15 @@ jest.mock('@/features/transactions/hooks/useTransactionFilterState', () => ({
     setSearch: jest.fn(),
     selectedCategory: null,
     setSelectedCategory: jest.fn(),
+    currentPage: 1,
+    setCurrentPage: jest.fn(),
+  }),
+}));
+
+jest.mock('@/features/transactions/hooks/useTransactions', () => ({
+  useTransactions: () => ({
+    currentPage: 1,
+    totalPages: 3,
   }),
 }));
 
@@ -120,10 +129,13 @@ describe('AuthenticatedApp', () => {
     expect(screen.getByText('Budgets')).toBeInTheDocument();
   });
 
-  it('renders transaction category filters in the bottom bar for the transactions tab', () => {
+  it('renders transaction search and pagination in the bottom bar for the transactions tab', () => {
     render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="transactions" />);
 
     expect(screen.getByTestId('transactions-search-bar')).toBeInTheDocument();
+    expect(screen.getByTestId('transactions-search-pagination')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Previous page' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next page' })).toBeInTheDocument();
     expect(screen.getByText('Transactions')).toBeInTheDocument();
   });
 
