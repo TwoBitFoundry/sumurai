@@ -1,7 +1,38 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import type { Totals } from '@/types/analytics';
 import { BalancesInsightsPanel } from './BalancesInsightsPanel';
+
+const collapsibleSessionKey = 'sumurai.ui.collapsibleExpanded';
+const balancesInsightsSectionId = 'balances-insights';
+
+function clearBalancesInsightsSession() {
+  const raw = window.sessionStorage.getItem(collapsibleSessionKey);
+  if (!raw) {
+    return;
+  }
+  try {
+    const map = JSON.parse(raw) as Record<string, boolean>;
+    delete map[balancesInsightsSectionId];
+    if (Object.keys(map).length === 0) {
+      window.sessionStorage.removeItem(collapsibleSessionKey);
+      return;
+    }
+    window.sessionStorage.setItem(collapsibleSessionKey, JSON.stringify(map));
+  } catch {
+    window.sessionStorage.removeItem(collapsibleSessionKey);
+  }
+}
+
+async function expandBalancesInsights(canvas: ReturnType<typeof within>) {
+  const summaryButton = canvas.getByRole('button', { name: /net worth summary/i });
+  if (summaryButton.getAttribute('aria-expanded') !== 'true') {
+    await userEvent.click(summaryButton);
+  }
+  await waitFor(() => {
+    expect(canvas.getByTestId('overall-cash')).toBeVisible();
+  });
+}
 
 const sampleOverall: Totals = {
   cash: 123642.1,
@@ -18,6 +49,12 @@ const meta = {
   title: 'Features/Analytics/BalancesInsightsPanel',
   component: BalancesInsightsPanel,
   tags: ['autodocs', 'test'],
+  decorators: [
+    (Story) => {
+      clearBalancesInsightsSession();
+      return <Story />;
+    },
+  ],
   args: {
     overall: sampleOverall,
     resetKey: 'story',
@@ -44,8 +81,10 @@ export const CollapseAndExpand: Story = {
     const summaryButton = canvas.getByRole('button', { name: /net worth summary/i });
     await expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(summaryButton);
-    await expect(summaryButton).toHaveAttribute('aria-expanded', 'true');
-    await expect(canvas.getByText('Cash')).toBeVisible();
+    await waitFor(() => {
+      expect(summaryButton).toHaveAttribute('aria-expanded', 'true');
+      expect(canvas.getByTestId('overall-cash')).toBeVisible();
+    });
     await userEvent.click(summaryButton);
     await expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
   },
@@ -54,11 +93,12 @@ export const CollapseAndExpand: Story = {
 export const FlipCategory: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const summaryButton = canvas.getByRole('button', { name: /net worth summary/i });
-    await userEvent.click(summaryButton);
+    await expandBalancesInsights(canvas);
     const cashButton = canvas.getByRole('button', { name: /cash/i });
     await userEvent.click(cashButton);
-    await expect(cashButton).toHaveAttribute('aria-expanded', 'true');
-    await expect(canvas.getByTestId('insight-question')).toBeVisible();
+    await waitFor(() => {
+      expect(cashButton).toHaveAttribute('aria-expanded', 'true');
+      expect(canvas.getByTestId('insight-question')).toBeVisible();
+    });
   },
 };

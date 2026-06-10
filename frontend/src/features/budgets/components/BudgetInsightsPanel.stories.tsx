@@ -11,10 +11,37 @@ const sampleInsights: BudgetInsights = {
   hasActivity: true,
 };
 
+const collapsibleSessionKey = 'sumurai.ui.collapsibleExpanded';
+const budgetInsightsSectionId = 'budget-insights';
+
+function clearBudgetInsightsSession() {
+  const raw = window.sessionStorage.getItem(collapsibleSessionKey);
+  if (!raw) {
+    return;
+  }
+  try {
+    const map = JSON.parse(raw) as Record<string, boolean>;
+    delete map[budgetInsightsSectionId];
+    if (Object.keys(map).length === 0) {
+      window.sessionStorage.removeItem(collapsibleSessionKey);
+      return;
+    }
+    window.sessionStorage.setItem(collapsibleSessionKey, JSON.stringify(map));
+  } catch {
+    window.sessionStorage.removeItem(collapsibleSessionKey);
+  }
+}
+
 const meta = {
   title: 'Features/Budgets/BudgetInsightsPanel',
   component: BudgetInsightsPanel,
   tags: ['autodocs', 'test'],
+  decorators: [
+    (Story) => {
+      clearBudgetInsightsSession();
+      return <Story />;
+    },
+  ],
   args: {
     totalBudgeted: 500,
     totalSpent: 250,
@@ -34,6 +61,9 @@ async function expandBudgetInsights(canvas: ReturnType<typeof within>) {
   if (summaryButton.getAttribute('aria-expanded') !== 'true') {
     await userEvent.click(summaryButton);
   }
+  await waitFor(() => {
+    expect(canvas.getByTestId('budget-insights-panel-body')).toBeVisible();
+  });
 }
 
 export const AllCards: Story = {

@@ -88,7 +88,7 @@ export const Journey: Story = {
       expect(page.getByText(/page 1 of 2/i)).toBeVisible();
     });
 
-    const nextPage = page.getByRole('button', { name: /next page/i });
+    const nextPage = canvas.getByRole('button', { name: /next page/i });
     await waitFor(() => {
       expect(nextPage).not.toBeDisabled();
     });
