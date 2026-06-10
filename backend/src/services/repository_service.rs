@@ -1986,7 +1986,7 @@ impl DatabaseRepository for PostgresRepository {
                     , agg AS (
                         SELECT
                             COUNT(*) AS total_count,
-                            COALESCE(SUM(CASE WHEN effective_category NOT IN ({excluded}) THEN ABS(amount)::float8 END), 0)::float8 AS total_spent,
+                            COALESCE(SUM(CASE WHEN effective_category NOT IN ({excluded}) THEN (-amount)::float8 END), 0)::float8 AS total_spent,
                             CASE WHEN COUNT(*) >= 2 THEN percentile_cont(0.5) WITHIN GROUP (ORDER BY ABS(amount)::float8)::float8 END AS median_amount,
                             CASE WHEN COUNT(*) >= 2 THEN mode() WITHIN GROUP (ORDER BY ABS(amount)::float8)::float8 END AS mode_amount,
                             SUM(CASE WHEN effective_category = 'SUBSCRIPTION' THEN 1 ELSE 0 END) AS subscription_count,
@@ -2003,7 +2003,7 @@ impl DatabaseRepository for PostgresRepository {
                         , parent_agg AS (
                             SELECT
                                 CASE WHEN COUNT(*) >= 2 THEN percentile_cont(0.5) WITHIN GROUP (ORDER BY ABS(amount)::float8)::float8 END AS parent_median,
-                                COALESCE(SUM(CASE WHEN effective_category NOT IN ({excluded}) THEN ABS(amount)::float8 END), 0)::float8 AS parent_spent,
+                                COALESCE(SUM(CASE WHEN effective_category NOT IN ({excluded}) THEN (-amount)::float8 END), 0)::float8 AS parent_spent,
                                 COUNT(*) AS parent_count
                             FROM parent
                         )
