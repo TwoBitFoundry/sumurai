@@ -91,8 +91,8 @@ This phase also cleans up the partially-implemented bill detection service that 
 - Verify `FixedExpenseSummary` schema appears with `category` field; `SubscriptionSummary` schema is removed; `BudgetsOverviewResponse.fixed_expenses` is present
 
 **Acceptance criteria:**
-- [ ] `docs/OPENAPI.json` reflects `fixed_expenses` and `FixedExpenseSummary` with `category`
-- [ ] No stale `subscriptions` or `SubscriptionSummary` references remain in the generated schema
+- [x] `docs/OPENAPI.json` reflects `fixed_expenses` and `FixedExpenseSummary` with `category`
+- [x] No stale `subscriptions` or `SubscriptionSummary` references remain in the generated schema
 
 ---
 
