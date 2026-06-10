@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { SubscriptionsSection } from '@/features/subscriptions/components/SubscriptionsSection';
-import type { SubscriptionSummary } from '@/types/api';
+import { FixedExpensesSection } from '@/features/fixed-expenses/components/FixedExpensesSection';
+import type { FixedExpenseSummary } from '@/types/api';
 import { setSessionBudgetsSectionExpanded } from '@/utils/sessionPreferences';
 
 jest.mock('@/utils/sessionPreferences', () => {
@@ -12,43 +12,47 @@ jest.mock('@/utils/sessionPreferences', () => {
   };
 });
 
-const makeSubscription = (merchant: string, normalized: string): SubscriptionSummary => ({
+const makeFixed = (merchant: string, normalized: string): FixedExpenseSummary => ({
   merchant,
   normalized_merchant: normalized,
   monthly_cost: '9.99',
   cadence: 'monthly',
+  category: 'subscription',
   first_charged: '2026-05-01',
   last_charged: '2026-05-01',
   occurrence_count: 3,
   account_ids: [],
 });
 
-describe('SubscriptionsSection', () => {
+const june2026 = new Date(2026, 5, 1);
+
+describe('FixedExpensesSection', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
-    setSessionBudgetsSectionExpanded('subscriptions', true);
+    setSessionBudgetsSectionExpanded('fixed-expenses', true);
   });
 
-  it('shows heading and subtitle without hero metrics', () => {
-    render(<SubscriptionsSection subscriptions={[]} isLoading={false} />);
+  it('shows Fixed Expenses heading without hero metrics', () => {
+    render(<FixedExpensesSection fixedExpenses={[]} month={june2026} isLoading={false} />);
 
-    expect(screen.getByText('Subscriptions')).toBeInTheDocument();
+    expect(screen.getByText('Fixed Expenses')).toBeInTheDocument();
     expect(screen.queryByText('Recurring subscriptions')).not.toBeInTheDocument();
     expect(screen.queryByText('Annualized subscriptions')).not.toBeInTheDocument();
   });
 
-  it('shows empty state when there are no subscriptions', async () => {
-    render(<SubscriptionsSection subscriptions={[]} isLoading={false} />);
+  it('shows empty state when there are no items', async () => {
+    render(<FixedExpensesSection fixedExpenses={[]} month={june2026} isLoading={false} />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('subscriptions-empty-state')).toBeInTheDocument();
+      expect(screen.getByText('No fixed expenses detected')).toBeInTheDocument();
     });
   });
 
-  it('renders subscription cards grouped by cadence', async () => {
+  it('renders cards grouped by cadence', async () => {
     render(
-      <SubscriptionsSection
-        subscriptions={[makeSubscription('Spotify', 'spotify')]}
+      <FixedExpensesSection
+        fixedExpenses={[makeFixed('Spotify', 'spotify')]}
+        month={june2026}
         isLoading={false}
       />
     );
@@ -57,6 +61,24 @@ describe('SubscriptionsSection', () => {
       expect(screen.getByText('Spotify')).toBeInTheDocument();
     });
     expect(screen.getByText('Monthly')).toBeInTheDocument();
-    expect(screen.getByTestId('subscription-cadence-group-monthly')).toBeInTheDocument();
+    expect(screen.getByTestId('fixed-expense-cadence-group-monthly')).toBeInTheDocument();
+  });
+
+  it('renders Subscriptions and Bills badges when both types are present', async () => {
+    render(
+      <FixedExpensesSection
+        fixedExpenses={[
+          makeFixed('Spotify', 'spotify'),
+          { ...makeFixed('Comcast', 'comcast'), category: 'RENT_AND_UTILITIES' },
+        ]}
+        month={june2026}
+        isLoading={false}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Subscriptions')).toBeInTheDocument();
+      expect(screen.getByText('Bills')).toBeInTheDocument();
+    });
   });
 });

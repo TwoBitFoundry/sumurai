@@ -86,9 +86,9 @@ export function CollapsibleSection({
             onClick={toggleExpanded}
             aria-label={expanded ? collapseLabel : expandLabel}
             aria-expanded={expanded}
-            className={cn('absolute', 'inset-0', 'cursor-pointer')}
+            className={cn('absolute', 'inset-0', 'z-0', 'cursor-pointer')}
           />
-          <div className={cn('pointer-events-none')}>
+          <div className={cn('relative', 'z-10', 'pointer-events-none')}>
             <div className={cn('min-w-0')}>
               {titleRow}
               {description ? (
@@ -97,10 +97,10 @@ export function CollapsibleSection({
                 </p>
               ) : null}
             </div>
-            <div className={cn('mt-2', 'flex', 'items-center', 'justify-between', 'pb-1')}>
-              <div className={cn('shrink-0', 'pointer-events-auto')}>{actionsStart}</div>
+            <div className={cn('mt-2', 'grid', 'grid-cols-3', 'items-center', 'pb-1')}>
+              <div className={cn('justify-self-start', 'pointer-events-auto')}>{actionsStart}</div>
               <div className={cn('flex', 'justify-center')}>{chevron}</div>
-              <div className={cn('shrink-0', 'pointer-events-auto')}>{actionsEnd}</div>
+              <div className={cn('justify-self-end', 'pointer-events-auto')}>{actionsEnd}</div>
             </div>
           </div>
         </div>
@@ -122,7 +122,18 @@ export function CollapsibleSection({
             <div className={cn('flex', 'justify-center')}>{chevron}</div>
           </button>
           {actions ? (
-            <div className={cn('absolute', 'right-0', 'top-0', 'shrink-0')}>{actions}</div>
+            <div
+              className={cn(
+                'pointer-events-auto',
+                'absolute',
+                'right-0',
+                'top-0',
+                'z-10',
+                'shrink-0'
+              )}
+            >
+              {actions}
+            </div>
           ) : null}
         </div>
       )}

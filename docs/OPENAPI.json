@@ -3147,7 +3147,7 @@
         "type": "object",
         "required": [
           "budgets",
-          "subscriptions"
+          "fixed_expenses"
         ],
         "properties": {
           "budgets": {
@@ -3156,10 +3156,10 @@
               "$ref": "#/components/schemas/Budget"
             }
           },
-          "subscriptions": {
+          "fixed_expenses": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SubscriptionSummary"
+              "$ref": "#/components/schemas/FixedExpenseSummary"
             }
           }
         }
@@ -3758,6 +3758,56 @@
           },
           "format": {
             "$ref": "#/components/schemas/ExportFormat"
+          }
+        }
+      },
+      "FixedExpenseSummary": {
+        "type": "object",
+        "required": [
+          "merchant",
+          "normalized_merchant",
+          "monthly_cost",
+          "cadence",
+          "first_charged",
+          "last_charged",
+          "occurrence_count",
+          "account_ids",
+          "category"
+        ],
+        "properties": {
+          "account_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "cadence": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "first_charged": {
+            "type": "string",
+            "format": "date"
+          },
+          "last_charged": {
+            "type": "string",
+            "format": "date"
+          },
+          "merchant": {
+            "type": "string"
+          },
+          "monthly_cost": {
+            "type": "string"
+          },
+          "normalized_merchant": {
+            "type": "string"
+          },
+          "occurrence_count": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -4730,52 +4780,6 @@
         "properties": {
           "restored": {
             "type": "boolean"
-          }
-        }
-      },
-      "SubscriptionSummary": {
-        "type": "object",
-        "required": [
-          "merchant",
-          "normalized_merchant",
-          "monthly_cost",
-          "cadence",
-          "first_charged",
-          "last_charged",
-          "occurrence_count",
-          "account_ids"
-        ],
-        "properties": {
-          "account_ids": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          "cadence": {
-            "type": "string"
-          },
-          "first_charged": {
-            "type": "string",
-            "format": "date"
-          },
-          "last_charged": {
-            "type": "string",
-            "format": "date"
-          },
-          "merchant": {
-            "type": "string"
-          },
-          "monthly_cost": {
-            "type": "string"
-          },
-          "normalized_merchant": {
-            "type": "string"
-          },
-          "occurrence_count": {
-            "type": "integer",
-            "format": "int64"
           }
         }
       },

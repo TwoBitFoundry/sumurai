@@ -12,7 +12,7 @@ import { BudgetInsightsPanel } from '../features/budgets/components/BudgetInsigh
 import { BudgetList } from '../features/budgets/components/BudgetList';
 import type { BudgetMonthControl } from '../features/budgets/hooks/useBudgetMonth';
 import { useBudgets } from '../features/budgets/hooks/useBudgets';
-import { SubscriptionsSection } from '../features/subscriptions/components/SubscriptionsSection';
+import { FixedExpensesSection } from '../features/fixed-expenses/components/FixedExpensesSection';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import { PageLayout } from '../layouts/PageLayout';
 
@@ -30,8 +30,8 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
     update,
     remove,
     computedBudgets,
-    subscriptions,
-    filteredSubscriptions,
+    filteredFixedExpenses,
+    insightsFixedExpenses,
     filterKey,
     availableCategoryOptions,
     month,
@@ -123,7 +123,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
       totalBudgeted={stats.totalBudgeted}
       totalSpent={stats.totalSpent}
       insights={insights}
-      subscriptions={filteredSubscriptions}
+      fixedExpenses={insightsFixedExpenses}
       month={month}
       filterKey={filterKey}
     />
@@ -140,16 +140,6 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
         stats={heroStats}
       >
         <div className={cn('w-full', 'min-w-0', 'max-w-full', 'space-y-6')}>
-          <GlassCard
-            variant="accent"
-            rounded="lg"
-            padding="none"
-            withInnerEffects={false}
-            containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
-            className={cn('space-y-6')}
-          >
-            <SubscriptionsSection subscriptions={subscriptions} isLoading={isLoading} />
-          </GlassCard>
           <GlassCard
             variant="accent"
             rounded="lg"
@@ -177,9 +167,10 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
                       onClick={onSaveEdit}
                       variant="success"
                       size="md"
+                      shape="square"
                       aria-label="Save budgets"
                       title="Save budgets"
-                      className={cn('w-auto', 'shrink-0', 'whitespace-nowrap')}
+                      className={cn('shrink-0')}
                     >
                       <Check />
                     </Button>
@@ -245,6 +236,20 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
                 />
               )}
             </CollapsibleSection>
+          </GlassCard>
+          <GlassCard
+            variant="accent"
+            rounded="lg"
+            padding="none"
+            withInnerEffects={false}
+            containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
+            className={cn('space-y-6')}
+          >
+            <FixedExpensesSection
+              fixedExpenses={filteredFixedExpenses}
+              month={month}
+              isLoading={isLoading}
+            />
           </GlassCard>
         </div>
       </PageLayout>

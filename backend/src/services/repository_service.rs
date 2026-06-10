@@ -386,10 +386,10 @@ pub trait DatabaseRepository: Send + Sync {
         since: chrono::NaiveDate,
     ) -> Result<Vec<Transaction>>;
 
-    async fn get_subscription_summary(
+    async fn get_fixed_expense_summary(
         &self,
         user_id: &Uuid,
-    ) -> Result<Vec<crate::models::subscription::SubscriptionSummary>>;
+    ) -> Result<Vec<crate::models::subscription::FixedExpenseSummary>>;
 }
 
 pub struct PostgresRepository {
@@ -3241,13 +3241,13 @@ impl DatabaseRepository for PostgresRepository {
         Ok(rows.into_iter().map(Into::into).collect())
     }
 
-    async fn get_subscription_summary(
+    async fn get_fixed_expense_summary(
         &self,
         user_id: &Uuid,
-    ) -> Result<Vec<crate::models::subscription::SubscriptionSummary>> {
-        use crate::models::subscription::SubscriptionSummary;
+    ) -> Result<Vec<crate::models::subscription::FixedExpenseSummary>> {
+        use crate::models::subscription::FixedExpenseSummary;
         use crate::services::subscription_detection::cadence::{
-            classify_cadence, normalize_to_monthly_cost, Cadence,
+            normalize_to_monthly_cost, reconcile_cadence_with_span, resolve_cadence,
         };
         use rust_decimal::Decimal;
         use std::collections::HashMap;
@@ -3256,21 +3256,30 @@ impl DatabaseRepository for PostgresRepository {
         let rows = self
             .with_tenant(&user_id, move |txn| {
                 Box::pin(async move {
-                    Ok(transactions::Entity::find()
+                    let query = transactions::Entity::find()
                         .join(
                             JoinType::LeftJoin,
                             transactions::Relation::TransactionCategoryOverrides.def(),
                         )
                         .filter(transactions::Column::UserId.eq(user_id))
-                        .filter(Self::effective_category_expr().eq("SUBSCRIPTION"))
-                        .order_by_asc(transactions::Column::Date)
+                        .filter(
+                            Condition::any()
+                                .add(Self::effective_category_expr().eq("SUBSCRIPTION"))
+                                .add(Self::effective_category_expr().eq("RENT_AND_UTILITIES"))
+                                .add(Self::effective_category_expr().eq("LOAN_PAYMENTS"))
+                                .add(Self::effective_category_expr().eq("INSURANCE")),
+                        )
+                        .order_by_asc(transactions::Column::Date);
+
+                    Ok(Self::transaction_with_effective_category_select(query)
+                        .into_model::<EffectiveCategoryTransactionRow>()
                         .all(txn)
                         .await?)
                 })
             })
             .await?;
 
-        let mut groups: HashMap<String, Vec<entity::transactions::Model>> = HashMap::new();
+        let mut groups: HashMap<String, Vec<EffectiveCategoryTransactionRow>> = HashMap::new();
         for row in rows {
             let key = row
                 .normalized_merchant
@@ -3287,7 +3296,16 @@ impl DatabaseRepository for PostgresRepository {
             let dates: Vec<chrono::NaiveDate> = group.iter().map(|r| r.date).collect();
             let day_gaps: Vec<i64> = dates.windows(2).map(|w| (w[1] - w[0]).num_days()).collect();
 
-            let cadence = classify_cadence(&day_gaps).unwrap_or(Cadence::Monthly);
+            let first_charged = group
+                .iter()
+                .map(|r| r.date)
+                .min()
+                .unwrap_or_else(|| chrono::Local::now().naive_local().date());
+
+            let last_charged = group.iter().map(|r| r.date).max().unwrap_or(first_charged);
+            let span_days = (last_charged - first_charged).num_days();
+            let cadence =
+                reconcile_cadence_with_span(resolve_cadence(&day_gaps), group.len(), span_days);
 
             let amounts: Vec<f64> = group
                 .iter()
@@ -3297,14 +3315,6 @@ impl DatabaseRepository for PostgresRepository {
             let monthly_f64 = normalize_to_monthly_cost(representative, cadence.clone());
             let monthly_cost = Decimal::try_from(monthly_f64)
                 .unwrap_or(Decimal::try_from(representative).unwrap_or(Decimal::ZERO));
-
-            let first_charged = group
-                .iter()
-                .map(|r| r.date)
-                .min()
-                .unwrap_or_else(|| chrono::Local::now().naive_local().date());
-
-            let last_charged = group.iter().map(|r| r.date).max().unwrap_or(first_charged);
 
             let merchant = group
                 .iter()
@@ -3318,7 +3328,19 @@ impl DatabaseRepository for PostgresRepository {
                 .filter(|id| seen_account_ids.insert(*id))
                 .collect();
 
-            summaries.push(SubscriptionSummary {
+            let mut category_counts: HashMap<String, usize> = HashMap::new();
+            for row in &group {
+                *category_counts
+                    .entry(row.category_primary.clone())
+                    .or_insert(0) += 1;
+            }
+            let category = category_counts
+                .into_iter()
+                .max_by_key(|(_, count)| *count)
+                .map(|(category, _)| category)
+                .unwrap_or_else(|| "RENT_AND_UTILITIES".to_string());
+
+            summaries.push(FixedExpenseSummary {
                 merchant,
                 normalized_merchant: normalized,
                 monthly_cost,
@@ -3327,6 +3349,7 @@ impl DatabaseRepository for PostgresRepository {
                 last_charged,
                 occurrence_count: group.len() as i64,
                 account_ids,
+                category,
             });
         }
 

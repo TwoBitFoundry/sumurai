@@ -72,4 +72,31 @@ describe('CollapsibleSection', () => {
     });
     expect(getSessionCollapsibleExpanded('budgets')).toBe(true);
   });
+
+  it('keeps split header actions clickable while the title area toggles expansion', async () => {
+    const user = userEvent.setup();
+    const onEdit = jest.fn();
+
+    render(
+      <CollapsibleSection
+        sectionId="budgets"
+        title="Budgets"
+        testId="budgets-section"
+        expandLabel="Show budgets"
+        collapseLabel="Hide budgets"
+        actionsStart={
+          <button type="button" onClick={onEdit}>
+            Edit budgets
+          </button>
+        }
+      >
+        <div data-testid="budgets-content">Budget content</div>
+      </CollapsibleSection>
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Edit budgets' }));
+
+    expect(onEdit).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('budgets-content')).not.toBeInTheDocument();
+  });
 });

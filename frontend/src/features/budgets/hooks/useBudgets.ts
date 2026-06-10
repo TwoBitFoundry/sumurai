@@ -5,13 +5,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
 import { BudgetCalculator } from '../../../domain/BudgetCalculator';
+import { hasFixedExpenseChargeInMonth } from '../../../domain/FixedExpenseCalculator';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { BudgetService } from '../../../services/BudgetService';
 import { TransactionService } from '../../../services/TransactionService';
 import type {
   Budget,
   BudgetsOverviewResponse,
-  SubscriptionSummary,
+  FixedExpenseSummary,
   Transaction,
 } from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
@@ -31,8 +32,9 @@ export interface UseBudgetsResult {
   error: string | null;
   validationError: string | null;
   budgets: Budget[];
-  subscriptions: SubscriptionSummary[];
-  filteredSubscriptions: SubscriptionSummary[];
+  fixedExpenses: FixedExpenseSummary[];
+  filteredFixedExpenses: FixedExpenseSummary[];
+  insightsFixedExpenses: FixedExpenseSummary[];
   filterKey: string;
   computedBudgets: BudgetProgressEntry[];
   transactions: Transaction[];
@@ -95,7 +97,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
   });
 
   const budgets = budgetsQuery.data?.budgets ?? [];
-  const subscriptions = budgetsQuery.data?.subscriptions ?? [];
+  const fixedExpenses = budgetsQuery.data?.fixed_expenses ?? [];
   const transactions = txnsQuery.data ?? [];
 
   const hasAccountRoster = allAccountIds.length > 0;
@@ -103,15 +105,23 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
   const isAccountFiltered =
     hasAccountRoster && !isAllAccountsSelected && selectedAccountIds.length > 0;
 
-  const filteredSubscriptions = useMemo(() => {
+  const insightsFixedExpenses = useMemo(() => {
     if (hasEmptyAccountSelection) {
       return [];
     }
-    if (!isAccountFiltered) return subscriptions;
-    return subscriptions.filter((sub) =>
-      sub.account_ids.some((id) => selectedAccountIds.includes(id))
+
+    if (!isAccountFiltered) {
+      return fixedExpenses;
+    }
+
+    return fixedExpenses.filter((item) =>
+      item.account_ids.some((id) => selectedAccountIds.includes(id))
     );
-  }, [hasEmptyAccountSelection, isAccountFiltered, selectedAccountIds, subscriptions]);
+  }, [hasEmptyAccountSelection, isAccountFiltered, selectedAccountIds, fixedExpenses]);
+
+  const filteredFixedExpenses = useMemo(() => {
+    return insightsFixedExpenses.filter((item) => hasFixedExpenseChargeInMonth(item, month));
+  }, [insightsFixedExpenses, month]);
 
   const loadError = useMemo(() => {
     if (!budgetsQuery.isError || budgetsQuery.error == null) {
@@ -138,7 +148,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
           ...(old?.budgets ?? []),
           { id, category: newBudget.category, amount: newBudget.amount },
         ],
-        subscriptions: old?.subscriptions ?? [],
+        fixed_expenses: old?.fixed_expenses ?? [],
       }));
       return { previous, tempId: id };
     },
@@ -153,7 +163,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
           ...(old?.budgets ?? []).filter((budget) => budget.id !== context?.tempId),
           createdBudget,
         ],
-        subscriptions: old?.subscriptions ?? [],
+        fixed_expenses: old?.fixed_expenses ?? [],
       }));
     },
     onSettled: () => {
@@ -171,7 +181,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
         budgets: (old?.budgets ?? []).map((b) =>
           b.id === variables.id ? { ...b, amount: variables.amount } : b
         ),
-        subscriptions: old?.subscriptions ?? [],
+        fixed_expenses: old?.fixed_expenses ?? [],
       }));
       return { previous };
     },
@@ -191,7 +201,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
               }
             : budget
         ),
-        subscriptions: old?.subscriptions ?? [],
+        fixed_expenses: old?.fixed_expenses ?? [],
       }));
     },
     onSettled: () => {
@@ -206,7 +216,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
       const previous = queryClient.getQueryData<BudgetsOverviewResponse>(['budgets']);
       queryClient.setQueryData<BudgetsOverviewResponse>(['budgets'], (old) => ({
         budgets: (old?.budgets ?? []).filter((b) => b.id !== variables.id),
-        subscriptions: old?.subscriptions ?? [],
+        fixed_expenses: old?.fixed_expenses ?? [],
       }));
       return { previous };
     },
@@ -330,8 +340,9 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
     error,
     validationError,
     budgets,
-    subscriptions,
-    filteredSubscriptions,
+    fixedExpenses,
+    filteredFixedExpenses,
+    insightsFixedExpenses,
     filterKey: cacheKey,
     computedBudgets,
     transactions,

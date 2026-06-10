@@ -3,7 +3,7 @@ import { ChevronDown, Flame, Repeat2, Wallet } from 'lucide-react';
 import { type CSSProperties, useState } from 'react';
 import { InsightCard } from '@/components/widgets/InsightCard';
 import type { BudgetInsights } from '@/domain/BudgetInsightsCalculator';
-import { SubscriptionCalculator } from '@/domain/SubscriptionCalculator';
+import { FixedExpenseCalculator } from '@/domain/FixedExpenseCalculator';
 import { useSessionCollapsible } from '@/hooks/useSessionCollapsible';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import { cn } from '@/ui/primitives';
@@ -13,7 +13,7 @@ import {
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { heroAccents } from '@/ui/tokens';
-import type { SubscriptionSummary } from '../../../types/api';
+import type { FixedExpenseSummary } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
 import { BudgetProgress } from './BudgetProgress';
 
@@ -21,7 +21,7 @@ export interface BudgetInsightsPanelProps {
   totalBudgeted: number;
   totalSpent: number;
   insights: BudgetInsights;
-  subscriptions: SubscriptionSummary[];
+  fixedExpenses: FixedExpenseSummary[];
   month: Date;
   filterKey: string;
 }
@@ -38,7 +38,7 @@ export function BudgetInsightsPanel({
   totalBudgeted,
   totalSpent,
   insights,
-  subscriptions,
+  fixedExpenses,
   month,
   filterKey,
 }: BudgetInsightsPanelProps) {
@@ -57,8 +57,8 @@ export function BudgetInsightsPanel({
   const overBudget = totalSpent > totalBudgeted;
   const shellAccent = heroAccents.sky;
 
-  const { monthlyTotal, yearToDate } = SubscriptionCalculator.computeSubscriptionHeroStats(
-    subscriptions,
+  const { monthlyTotal, yearToDate } = FixedExpenseCalculator.computeFixedExpenseHeroStats(
+    fixedExpenses,
     month
   );
 
@@ -158,7 +158,7 @@ export function BudgetInsightsPanel({
           subgridRow={isMobile}
         />
         <InsightCard
-          title="Sub Costs"
+          title="Fixed Costs"
           icon={<Repeat2 />}
           value={
             <>
@@ -185,7 +185,7 @@ export function BudgetInsightsPanel({
               </span>
             </>
           }
-          question="What do my subscriptions cost per month and year to date?"
+          question="What do my fixed expenses cost per month and year to date?"
           accent="sky"
           flipped={!!flipped['subscription-costs']}
           onToggle={() => toggle('subscription-costs')}

@@ -9,7 +9,7 @@ use uuid::Uuid;
 use crate::services::subscription_detection::cadence::Cadence;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
-pub struct SubscriptionSummary {
+pub struct FixedExpenseSummary {
     pub merchant: String,
     pub normalized_merchant: String,
     #[schema(value_type = String)]
@@ -19,9 +19,10 @@ pub struct SubscriptionSummary {
     pub last_charged: NaiveDate,
     pub occurrence_count: i64,
     pub account_ids: Vec<Uuid>,
+    pub category: String,
 }
 
-impl SubscriptionSummary {
+impl FixedExpenseSummary {
     #[allow(clippy::too_many_arguments)]
     pub fn from_cadence(
         merchant: String,
@@ -32,6 +33,7 @@ impl SubscriptionSummary {
         last_charged: NaiveDate,
         occurrence_count: i64,
         account_ids: Vec<Uuid>,
+        category: String,
     ) -> Self {
         let monthly_cost_f64 =
             crate::services::subscription_detection::cadence::normalize_to_monthly_cost(
@@ -49,6 +51,7 @@ impl SubscriptionSummary {
             last_charged,
             occurrence_count,
             account_ids,
+            category,
         }
     }
 }

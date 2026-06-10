@@ -4,7 +4,7 @@ import { BottomContextualBar } from '@/components/BottomContextualBar';
 import { BudgetMonthPillSlider } from '@/features/budgets/components/BudgetMonthPillSlider';
 import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
-import { sampleSubscriptions } from '@/storybook/fixtures/subscriptions';
+import { sampleFixedExpenses } from '@/storybook/fixtures/fixed-expenses';
 import BudgetsPage from '@/views/BudgetsPage';
 import {
   getPagedStoryTransactions,
@@ -33,7 +33,7 @@ async function expandBudgetInsights(canvas: ReturnType<typeof within>) {
     await userEvent.click(summaryButton);
   }
   await waitFor(() => {
-    expect(canvas.getByText('Sub Costs')).toBeVisible();
+    expect(canvas.getByText('Fixed Costs')).toBeVisible();
   });
 }
 
@@ -44,7 +44,7 @@ const handlers = [
   route('GET', '/budgets/overview', () =>
     jsonResponse({
       budgets: storyBudgets,
-      subscriptions: sampleSubscriptions,
+      fixed_expenses: sampleFixedExpenses,
     })
   ),
   route('POST', '/budgets', ({ body }) => {
@@ -114,11 +114,23 @@ export const Journey: Story = {
     });
     await expandBudgetInsights(canvas);
 
-    await userEvent.click(canvas.getByRole('button', { name: /show subscriptions/i }));
+    await userEvent.click(canvas.getByRole('button', { name: /show budgets/i }));
+    const addBudget = canvas.getByRole('button', { name: /^budget$/i });
+    await userEvent.click(addBudget);
+    const picker = await screen.findByTestId('add-budget-picker-content');
+    await userEvent.click(within(picker).getByRole('button', { name: /bills and utilities/i }));
+    await userEvent.type(screen.getByTestId('budget-amount-input'), '275');
+    await userEvent.click(screen.getByRole('button', { name: 'Save budget' }));
     await waitFor(() => {
-      expect(canvas.getByText('Spotify')).toBeVisible();
-      expect(canvas.getByText('Netflix')).toBeVisible();
+      expect(canvas.getAllByText(/bills and utilities/i)).toHaveLength(1);
     });
+
+    await userEvent.click(canvas.getByRole('button', { name: /show fixed expenses/i }));
+    await waitFor(() => {
+      expect(canvas.getByText('CenturyLink')).toBeVisible();
+      expect(canvas.getByText('Spotify')).toBeVisible();
+    });
+
     await waitFor(() => {
       expect(canvas.getByRole('button', { name: /next month/i })).toBeVisible();
     });
@@ -130,16 +142,5 @@ export const Journey: Story = {
       year: 'numeric',
     }).format(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1));
     await expect(canvas.getByText(expectedMonth)).toBeVisible();
-
-    await userEvent.click(canvas.getByRole('button', { name: /show budgets/i }));
-    const addBudget = canvas.getByRole('button', { name: /^budget$/i });
-    await userEvent.click(addBudget);
-    const picker = await screen.findByTestId('add-budget-picker-content');
-    await userEvent.click(within(picker).getByRole('button', { name: /bills and utilities/i }));
-    await userEvent.type(screen.getByTestId('budget-amount-input'), '275');
-    await userEvent.click(screen.getByRole('button', { name: 'Save budget' }));
-    await waitFor(() => {
-      expect(canvas.getAllByText(/bills and utilities/i)).toHaveLength(1);
-    });
   },
 };

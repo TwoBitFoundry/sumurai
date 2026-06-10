@@ -93,7 +93,7 @@ export interface Budget {
 
 export interface BudgetsOverviewResponse {
   budgets: Budget[];
-  subscriptions: SubscriptionSummary[];
+  fixed_expenses: FixedExpenseSummary[];
 }
 
 // Historically budgets included a `month`. Budgets are now
@@ -362,7 +362,7 @@ export interface RegisterRequest {
   name: string;
 }
 
-export interface SubscriptionSummary {
+export interface FixedExpenseSummary {
   merchant: string;
   normalized_merchant: string;
   monthly_cost: string;
@@ -371,4 +371,7 @@ export interface SubscriptionSummary {
   last_charged: string;
   occurrence_count: number;
   account_ids: string[];
+  category?: string;
 }
+
+export type SubscriptionSummary = FixedExpenseSummary;

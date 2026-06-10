@@ -1,13 +1,12 @@
-import { AlertTriangle, Clock, Pencil, Plus, Repeat2, Target } from 'lucide-react';
+import { Pencil, Plus, Target } from 'lucide-react';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
-import HeroStatCard, { SubscriptionCostsMetric } from '@/components/widgets/HeroStatCard';
 import AddBudgetPicker from '@/features/budgets/components/AddBudgetPicker';
 import { BudgetInsightsPanel } from '@/features/budgets/components/BudgetInsightsPanel';
 import { BudgetList } from '@/features/budgets/components/BudgetList';
-import { SubscriptionsSection } from '@/features/subscriptions/components/SubscriptionsSection';
+import { FixedExpensesSection } from '@/features/fixed-expenses/components/FixedExpensesSection';
 import { PageLayout } from '@/layouts/PageLayout';
 import { sampleBudgetProgressEntries } from '@/storybook/fixtures/budgets';
-import { sampleSubscriptions } from '@/storybook/fixtures/subscriptions';
+import { sampleFixedExpenses, storyFixedExpenseMonth } from '@/storybook/fixtures/fixed-expenses';
 import { Button, cn, EmptyState, GlassCard } from '@/ui/primitives';
 import { heroAccents } from '@/ui/tokens';
 
@@ -25,13 +24,13 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         runoutDate: props.state === 'empty' ? null : new Date(2026, 5, 17),
         hasActivity: props.state !== 'empty',
       }}
-      subscriptions={props.state === 'empty' ? [] : sampleSubscriptions}
-      month={new Date(2026, 5, 1)}
+      fixedExpenses={props.state === 'empty' ? [] : sampleFixedExpenses}
+      month={storyFixedExpenseMonth}
       filterKey={props.state}
     />
   );
 
-  const subscriptions = props.state === 'empty' ? [] : sampleSubscriptions;
+  const fixedExpenses = props.state === 'empty' ? [] : sampleFixedExpenses;
 
   const errorMessage =
     props.state === 'error' ? 'Unable to reach the budgets service. Try again shortly.' : null;
@@ -39,22 +38,12 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
   return (
     <div data-testid="budgets-page">
       <PageLayout
-        title="Budgets under command"
+        title="Provision the coffers"
         subtitle="Review subscriptions and manage monthly budgets categories from all your connected bank accounts."
         error={errorMessage}
         stats={heroStats}
       >
         <div className={cn('w-full', 'min-w-0', 'max-w-full', 'space-y-6')}>
-          <GlassCard
-            variant="accent"
-            rounded="lg"
-            padding="none"
-            withInnerEffects={false}
-            containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
-            className={cn('space-y-6')}
-          >
-            <SubscriptionsSection subscriptions={subscriptions} isLoading={false} />
-          </GlassCard>
           <GlassCard
             variant="accent"
             rounded="lg"
@@ -137,7 +126,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
                 <EmptyState
                   icon={Target}
                   title="No budgets yet"
-                  description="Set your first category limit. Lead the month with discipline."
+                  description="Set your first budget to see your progress."
                   action={
                     <Button type="button" onClick={() => {}} variant="primary" size="md">
                       <Plus />
@@ -148,6 +137,20 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
                 />
               ) : null}
             </CollapsibleSection>
+          </GlassCard>
+          <GlassCard
+            variant="accent"
+            rounded="lg"
+            padding="none"
+            withInnerEffects={false}
+            containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
+            className={cn('space-y-6')}
+          >
+            <FixedExpensesSection
+              fixedExpenses={fixedExpenses}
+              month={storyFixedExpenseMonth}
+              isLoading={false}
+            />
           </GlassCard>
         </div>
       </PageLayout>

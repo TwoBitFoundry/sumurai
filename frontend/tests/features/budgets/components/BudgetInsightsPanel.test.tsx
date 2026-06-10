@@ -20,7 +20,7 @@ const defaultProps = {
   totalBudgeted: 500,
   totalSpent: 250,
   insights: baseInsights,
-  subscriptions: [],
+  fixedExpenses: [],
   month: new Date(2026, 5, 1),
   filterKey: 'all',
 };
@@ -50,7 +50,7 @@ describe('BudgetInsightsPanel', () => {
     );
     expect(screen.queryByText('Runway')).not.toBeInTheDocument();
     expect(screen.queryByText('Free Spend')).not.toBeInTheDocument();
-    expect(screen.queryByText('Sub Costs')).not.toBeInTheDocument();
+    expect(screen.queryByText('Fixed Costs')).not.toBeInTheDocument();
   });
 
   it('restores expanded state from session storage', () => {

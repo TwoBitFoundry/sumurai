@@ -73,8 +73,9 @@ const baseUseBudgetsMock = {
     { id: 'b1', category: 'FOOD_AND_DRINK', amount: 200, spent: 80, percentage: 40 },
   ],
   transactions: [],
-  subscriptions: [],
-  filteredSubscriptions: [],
+  fixedExpenses: [],
+  filteredFixedExpenses: [],
+  insightsFixedExpenses: [],
   filterKey: 'all',
   categoryOptions: [],
   availableCategoryOptions: [],
@@ -95,7 +96,7 @@ describe('BudgetsPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     window.sessionStorage.clear();
-    setSessionBudgetsSectionExpanded('subscriptions', true);
+    setSessionBudgetsSectionExpanded('fixed-expenses', true);
     setSessionBudgetsSectionExpanded('budgets', true);
     setSessionCollapsibleExpanded('budget-insights', true);
     jest.mocked(useBudgets).mockReturnValue(baseUseBudgetsMock as any);
@@ -111,14 +112,14 @@ describe('BudgetsPage', () => {
     );
     expect(screen.getByText('Runway')).toBeInTheDocument();
     expect(screen.getByText('Free Spend')).toBeInTheDocument();
-    expect(screen.getByText('Sub Costs')).toBeInTheDocument();
+    expect(screen.getByText('Fixed Costs')).toBeInTheDocument();
 
     expect(screen.queryByText('Days remaining')).not.toBeInTheDocument();
     expect(screen.queryByText('Subscription costs')).not.toBeInTheDocument();
     expect(screen.queryByText('Overages')).not.toBeInTheDocument();
   });
 
-  it('shows subscription and budget glass cards with subscriptions first', async () => {
+  it('shows budget and fixed expense glass cards with budgets first', async () => {
     jest.mocked(useBudgets).mockReturnValue({ ...baseUseBudgetsMock, computedBudgets: [] } as any);
     render(<BudgetsPage monthControl={monthControl} />);
 
@@ -127,15 +128,15 @@ describe('BudgetsPage', () => {
     });
 
     const cards = Array.from(screen.getByTestId('page-children').firstElementChild?.children ?? []);
-    const subscriptionsCardIndex = cards.findIndex((card) =>
-      card.querySelector('[data-testid="subscriptions-section"]')
+    const fixedExpensesCardIndex = cards.findIndex((card) =>
+      card.querySelector('[data-testid="fixed-expenses-section"]')
     );
     const budgetsCardIndex = cards.findIndex((card) =>
       card.querySelector('[data-testid="budgets-empty-state"]')
     );
 
-    expect(subscriptionsCardIndex).toBeGreaterThanOrEqual(0);
-    expect(budgetsCardIndex).toBeGreaterThan(subscriptionsCardIndex);
+    expect(budgetsCardIndex).toBeGreaterThanOrEqual(0);
+    expect(fixedExpensesCardIndex).toBeGreaterThan(budgetsCardIndex);
   });
 
   it('keeps the insight shell visible in the page stats area', () => {
