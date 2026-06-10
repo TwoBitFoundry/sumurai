@@ -115,7 +115,7 @@ export function BudgetInsightsPanel({
             )
           }
           question="How much am I spending per day, and when will I run out at this pace?"
-          accent="slate"
+          accent="sky"
           flipped={!!flipped.pacing}
           onToggle={() => toggle('pacing')}
           outlined={false}
@@ -149,7 +149,7 @@ export function BudgetInsightsPanel({
             </>
           }
           question="How much income is left after planned budgets and overages?"
-          accent="slate"
+          accent="sky"
           flipped={!!flipped['free-spend']}
           onToggle={() => toggle('free-spend')}
           outlined={false}
@@ -186,7 +186,7 @@ export function BudgetInsightsPanel({
             </>
           }
           question="What do my subscriptions cost per month and year to date?"
-          accent="slate"
+          accent="sky"
           flipped={!!flipped['subscription-costs']}
           onToggle={() => toggle('subscription-costs')}
           outlined={false}

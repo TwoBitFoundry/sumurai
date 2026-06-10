@@ -126,7 +126,7 @@ function Card3Value({ metric }: { metric: InsightMetric }) {
         <span className="justify-self-start">
           {Math.round(variable)}
           <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.body, 'ml-0.5')}>
-            active
+            total
           </span>
         </span>
       </>

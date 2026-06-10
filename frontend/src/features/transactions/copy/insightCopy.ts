@@ -18,7 +18,7 @@ export const INSIGHT_COPY: Record<InsightState, InsightStateCopy> = {
     },
     card3: {
       title: 'Breakdown',
-      question: 'How much is recurring bills vs active swipes?',
+      question: 'How many expenses are fixed or extraneous?',
     },
   },
   b: {
