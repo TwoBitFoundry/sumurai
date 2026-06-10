@@ -31,8 +31,8 @@ export const INSIGHT_COPY: Record<InsightState, InsightStateCopy> = {
       question: 'What does a typical purchase here cost?',
     },
     card3: {
-      title: 'vs Your Usual',
-      question: 'Are purchases here bigger or smaller than usual?',
+      title: 'vs All Categories',
+      question: 'Is a typical purchase here bigger or smaller than your overall median?',
     },
   },
   c: {
@@ -59,8 +59,8 @@ export const INSIGHT_COPY: Record<InsightState, InsightStateCopy> = {
       question: 'What does a typical charge here look like?',
     },
     card3: {
-      title: 'vs Your Usual',
-      question: 'Are charges here bigger or smaller than usual?',
+      title: 'vs All Accounts',
+      question: 'Is a typical charge here bigger or smaller than your overall median?',
     },
   },
   e: {

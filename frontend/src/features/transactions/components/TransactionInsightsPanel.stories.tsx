@@ -100,7 +100,7 @@ export const StateB: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText('Category filter')).toBeVisible();
     await expect(canvas.getByText('Category Total')).toBeVisible();
-    await expect(canvas.getByText('vs Your Usual')).toBeVisible();
+    await expect(canvas.getByText('vs All Categories')).toBeVisible();
   },
 };
 
