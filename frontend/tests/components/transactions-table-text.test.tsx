@@ -29,8 +29,6 @@ describe('TransactionsTable text tokens', () => {
         currentPage={1}
         totalPages={1}
         pageSize={3}
-        onPrev={() => {}}
-        onNext={() => {}}
       />
     );
 
@@ -52,8 +50,6 @@ describe('TransactionsTable text tokens', () => {
         currentPage={1}
         totalPages={1}
         pageSize={4}
-        onPrev={() => {}}
-        onNext={() => {}}
       />
     );
 
@@ -62,15 +58,7 @@ describe('TransactionsTable text tokens', () => {
 
   it('renders eight placeholder rows when no transactions match', () => {
     const { container } = render(
-      <TransactionsTable
-        items={[]}
-        total={0}
-        currentPage={1}
-        totalPages={1}
-        pageSize={8}
-        onPrev={() => {}}
-        onNext={() => {}}
-      />
+      <TransactionsTable items={[]} total={0} currentPage={1} totalPages={1} pageSize={8} />
     );
 
     expect(container.querySelectorAll('tbody tr')).toHaveLength(8);
@@ -92,8 +80,6 @@ describe('TransactionsTable text tokens', () => {
         currentPage={1}
         totalPages={1}
         pageSize={1}
-        onPrev={() => {}}
-        onNext={() => {}}
       />
     );
 
@@ -125,8 +111,6 @@ describe('TransactionsTable text tokens', () => {
         currentPage={1}
         totalPages={1}
         pageSize={1}
-        onPrev={() => {}}
-        onNext={() => {}}
       />
     );
 
@@ -155,8 +139,6 @@ describe('TransactionsTable text tokens', () => {
         currentPage={1}
         totalPages={1}
         pageSize={1}
-        onPrev={() => {}}
-        onNext={() => {}}
       />
     );
 
@@ -188,8 +170,6 @@ describe('TransactionsTable text tokens', () => {
         currentPage={1}
         totalPages={1}
         pageSize={1}
-        onPrev={() => {}}
-        onNext={() => {}}
       />
     );
 
@@ -211,8 +191,6 @@ describe('TransactionsTable text tokens', () => {
         currentPage={1}
         totalPages={1}
         pageSize={1}
-        onPrev={() => {}}
-        onNext={() => {}}
       />
     );
 
@@ -240,8 +218,6 @@ describe('TransactionsTable text tokens', () => {
         currentPage={1}
         totalPages={1}
         pageSize={1}
-        onPrev={() => {}}
-        onNext={() => {}}
       />
     );
 

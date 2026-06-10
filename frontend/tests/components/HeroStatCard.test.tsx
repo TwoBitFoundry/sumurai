@@ -26,7 +26,7 @@ describe('HeroStatCard', () => {
   it('renders the shared scroll footer for subtext', () => {
     render(
       <HeroStatCard
-        title="Accounts tracked"
+        title="Accounts"
         value={3}
         suffix="accounts"
         subtext="Balances stay in sync automatically"

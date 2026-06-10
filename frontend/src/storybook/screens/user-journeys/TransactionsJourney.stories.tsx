@@ -3,6 +3,7 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { BottomContextualBar } from '@/components/BottomContextualBar';
 import { TransactionsSearchBar } from '@/features/transactions/components/TransactionsSearchBar';
 import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
+import { useTransactions } from '@/features/transactions/hooks/useTransactions';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import TransactionsPage from '@/views/TransactionsPage';
 import {
@@ -45,12 +46,26 @@ const handlers = [
 
 function TransactionsJourney() {
   const filterControl = useTransactionFilterState();
+  const transactionsControl = useTransactions({ pageSize: 8, filterControl });
   return (
     <AccountFilterStoryProvider>
       <StoryApiScope handlers={handlers}>
-        <TransactionsPage filterControl={filterControl} />
+        <TransactionsPage filterControl={filterControl} transactionsControl={transactionsControl} />
         <BottomContextualBar>
-          <TransactionsSearchBar search={filterControl.search} onSearch={filterControl.setSearch} />
+          <TransactionsSearchBar
+            search={filterControl.search}
+            onSearch={filterControl.setSearch}
+            currentPage={transactionsControl.currentPage}
+            totalPages={transactionsControl.totalPages}
+            onPrev={() =>
+              filterControl.setCurrentPage(Math.max(1, transactionsControl.currentPage - 1))
+            }
+            onNext={() =>
+              filterControl.setCurrentPage(
+                Math.min(transactionsControl.totalPages, transactionsControl.currentPage + 1)
+              )
+            }
+          />
         </BottomContextualBar>
       </StoryApiScope>
     </AccountFilterStoryProvider>
@@ -73,7 +88,7 @@ export const Journey: Story = {
       expect(page.getByText(/page 1 of 2/i)).toBeVisible();
     });
 
-    const nextPage = page.getByRole('button', { name: /next page/i });
+    const nextPage = canvas.getByRole('button', { name: /next page/i });
     await waitFor(() => {
       expect(nextPage).not.toBeDisabled();
     });

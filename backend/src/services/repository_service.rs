@@ -10,10 +10,12 @@ use crate::models::{
     custom_category::CustomCategory,
     plaid::{LatestAccountBalance, PlaidCredentials, ProviderConnection},
     transaction::{
-        LargestTransaction, Transaction, TransactionWithAccount, TransactionsInsightsResponse,
+        ContextualInsightsResponse, InsightFormat, InsightMetric, InsightState, LargestTransaction,
+        Transaction, TransactionWithAccount, TransactionsInsightsResponse,
     },
     transaction_category_override::TransactionCategoryOverride,
 };
+use crate::services::merchant_normalization::engine::canonical_key;
 use crate::utils::tenant_context::set_tenant_context;
 use aes_gcm::{
     aead::{Aead, KeyInit},
@@ -27,6 +29,8 @@ use entity::{
     simplefin_hidden_orgs, simplefin_root_credentials, transaction_category_overrides,
     transactions, user_custom_categories, users, webauthn_credentials,
 };
+use once_cell::sync::Lazy;
+use regex::Regex;
 use sea_orm::{
     sea_query::{Expr, Func, JoinType, OnConflict, Query, SimpleExpr},
     ActiveValue::Set,
@@ -194,6 +198,16 @@ pub trait DatabaseRepository: Send + Sync {
         end_date: Option<NaiveDate>,
         category_primary: Option<&str>,
     ) -> Result<TransactionsInsightsResponse>;
+    #[allow(clippy::too_many_arguments)]
+    async fn get_transactions_contextual_insights(
+        &self,
+        user_id: &Uuid,
+        search: Option<&str>,
+        account_ids: Option<&[Uuid]>,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
+        category_primary: Option<&str>,
+    ) -> Result<ContextualInsightsResponse>;
     async fn get_distinct_transaction_categories(&self, user_id: &Uuid) -> Result<Vec<String>>;
 
     async fn store_provider_credentials_for_user(
@@ -399,9 +413,32 @@ impl SqlStatementBuilder {
         self.sql.push_str(fragment);
     }
 
+    fn push_cte(&mut self, name: &str, stmt: Statement) {
+        let offset = self.values.len();
+        let remapped = remap_params(&stmt.sql, offset);
+        self.sql.push_str(&format!(", {} AS ({})", name, remapped));
+        if let Some(values) = stmt.values {
+            self.values.extend(values.0);
+        }
+    }
+
+    fn push_param(&mut self, val: Value) -> usize {
+        self.values.push(val);
+        self.values.len()
+    }
+
     fn into_statement(self) -> Statement {
         Statement::from_sql_and_values(DbBackend::Postgres, self.sql, self.values)
     }
+}
+
+fn remap_params(sql: &str, offset: usize) -> String {
+    static RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\$(\d+)").unwrap());
+    RE.replace_all(sql, |caps: &regex::Captures| {
+        let n: usize = caps[1].parse().unwrap_or(0);
+        format!("${}", n + offset)
+    })
+    .into_owned()
 }
 
 impl PostgresRepository {
@@ -971,6 +1008,7 @@ impl PostgresRepository {
         )
         .select_only()
         .column(transactions::Column::Amount)
+        .column(transactions::Column::Date)
         .column_as(
             Expr::cust_with_expr(
                 "NULLIF(TRIM($1), '')",
@@ -979,6 +1017,66 @@ impl PostgresRepository {
             "merchant",
         )
         .column_as(Self::effective_category_expr(), "effective_category")
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn insights_merchant_select(
+        user_id: &Uuid,
+        merchant_key: &str,
+        search_like: &str,
+        account_ids: Option<&[Uuid]>,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
+        category_primary: Option<&str>,
+    ) -> Select<transactions::Entity> {
+        let mut q = Self::transactions_with_account_joins()
+            .select_only()
+            .column(transactions::Column::Amount)
+            .column(transactions::Column::Date)
+            .column_as(
+                Expr::cust_with_expr(
+                    "NULLIF(TRIM($1), '')",
+                    Expr::col((transactions::Entity, transactions::Column::MerchantName)),
+                ),
+                "merchant",
+            )
+            .column_as(Self::effective_category_expr(), "effective_category")
+            .filter(transactions::Column::UserId.eq(*user_id));
+
+        if let Some(ids) = account_ids.filter(|ids| !ids.is_empty()) {
+            q = q.filter(transactions::Column::AccountId.is_in(ids.to_vec()));
+        }
+        if let Some(sd) = start_date {
+            q = q.filter(transactions::Column::Date.gte(sd));
+        }
+        if let Some(ed) = end_date {
+            q = q.filter(transactions::Column::Date.lte(ed));
+        }
+        if let Some(cat) = category_primary {
+            let cat = cat.trim();
+            if !cat.is_empty() {
+                q = q.filter(Self::effective_category_expr().eq(cat.to_string()));
+            }
+        }
+        q.filter(
+            Condition::any()
+                .add(transactions::Column::NormalizedMerchant.eq(merchant_key.to_string()))
+                .add(
+                    Condition::all()
+                        .add(transactions::Column::NormalizedMerchant.is_null())
+                        .add(
+                            Expr::expr(Func::lower(Func::coalesce([
+                                Expr::col((
+                                    transactions::Entity,
+                                    transactions::Column::MerchantName,
+                                ))
+                                .into(),
+                                Expr::val("").into(),
+                            ])))
+                            .like(search_like.to_string()),
+                        ),
+                ),
+        )
     }
 
     fn auto_categorize_filter() -> SimpleExpr {
@@ -1073,6 +1171,19 @@ impl PostgresRepository {
             largest,
             top_categories,
         }
+    }
+}
+
+fn derive_insight_state(a: bool, c: bool, m: bool) -> InsightState {
+    match (a, c, m) {
+        (false, false, false) => InsightState::A,
+        (false, true, false) => InsightState::B,
+        (false, false, true) => InsightState::C,
+        (true, false, false) => InsightState::D,
+        (true, true, false) => InsightState::E,
+        (true, false, true) => InsightState::F,
+        (false, true, true) => InsightState::G,
+        (true, true, true) => InsightState::Triple,
     }
 }
 
@@ -1688,6 +1799,377 @@ impl DatabaseRepository for PostgresRepository {
                     .await?
                     .ok_or_else(|| anyhow::anyhow!("insights query returned no rows"))?;
                 Self::map_transaction_insights_row(&row)
+            })
+        })
+        .await
+    }
+
+    async fn get_transactions_contextual_insights(
+        &self,
+        user_id: &Uuid,
+        search: Option<&str>,
+        account_ids: Option<&[Uuid]>,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
+        category_primary: Option<&str>,
+    ) -> Result<ContextualInsightsResponse> {
+        let user_id = *user_id;
+        let search = search.map(str::to_string);
+        let account_ids = account_ids.map(|ids| ids.to_vec());
+        let category_primary = category_primary.map(str::to_string);
+
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                let a = account_ids.as_ref().is_some_and(|ids| ids.len() == 1);
+                let c = category_primary.is_some();
+
+                let (m, merchant_key) =
+                    match search.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+                        Some(trimmed) => {
+                            let key = canonical_key(trimmed);
+                            let search_like = format!("%{}%", trimmed.to_lowercase());
+                            let mut count_q = Self::transactions_with_account_joins()
+                                .filter(transactions::Column::UserId.eq(user_id));
+                            if let Some(ids) =
+                                account_ids.as_deref().filter(|ids| !ids.is_empty())
+                            {
+                                count_q = count_q.filter(
+                                    transactions::Column::AccountId.is_in(ids.to_vec()),
+                                );
+                            }
+                            count_q = count_q.filter(
+                                Condition::any()
+                                    .add(
+                                        transactions::Column::NormalizedMerchant
+                                            .eq(key.clone()),
+                                    )
+                                    .add(
+                                        Condition::all()
+                                            .add(
+                                                transactions::Column::NormalizedMerchant
+                                                    .is_null(),
+                                            )
+                                            .add(
+                                                Expr::expr(Func::lower(Func::coalesce([
+                                                    Expr::col((
+                                                        transactions::Entity,
+                                                        transactions::Column::MerchantName,
+                                                    ))
+                                                    .into(),
+                                                    Expr::val("").into(),
+                                                ])))
+                                                .like(search_like),
+                                            ),
+                                    ),
+                            );
+                            let count = count_q.count(txn).await?;
+                            (count > 0, Some(key))
+                        }
+                        None => (false, None),
+                    };
+
+                let state = derive_insight_state(a, c, m);
+                let use_lifetime = matches!(state, InsightState::C);
+                let use_mode = matches!(state, InsightState::C | InsightState::Triple);
+                let has_parent = !matches!(state, InsightState::A | InsightState::Triple);
+
+                let (merchant_key_str, slike) = if let Some(ref key) = merchant_key {
+                    let trimmed = search.as_deref().unwrap_or("").trim();
+                    (key.clone(), format!("%{}%", trimmed.to_lowercase()))
+                } else {
+                    (String::new(), String::new())
+                };
+
+                let filtered = if m {
+                    Self::insights_merchant_select(
+                        &user_id,
+                        &merchant_key_str,
+                        &slike,
+                        account_ids.as_deref(),
+                        if use_lifetime { None } else { start_date },
+                        if use_lifetime { None } else { end_date },
+                        category_primary.as_deref(),
+                    )
+                } else {
+                    Self::insights_filtered_select(
+                        &user_id,
+                        search.as_deref(),
+                        account_ids.as_deref(),
+                        start_date,
+                        end_date,
+                        category_primary.as_deref(),
+                    )
+                }
+                .build(DbBackend::Postgres);
+
+                let filtered_values = filtered.values.map(|v| v.0).unwrap_or_default();
+                let excluded = EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES
+                    .iter()
+                    .map(|c| format!("'{}'", c))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+
+                let mut qb = SqlStatementBuilder::from_prefix(
+                    format!("WITH filtered AS ({})", filtered.sql),
+                    filtered_values,
+                );
+
+                match state {
+                    InsightState::C => {
+                        let uid_param =
+                            qb.push_param(Value::Uuid(Some(Box::new(user_id))));
+                        qb.push(&format!(
+                            r#"
+                            , merchant_cat AS (
+                                SELECT COALESCE(mode() WITHIN GROUP (ORDER BY effective_category), '') AS cat
+                                FROM filtered
+                            )
+                            , parent AS (
+                                SELECT t.amount,
+                                       COALESCE(tco.category_name, t.category_primary) AS effective_category
+                                FROM transactions t
+                                INNER JOIN accounts a ON a.id = t.account_id
+                                LEFT JOIN transaction_category_overrides tco
+                                    ON tco.user_id = t.user_id
+                                    AND tco.normalized_merchant = t.normalized_merchant
+                                WHERE t.user_id = ${uid_param}
+                                  AND COALESCE(tco.category_name, t.category_primary)
+                                      = (SELECT cat FROM merchant_cat)
+                                  AND (SELECT cat FROM merchant_cat) <> ''
+                            )
+                            "#,
+                            uid_param = uid_param,
+                        ));
+                    }
+                    InsightState::B | InsightState::D => {
+                        let stmt = Self::insights_filtered_select(
+                            &user_id,
+                            None,
+                            None,
+                            start_date,
+                            end_date,
+                            None,
+                        )
+                        .build(DbBackend::Postgres);
+                        qb.push_cte("parent", stmt);
+                    }
+                    InsightState::E | InsightState::G => {
+                        let stmt = Self::insights_filtered_select(
+                            &user_id,
+                            None,
+                            None,
+                            start_date,
+                            end_date,
+                            category_primary.as_deref(),
+                        )
+                        .build(DbBackend::Postgres);
+                        qb.push_cte("parent", stmt);
+                    }
+                    InsightState::F => {
+                        let stmt = Self::insights_merchant_select(
+                            &user_id,
+                            &merchant_key_str,
+                            &slike,
+                            None,
+                            start_date,
+                            end_date,
+                            None,
+                        )
+                        .build(DbBackend::Postgres);
+                        qb.push_cte("parent", stmt);
+                    }
+                    _ => {}
+                }
+
+                qb.push(&format!(
+                    r#"
+                    , agg AS (
+                        SELECT
+                            COUNT(*) AS total_count,
+                            COALESCE(SUM(CASE WHEN effective_category NOT IN ({excluded}) THEN (-amount)::float8 END), 0)::float8 AS total_spent,
+                            CASE WHEN COUNT(*) >= 2 THEN percentile_cont(0.5) WITHIN GROUP (ORDER BY ABS(amount)::float8)::float8 END AS median_amount,
+                            CASE WHEN COUNT(*) >= 2 THEN mode() WITHIN GROUP (ORDER BY ABS(amount)::float8)::float8 END AS mode_amount,
+                            SUM(CASE WHEN effective_category = 'SUBSCRIPTION' THEN 1 ELSE 0 END) AS subscription_count,
+                            (CURRENT_DATE - MAX(date))::float8 AS days_since_last
+                        FROM filtered
+                    )
+                    "#,
+                    excluded = excluded,
+                ));
+
+                if has_parent {
+                    qb.push(&format!(
+                        r#"
+                        , parent_agg AS (
+                            SELECT
+                                CASE WHEN COUNT(*) >= 2 THEN percentile_cont(0.5) WITHIN GROUP (ORDER BY ABS(amount)::float8)::float8 END AS parent_median,
+                                COALESCE(SUM(CASE WHEN effective_category NOT IN ({excluded}) THEN (-amount)::float8 END), 0)::float8 AS parent_spent,
+                                COUNT(*) AS parent_count
+                            FROM parent
+                        )
+                        SELECT total_count, total_spent, median_amount, mode_amount,
+                               subscription_count, days_since_last,
+                               parent_median, parent_spent, parent_count
+                        FROM agg, parent_agg
+                        "#,
+                        excluded = excluded,
+                    ));
+                } else {
+                    qb.push(
+                        r#"
+                        SELECT total_count, total_spent, median_amount, mode_amount,
+                               subscription_count, days_since_last
+                        FROM agg
+                        "#,
+                    );
+                }
+
+                let row = txn
+                    .query_one(qb.into_statement())
+                    .await?
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("contextual insights query returned no rows")
+                    })?;
+
+                let total_count: i64 = row.try_get("", "total_count")?;
+                let total_spent: f64 = row.try_get("", "total_spent")?;
+                let median_amount: Option<f64> = row.try_get("", "median_amount")?;
+                let mode_amount: Option<f64> = row.try_get("", "mode_amount")?;
+                let subscription_count: i64 = row.try_get("", "subscription_count")?;
+                let days_since_last: Option<f64> = row.try_get("", "days_since_last")?;
+
+                let (parent_median, parent_spent, parent_count): (Option<f64>, f64, i64) =
+                    if has_parent {
+                        (
+                            row.try_get("", "parent_median")?,
+                            row.try_get("", "parent_spent")?,
+                            row.try_get("", "parent_count")?,
+                        )
+                    } else {
+                        (None, 0.0, 0)
+                    };
+
+                let card2_value = if use_mode { mode_amount } else { median_amount };
+
+                let (card1_share, card3) = match state {
+                    InsightState::A => (
+                        None,
+                        Some(InsightMetric {
+                            value: Some(subscription_count as f64),
+                            format: InsightFormat::Count,
+                            secondary: Some((total_count - subscription_count) as f64),
+                            comparison: None,
+                            share: None,
+                            label: None,
+                        }),
+                    ),
+                    InsightState::B | InsightState::D => {
+                        let ratio = parent_median
+                            .filter(|&pm| pm > 0.0)
+                            .and_then(|pm| card2_value.map(|v| v / pm));
+                        let share = (parent_spent > 0.0).then(|| total_spent / parent_spent);
+                        (
+                            share,
+                            Some(InsightMetric {
+                                value: ratio,
+                                format: InsightFormat::Ratio,
+                                comparison: parent_median,
+                                secondary: None,
+                                share: None,
+                                label: None,
+                            }),
+                        )
+                    }
+                    InsightState::C => {
+                        let ratio = parent_median
+                            .filter(|&pm| pm > 0.0)
+                            .and_then(|pm| card2_value.map(|v| v / pm));
+                        (
+                            None,
+                            Some(InsightMetric {
+                                value: ratio,
+                                format: InsightFormat::Ratio,
+                                comparison: parent_median,
+                                secondary: None,
+                                share: None,
+                                label: None,
+                            }),
+                        )
+                    }
+                    InsightState::E => (
+                        None,
+                        Some(InsightMetric {
+                            value: (parent_spent > 0.0)
+                                .then(|| total_spent / parent_spent),
+                            format: InsightFormat::Percent,
+                            secondary: Some(parent_spent),
+                            comparison: None,
+                            share: None,
+                            label: None,
+                        }),
+                    ),
+                    InsightState::F => (
+                        None,
+                        Some(InsightMetric {
+                            value: (parent_count > 0)
+                                .then(|| total_count as f64 / parent_count as f64),
+                            format: InsightFormat::Percent,
+                            secondary: Some(parent_count as f64),
+                            comparison: None,
+                            share: None,
+                            label: None,
+                        }),
+                    ),
+                    InsightState::G => {
+                        let ratio = parent_median
+                            .filter(|&pm| pm > 0.0)
+                            .and_then(|pm| card2_value.map(|v| v / pm));
+                        let share = (parent_spent > 0.0).then(|| total_spent / parent_spent);
+                        (
+                            share,
+                            Some(InsightMetric {
+                                value: ratio,
+                                format: InsightFormat::Ratio,
+                                comparison: parent_median,
+                                secondary: None,
+                                share: None,
+                                label: None,
+                            }),
+                        )
+                    }
+                    InsightState::Triple => (
+                        None,
+                        Some(InsightMetric {
+                            value: days_since_last,
+                            format: InsightFormat::Days,
+                            secondary: None,
+                            comparison: None,
+                            share: None,
+                            label: None,
+                        }),
+                    ),
+                };
+
+                Ok(ContextualInsightsResponse {
+                    state,
+                    card1: InsightMetric {
+                        value: Some(total_spent),
+                        format: InsightFormat::Currency,
+                        secondary: Some(total_count as f64),
+                        comparison: None,
+                        share: card1_share,
+                        label: None,
+                    },
+                    card2: InsightMetric {
+                        value: card2_value,
+                        format: InsightFormat::Currency,
+                        secondary: None,
+                        comparison: None,
+                        share: None,
+                        label: None,
+                    },
+                    card3,
+                })
             })
         })
         .await

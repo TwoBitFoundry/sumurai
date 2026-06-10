@@ -102,6 +102,17 @@ describe('TransactionsMobileList', () => {
     expect(merchant.className).toContain('overflow-hidden');
   });
 
+  it('applies hover styling to each transaction row', () => {
+    const { container } = render(<TransactionsMobileList {...listProps} />);
+
+    expect(screen.getByTestId('transactions-mobile-list').className).not.toContain(
+      'hover:ring-emerald-400/60'
+    );
+
+    const row = container.querySelector('li:not([aria-hidden="true"])');
+    expect(row?.className).toContain('hover:ring-emerald-400/60');
+  });
+
   it('includes the year on the meta line for every transaction', () => {
     render(<TransactionsMobileList {...listProps} />);
 

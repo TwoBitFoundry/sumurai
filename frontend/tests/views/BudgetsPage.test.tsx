@@ -1,7 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import type React from 'react';
 import { useBudgets } from '@/features/budgets/hooks/useBudgets';
-import { setSessionBudgetsSectionExpanded } from '@/utils/sessionPreferences';
+import {
+  setSessionBudgetsSectionExpanded,
+  setSessionCollapsibleExpanded,
+} from '@/utils/sessionPreferences';
 import BudgetsPage from '@/views/BudgetsPage';
 
 jest.mock('@/features/budgets/hooks/useBudgets', () => ({
@@ -94,6 +97,7 @@ describe('BudgetsPage', () => {
     window.sessionStorage.clear();
     setSessionBudgetsSectionExpanded('subscriptions', true);
     setSessionBudgetsSectionExpanded('budgets', true);
+    setSessionCollapsibleExpanded('budget-insights', true);
     jest.mocked(useBudgets).mockReturnValue(baseUseBudgetsMock as any);
   });
 

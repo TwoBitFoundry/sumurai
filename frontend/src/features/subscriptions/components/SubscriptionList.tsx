@@ -129,7 +129,10 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionSummary 
             )}
           </div>
           <span className={cn('shrink-0', 'tabular-nums', 'whitespace-nowrap')}>
-            {subscription.occurrence_count}×
+            {subscription.occurrence_count}
+            <span className={cn(uiTypographyRecipes.caption, uiTextRecipes.body, 'ml-0.5')}>
+              tx
+            </span>
           </span>
         </div>
       </div>

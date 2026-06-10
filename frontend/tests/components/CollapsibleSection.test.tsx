@@ -2,8 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import {
-  getSessionBudgetsSectionExpanded,
-  setSessionBudgetsSectionExpanded,
+  getSessionCollapsibleExpanded,
+  setSessionCollapsibleExpanded,
 } from '@/utils/sessionPreferences';
 
 jest.mock('@/utils/sessionPreferences', () => {
@@ -12,8 +12,8 @@ jest.mock('@/utils/sessionPreferences', () => {
   ) as typeof import('@/utils/sessionPreferences');
   return {
     ...actual,
-    getSessionBudgetsSectionExpanded: jest.fn(actual.getSessionBudgetsSectionExpanded),
-    setSessionBudgetsSectionExpanded: jest.fn(actual.setSessionBudgetsSectionExpanded),
+    getSessionCollapsibleExpanded: jest.fn(actual.getSessionCollapsibleExpanded),
+    setSessionCollapsibleExpanded: jest.fn(actual.setSessionCollapsibleExpanded),
   };
 });
 
@@ -49,11 +49,11 @@ describe('CollapsibleSection', () => {
       'aria-expanded',
       'true'
     );
-    expect(setSessionBudgetsSectionExpanded).toHaveBeenCalledWith('budgets', true);
+    expect(setSessionCollapsibleExpanded).toHaveBeenCalledWith('budgets', true);
   });
 
   it('restores expanded state from session storage', async () => {
-    setSessionBudgetsSectionExpanded('budgets', true);
+    setSessionCollapsibleExpanded('budgets', true);
 
     render(
       <CollapsibleSection
@@ -70,6 +70,6 @@ describe('CollapsibleSection', () => {
     await waitFor(() => {
       expect(screen.getByTestId('budgets-content')).toBeInTheDocument();
     });
-    expect(getSessionBudgetsSectionExpanded('budgets')).toBe(true);
+    expect(getSessionCollapsibleExpanded('budgets')).toBe(true);
   });
 });

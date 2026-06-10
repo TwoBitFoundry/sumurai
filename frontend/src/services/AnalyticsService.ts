@@ -4,6 +4,7 @@
 
 import type { BalancesOverview } from '../types/analytics';
 import type {
+  AnalyticsCashFlowPoint,
   AnalyticsCashFlowResponse,
   AnalyticsCategoryResponse,
   AnalyticsMonthlyTotalsResponse,

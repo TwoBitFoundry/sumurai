@@ -14,6 +14,7 @@ describe('PaginationButton', () => {
     expect(screen.getByRole('button', { name: 'Next page' }).className).toContain(
       control.square.md
     );
+    expect(screen.getByRole('button', { name: 'Next page' }).className).toContain('surface-card');
     expect(
       screen.getByRole('button', { name: 'Next page' }).querySelector('span')?.className
     ).toContain(control.glyph.md);

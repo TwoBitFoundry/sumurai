@@ -415,7 +415,7 @@ describe('AccountsPage', () => {
     await expandInstitutionAccounts(user);
 
     await waitFor(() => {
-      expect(screen.getByText('55×')).toBeVisible();
+      expect(screen.getByText('tx').parentElement).toHaveTextContent('55tx');
     });
   });
 

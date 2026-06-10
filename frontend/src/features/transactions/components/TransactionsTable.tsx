@@ -1,10 +1,9 @@
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Receipt } from 'lucide-react';
 import type React from 'react';
 import { useMemo } from 'react';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
-import { cn, EmptyState, PaginationButton } from '@/ui/primitives';
+import { cn, EmptyState } from '@/ui/primitives';
 import {
   border as uiBorderRecipes,
   text as uiTextRecipes,
@@ -26,8 +25,6 @@ interface Props {
   pageSize: number;
   isLoading?: boolean;
   bodyAnimationKey?: string;
-  onPrev: () => void;
-  onNext: () => void;
 }
 
 const tableHeader = [
@@ -63,8 +60,6 @@ export const TransactionsTable: React.FC<Props> = ({
   pageSize,
   isLoading = false,
   bodyAnimationKey,
-  onPrev,
-  onNext,
 }) => {
   const { isDesktop } = useViewportBreakpoint();
   const tbodyAnimationKey = bodyAnimationKey ?? String(currentPage);
@@ -95,33 +90,15 @@ export const TransactionsTable: React.FC<Props> = ({
       >
         Showing {from}-{to} of {total}
       </div>
-      <div className={cn('flex', 'items-center', 'gap-3')}>
-        <PaginationButton
-          type="button"
-          onClick={onPrev}
-          disabled={currentPage <= 1}
-          aria-label="Previous page"
-        >
-          <ChevronLeftIcon />
-        </PaginationButton>
-        <div
-          className={cn(
-            uiTypographyRecipes.caption,
-            uiTextRecipes.muted,
-            'transition-colors',
-            'duration-500'
-          )}
-        >
-          Page {currentPage} of {totalPages}
-        </div>
-        <PaginationButton
-          type="button"
-          onClick={onNext}
-          disabled={currentPage >= totalPages}
-          aria-label="Next page"
-        >
-          <ChevronRightIcon />
-        </PaginationButton>
+      <div
+        className={cn(
+          uiTypographyRecipes.caption,
+          uiTextRecipes.muted,
+          'transition-colors',
+          'duration-500'
+        )}
+      >
+        Page {currentPage} of {totalPages}
       </div>
     </div>
   );

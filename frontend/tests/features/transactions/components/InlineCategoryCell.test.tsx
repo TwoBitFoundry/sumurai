@@ -33,7 +33,7 @@ describe('InlineCategoryCell', () => {
   it.each([
     ['dense mobile', true],
     ['desktop table', false],
-  ])('uses shared pill layout for %s rows', (_label, dense) => {
+  ])('uses shared inline label layout for %s rows', (_label, dense) => {
     const longestLabel = longestFormattedCategoryLabel();
     const expectedWidth = mobileCategoryChipWidthRem(longestLabel);
 
@@ -43,8 +43,11 @@ describe('InlineCategoryCell', () => {
     expect(slot.style.width).toBe(expectedWidth);
 
     const button = screen.getByRole('button', { name: /Edit category: Merch/i });
-    expect(button.className).toContain('!justify-start');
-    expect(button.querySelector('span.flex-1')?.className).toContain('text-center');
+    expect(button.className).toContain('!justify-end');
+    expect(button.className).toContain('text-amber-500');
+    expect(button.className).not.toContain('rounded-full');
+    expect(button.className).not.toContain('bg-[linear-gradient');
+    expect(button.querySelector('span.flex-1')?.className).toContain('text-right');
     expect(button.querySelector('[aria-hidden="true"]')?.className).toContain('shrink-0');
     expect(button.className).not.toContain('h-11');
   });

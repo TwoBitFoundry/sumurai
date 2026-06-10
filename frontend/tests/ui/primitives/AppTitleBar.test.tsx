@@ -142,6 +142,25 @@ describe('AppTitleBar', () => {
     expect(screen.getByText('Log off')).toHaveClass('hidden', 'md:inline');
   });
 
+  it('uses tab active styling when the settings tab is selected', () => {
+    render(<AppTitleBar {...baseProps} isOnline currentTab="settings" onLogout={jest.fn()} />);
+
+    const settingsButton = screen.getByRole('button', { name: 'Settings' });
+    expect(settingsButton.className).toContain('bg-[var(--color-brand-sky)]');
+    expect(settingsButton.className).toContain('text-white');
+    expect(settingsButton.className).not.toContain(
+      'bg-[color:color-mix(in_srgb,var(--color-surface-card)'
+    );
+  });
+
+  it('uses toolbar styling when the settings tab is not selected', () => {
+    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+
+    const settingsButton = screen.getByRole('button', { name: 'Settings' });
+    expect(settingsButton.className).toContain('bg-transparent');
+    expect(settingsButton.className).not.toContain('bg-[var(--color-brand-sky)]');
+  });
+
   it('renders settings and logout actions for authenticated users', async () => {
     const onTabChange = jest.fn();
     const user = userEvent.setup();

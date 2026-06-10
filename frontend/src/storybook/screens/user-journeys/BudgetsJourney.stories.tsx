@@ -27,6 +27,16 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+async function expandBudgetInsights(canvas: ReturnType<typeof within>) {
+  const summaryButton = canvas.getByRole('button', { name: /budget summary/i });
+  if (summaryButton.getAttribute('aria-expanded') !== 'true') {
+    await userEvent.click(summaryButton);
+  }
+  await waitFor(() => {
+    expect(canvas.getByText('Sub Costs')).toBeVisible();
+  });
+}
+
 let storyBudgets = storyBudgetRecords.map((budget) => ({ ...budget }));
 
 const handlers = [
@@ -101,8 +111,8 @@ export const Journey: Story = {
     const canvas = within(canvasElement);
     await waitFor(() => {
       expect(canvas.getByText(/provision the coffers/i)).toBeVisible();
-      expect(canvas.getByText('Sub Costs')).toBeVisible();
     });
+    await expandBudgetInsights(canvas);
 
     await userEvent.click(canvas.getByRole('button', { name: /show subscriptions/i }));
     await waitFor(() => {

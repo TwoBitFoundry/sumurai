@@ -39,6 +39,9 @@ describe('SubscriptionList', () => {
     );
 
     expect(screen.getByText('Spotify')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('subscription-card-spotify').querySelector('.tabular-nums')
+    ).toHaveTextContent('3tx');
     expect(screen.getByText('Adobe')).toBeInTheDocument();
     expect(screen.getByTestId('subscription-cadence-group-monthly')).toBeInTheDocument();
     expect(screen.getByTestId('subscription-cadence-group-quarterly')).toBeInTheDocument();

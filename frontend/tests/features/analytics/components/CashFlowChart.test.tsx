@@ -2,7 +2,7 @@ import { render } from '@testing-library/react';
 import React from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { CashFlowChart } from '@/features/analytics/components/CashFlowChart';
-import { getThemeColors } from '@/ui/tokens';
+import { getThemeColors, status } from '@/ui/tokens';
 
 jest.mock('@/context/ThemeContext', () => ({
   useTheme: jest.fn(),
@@ -26,5 +26,7 @@ describe('CashFlowChart', () => {
 
     expect(container.innerHTML).toContain('expensesGradient');
     expect(container.innerHTML).toContain('-$2k');
+    expect(container.innerHTML).toContain(`stop-color="${status.light.successIcon}"`);
+    expect(container.innerHTML).toContain(`stop-color="${status.light.dangerIcon}"`);
   });
 });

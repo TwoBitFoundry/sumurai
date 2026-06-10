@@ -78,8 +78,8 @@ use crate::models::{
     },
     provider_connect::ProviderConnectRequest,
     transaction::{
-        PaginatedTransactionsResponse, SyncTransactionsResponse, TransactionsInsightsResponse,
-        TransactionsQuery,
+        ContextualInsightsResponse, PaginatedTransactionsResponse, SyncTransactionsResponse,
+        TransactionsInsightsResponse, TransactionsQuery,
     },
 };
 use crate::models::{
@@ -562,6 +562,10 @@ pub fn create_app(state: AppState) -> Router {
         .route(
             "/api/transactions/insights",
             get(get_authenticated_transactions_insights),
+        )
+        .route(
+            "/api/transactions/contextual-insights",
+            get(get_authenticated_transactions_contextual_insights),
         )
         .route(
             "/api/transactions/auto-categorize",
@@ -1370,6 +1374,103 @@ async fn get_authenticated_transactions_insights(
         .map_err(|e| {
             tracing::error!(
                 "Failed to load transaction insights for user {}: {}",
+                user_id,
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(Json(insights))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/transactions/contextual-insights",
+    description = "Returns contextual transaction insights driven by the active filter state.",
+    params(
+        ("search" = Option<String>, Query, description = "Search transactions by merchant, category, or account"),
+        ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs"),
+        ("start_date" = Option<String>, Query, description = "Start date in YYYY-MM-DD format"),
+        ("end_date" = Option<String>, Query, description = "End date in YYYY-MM-DD format"),
+        ("category_primary" = Option<String>, Query, description = "Filter by primary category")
+    ),
+    responses(
+        (status = 200, description = "Contextual transaction insights", body = ContextualInsightsResponse),
+        (status = 400, description = "Invalid date or account filter"),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Account filter references another user"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Transactions"
+)]
+async fn get_authenticated_transactions_contextual_insights(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    AuthorizedQuery {
+        query,
+        authorized_account_ids,
+    }: AuthorizedQuery<TransactionsQuery>,
+) -> Result<Json<ContextualInsightsResponse>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    let TransactionsQuery {
+        search,
+        account_ids: _,
+        page: _,
+        page_size: _,
+        start_date,
+        end_date,
+        category_primary,
+    } = query;
+
+    let search = search
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+    let category_primary = category_primary
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+
+    let start_date = match start_date.as_deref() {
+        Some(raw) => {
+            Some(NaiveDate::parse_from_str(raw, "%Y-%m-%d").map_err(|_| StatusCode::BAD_REQUEST)?)
+        }
+        None => None,
+    };
+    let end_date = match end_date.as_deref() {
+        Some(raw) => {
+            Some(NaiveDate::parse_from_str(raw, "%Y-%m-%d").map_err(|_| StatusCode::BAD_REQUEST)?)
+        }
+        None => None,
+    };
+
+    if let (Some(start_date), Some(end_date)) = (start_date, end_date) {
+        if end_date < start_date {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    }
+
+    let account_ids: Option<Vec<Uuid>> = authorized_account_ids
+        .as_ref()
+        .map(|ids| ids.iter().copied().collect());
+    let account_ids_ref = account_ids.as_deref();
+
+    let insights = state
+        .db_repository
+        .get_transactions_contextual_insights(
+            &user_id,
+            search,
+            account_ids_ref,
+            start_date,
+            end_date,
+            category_primary,
+        )
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to load contextual insights for user {}: {}",
                 user_id,
                 e
             );

@@ -3,6 +3,10 @@ import userEvent from '@testing-library/user-event';
 import type { BudgetInsights } from '@/domain/BudgetInsightsCalculator';
 import { BudgetInsightsPanel } from '@/features/budgets/components/BudgetInsightsPanel';
 import { text as uiTextRecipes } from '@/ui/recipes';
+import {
+  getSessionCollapsibleExpanded,
+  setSessionCollapsibleExpanded,
+} from '@/utils/sessionPreferences';
 
 const baseInsights: BudgetInsights = {
   dailyPacing: 15,
@@ -33,34 +37,57 @@ function setViewportWidth(width: number) {
 describe('BudgetInsightsPanel', () => {
   beforeEach(() => {
     setViewportWidth(1280);
+    window.sessionStorage.clear();
   });
 
-  it('renders the combined shell expanded by default', () => {
+  it('renders the combined shell collapsed by default', () => {
     render(<BudgetInsightsPanel {...defaultProps} />);
 
     expect(screen.getByTestId('budget-insights-shell')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /budget summary/i })).toHaveAttribute(
       'aria-expanded',
+      'false'
+    );
+    expect(screen.queryByText('Runway')).not.toBeInTheDocument();
+    expect(screen.queryByText('Free Spend')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sub Costs')).not.toBeInTheDocument();
+  });
+
+  it('restores expanded state from session storage', () => {
+    setSessionCollapsibleExpanded('budget-insights', true);
+
+    render(<BudgetInsightsPanel {...defaultProps} />);
+
+    expect(screen.getByRole('button', { name: /budget summary/i })).toHaveAttribute(
+      'aria-expanded',
       'true'
     );
     expect(screen.getByText('Runway')).toBeInTheDocument();
-    expect(screen.getByText('Free Spend')).toBeInTheDocument();
-    expect(screen.getByText('Sub Costs')).toBeInTheDocument();
+    expect(getSessionCollapsibleExpanded('budget-insights')).toBe(true);
   });
 
   it('toggles the shell open and closed from the summary', async () => {
     render(<BudgetInsightsPanel {...defaultProps} />);
 
     const summaryButton = screen.getByRole('button', { name: /budget summary/i });
+    expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('Runway')).not.toBeInTheDocument();
+
+    await userEvent.click(summaryButton);
+
     expect(summaryButton).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText('Runway')).toBeInTheDocument();
+    expect(getSessionCollapsibleExpanded('budget-insights')).toBe(true);
 
     await userEvent.click(summaryButton);
 
     expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
+    expect(getSessionCollapsibleExpanded('budget-insights')).toBe(false);
   });
 
   it('lays out the detail cards as three content-fit tiles on tablet and desktop', () => {
+    setSessionCollapsibleExpanded('budget-insights', true);
+
     render(<BudgetInsightsPanel {...defaultProps} />);
 
     const body = screen.getByTestId('budget-insights-panel-body');
@@ -71,7 +98,7 @@ describe('BudgetInsightsPanel', () => {
     expect(tileGrid).toHaveClass('items-start');
     expect(tileGrid).toHaveClass('gap-3');
 
-    const runwayTile = screen.getByTestId('budget-insight-card-runway');
+    const runwayTile = screen.getByTestId('insight-card-runway');
     expect(runwayTile).toHaveClass('md:flex-1');
     expect(runwayTile).toHaveClass('md:min-w-0');
     expect(runwayTile.firstElementChild).toHaveClass('md:self-start');
@@ -83,10 +110,11 @@ describe('BudgetInsightsPanel', () => {
 
   it('renders mobile detail cards as inline rows', () => {
     setViewportWidth(390);
+    setSessionCollapsibleExpanded('budget-insights', true);
 
     render(<BudgetInsightsPanel {...defaultProps} />);
 
-    const runwayTile = screen.getByTestId('budget-insight-card-runway');
+    const runwayTile = screen.getByTestId('insight-card-runway');
     expect(runwayTile).not.toHaveClass('md:flex-1');
     expect(runwayTile).toHaveClass('contents');
     const frontFace = runwayTile.querySelector('.grid-cols-subgrid');
@@ -97,6 +125,7 @@ describe('BudgetInsightsPanel', () => {
 
   it('aligns the mobile detail rows in a shared content-fit grid', () => {
     setViewportWidth(390);
+    setSessionCollapsibleExpanded('budget-insights', true);
 
     render(<BudgetInsightsPanel {...defaultProps} />);
 
@@ -108,6 +137,8 @@ describe('BudgetInsightsPanel', () => {
   });
 
   it('clicking a card flips it to show the question', async () => {
+    setSessionCollapsibleExpanded('budget-insights', true);
+
     render(<BudgetInsightsPanel {...defaultProps} />);
     const dailyPacingButton = screen.getByRole('button', { name: /runway/i });
     expect(dailyPacingButton).toHaveAttribute('aria-expanded', 'false');
@@ -116,6 +147,8 @@ describe('BudgetInsightsPanel', () => {
   });
 
   it('clicking a flipped card returns it to the front', async () => {
+    setSessionCollapsibleExpanded('budget-insights', true);
+
     render(<BudgetInsightsPanel {...defaultProps} />);
     const btn = screen.getByRole('button', { name: /runway/i });
     await userEvent.click(btn);
@@ -124,6 +157,8 @@ describe('BudgetInsightsPanel', () => {
   });
 
   it('a different card is not affected when one is flipped', async () => {
+    setSessionCollapsibleExpanded('budget-insights', true);
+
     render(<BudgetInsightsPanel {...defaultProps} />);
     await userEvent.click(screen.getByRole('button', { name: /runway/i }));
     expect(screen.getByRole('button', { name: /free spend/i })).toHaveAttribute(
@@ -133,6 +168,8 @@ describe('BudgetInsightsPanel', () => {
   });
 
   it('resets all flipped cards when filterKey changes', async () => {
+    setSessionCollapsibleExpanded('budget-insights', true);
+
     const { rerender } = render(<BudgetInsightsPanel {...defaultProps} />);
     await userEvent.click(screen.getByRole('button', { name: /runway/i }));
     expect(screen.getByRole('button', { name: /runway/i })).toHaveAttribute(
@@ -147,6 +184,8 @@ describe('BudgetInsightsPanel', () => {
   });
 
   it('highlights negative free spend in red', () => {
+    setSessionCollapsibleExpanded('budget-insights', true);
+
     render(
       <BudgetInsightsPanel
         {...defaultProps}
@@ -154,12 +193,14 @@ describe('BudgetInsightsPanel', () => {
       />
     );
 
-    const freeSpendCard = screen.getByTestId('budget-insight-card-free-spend');
+    const freeSpendCard = screen.getByTestId('insight-card-free-spend');
     const freeSpendAmount = within(freeSpendCard).getByText('-$150.00');
     expect(freeSpendAmount).toHaveClass(uiTextRecipes.danger);
   });
 
   it('shows zero-activity fallback while keeping the shell visible', () => {
+    setSessionCollapsibleExpanded('budget-insights', true);
+
     render(
       <BudgetInsightsPanel {...defaultProps} insights={{ ...baseInsights, hasActivity: false }} />
     );

@@ -75,9 +75,7 @@ export function AccountsConnectedScreenSlice(props: {
   const statsGrid = (
     <AccountsSummaryStats
       summary={summary}
-      syncingAll={props.syncingAll ?? false}
       lastSyncValue={props.syncingAll ? 'Syncing...' : '12m ago'}
-      lastSyncDetail={props.syncingAll ? 'Sync in progress' : 'Balances refreshed from Story Bank'}
     />
   );
 

@@ -36,6 +36,19 @@ describe('IconButton', () => {
     expect(glyphShell?.className).toContain('[&_svg]:h-full');
   });
 
+  it('uses flat brand sky for the primary variant', () => {
+    render(
+      <IconButton variant="primary" aria-label="Add">
+        <span aria-hidden="true">+</span>
+      </IconButton>
+    );
+
+    const button = screen.getByRole('button', { name: 'Add' });
+    expect(button.className).toContain('bg-[var(--color-brand-sky)]');
+    expect(button.className).not.toContain('bg-gradient-to-r');
+    expect(button.className).not.toContain('to-violet-500');
+  });
+
   it('renders the chrome bar size for title bar icon actions', () => {
     render(
       <IconButton aria-label="Settings" size="bar">

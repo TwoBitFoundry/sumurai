@@ -95,7 +95,10 @@ const TopMerchantsListFn: React.FC<Props> = ({ merchants, className = '' }) => {
                     'tabular-nums'
                   )}
                 >
-                  {merchant.count}×
+                  {merchant.count}
+                  <span className={cn(uiTypographyRecipes.caption, uiTextRecipes.body, 'ml-0.5')}>
+                    tx
+                  </span>
                 </div>
               </div>
             </div>

@@ -329,7 +329,7 @@ describe('BankCard', () => {
 
     await user.click(screen.getByRole('button', { name: 'Show accounts' }));
 
-    expect(await screen.findByText('7×')).toBeVisible();
+    expect((await screen.findByText('tx')).parentElement).toHaveTextContent('7tx');
     const importBtn = screen.getByRole('button', { name: 'Import transactions' });
     expect(importBtn).toBeVisible();
     expect(importBtn).toHaveAttribute('title', 'Import transactions');

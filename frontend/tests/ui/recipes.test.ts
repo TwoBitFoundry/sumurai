@@ -1,6 +1,8 @@
 import {
   authLayout,
   border,
+  budgetProgress,
+  buttonCta,
   chrome,
   chromeBar,
   control,
@@ -85,6 +87,12 @@ describe('shared UI recipes', () => {
     expect(controlIconWell.sm).toContain(control.glyph.sm);
     expect(controlIconWell.md).toContain(control.glyph.md);
     expect(controlIconWell.lg).toContain(control.glyph.lg);
+  });
+
+  it('exposes flat sky CTA and progress fill recipes', () => {
+    expect(buttonCta.gradient).toEqual(['bg-[var(--color-brand-sky)]']);
+    expect(budgetProgress.fillWithin).toContain('bg-[var(--color-brand-sky)]');
+    expect(budgetProgress.fillWithin).not.toContain('brand-violet');
   });
 
   it('exposes the success and drawer modal recipes', () => {

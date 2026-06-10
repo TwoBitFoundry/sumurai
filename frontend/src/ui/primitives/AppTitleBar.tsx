@@ -26,7 +26,7 @@ import {
   radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { Button, buttonRecipes } from './Button';
+import { Button } from './Button';
 import { IconButton } from './IconButton';
 import { cn } from './utils';
 
@@ -309,12 +309,9 @@ export const AppTitleBar = ({
               <IconButton
                 type="button"
                 onClick={() => onTabChange('settings')}
-                variant={currentTab === 'settings' ? 'ghost' : 'toolbar'}
+                variant={currentTab === 'settings' ? 'tabActive' : 'toolbar'}
                 size="md"
-                className={cn(
-                  ...appTitleBarRecipes.actionIcon,
-                  currentTab === 'settings' ? buttonRecipes.tabActive.join(' ') : undefined
-                )}
+                className={cn(...appTitleBarRecipes.actionIcon)}
                 aria-label="Settings"
                 title="Settings"
               >

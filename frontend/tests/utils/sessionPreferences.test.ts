@@ -1,6 +1,7 @@
 import {
   getSessionBankExpanded,
   getSessionBudgetsSectionExpanded,
+  getSessionCollapsibleExpanded,
   getSessionDashboardDateRange,
   getSessionThemePreference,
   getSessionTransactionsCategory,
@@ -8,6 +9,7 @@ import {
   getSessionTransactionsSearch,
   setSessionBankExpanded,
   setSessionBudgetsSectionExpanded,
+  setSessionCollapsibleExpanded,
   setSessionDashboardDateRange,
   setSessionThemePreference,
   setSessionTransactionsCategory,
@@ -75,5 +77,23 @@ describe('sessionPreferences', () => {
 
     setSessionBudgetsSectionExpanded('subscriptions', false);
     expect(getSessionBudgetsSectionExpanded('subscriptions')).toBe(false);
+  });
+
+  it('defaults collapsible sections to collapsed and remembers expansion', () => {
+    expect(getSessionCollapsibleExpanded('balances-insights')).toBe(false);
+
+    setSessionCollapsibleExpanded('balances-insights', true);
+    expect(getSessionCollapsibleExpanded('balances-insights')).toBe(true);
+
+    setSessionCollapsibleExpanded('balances-insights', false);
+    expect(getSessionCollapsibleExpanded('balances-insights')).toBe(false);
+  });
+
+  it('reads legacy budgets section keys from the collapsible map', () => {
+    sessionStorageData['sumurai.ui.budgetsSectionExpanded'] = JSON.stringify({
+      subscriptions: true,
+    });
+
+    expect(getSessionCollapsibleExpanded('subscriptions')).toBe(true);
   });
 });

@@ -40,6 +40,19 @@ describe('Button', () => {
     expect(button.className).toContain('active:scale-[0.98]');
   });
 
+  it('uses flat brand sky for the primary variant', () => {
+    render(
+      <Button variant="primary" size="md">
+        Categorize
+      </Button>
+    );
+
+    const button = screen.getByRole('button', { name: 'Categorize' });
+    expect(button.className).toContain('bg-[var(--color-brand-sky)]');
+    expect(button.className).not.toContain('bg-gradient-to-r');
+    expect(button.className).not.toContain('to-violet-500');
+  });
+
   it('renders square controls with the shared square recipe', () => {
     render(
       <Button size="md" shape="square">

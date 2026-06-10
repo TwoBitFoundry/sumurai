@@ -27,7 +27,7 @@ describe('dashboard surface components', () => {
     expect(screen.getByText(/\$280\.00/i)).toBeVisible();
   });
 
-  it('keeps the transactions table navigation intact', () => {
+  it('keeps the transactions table footer summary intact', () => {
     render(
       createElement(TransactionsTable, {
         items: [transaction(42), transaction(-42)],
@@ -35,13 +35,12 @@ describe('dashboard surface components', () => {
         currentPage: 1,
         totalPages: 1,
         pageSize: 2,
-        onPrev: () => {},
-        onNext: () => {},
       })
     );
 
     expect(screen.getByText(/showing 1-2 of 2/i)).toBeVisible();
-    expect(screen.getByRole('button', { name: /previous page/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /next page/i })).toBeDisabled();
+    expect(screen.getByText(/page 1 of 1/i)).toBeVisible();
+    expect(screen.queryByRole('button', { name: /previous page/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /next page/i })).not.toBeInTheDocument();
   });
 });

@@ -112,12 +112,7 @@ export const effect = {
 } as const;
 
 export const buttonCta = {
-  gradient: [
-    'bg-gradient-to-r',
-    'from-[var(--color-brand-sky)]',
-    'via-[var(--color-brand-cyan)]',
-    'to-[var(--color-brand-violet)]',
-  ],
+  gradient: ['bg-[var(--color-brand-sky)]'],
   shadow: [
     'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.78)]',
     'dark:shadow-[0_22px_60px_-32px_rgba(56,189,248,0.65)]',
@@ -275,10 +270,7 @@ export const budgetProgress = {
     'ease-out',
   ],
   fillWithin: [
-    'bg-gradient-to-r',
-    'from-[var(--color-brand-sky)]',
-    'via-[var(--color-brand-cyan)]',
-    'to-[var(--color-brand-violet)]',
+    'bg-[var(--color-brand-sky)]',
     'shadow-[0_0_12px_var(--color-effect-success-glow)]',
     'dark:shadow-[0_0_12px_var(--color-effect-success-glow)]',
   ],
