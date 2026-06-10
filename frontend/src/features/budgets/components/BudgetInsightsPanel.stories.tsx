@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import type { BudgetInsights } from '@/domain/BudgetInsightsCalculator';
+import { sampleFixedExpenses, storyFixedExpenseMonth } from '@/storybook/fixtures/fixed-expenses';
 import { BudgetInsightsPanel } from './BudgetInsightsPanel';
 
 const sampleInsights: BudgetInsights = {
@@ -100,6 +101,18 @@ export const NegativeFreeSpend: Story = {
     await expandBudgetInsights(canvas);
     await expect(canvas.getByText('-$150.00')).toBeVisible();
     await expect(canvas.getByText('$1,000.00')).toBeVisible();
+  },
+};
+
+export const WithFixedExpenses: Story = {
+  args: {
+    fixedExpenses: sampleFixedExpenses,
+    month: storyFixedExpenseMonth,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expandBudgetInsights(canvas);
+    await expect(canvas.getByText('Fixed Costs')).toBeVisible();
   },
 };
 

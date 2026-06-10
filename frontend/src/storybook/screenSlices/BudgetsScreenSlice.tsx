@@ -1,13 +1,12 @@
-import { AlertTriangle, Clock, Pencil, Plus, Repeat2, Target } from 'lucide-react';
+import { Pencil, Plus, Target } from 'lucide-react';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
-import HeroStatCard, { SubscriptionCostsMetric } from '@/components/widgets/HeroStatCard';
 import AddBudgetPicker from '@/features/budgets/components/AddBudgetPicker';
 import { BudgetInsightsPanel } from '@/features/budgets/components/BudgetInsightsPanel';
 import { BudgetList } from '@/features/budgets/components/BudgetList';
 import { FixedExpensesSection } from '@/features/fixed-expenses/components/FixedExpensesSection';
 import { PageLayout } from '@/layouts/PageLayout';
 import { sampleBudgetProgressEntries } from '@/storybook/fixtures/budgets';
-import { sampleFixedExpenses } from '@/storybook/fixtures/fixed-expenses';
+import { sampleFixedExpenses, storyFixedExpenseMonth } from '@/storybook/fixtures/fixed-expenses';
 import { Button, cn, EmptyState, GlassCard } from '@/ui/primitives';
 import { heroAccents } from '@/ui/tokens';
 
@@ -26,7 +25,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         hasActivity: props.state !== 'empty',
       }}
       fixedExpenses={props.state === 'empty' ? [] : sampleFixedExpenses}
-      month={new Date(2026, 5, 1)}
+      month={storyFixedExpenseMonth}
       filterKey={props.state}
     />
   );
@@ -39,7 +38,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
   return (
     <div data-testid="budgets-page">
       <PageLayout
-        title="Budgets under command"
+        title="Provision the coffers"
         subtitle="Review subscriptions and manage monthly budgets categories from all your connected bank accounts."
         error={errorMessage}
         stats={heroStats}
@@ -127,7 +126,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
                 <EmptyState
                   icon={Target}
                   title="No budgets yet"
-                  description="Set your first category limit. Lead the month with discipline."
+                  description="Set your first budget to see your progress."
                   action={
                     <Button type="button" onClick={() => {}} variant="primary" size="md">
                       <Plus />
@@ -149,7 +148,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
           >
             <FixedExpensesSection
               fixedExpenses={fixedExpenses}
-              month={new Date(2026, 5, 1)}
+              month={storyFixedExpenseMonth}
               isLoading={false}
             />
           </GlassCard>
