@@ -18,7 +18,7 @@ describe('BudgetService.getOverview — Given/When/Then', () => {
   it('Given backend returns overview; When getOverview; Then maps budgets and returns subscriptions', async () => {
     jest.mocked(ApiClient.get).mockResolvedValueOnce({
       budgets: [{ id: 'b1', category: 'Food', amount: '100.50' }],
-      subscriptions: [
+      fixed_expenses: [
         {
           merchant: 'Spotify',
           normalized_merchant: 'spotify',
@@ -37,7 +37,7 @@ describe('BudgetService.getOverview — Given/When/Then', () => {
     expect(ApiClient.get).toHaveBeenCalledWith('/budgets/overview');
     expect(overview).toEqual({
       budgets: [{ id: 'b1', category: 'Food', amount: 100.5 }],
-      subscriptions: [
+      fixed_expenses: [
         {
           merchant: 'Spotify',
           normalized_merchant: 'spotify',

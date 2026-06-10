@@ -4,7 +4,7 @@ import HeroStatCard, { SubscriptionCostsMetric } from '@/components/widgets/Hero
 import AddBudgetPicker from '@/features/budgets/components/AddBudgetPicker';
 import { BudgetInsightsPanel } from '@/features/budgets/components/BudgetInsightsPanel';
 import { BudgetList } from '@/features/budgets/components/BudgetList';
-import { SubscriptionsSection } from '@/features/subscriptions/components/SubscriptionsSection';
+import { FixedExpensesSection } from '@/features/fixed-expenses/components/FixedExpensesSection';
 import { PageLayout } from '@/layouts/PageLayout';
 import { sampleBudgetProgressEntries } from '@/storybook/fixtures/budgets';
 import { sampleSubscriptions } from '@/storybook/fixtures/subscriptions';
@@ -25,7 +25,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         runoutDate: props.state === 'empty' ? null : new Date(2026, 5, 17),
         hasActivity: props.state !== 'empty',
       }}
-      subscriptions={props.state === 'empty' ? [] : sampleSubscriptions}
+      fixedExpenses={props.state === 'empty' ? [] : sampleSubscriptions}
       month={new Date(2026, 5, 1)}
       filterKey={props.state}
     />
@@ -53,7 +53,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
             containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
             className={cn('space-y-6')}
           >
-            <SubscriptionsSection subscriptions={subscriptions} isLoading={false} />
+            <FixedExpensesSection fixedExpenses={subscriptions} isLoading={false} />
           </GlassCard>
           <GlassCard
             variant="accent"

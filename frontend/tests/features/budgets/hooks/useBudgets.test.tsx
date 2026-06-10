@@ -36,9 +36,9 @@ const defaultCategoriesMock = {
 let fetchMock: ReturnType<typeof installFetchRoutes>;
 
 const asBudget = (id: string, category: string, amount: number) => ({ id, category, amount });
-const asOverview = (budgets: ReturnType<typeof asBudget>[], subscriptions: unknown[] = []) => ({
+const asOverview = (budgets: ReturnType<typeof asBudget>[], fixed_expenses: unknown[] = []) => ({
   budgets,
-  subscriptions,
+  fixed_expenses,
 });
 const makeSubscription = (merchant: string, monthlyCost: string) => ({
   merchant,
@@ -294,7 +294,7 @@ describe('useBudgets', () => {
       .spyOn(BudgetService, 'getOverview')
       .mockImplementation(async () => ({
         budgets: [...budgetsStore],
-        subscriptions: [],
+        fixed_expenses: [],
       }));
     const updateBudgetSpy = jest
       .spyOn(BudgetService, 'updateBudget')
@@ -521,8 +521,8 @@ describe('useBudgets', () => {
     const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper });
 
     await waitFor(() => {
-      expect(result.current.subscriptions).toHaveLength(1);
-      expect(result.current.subscriptions[0].merchant).toBe('Spotify');
+      expect(result.current.fixedExpenses).toHaveLength(1);
+      expect(result.current.fixedExpenses[0].merchant).toBe('Spotify');
     });
   });
 
@@ -545,7 +545,7 @@ describe('useBudgets', () => {
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
-      expect(result.current.subscriptions).toHaveLength(1);
+      expect(result.current.fixedExpenses).toHaveLength(1);
     });
 
     await act(async () => {
@@ -553,11 +553,11 @@ describe('useBudgets', () => {
     });
 
     expect(result.current.budgets).toHaveLength(1);
-    expect(result.current.subscriptions).toHaveLength(1);
-    expect(result.current.subscriptions[0].merchant).toBe('Spotify');
+    expect(result.current.fixedExpenses).toHaveLength(1);
+    expect(result.current.fixedExpenses[0].merchant).toBe('Spotify');
   });
 
-  it('returns full subscriptions as filteredSubscriptions when no account filter is active', async () => {
+  it('returns full subscriptions as filteredFixedExpenses when no account filter is active', async () => {
     const subscriptions = [
       { ...makeSubscription('Spotify', '9.99'), account_ids: ['account1'] },
       { ...makeSubscription('Netflix', '15.99'), account_ids: [] },
@@ -573,7 +573,7 @@ describe('useBudgets', () => {
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
-      expect(result.current.filteredSubscriptions).toHaveLength(2);
+      expect(result.current.filteredFixedExpenses).toHaveLength(2);
     });
   });
 
@@ -622,8 +622,8 @@ describe('useBudgets', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.filteredSubscriptions).toHaveLength(1);
-      expect(result.current.filteredSubscriptions[0].merchant).toBe('Spotify');
+      expect(result.current.filteredFixedExpenses).toHaveLength(1);
+      expect(result.current.filteredFixedExpenses[0].merchant).toBe('Spotify');
     });
   });
 
@@ -672,7 +672,7 @@ describe('useBudgets', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.filteredSubscriptions).toEqual([]);
+      expect(result.current.filteredFixedExpenses).toEqual([]);
     });
   });
 });

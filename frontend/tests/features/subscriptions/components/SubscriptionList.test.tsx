@@ -40,12 +40,12 @@ describe('SubscriptionList', () => {
 
     expect(screen.getByText('Spotify')).toBeInTheDocument();
     expect(
-      screen.getByTestId('subscription-card-spotify').querySelector('.tabular-nums')
+      screen.getByTestId('fixed-expense-card-spotify').querySelector('.tabular-nums')
     ).toHaveTextContent('3tx');
     expect(screen.getByText('Adobe')).toBeInTheDocument();
-    expect(screen.getByTestId('subscription-cadence-group-monthly')).toBeInTheDocument();
-    expect(screen.getByTestId('subscription-cadence-group-quarterly')).toBeInTheDocument();
-    expect(screen.queryByTestId('subscription-cadence-group-annual')).not.toBeInTheDocument();
+    expect(screen.getByTestId('fixed-expense-cadence-group-monthly')).toBeInTheDocument();
+    expect(screen.getByTestId('fixed-expense-cadence-group-quarterly')).toBeInTheDocument();
+    expect(screen.queryByTestId('fixed-expense-cadence-group-annual')).not.toBeInTheDocument();
     expect(screen.queryByText('monthly')).not.toBeInTheDocument();
     expect(screen.queryByText('quarterly')).not.toBeInTheDocument();
   });
@@ -62,9 +62,9 @@ describe('SubscriptionList', () => {
       />
     );
 
-    const monthlyGroup = screen.getByTestId('subscription-cadence-group-monthly');
+    const monthlyGroup = screen.getByTestId('fixed-expense-cadence-group-monthly');
     const merchants = Array.from(
-      monthlyGroup.querySelectorAll('[data-testid^="subscription-card-"]')
+      monthlyGroup.querySelectorAll('[data-testid^="fixed-expense-card-"]')
     ).map((card) => card.querySelector('span.truncate')?.textContent);
 
     expect(merchants).toEqual(['Pdxfit Gym', 'Costco', 'Netflix', 'Walmart']);
@@ -75,8 +75,8 @@ describe('SubscriptionList', () => {
   it('shows empty state when not loading and there are no subscriptions', () => {
     render(<SubscriptionList subscriptions={[]} />);
 
-    expect(screen.getByTestId('subscriptions-empty-state')).toBeInTheDocument();
-    expect(screen.queryByTestId('subscription-cadence-group-monthly')).not.toBeInTheDocument();
+    expect(screen.getByText('No fixed expenses detected')).toBeInTheDocument();
+    expect(screen.queryByTestId('fixed-expense-cadence-group-monthly')).not.toBeInTheDocument();
     expect(screen.queryByText('Yearly')).not.toBeInTheDocument();
   });
 });

@@ -46,7 +46,7 @@ const meta = {
     totalBudgeted: 500,
     totalSpent: 250,
     insights: sampleInsights,
-    subscriptions: [],
+    fixedExpenses: [],
     month: new Date(2026, 5, 1),
     filterKey: 'all',
   },
@@ -72,7 +72,7 @@ export const AllCards: Story = {
     await expandBudgetInsights(canvas);
     await expect(canvas.getByText('Runway')).toBeVisible();
     await expect(canvas.getByText('Free Spend')).toBeVisible();
-    await expect(canvas.getByText('Sub Costs')).toBeVisible();
+    await expect(canvas.getByText('Fixed Costs')).toBeVisible();
   },
 };
 
@@ -108,7 +108,7 @@ export const ZeroActivity: Story = {
     totalBudgeted: 0,
     totalSpent: 0,
     insights: { ...sampleInsights, hasActivity: false },
-    subscriptions: [],
+    fixedExpenses: [],
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

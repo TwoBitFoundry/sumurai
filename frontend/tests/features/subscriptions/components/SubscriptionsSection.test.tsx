@@ -32,7 +32,7 @@ describe('SubscriptionsSection', () => {
   it('shows heading and subtitle without hero metrics', () => {
     render(<SubscriptionsSection subscriptions={[]} isLoading={false} />);
 
-    expect(screen.getByText('Subscriptions')).toBeInTheDocument();
+    expect(screen.getByText('Fixed Expenses')).toBeInTheDocument();
     expect(screen.queryByText('Recurring subscriptions')).not.toBeInTheDocument();
     expect(screen.queryByText('Annualized subscriptions')).not.toBeInTheDocument();
   });
@@ -41,7 +41,7 @@ describe('SubscriptionsSection', () => {
     render(<SubscriptionsSection subscriptions={[]} isLoading={false} />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('subscriptions-empty-state')).toBeInTheDocument();
+      expect(screen.getByText('No fixed expenses detected')).toBeInTheDocument();
     });
   });
 
@@ -57,6 +57,6 @@ describe('SubscriptionsSection', () => {
       expect(screen.getByText('Spotify')).toBeInTheDocument();
     });
     expect(screen.getByText('Monthly')).toBeInTheDocument();
-    expect(screen.getByTestId('subscription-cadence-group-monthly')).toBeInTheDocument();
+    expect(screen.getByTestId('fixed-expense-cadence-group-monthly')).toBeInTheDocument();
   });
 });

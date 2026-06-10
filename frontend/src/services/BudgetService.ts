@@ -2,7 +2,7 @@
  * API access for budget operations.
  */
 
-import type { Budget, BudgetsOverviewResponse, SubscriptionSummary } from '../types/api';
+import type { Budget, BudgetsOverviewResponse, FixedExpenseSummary } from '../types/api';
 import { ApiClient } from './ApiClient';
 
 type BudgetRecord = {
@@ -13,7 +13,7 @@ type BudgetRecord = {
 
 type OverviewRecord = {
   budgets: BudgetRecord[];
-  subscriptions: SubscriptionSummary[];
+  fixed_expenses: FixedExpenseSummary[];
 };
 
 export class BudgetService {
@@ -25,7 +25,7 @@ export class BudgetService {
         category: b.category,
         amount: Number(b.amount),
       })),
-      subscriptions: response.subscriptions,
+      fixed_expenses: response.fixed_expenses,
     };
   }
 

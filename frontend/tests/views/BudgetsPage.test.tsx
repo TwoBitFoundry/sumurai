@@ -73,8 +73,8 @@ const baseUseBudgetsMock = {
     { id: 'b1', category: 'FOOD_AND_DRINK', amount: 200, spent: 80, percentage: 40 },
   ],
   transactions: [],
-  subscriptions: [],
-  filteredSubscriptions: [],
+  fixedExpenses: [],
+  filteredFixedExpenses: [],
   filterKey: 'all',
   categoryOptions: [],
   availableCategoryOptions: [],
@@ -111,7 +111,7 @@ describe('BudgetsPage', () => {
     );
     expect(screen.getByText('Runway')).toBeInTheDocument();
     expect(screen.getByText('Free Spend')).toBeInTheDocument();
-    expect(screen.getByText('Sub Costs')).toBeInTheDocument();
+    expect(screen.getByText('Fixed Costs')).toBeInTheDocument();
 
     expect(screen.queryByText('Days remaining')).not.toBeInTheDocument();
     expect(screen.queryByText('Subscription costs')).not.toBeInTheDocument();

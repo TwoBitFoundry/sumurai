@@ -33,7 +33,7 @@ async function expandBudgetInsights(canvas: ReturnType<typeof within>) {
     await userEvent.click(summaryButton);
   }
   await waitFor(() => {
-    expect(canvas.getByText('Sub Costs')).toBeVisible();
+    expect(canvas.getByText('Fixed Costs')).toBeVisible();
   });
 }
 
@@ -44,7 +44,7 @@ const handlers = [
   route('GET', '/budgets/overview', () =>
     jsonResponse({
       budgets: storyBudgets,
-      subscriptions: sampleSubscriptions,
+      fixed_expenses: sampleSubscriptions,
     })
   ),
   route('POST', '/budgets', ({ body }) => {
@@ -114,7 +114,7 @@ export const Journey: Story = {
     });
     await expandBudgetInsights(canvas);
 
-    await userEvent.click(canvas.getByRole('button', { name: /show subscriptions/i }));
+    await userEvent.click(canvas.getByRole('button', { name: /show fixed expenses/i }));
     await waitFor(() => {
       expect(canvas.getByText('Spotify')).toBeVisible();
       expect(canvas.getByText('Netflix')).toBeVisible();

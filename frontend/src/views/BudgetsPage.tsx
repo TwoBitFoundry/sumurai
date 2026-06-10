@@ -12,7 +12,7 @@ import { BudgetInsightsPanel } from '../features/budgets/components/BudgetInsigh
 import { BudgetList } from '../features/budgets/components/BudgetList';
 import type { BudgetMonthControl } from '../features/budgets/hooks/useBudgetMonth';
 import { useBudgets } from '../features/budgets/hooks/useBudgets';
-import { SubscriptionsSection } from '../features/subscriptions/components/SubscriptionsSection';
+import { FixedExpensesSection } from '../features/fixed-expenses/components/FixedExpensesSection';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import { PageLayout } from '../layouts/PageLayout';
 
@@ -30,8 +30,8 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
     update,
     remove,
     computedBudgets,
-    subscriptions,
-    filteredSubscriptions,
+    fixedExpenses,
+    filteredFixedExpenses,
     filterKey,
     availableCategoryOptions,
     month,
@@ -123,7 +123,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
       totalBudgeted={stats.totalBudgeted}
       totalSpent={stats.totalSpent}
       insights={insights}
-      subscriptions={filteredSubscriptions}
+      fixedExpenses={filteredFixedExpenses}
       month={month}
       filterKey={filterKey}
     />
@@ -148,7 +148,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
             containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
             className={cn('space-y-6')}
           >
-            <SubscriptionsSection subscriptions={subscriptions} isLoading={isLoading} />
+            <FixedExpensesSection fixedExpenses={fixedExpenses} isLoading={isLoading} />
           </GlassCard>
           <GlassCard
             variant="accent"

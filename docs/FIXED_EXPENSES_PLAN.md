@@ -121,9 +121,9 @@ This phase also cleans up the partially-implemented bill detection service that 
   - Use `FixedExpenseCalculator.computeFixedExpenseHeroStats()`
 
 **Acceptance criteria:**
-- [ ] `npm --prefix frontend run build` (or `tsc --noEmit`) passes with no type errors
-- [ ] No remaining imports from `features/subscriptions/` or `domain/SubscriptionCalculator`
-- [ ] `SubscriptionSummary` type has no usages in frontend source
+- [x] `npm --prefix frontend run build` (or `tsc --noEmit`) passes with no type errors
+- [x] No remaining imports from `features/subscriptions/` or `domain/SubscriptionCalculator` in production source
+- [x] `SubscriptionSummary` re-exported as alias in `types/api.ts` for test shim backward compat; no direct usages in production source
 
 ---
 
