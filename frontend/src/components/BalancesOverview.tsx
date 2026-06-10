@@ -10,6 +10,7 @@ import {
   ChartTooltipFadeHost,
   ChartTooltipShell,
 } from '../features/analytics/components/ChartGlassTooltip';
+import { useCashFlow } from '../features/analytics/hooks/useCashFlow';
 import { useChartContainerSize } from '../features/analytics/hooks/useChartContainerSize';
 import { useDebouncedChartRecalc } from '../features/analytics/hooks/useDebouncedChartRecalc';
 import {
@@ -26,6 +27,7 @@ import {
   maxCharsPerInstitutionSlot,
 } from '../features/analytics/utils/wrapInstitutionLabel';
 import { useBalancesOverview } from '../hooks/useBalancesOverview';
+import { computeYtdTotals } from '../services/AnalyticsService';
 import { Alert, Button, cn, EmptyState } from '../ui/primitives';
 import {
   control,
@@ -54,11 +56,16 @@ type BankBarDatum = {
 
 export function BalancesOverview() {
   const { loading, refreshing, error, data, refresh } = useBalancesOverview();
+  const { series: cashFlowSeries } = useCashFlow(12);
   const { colors } = useTheme();
 
   const banks = data?.banks || [];
   const debouncedBanks = useDebouncedChartRecalc(banks);
   const overall = data?.overall;
+  const { incomeYtd, expensesYtd } = useMemo(
+    () => computeYtdTotals(cashFlowSeries, new Date().getFullYear()),
+    [cashFlowSeries]
+  );
 
   const { ref: chartSizeRef, width: chartContainerWidth } = useChartContainerSize();
   const chartInnerHeight = Math.max(220, Math.round(chartContainerWidth * 0.35));
@@ -254,7 +261,12 @@ export function BalancesOverview() {
 
       <div className={cn('space-y-5')}>
         {!loading && overall ? (
-          <BalancesInsightsPanel overall={overall} resetKey={data?.asOf ?? 'default'} />
+          <BalancesInsightsPanel
+            overall={overall}
+            resetKey={data?.asOf ?? 'default'}
+            incomeYtd={incomeYtd}
+            expensesYtd={expensesYtd}
+          />
         ) : null}
 
         <div

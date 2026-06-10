@@ -87,10 +87,17 @@ The `/api/analytics/cash-flow` endpoint already returns per-month `{ income, exp
 
 **Acceptance criteria**
 
-- [ ] `BalancesOverview` computes and passes `incomeYtd` / `expensesYtd` to `BalancesInsightsPanel`.
-- [ ] No additional network requests are made when `DashboardPage` already mounts (TanStack Query cache hit).
-- [ ] TypeScript passes.
-- [ ] `npm --prefix frontend run build` succeeds.
+- [x] `BalancesOverview` computes and passes `incomeYtd` / `expensesYtd` to `BalancesInsightsPanel`.
+- [x] No additional network requests are made when `DashboardPage` already mounts (TanStack Query cache hit).
+- [x] TypeScript passes.
+- [x] `npm --prefix frontend run build` succeeds.
+
+**TDD log**
+
+- Red: `BalancesOverview.test.tsx` — YTD row missing, `useCashFlow` not called.
+- Green: wired `useCashFlow(12)` + `computeYtdTotals` into `BalancesOverview`.
+- Verify: 2/2 overview tests pass, typecheck clean, build succeeds.
+- Note: TanStack Query deduplicates `useCashFlow(12)` when `DashboardPage` is mounted (same query key).
 
 ---
 
