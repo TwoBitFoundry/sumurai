@@ -3469,28 +3469,32 @@ async fn get_authenticated_budgets_overview(
         };
 
     if let Some(budgets) = cached_budgets {
-        match state.db_repository.get_subscription_summary(&user_id).await {
-            Ok(subscriptions) => Ok(Json(BudgetsOverviewResponse {
+        match state
+            .db_repository
+            .get_fixed_expense_summary(&user_id)
+            .await
+        {
+            Ok(fixed_expenses) => Ok(Json(BudgetsOverviewResponse {
                 budgets,
-                subscriptions,
+                fixed_expenses,
             })),
             Err(e) => {
                 tracing::error!(
-                    "Failed to get subscription summary for user {}: {}",
+                    "Failed to get fixed expense summary for user {}: {}",
                     user_id,
                     e
                 );
                 Err(ApiErrorResponse::internal_server_error(
-                    "Failed to fetch subscriptions",
+                    "Failed to fetch fixed expenses",
                 ))
             }
         }
     } else {
-        let (budgets_result, subscriptions_result) = tokio::join!(
+        let (budgets_result, fixed_expenses_result) = tokio::join!(
             state
                 .budget_service
                 .get_budgets_for_user(&*state.db_repository, user_id),
-            state.db_repository.get_subscription_summary(&user_id),
+            state.db_repository.get_fixed_expense_summary(&user_id),
         );
 
         let budgets = match budgets_result {
@@ -3503,16 +3507,16 @@ async fn get_authenticated_budgets_overview(
             }
         };
 
-        let subscriptions = match subscriptions_result {
-            Ok(subscriptions) => subscriptions,
+        let fixed_expenses = match fixed_expenses_result {
+            Ok(fixed_expenses) => fixed_expenses,
             Err(e) => {
                 tracing::error!(
-                    "Failed to get subscription summary for user {}: {}",
+                    "Failed to get fixed expense summary for user {}: {}",
                     user_id,
                     e
                 );
                 return Err(ApiErrorResponse::internal_server_error(
-                    "Failed to fetch subscriptions",
+                    "Failed to fetch fixed expenses",
                 ));
             }
         };
@@ -3526,7 +3530,7 @@ async fn get_authenticated_budgets_overview(
 
         Ok(Json(BudgetsOverviewResponse {
             budgets,
-            subscriptions,
+            fixed_expenses,
         }))
     }
 }

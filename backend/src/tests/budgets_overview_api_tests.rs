@@ -1,5 +1,5 @@
 use crate::models::budget::Budget;
-use crate::models::subscription::SubscriptionSummary;
+use crate::models::subscription::FixedExpenseSummary;
 use crate::services::{
     cache_service::MockCacheService, repository_service::MockDatabaseRepository,
 };
@@ -18,7 +18,7 @@ async fn given_authenticated_user_when_get_budgets_overview_then_returns_budgets
     let budgets = vec![Budget::new(user_id, "Groceries".to_string(), dec!(200))];
     let account_id_a = Uuid::new_v4();
     let account_id_b = Uuid::new_v4();
-    let subscriptions = vec![SubscriptionSummary {
+    let subscriptions = vec![FixedExpenseSummary {
         merchant: "Spotify".to_string(),
         normalized_merchant: "spotify".to_string(),
         monthly_cost: dec!(9.99),
@@ -27,6 +27,7 @@ async fn given_authenticated_user_when_get_budgets_overview_then_returns_budgets
         last_charged: NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
         occurrence_count: 3,
         account_ids: vec![account_id_a, account_id_b],
+        category: "subscription".to_string(),
     }];
 
     let mut mock = MockDatabaseRepository::new();
@@ -44,7 +45,7 @@ async fn given_authenticated_user_when_get_budgets_overview_then_returns_budgets
         });
 
     let subscriptions_clone = subscriptions.clone();
-    mock.expect_get_subscription_summary()
+    mock.expect_get_fixed_expense_summary()
         .times(1)
         .returning(move |_| {
             let s = subscriptions_clone.clone();
@@ -79,10 +80,11 @@ async fn given_authenticated_user_when_get_budgets_overview_then_returns_budgets
     assert!(v["budgets"].is_array());
     assert_eq!(v["budgets"].as_array().unwrap().len(), 1);
     assert_eq!(v["budgets"][0]["category"], "Groceries");
-    assert!(v["subscriptions"].is_array());
-    assert_eq!(v["subscriptions"].as_array().unwrap().len(), 1);
-    assert_eq!(v["subscriptions"][0]["merchant"], "Spotify");
-    let ids = v["subscriptions"][0]["account_ids"].as_array().unwrap();
+    assert!(v["fixed_expenses"].is_array());
+    assert_eq!(v["fixed_expenses"].as_array().unwrap().len(), 1);
+    assert_eq!(v["fixed_expenses"][0]["merchant"], "Spotify");
+    assert_eq!(v["fixed_expenses"][0]["category"], "subscription");
+    let ids = v["fixed_expenses"][0]["account_ids"].as_array().unwrap();
     assert_eq!(ids.len(), 2);
     assert_eq!(ids[0].as_str().unwrap(), account_id_a.to_string());
     assert_eq!(ids[1].as_str().unwrap(), account_id_b.to_string());
@@ -95,7 +97,7 @@ async fn given_cache_hit_when_get_budgets_overview_then_uses_cached_budgets_and_
     let budgets = vec![Budget::new(user_id, "Rent".to_string(), dec!(1200))];
     let serialized = serde_json::to_string(&budgets).unwrap();
 
-    let subscriptions = vec![SubscriptionSummary {
+    let subscriptions = vec![FixedExpenseSummary {
         merchant: "Netflix".to_string(),
         normalized_merchant: "netflix".to_string(),
         monthly_cost: dec!(15.99),
@@ -104,6 +106,7 @@ async fn given_cache_hit_when_get_budgets_overview_then_uses_cached_budgets_and_
         last_charged: NaiveDate::from_ymd_opt(2024, 3, 15).unwrap(),
         occurrence_count: 5,
         account_ids: vec![],
+        category: "subscription".to_string(),
     }];
 
     let mock_db = MockDatabaseRepository::new();
@@ -130,7 +133,7 @@ async fn given_cache_hit_when_get_budgets_overview_then_uses_cached_budgets_and_
 
     let subscriptions_clone = subscriptions.clone();
     mock_db_with_subs
-        .expect_get_subscription_summary()
+        .expect_get_fixed_expense_summary()
         .times(1)
         .returning(move |_| {
             let s = subscriptions_clone.clone();
@@ -149,5 +152,5 @@ async fn given_cache_hit_when_get_budgets_overview_then_uses_cached_budgets_and_
     let body_bytes = to_bytes(res.into_body(), 1024 * 1024).await.unwrap();
     let v: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
     assert_eq!(v["budgets"][0]["category"], "Rent");
-    assert_eq!(v["subscriptions"][0]["merchant"], "Netflix");
+    assert_eq!(v["fixed_expenses"][0]["merchant"], "Netflix");
 }

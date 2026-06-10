@@ -103,7 +103,7 @@ use utoipa::OpenApi;
             crate::models::transaction_category_override::SetTransactionCategoryRequest,
             crate::models::auto_categorization_job::AutoCategorizationJobState,
             crate::models::auto_categorization_job::AutoCategorizationJobStatus,
-            crate::models::subscription::SubscriptionSummary,
+            crate::models::subscription::FixedExpenseSummary,
             crate::models::api_error::ApiErrorResponse,
             schemas::SuccessResponse,
             schemas::ErrorResponse,

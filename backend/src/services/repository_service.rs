@@ -386,10 +386,10 @@ pub trait DatabaseRepository: Send + Sync {
         since: chrono::NaiveDate,
     ) -> Result<Vec<Transaction>>;
 
-    async fn get_subscription_summary(
+    async fn get_fixed_expense_summary(
         &self,
         user_id: &Uuid,
-    ) -> Result<Vec<crate::models::subscription::SubscriptionSummary>>;
+    ) -> Result<Vec<crate::models::subscription::FixedExpenseSummary>>;
 }
 
 pub struct PostgresRepository {
@@ -3241,11 +3241,11 @@ impl DatabaseRepository for PostgresRepository {
         Ok(rows.into_iter().map(Into::into).collect())
     }
 
-    async fn get_subscription_summary(
+    async fn get_fixed_expense_summary(
         &self,
         user_id: &Uuid,
-    ) -> Result<Vec<crate::models::subscription::SubscriptionSummary>> {
-        use crate::models::subscription::SubscriptionSummary;
+    ) -> Result<Vec<crate::models::subscription::FixedExpenseSummary>> {
+        use crate::models::subscription::FixedExpenseSummary;
         use crate::services::subscription_detection::cadence::{
             classify_cadence, normalize_to_monthly_cost, Cadence,
         };
@@ -3318,7 +3318,7 @@ impl DatabaseRepository for PostgresRepository {
                 .filter(|id| seen_account_ids.insert(*id))
                 .collect();
 
-            summaries.push(SubscriptionSummary {
+            summaries.push(FixedExpenseSummary {
                 merchant,
                 normalized_merchant: normalized,
                 monthly_cost,
@@ -3327,6 +3327,7 @@ impl DatabaseRepository for PostgresRepository {
                 last_charged,
                 occurrence_count: group.len() as i64,
                 account_ids,
+                category: "subscription".to_string(),
             });
         }
 
