@@ -21,6 +21,8 @@ import { fmtUSD } from '@/utils/format';
 export interface BalancesInsightsPanelProps {
   overall: Totals;
   resetKey?: string;
+  incomeYtd?: number;
+  expensesYtd?: number;
 }
 
 export function BalancesInsightsPanel({

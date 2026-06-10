@@ -33,11 +33,17 @@ The `/api/analytics/cash-flow` endpoint already returns per-month `{ income, exp
 
 **Acceptance criteria**
 
-- [ ] `computeYtdTotals` sums `income` and `expenses` only for months whose `month` string starts with `"${year}-"`.
-- [ ] Months outside the target year are excluded from the sum.
-- [ ] An empty series returns `{ incomeYtd: 0, expensesYtd: 0 }`.
-- [ ] `BalancesInsightsPanelProps` accepts `incomeYtd` and `expensesYtd` as optional numbers.
-- [ ] TypeScript passes with `npm --prefix frontend run typecheck`.
+- [x] `computeYtdTotals` sums `income` and `expenses` only for months whose `month` string starts with `"${year}-"`.
+- [x] Months outside the target year are excluded from the sum.
+- [x] An empty series returns `{ incomeYtd: 0, expensesYtd: 0 }`.
+- [x] `BalancesInsightsPanelProps` accepts `incomeYtd` and `expensesYtd` as optional numbers.
+- [x] TypeScript passes with `npm --prefix frontend run typecheck`.
+
+**TDD log**
+
+- Red: `npm --prefix frontend test -- tests/services/AnalyticsService.ytd.test.ts` — export not found.
+- Green: implemented `computeYtdTotals` in `AnalyticsService.ts`, added optional props to `BalancesInsightsPanelProps`.
+- Verify: 4/4 tests pass, typecheck clean.
 
 ---
 

@@ -4,6 +4,7 @@
 
 import type { BalancesOverview } from '../types/analytics';
 import type {
+  AnalyticsCashFlowPoint,
   AnalyticsCashFlowResponse,
   AnalyticsCategoryResponse,
   AnalyticsMonthlyTotalsResponse,
@@ -114,6 +115,22 @@ export class AnalyticsService {
     }>(endpoint);
     return result.series || [];
   }
+}
+
+export function computeYtdTotals(
+  series: AnalyticsCashFlowPoint[],
+  year: number
+): { incomeYtd: number; expensesYtd: number } {
+  const prefix = `${year}-`;
+  return series
+    .filter((point) => point.month.startsWith(prefix))
+    .reduce(
+      (acc, point) => ({
+        incomeYtd: acc.incomeYtd + point.income,
+        expensesYtd: acc.expensesYtd + point.expenses,
+      }),
+      { incomeYtd: 0, expensesYtd: 0 }
+    );
 }
 
 export function computeRatio(positivesTotal: number, negativesTotal: number): number | null {
