@@ -199,7 +199,7 @@ describe('TransactionInsightsPanel', () => {
     });
     render(<TransactionInsightsPanel insights={insights} isLoading={false} resetKey="k1" />);
     expect(screen.getByText('Share of Wallet')).toBeInTheDocument();
-    expect(screen.getByText('42%')).toBeInTheDocument();
+    expect(screen.getByText('42.0%')).toBeInTheDocument();
   });
 
   it('renders days ago for Triple recency card3', () => {

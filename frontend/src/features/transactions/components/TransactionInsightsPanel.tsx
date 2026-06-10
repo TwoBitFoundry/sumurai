@@ -38,6 +38,10 @@ function fmtPct(v: number): string {
   return `${(v * 100).toFixed(0)}%`;
 }
 
+function fmtPctExact(v: number): string {
+  return `${(v * 100).toFixed(1)}%`;
+}
+
 function fmtDays(v: number): string {
   const d = Math.round(v);
   return d === 1 ? '1 day' : `${d} days`;
@@ -149,7 +153,7 @@ function Card3Value({ metric }: { metric: InsightMetric }) {
     }
     return (
       <>
-        <span className="justify-self-start">{fmtPct(value)}</span>
+        <span className="justify-self-start">{fmtPctExact(value)}</span>
         <span />
         <span />
       </>

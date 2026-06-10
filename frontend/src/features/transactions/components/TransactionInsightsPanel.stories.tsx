@@ -129,7 +129,7 @@ export const StateE: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText('Account + Category')).toBeVisible();
     await expect(canvas.getByText('Share of Wallet')).toBeVisible();
-    await expect(canvas.getByText('50%')).toBeVisible();
+    await expect(canvas.getByText('50.0%')).toBeVisible();
   },
 };
 
@@ -139,7 +139,7 @@ export const StateF: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText('Account + Merchant')).toBeVisible();
     await expect(canvas.getByText('Swipe Preference')).toBeVisible();
-    await expect(canvas.getByText('60%')).toBeVisible();
+    await expect(canvas.getByText('60.0%')).toBeVisible();
   },
 };
 

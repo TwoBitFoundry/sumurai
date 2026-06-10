@@ -1825,3 +1825,84 @@ async fn given_empty_parent_when_getting_contextual_insights_then_card3_null_not
         "ratio should be null when subset < 2 rows"
     );
 }
+
+#[tokio::test]
+async fn given_two_accounts_with_category_filter_when_getting_state_e_then_shares_sum_to_one() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let acct1 = create_test_account(&repo, user.id).await;
+    let acct2 = create_test_account(&repo, user.id).await;
+    let date = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+
+    let t1 = make_contextual_txn(
+        user.id,
+        acct1.id,
+        "e1",
+        -2000,
+        date,
+        "FOOD_AND_DRINK",
+        None,
+        None,
+    );
+    let t2 = make_contextual_txn(
+        user.id,
+        acct2.id,
+        "e2",
+        -3000,
+        date,
+        "FOOD_AND_DRINK",
+        None,
+        None,
+    );
+    repo.upsert_transaction(&t1).await.unwrap();
+    repo.upsert_transaction(&t2).await.unwrap();
+
+    let result1 = repo
+        .get_transactions_contextual_insights(
+            &user.id,
+            None,
+            Some(&[acct1.id]),
+            None,
+            None,
+            Some("FOOD_AND_DRINK"),
+        )
+        .await
+        .unwrap();
+
+    let result2 = repo
+        .get_transactions_contextual_insights(
+            &user.id,
+            None,
+            Some(&[acct2.id]),
+            None,
+            None,
+            Some("FOOD_AND_DRINK"),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(result1.state, InsightState::E);
+    assert_eq!(result2.state, InsightState::E);
+
+    let share1 = result1.card3.unwrap().value.unwrap();
+    let share2 = result2.card3.unwrap().value.unwrap();
+
+    assert!(
+        (share1 - 0.4).abs() < 0.001,
+        "acct1 share should be 40%, got {}",
+        share1
+    );
+    assert!(
+        (share2 - 0.6).abs() < 0.001,
+        "acct2 share should be 60%, got {}",
+        share2
+    );
+    assert!(
+        (share1 + share2 - 1.0).abs() < 0.001,
+        "shares must sum to 1.0, got {}",
+        share1 + share2
+    );
+}
