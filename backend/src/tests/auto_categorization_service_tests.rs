@@ -691,6 +691,7 @@ async fn given_completed_job_when_detection_runs_then_detection_count_added_to_u
             let txns = sub_txns_clone.clone();
             Box::pin(async move { Ok(txns) })
         });
+
     db.expect_update_transaction_categories_batch()
         .times(..)
         .returning(|_, _| Box::pin(async { Ok(()) }));

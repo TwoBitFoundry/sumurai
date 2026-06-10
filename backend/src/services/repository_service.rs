@@ -3262,7 +3262,13 @@ impl DatabaseRepository for PostgresRepository {
                             transactions::Relation::TransactionCategoryOverrides.def(),
                         )
                         .filter(transactions::Column::UserId.eq(user_id))
-                        .filter(Self::effective_category_expr().eq("SUBSCRIPTION"))
+                        .filter(
+                            Condition::any()
+                                .add(Self::effective_category_expr().eq("SUBSCRIPTION"))
+                                .add(Self::effective_category_expr().eq("RENT_AND_UTILITIES"))
+                                .add(Self::effective_category_expr().eq("LOAN_PAYMENTS"))
+                                .add(Self::effective_category_expr().eq("INSURANCE")),
+                        )
                         .order_by_asc(transactions::Column::Date)
                         .all(txn)
                         .await?)
@@ -3318,6 +3324,12 @@ impl DatabaseRepository for PostgresRepository {
                 .filter(|id| seen_account_ids.insert(*id))
                 .collect();
 
+            let category = if group.iter().any(|r| r.category_primary == "SUBSCRIPTION") {
+                "subscription".to_string()
+            } else {
+                "bill".to_string()
+            };
+
             summaries.push(FixedExpenseSummary {
                 merchant,
                 normalized_merchant: normalized,
@@ -3327,7 +3339,7 @@ impl DatabaseRepository for PostgresRepository {
                 last_charged,
                 occurrence_count: group.len() as i64,
                 account_ids,
-                category: "subscription".to_string(),
+                category,
             });
         }
 

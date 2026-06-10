@@ -2,25 +2,36 @@
 
 ## Context
 
-Subscriptions are currently the only recurring-expense concept surfaced in the app. This plan reworks the subscriptions feature into a unified **Fixed Expenses** section that covers all recurring charges — streaming/software subscriptions AND bills (utilities, insurance, loans). The section groups items by cadence (biweekly → monthly → quarterly → yearly), shows only non-empty groups, and adds a category badge ("Subscription" / "Bills") to each card.
+Subscriptions are currently the only recurring-expense concept surfaced in the app. This plan reworks the subscriptions feature into a unified **Fixed Expenses** section that covers all recurring charges — streaming/software subscriptions AND bills (utilities, insurance, loans).
 
-**Why:** A user's recurring obligations extend well beyond Netflix and Spotify. ISP bills, insurance premiums, and loan payments follow identical cadence patterns and belong in the same financial view.
+**Why:** A user's recurring obligations extend well beyond Netflix and Spotify. ISP bills, insurance premiums, and loan payments belong in the same financial view.
+
+**Mental model:**
+
+Auto-categorization is the normalizing layer for all transaction sources (Plaid, Teller, SimpleFin, custom imports). Every transaction ends up with the correct category before Fixed Expenses runs. This means:
+
+- **Bills** are transactions already carrying RENT_AND_UTILITIES, LOAN_PAYMENTS, or INSURANCE as their effective category. No detection service needed — the category is the signal.
+- **Subscriptions** carry the custom SUBSCRIPTION category populated by our subscription detection service (Plaid has no native subscription category).
+- **Cadence classification** is used only for display grouping (biweekly → monthly → quarterly → yearly). It does not determine whether something is a fixed expense — the category does.
+
+Note: RENT_AND_UTILITIES is stored as `category_primary = 'RENT_AND_UTILITIES'` but displayed as "Bills" in the UI.
 
 **Key decisions:**
-- Bills are detected with the same cadence algorithm as subscriptions, but targeting different source categories and a looser amount-variance threshold (35% vs 15%) to tolerate seasonal utility variation.
-- Bill detection runs **after** subscription detection; any RENT_AND_UTILITIES transaction already promoted to SUBSCRIPTION is invisible to bill detection.
-- The data contract is renamed end-to-end: `SubscriptionSummary` → `FixedExpenseSummary`, `subscriptions` → `fixed_expenses`. A `category: 'subscription' | 'bill'` field is added to the model.
-- The specific bill sub-type (utility vs insurance vs loan) is not exposed as a distinct display label — all bill items show "Bills".
+- `get_fixed_expense_summary()` queries `effective_category IN ('SUBSCRIPTION', 'RENT_AND_UTILITIES', 'LOAN_PAYMENTS', 'INSURANCE')` — one query, two display categories.
+- `category: "subscription"` for SUBSCRIPTION items; `category: "bill"` for everything else.
+- Subscription-promoted RENT_AND_UTILITIES transactions (where subscription detection set `category_primary = 'SUBSCRIPTION'`) naturally fall under SUBSCRIPTION, not bills — no special exclusion logic needed.
+- No bill detection service. No CV gate. No category mutation for bills.
+- The data contract is renamed end-to-end: `SubscriptionSummary` → `FixedExpenseSummary`, `subscriptions` → `fixed_expenses`.
 
 ---
 
-## Phase 1 — Backend: rename model + extend API contract
+## Phase 1 — Backend: rename model + extend API contract ✅
 
-**Goal:** Rename the existing subscription model and API field to the fixed-expense naming, add the `category` field, and keep all existing subscription behavior working. No new detection logic yet.
+**Goal:** Rename the existing subscription model and API field to the fixed-expense naming, add the `category` field, and keep all existing subscription behavior working. No new query logic yet.
 
 **Tasks:**
-- Rename `SubscriptionSummary` → `FixedExpenseSummary` in `backend/src/models/subscription.rs` (or rename file to `fixed_expense.rs`); add `category: String` field; update `mod.rs`
-- Update `get_subscription_summary()` → `get_fixed_expense_summary()` in `backend/src/services/repository_service.rs`; populate `category = "subscription"` for all rows (BILL query added in Phase 2)
+- Rename `SubscriptionSummary` → `FixedExpenseSummary` in `backend/src/models/subscription.rs`; add `category: String` field; update `mod.rs`
+- Update `get_subscription_summary()` → `get_fixed_expense_summary()` in `backend/src/services/repository_service.rs`; populate `category = "subscription"` for all rows (bill categories added in Phase 2)
 - In `backend/src/models/budget.rs`: rename `subscriptions: Vec<SubscriptionSummary>` → `fixed_expenses: Vec<FixedExpenseSummary>` on `BudgetsOverviewResponse`
 - In `backend/src/main.rs` (budgets overview handler): replace `get_subscription_summary()` call with `get_fixed_expense_summary()`; update `tokio::join!` block
 - Update any remaining `SubscriptionSummary` references in `backend/src/models/` and `backend/openapi/`
@@ -38,37 +49,36 @@ Subscriptions are currently the only recurring-expense concept surfaced in the a
 
 ---
 
-## Phase 2 — Backend: bill detection service + BILL category
+## Phase 2 — Backend: extend summary to include bill categories
 
-**Goal:** Add the `BILL` category and a detection service that identifies recurring utility, insurance, and loan payments, then wires detection into the sync and auto-categorization pipelines.
+**Goal:** Extend `get_fixed_expense_summary()` to pull in transactions from RENT_AND_UTILITIES, LOAN_PAYMENTS, and INSURANCE alongside SUBSCRIPTION transactions. Auto-categorization already ensures all sources have the correct category — no detection service is needed.
 
-**Tasks:**
-- Add `"BILL"` to the system category list in `backend/src/services/categorization/classifier_labels.rs` (no deterministic merchant labeling — detection-only)
-- Create `backend/src/services/bill_detection/` with:
-  - `mod.rs` — module exports
-  - `service.rs` — mirrors `subscription_detection/service.rs` with:
-    - `ELIGIBLE_CATEGORIES`: `["RENT_AND_UTILITIES", "LOAN_PAYMENTS", "INSURANCE"]`
-    - `ASSIGNED_CATEGORY`: `"BILL"`
-    - `AMOUNT_CV_MAX`: `0.35` (vs 0.15 for subscriptions)
-    - No exclusion list
-    - Reuses `cadence.rs` via `use crate::services::subscription_detection::cadence`
-  - `known_merchants.rs` — ISPs (Comcast/Xfinity, AT&T, Verizon, Spectrum, T-Mobile, Google Fi), major insurers (State Farm, Geico, Allstate, Progressive, USAA), common loan servicers
-- Wire `bill_detection::detect_and_assign_for_user()` into `backend/src/services/connection_service.rs` after the existing subscription detection call (same background task pattern)
-- Wire into `backend/src/services/auto_categorization/service.rs` after subscription detection call (~line 243)
-- Extend `get_fixed_expense_summary()` query in `repository_service.rs` to include `effective_category IN ('SUBSCRIPTION', 'BILL')`; set `category = "bill"` when `effective_category = 'BILL'`
-- Add test file `backend/src/tests/bill_detection_tests.rs`:
-  - `detector_assigns_bill_for_stable_monthly_utility`
-  - `detector_accepts_high_variance_within_35_pct_cv`
-  - `detector_rejects_variance_above_35_pct`
-  - `detector_skips_transactions_already_categorized_as_subscription`
-  - `detector_rejects_sub_threshold_count`
-- Register test module in `backend/src/tests/mod.rs`
+This phase also cleans up the partially-implemented bill detection service that was started and abandoned during development.
+
+**Cleanup tasks (revert mid-session work):**
+- Remove any remaining references to `bill_detection` module from `connection_service.rs` and `auto_categorization/service.rs`
+- Remove `get_transactions_for_bill_detection` from `repository_service.rs` trait and impl
+- Remove `expect_get_transactions_for_bill_detection()` calls from `auto_categorization_service_tests.rs`
+
+**Implementation tasks:**
+- In `repository_service.rs`, rewrite `get_fixed_expense_summary()`:
+  - Single query: `effective_category IN ('SUBSCRIPTION', 'RENT_AND_UTILITIES', 'LOAN_PAYMENTS', 'INSURANCE')`
+  - Group by `normalized_merchant` (fall back to `merchant_name`)
+  - Classify cadence per group using existing `classify_cadence()` from subscription_detection
+  - Set `category: "subscription"` when effective_category is SUBSCRIPTION; `category: "bill"` for all others
+- Update `budgets_overview_api_tests.rs` to assert bill-category items appear with `category: "bill"`
 
 **Acceptance criteria:**
-- [ ] `cargo test -p sumurai-backend --locked bill` — all bill detection tests pass
-- [ ] `GET /api/budgets/overview` returns items with `category: "bill"` for detected recurring utilities/insurance/loans
-- [ ] Subscription-categorized RENT_AND_UTILITIES transactions do not appear as bills (double-counting check)
-- [ ] `cargo test -p sumurai-backend --locked` — full backend test suite green
+- [x] `cargo build -p sumurai-backend --locked` passes with no errors
+- [x] `GET /api/budgets/overview` returns items with `category: "bill"` for RENT_AND_UTILITIES / LOAN_PAYMENTS / INSURANCE transactions
+- [x] SUBSCRIPTION transactions still return with `category: "subscription"`
+- [x] No references to `bill_detection` remain anywhere in the backend
+- [x] `cargo test -p sumurai-backend --locked` — full backend test suite green
+
+**TDD log:**
+- Removed `bill_detection` service (directory, trait method, impl, all test mock expectations).
+- Rewrote `get_fixed_expense_summary()`: single query on `effective_category IN ('SUBSCRIPTION', 'RENT_AND_UTILITIES', 'LOAN_PAYMENTS', 'INSURANCE')`; groups by normalized_merchant; classifies cadence for display; sets `category` from `category_primary`.
+- `cargo test -p sumurai-backend --locked` — 643 passed, 0 failed.
 
 ---
 
@@ -77,7 +87,7 @@ Subscriptions are currently the only recurring-expense concept surfaced in the a
 **Goal:** Regenerate the OpenAPI schema after the model changes from Phases 1–2 are stable.
 
 **Tasks:**
-- Run the project's OpenAPI generation command (check `Makefile` or `CONTRIBUTING.md` for the exact command; output targets `backend/openapi/` and `docs/OPENAPI.json`)
+- Run the project's OpenAPI generation command (check `CONTRIBUTING.md` for the exact command; output targets `backend/openapi/` and `docs/OPENAPI.json`)
 - Verify `FixedExpenseSummary` schema appears with `category` field; `SubscriptionSummary` schema is removed; `BudgetsOverviewResponse.fixed_expenses` is present
 
 **Acceptance criteria:**
@@ -143,14 +153,7 @@ Subscriptions are currently the only recurring-expense concept surfaced in the a
 
 ---
 
-## Assumptions
-
-- The backend cadence algorithm already detects biweekly recurrence; it just needs to be included in the frontend cadence order constant.
-- `category_primary` (original Plaid category) is available on the transaction row alongside `effective_category`, but Phase 2 does not need to inspect it since all BILL items share one display label.
-- Subscription detection tests do not need substantive changes — only import path updates if `SubscriptionSummary` is referenced there.
-
 ## Risks
 
-- **RENT_AND_UTILITIES overlap**: Subscription detection already includes RENT_AND_UTILITIES as an eligible category (e.g., a streaming service miscategorized by Plaid). The run-order dependency (subscriptions first, bills second) handles this, but it's worth confirming the eligible-category filter in the subscription detection service excludes already-overridden transactions.
-- **CV threshold for bills**: 35% is a judgment call. A seasonal utility with very high summer/winter swing might still exceed this. Monitor false negatives in testing.
-- **API contract break**: Renaming `subscriptions` → `fixed_expenses` is a breaking change to any client consuming the current API. Verify no other consumers (mobile, partner integrations) depend on the current field name before deploying Phase 1.
+- **Single-occurrence bills:** A transaction with only one occurrence has no inter-transaction gaps, so cadence classification defaults to monthly. This is acceptable — the item is a real fixed expense by its category alone.
+- **API contract break:** Renaming `subscriptions` → `fixed_expenses` is a breaking change to any client consuming the current API. Verify no other consumers (mobile, partner integrations) depend on the current field name before deploying Phase 1. (Phase 1 is already committed.)
