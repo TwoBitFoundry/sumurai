@@ -29,7 +29,7 @@ const june2026 = new Date(2026, 5, 1);
 describe('FixedExpensesSection', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
-    setSessionBudgetsSectionExpanded('subscriptions', true);
+    setSessionBudgetsSectionExpanded('fixed-expenses', true);
   });
 
   it('shows Fixed Expenses heading without hero metrics', () => {
@@ -69,7 +69,7 @@ describe('FixedExpensesSection', () => {
       <FixedExpensesSection
         fixedExpenses={[
           makeFixed('Spotify', 'spotify'),
-          { ...makeFixed('Comcast', 'comcast'), category: 'bill' },
+          { ...makeFixed('Comcast', 'comcast'), category: 'RENT_AND_UTILITIES' },
         ]}
         month={june2026}
         isLoading={false}

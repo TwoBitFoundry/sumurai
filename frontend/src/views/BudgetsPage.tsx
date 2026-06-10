@@ -31,6 +31,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
     remove,
     computedBudgets,
     filteredFixedExpenses,
+    insightsFixedExpenses,
     filterKey,
     availableCategoryOptions,
     month,
@@ -122,7 +123,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
       totalBudgeted={stats.totalBudgeted}
       totalSpent={stats.totalSpent}
       insights={insights}
-      fixedExpenses={filteredFixedExpenses}
+      fixedExpenses={insightsFixedExpenses}
       month={month}
       filterKey={filterKey}
     />

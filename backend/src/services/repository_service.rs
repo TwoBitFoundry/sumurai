@@ -3256,7 +3256,7 @@ impl DatabaseRepository for PostgresRepository {
         let rows = self
             .with_tenant(&user_id, move |txn| {
                 Box::pin(async move {
-                    Ok(transactions::Entity::find()
+                    let query = transactions::Entity::find()
                         .join(
                             JoinType::LeftJoin,
                             transactions::Relation::TransactionCategoryOverrides.def(),
@@ -3269,14 +3269,17 @@ impl DatabaseRepository for PostgresRepository {
                                 .add(Self::effective_category_expr().eq("LOAN_PAYMENTS"))
                                 .add(Self::effective_category_expr().eq("INSURANCE")),
                         )
-                        .order_by_asc(transactions::Column::Date)
+                        .order_by_asc(transactions::Column::Date);
+
+                    Ok(Self::transaction_with_effective_category_select(query)
+                        .into_model::<EffectiveCategoryTransactionRow>()
                         .all(txn)
                         .await?)
                 })
             })
             .await?;
 
-        let mut groups: HashMap<String, Vec<entity::transactions::Model>> = HashMap::new();
+        let mut groups: HashMap<String, Vec<EffectiveCategoryTransactionRow>> = HashMap::new();
         for row in rows {
             let key = row
                 .normalized_merchant
@@ -3325,11 +3328,17 @@ impl DatabaseRepository for PostgresRepository {
                 .filter(|id| seen_account_ids.insert(*id))
                 .collect();
 
-            let category = if group.iter().any(|r| r.category_primary == "SUBSCRIPTION") {
-                "subscription".to_string()
-            } else {
-                "bill".to_string()
-            };
+            let mut category_counts: HashMap<String, usize> = HashMap::new();
+            for row in &group {
+                *category_counts
+                    .entry(row.category_primary.clone())
+                    .or_insert(0) += 1;
+            }
+            let category = category_counts
+                .into_iter()
+                .max_by_key(|(_, count)| *count)
+                .map(|(category, _)| category)
+                .unwrap_or_else(|| "RENT_AND_UTILITIES".to_string());
 
             summaries.push(FixedExpenseSummary {
                 merchant,

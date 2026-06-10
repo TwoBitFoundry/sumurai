@@ -34,6 +34,7 @@ export interface UseBudgetsResult {
   budgets: Budget[];
   fixedExpenses: FixedExpenseSummary[];
   filteredFixedExpenses: FixedExpenseSummary[];
+  insightsFixedExpenses: FixedExpenseSummary[];
   filterKey: string;
   computedBudgets: BudgetProgressEntry[];
   transactions: Transaction[];
@@ -104,23 +105,23 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
   const isAccountFiltered =
     hasAccountRoster && !isAllAccountsSelected && selectedAccountIds.length > 0;
 
-  const filteredFixedExpenses = useMemo(() => {
+  const insightsFixedExpenses = useMemo(() => {
     if (hasEmptyAccountSelection) {
       return [];
     }
 
-    const inSelectedMonth = fixedExpenses.filter((item) =>
-      hasFixedExpenseChargeInMonth(item, month)
-    );
-
     if (!isAccountFiltered) {
-      return inSelectedMonth;
+      return fixedExpenses;
     }
 
-    return inSelectedMonth.filter((item) =>
+    return fixedExpenses.filter((item) =>
       item.account_ids.some((id) => selectedAccountIds.includes(id))
     );
-  }, [hasEmptyAccountSelection, isAccountFiltered, selectedAccountIds, fixedExpenses, month]);
+  }, [hasEmptyAccountSelection, isAccountFiltered, selectedAccountIds, fixedExpenses]);
+
+  const filteredFixedExpenses = useMemo(() => {
+    return insightsFixedExpenses.filter((item) => hasFixedExpenseChargeInMonth(item, month));
+  }, [insightsFixedExpenses, month]);
 
   const loadError = useMemo(() => {
     if (!budgetsQuery.isError || budgetsQuery.error == null) {
@@ -341,6 +342,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
     budgets,
     fixedExpenses,
     filteredFixedExpenses,
+    insightsFixedExpenses,
     filterKey: cacheKey,
     computedBudgets,
     transactions,

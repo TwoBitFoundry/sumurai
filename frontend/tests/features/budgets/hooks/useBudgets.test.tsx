@@ -678,6 +678,40 @@ describe('useBudgets', () => {
 
     await waitFor(() => {
       expect(result.current.filteredFixedExpenses).toEqual([]);
+      expect(result.current.insightsFixedExpenses).toEqual([]);
     });
+  });
+
+  it('keeps account-filtered expenses in insightsFixedExpenses when they are outside the selected month', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-06-09T12:00:00'));
+
+    const fixedExpenses = [
+      makeSubscription('Spotify', '9.99'),
+      {
+        ...makeSubscription('Amazon Prime', '139.00'),
+        cadence: 'annual',
+        first_charged: '2026-01-15',
+        last_charged: '2026-01-15',
+        occurrence_count: 1,
+      },
+    ];
+    fetchMock = installFetchRoutes({
+      'GET /api/budgets/overview': () => asOverview([], fixedExpenses),
+      'GET /api/transactions': [],
+      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/status': createConnectedStatus(),
+    });
+
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.insightsFixedExpenses).toHaveLength(2);
+      expect(result.current.filteredFixedExpenses).toHaveLength(1);
+      expect(result.current.filteredFixedExpenses[0].merchant).toBe('Spotify');
+    });
+
+    jest.useRealTimers();
   });
 });

@@ -210,6 +210,10 @@ export function setSessionBankExpanded(bankId: string, expanded: boolean): void 
 
 export function getSessionCollapsibleExpanded(sectionId: string): boolean {
   const map = readCollapsibleExpandedMap();
+  if (sectionId === 'fixed-expenses' && map[sectionId] !== true && map.subscriptions === true) {
+    return true;
+  }
+
   return map[sectionId] === true;
 }
 

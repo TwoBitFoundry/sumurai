@@ -371,7 +371,7 @@ export interface FixedExpenseSummary {
   last_charged: string;
   occurrence_count: number;
   account_ids: string[];
-  category?: 'subscription' | 'bill';
+  category?: string;
 }
 
 export type SubscriptionSummary = FixedExpenseSummary;

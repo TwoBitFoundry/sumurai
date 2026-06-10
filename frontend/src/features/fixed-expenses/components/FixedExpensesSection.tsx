@@ -17,11 +17,11 @@ export function FixedExpensesSection({
 }: FixedExpensesSectionProps) {
   return (
     <CollapsibleSection
-      sectionId="subscriptions"
+      sectionId="fixed-expenses"
       title="Fixed Expenses"
       titleIcon={Repeat2}
       titleIconClassName={heroAccents.sky.icon}
-      testId="subscriptions-section"
+      testId="fixed-expenses-section"
       expandLabel="Show fixed expenses"
       collapseLabel="Hide fixed expenses"
     >

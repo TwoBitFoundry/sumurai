@@ -95,5 +95,6 @@ describe('sessionPreferences', () => {
     });
 
     expect(getSessionCollapsibleExpanded('subscriptions')).toBe(true);
+    expect(getSessionCollapsibleExpanded('fixed-expenses')).toBe(true);
   });
 });

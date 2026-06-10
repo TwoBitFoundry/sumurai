@@ -8,7 +8,7 @@ const makeFixed = (
   cadence = 'monthly',
   firstCharged = '2026-05-01',
   lastCharged = firstCharged,
-  category: 'subscription' | 'bill' = 'subscription',
+  category: 'subscription' | 'bill' | string = 'subscription',
   occurrenceCount = 3
 ): FixedExpenseSummary => ({
   merchant,

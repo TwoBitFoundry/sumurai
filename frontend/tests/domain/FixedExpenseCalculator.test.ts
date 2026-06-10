@@ -240,6 +240,21 @@ describe('resolveFixedExpenseMonthState', () => {
       'due'
     );
   });
+
+  it('returns paid when last_charged is in the month but no scheduled due dates project there', () => {
+    const summary = makeSummary({
+      merchant: 'Adobe',
+      monthly_cost: '18.33',
+      cadence: 'quarterly',
+      first_charged: '2026-01-01',
+      last_charged: '2026-03-31',
+      occurrence_count: 2,
+    });
+
+    expect(
+      resolveFixedExpenseMonthState(summary, new Date(2026, 2, 1), new Date(2026, 2, 31))
+    ).toBe('paid');
+  });
 });
 
 describe('computeFixedExpenseMonthCost', () => {

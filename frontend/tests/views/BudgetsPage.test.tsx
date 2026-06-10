@@ -75,6 +75,7 @@ const baseUseBudgetsMock = {
   transactions: [],
   fixedExpenses: [],
   filteredFixedExpenses: [],
+  insightsFixedExpenses: [],
   filterKey: 'all',
   categoryOptions: [],
   availableCategoryOptions: [],
@@ -95,7 +96,7 @@ describe('BudgetsPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     window.sessionStorage.clear();
-    setSessionBudgetsSectionExpanded('subscriptions', true);
+    setSessionBudgetsSectionExpanded('fixed-expenses', true);
     setSessionBudgetsSectionExpanded('budgets', true);
     setSessionCollapsibleExpanded('budget-insights', true);
     jest.mocked(useBudgets).mockReturnValue(baseUseBudgetsMock as any);
@@ -127,15 +128,15 @@ describe('BudgetsPage', () => {
     });
 
     const cards = Array.from(screen.getByTestId('page-children').firstElementChild?.children ?? []);
-    const subscriptionsCardIndex = cards.findIndex((card) =>
-      card.querySelector('[data-testid="subscriptions-section"]')
+    const fixedExpensesCardIndex = cards.findIndex((card) =>
+      card.querySelector('[data-testid="fixed-expenses-section"]')
     );
     const budgetsCardIndex = cards.findIndex((card) =>
       card.querySelector('[data-testid="budgets-empty-state"]')
     );
 
     expect(budgetsCardIndex).toBeGreaterThanOrEqual(0);
-    expect(subscriptionsCardIndex).toBeGreaterThan(budgetsCardIndex);
+    expect(fixedExpensesCardIndex).toBeGreaterThan(budgetsCardIndex);
   });
 
   it('keeps the insight shell visible in the page stats area', () => {

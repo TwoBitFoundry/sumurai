@@ -26,8 +26,9 @@ export const Populated: Story = {
     await expect(canvas.getByTestId('fixed-expense-cadence-group-monthly')).toBeVisible();
     await expect(canvas.getByText('CenturyLink')).toBeVisible();
     await expect(canvas.getByText('Spotify')).toBeVisible();
-    await expect(canvas.getByText('Bills')).toBeVisible();
-    await expect(canvas.getByText('Subscriptions')).toBeVisible();
+    await expect(canvas.getAllByText('Bills')).toHaveLength(3);
+    await expect(canvas.getAllByText('Subscriptions')).toHaveLength(4);
+    await expect(canvas.getByText('Loan Payments')).toBeVisible();
     await expect(canvas.getByTestId('fixed-expense-card-centurylink')).toHaveTextContent(
       'Jun 2, 9, 16, 23, 30'
     );

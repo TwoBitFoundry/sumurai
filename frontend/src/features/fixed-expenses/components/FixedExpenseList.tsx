@@ -264,8 +264,9 @@ function FixedExpenseCard({
   const categoryPrimary = getFixedExpenseCategoryPrimary(item.category);
   const tagTheme = getTagThemeForCategory(categoryPrimary, accentIndexByName);
   const heroStyles = getHeroAccentTheme(getHeroAccentForCategoryKey(tagTheme.key));
-  const dueDates = listFixedExpenseDueDatesInMonth(item, month);
-  const monthState = resolveFixedExpenseMonthState(item, month);
+  const referenceToday = new Date();
+  const dueDates = listFixedExpenseDueDatesInMonth(item, month, referenceToday);
+  const monthState = resolveFixedExpenseMonthState(item, month, referenceToday, dueDates);
   const cardAccentStyle = {
     borderColor: `${tagTheme.ringHex}99`,
     '--tw-ring-color': `${tagTheme.ringHex}66`,

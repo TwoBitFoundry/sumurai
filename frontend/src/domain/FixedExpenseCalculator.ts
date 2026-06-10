@@ -263,18 +263,23 @@ export type FixedExpenseMonthState = 'paid' | 'due' | 'missed';
 export function resolveFixedExpenseMonthState(
   summary: FixedExpenseSummary,
   month: Date,
-  today: Date = new Date()
+  today: Date = new Date(),
+  dueDates?: FixedExpenseDueDateInMonth[]
 ): FixedExpenseMonthState {
-  const dueDates = listFixedExpenseDueDatesInMonth(summary, month, today);
-  if (dueDates.length === 0) {
+  const entries = dueDates ?? listFixedExpenseDueDatesInMonth(summary, month, today);
+  if (entries.length === 0) {
+    if (isIsoDateInMonth(summary.last_charged, month)) {
+      return 'paid';
+    }
+
     return 'due';
   }
 
-  if (dueDates.some((entry) => entry.status === 'missed')) {
+  if (entries.some((entry) => entry.status === 'missed')) {
     return 'missed';
   }
 
-  if (dueDates.some((entry) => entry.status === 'upcoming')) {
+  if (entries.some((entry) => entry.status === 'upcoming')) {
     return 'due';
   }
 
