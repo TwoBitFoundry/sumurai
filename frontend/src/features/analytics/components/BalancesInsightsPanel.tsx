@@ -28,6 +28,8 @@ export interface BalancesInsightsPanelProps {
 export function BalancesInsightsPanel({
   overall,
   resetKey = 'default',
+  incomeYtd,
+  expensesYtd,
 }: BalancesInsightsPanelProps) {
   const [lastResetKey, setLastResetKey] = useState(resetKey);
   const [expanded, setExpanded] = useState(true);
@@ -41,6 +43,7 @@ export function BalancesInsightsPanel({
   }
 
   const toggle = (id: string) => setFlipped((prev) => ({ ...prev, [id]: !prev[id] }));
+  const showYtd = incomeYtd != null && expensesYtd != null;
 
   const subCategories = [
     {
@@ -180,6 +183,57 @@ export function BalancesInsightsPanel({
             <Amount value={overall.net} className={cn('text-violet-500', 'dark:text-violet-300')} />
           </div>
         </div>
+        {showYtd ? (
+          <div
+            data-testid="balances-ytd-row"
+            className={cn(
+              'mt-1.5',
+              'flex',
+              'flex-wrap',
+              'items-baseline',
+              'justify-center',
+              'gap-x-4',
+              'gap-y-1'
+            )}
+          >
+            <div
+              data-testid="balances-ytd-income"
+              className={cn('inline-flex', 'items-baseline', 'gap-x-1')}
+            >
+              <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}>
+                income ytd
+              </span>
+              <span
+                data-testid="balances-ytd-income-value"
+                className={cn(
+                  uiTypographyRecipes.caption,
+                  uiStatusRecipes.success.text,
+                  'tabular-nums'
+                )}
+              >
+                {fmtUSD(incomeYtd)}
+              </span>
+            </div>
+            <div
+              data-testid="balances-ytd-expenses"
+              className={cn('inline-flex', 'items-baseline', 'gap-x-1')}
+            >
+              <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}>
+                expenses ytd
+              </span>
+              <span
+                data-testid="balances-ytd-expenses-value"
+                className={cn(
+                  uiTypographyRecipes.caption,
+                  uiStatusRecipes.danger.text,
+                  'tabular-nums'
+                )}
+              >
+                {fmtUSD(expensesYtd)}
+              </span>
+            </div>
+          </div>
+        ) : null}
         <div className={cn('mt-2', 'flex', 'justify-center')}>
           <ChevronDown
             className={cn(

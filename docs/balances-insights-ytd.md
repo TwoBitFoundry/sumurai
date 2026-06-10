@@ -61,11 +61,17 @@ The `/api/analytics/cash-flow` endpoint already returns per-month `{ income, exp
 
 **Acceptance criteria**
 
-- [ ] When both props are provided, the header shows income and expenses YTD values.
-- [ ] When props are omitted, the header renders identically to the current state.
-- [ ] Income value uses success text color; expenses value uses danger text color.
-- [ ] Labels ("income ytd" / "expenses ytd") use caption + subtle styling.
-- [ ] TypeScript passes.
+- [x] When both props are provided, the header shows income and expenses YTD values.
+- [x] When props are omitted, the header renders identically to the current state.
+- [x] Income value uses success text color; expenses value uses danger text color.
+- [x] Labels ("income ytd" / "expenses ytd") use caption + subtle styling.
+- [x] TypeScript passes.
+
+**TDD log**
+
+- Red: added 3 failing tests in `BalancesInsightsPanel.test.tsx` for YTD render, omit, and colors.
+- Green: rendered YTD sub-row between net amount and chevron when both props provided.
+- Verify: 11/11 panel tests pass, typecheck clean.
 
 ---
 

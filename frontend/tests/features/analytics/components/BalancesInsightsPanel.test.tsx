@@ -110,6 +110,32 @@ describe('BalancesInsightsPanel', () => {
     expect(cashButton).toHaveAttribute('aria-expanded', 'true');
   });
 
+  it('renders income and expenses YTD when both props are provided', () => {
+    render(<BalancesInsightsPanel overall={sampleOverall} incomeYtd={52300} expensesYtd={18400} />);
+
+    expect(screen.getByTestId('balances-ytd-income')).toHaveTextContent('$52,300.00');
+    expect(screen.getByTestId('balances-ytd-expenses')).toHaveTextContent('$18,400.00');
+    expect(screen.getByText('income ytd')).toBeInTheDocument();
+    expect(screen.getByText('expenses ytd')).toBeInTheDocument();
+  });
+
+  it('omits YTD row when props are absent', () => {
+    render(<BalancesInsightsPanel overall={sampleOverall} />);
+
+    expect(screen.queryByTestId('balances-ytd-row')).not.toBeInTheDocument();
+  });
+
+  it('colors YTD income success and expenses danger', () => {
+    render(<BalancesInsightsPanel overall={sampleOverall} incomeYtd={1000} expensesYtd={500} />);
+
+    expect(screen.getByTestId('balances-ytd-income-value')).toHaveClass(
+      uiStatusRecipes.success.text[0]
+    );
+    expect(screen.getByTestId('balances-ytd-expenses-value')).toHaveClass(
+      uiStatusRecipes.danger.text[0]
+    );
+  });
+
   it('resets flipped categories when resetKey changes', async () => {
     const { rerender } = render(<BalancesInsightsPanel overall={sampleOverall} resetKey="first" />);
     await userEvent.click(screen.getByRole('button', { name: /cash/i }));
