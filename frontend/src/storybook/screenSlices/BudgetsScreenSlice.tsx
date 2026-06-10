@@ -7,7 +7,7 @@ import { BudgetList } from '@/features/budgets/components/BudgetList';
 import { FixedExpensesSection } from '@/features/fixed-expenses/components/FixedExpensesSection';
 import { PageLayout } from '@/layouts/PageLayout';
 import { sampleBudgetProgressEntries } from '@/storybook/fixtures/budgets';
-import { sampleSubscriptions } from '@/storybook/fixtures/subscriptions';
+import { sampleFixedExpenses } from '@/storybook/fixtures/fixed-expenses';
 import { Button, cn, EmptyState, GlassCard } from '@/ui/primitives';
 import { heroAccents } from '@/ui/tokens';
 
@@ -25,13 +25,13 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         runoutDate: props.state === 'empty' ? null : new Date(2026, 5, 17),
         hasActivity: props.state !== 'empty',
       }}
-      fixedExpenses={props.state === 'empty' ? [] : sampleSubscriptions}
+      fixedExpenses={props.state === 'empty' ? [] : sampleFixedExpenses}
       month={new Date(2026, 5, 1)}
       filterKey={props.state}
     />
   );
 
-  const subscriptions = props.state === 'empty' ? [] : sampleSubscriptions;
+  const fixedExpenses = props.state === 'empty' ? [] : sampleFixedExpenses;
 
   const errorMessage =
     props.state === 'error' ? 'Unable to reach the budgets service. Try again shortly.' : null;
@@ -53,7 +53,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
             containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
             className={cn('space-y-6')}
           >
-            <FixedExpensesSection fixedExpenses={subscriptions} isLoading={false} />
+            <FixedExpensesSection fixedExpenses={fixedExpenses} isLoading={false} />
           </GlassCard>
           <GlassCard
             variant="accent"

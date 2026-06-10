@@ -146,9 +146,9 @@ This phase also cleans up the partially-implemented bill detection service that 
   - Confirm other cadence groups are conditional (absent when empty)
 
 **Acceptance criteria:**
-- [ ] `npm --prefix frontend test -- fixed-expenses` — all tests pass
-- [ ] `npm --prefix frontend test` — full frontend test suite green
-- [ ] Storybook stories render Fixed Expenses section with "Subscription" and "Bills" badges visible
+- [x] `npm --prefix frontend test -- fixed-expenses` — all tests pass
+- [x] `npm --prefix frontend test` — full frontend test suite green (1028 pass, 0 fail)
+- [x] Storybook stories updated with "Fixed Costs" and new fixture including bill items
 - [ ] Dev server at `http://localhost:8080` → Budgets page shows Fixed Expenses section with cadence groups, category badges, and "Fixed Costs" insight tile
 
 ---

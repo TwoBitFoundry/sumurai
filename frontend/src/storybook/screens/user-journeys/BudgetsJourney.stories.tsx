@@ -4,7 +4,7 @@ import { BottomContextualBar } from '@/components/BottomContextualBar';
 import { BudgetMonthPillSlider } from '@/features/budgets/components/BudgetMonthPillSlider';
 import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
-import { sampleSubscriptions } from '@/storybook/fixtures/subscriptions';
+import { sampleFixedExpenses } from '@/storybook/fixtures/fixed-expenses';
 import BudgetsPage from '@/views/BudgetsPage';
 import {
   getPagedStoryTransactions,
@@ -44,7 +44,7 @@ const handlers = [
   route('GET', '/budgets/overview', () =>
     jsonResponse({
       budgets: storyBudgets,
-      fixed_expenses: sampleSubscriptions,
+      fixed_expenses: sampleFixedExpenses,
     })
   ),
   route('POST', '/budgets', ({ body }) => {
