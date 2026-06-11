@@ -52,7 +52,8 @@ use utils::webauthn_credentials::{
 
 use crate::models::analytics::{
     BalanceCategory, BalancesOverviewQuery, BalancesOverviewResponse, CashFlowResponse,
-    CategorySpending, DailySpending, MonthlySpending, NetWorthOverTimeResponse, TopMerchant,
+    CategorySpending, DailySpending, MonthlySpending, NetWorthOverTimeResponse, SankeyResponse,
+    TopMerchant,
 };
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, AuthMiddlewareState};
@@ -634,6 +635,7 @@ pub fn create_app(state: AppState) -> Router {
             get(get_authenticated_monthly_totals),
         )
         .route("/api/analytics/cash-flow", get(get_authenticated_cash_flow))
+        .route("/api/analytics/sankey", get(get_authenticated_sankey))
         .route(
             "/api/analytics/top-merchants",
             get(get_authenticated_top_merchants),
@@ -2897,6 +2899,153 @@ async fn get_authenticated_cash_flow(
         .analytics_service
         .cash_flow_from_monthly_aggregates(&aggregates, months);
     Ok(Json(CashFlowResponse { series, currency }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/analytics/sankey",
+    description = "Produces a cached Sankey money-flow view centered on Expenses for the requested date range and account scope.",
+    params(("start_date" = String, Query, description = "Start date in YYYY-MM-DD format"),
+           ("end_date" = String, Query, description = "End date in YYYY-MM-DD format"),
+           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
+    responses(
+        (status = 200, description = "Sankey money-flow data", body = SankeyResponse),
+        (status = 400, description = "Bad request"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Analytics"
+)]
+async fn get_authenticated_sankey(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    AuthorizedQuery {
+        query,
+        authorized_account_ids,
+    }: AuthorizedQuery<DateRangeQuery>,
+) -> Result<Json<models::analytics::SankeyResponse>, StatusCode> {
+    use rust_decimal::Decimal;
+    use std::collections::HashSet;
+
+    let user_id = auth_context.user_id;
+
+    let start_date = query
+        .start_date
+        .as_ref()
+        .and_then(|value| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok())
+        .ok_or(StatusCode::BAD_REQUEST)?;
+    let end_date = query
+        .end_date
+        .as_ref()
+        .and_then(|value| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok())
+        .ok_or(StatusCode::BAD_REQUEST)?;
+    if end_date < start_date {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    let accounts = state
+        .db_repository
+        .get_accounts_for_user(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch accounts for sankey: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let mut allowed_account_ids: HashSet<Uuid> = HashSet::new();
+    for account in accounts {
+        if let Some(ref filtered_ids) = authorized_account_ids {
+            if !filtered_ids.contains(&account.id) {
+                continue;
+            }
+        }
+
+        let category =
+            AnalyticsService::map_account_to_balance_category(&account.account_type, None);
+        if matches!(
+            category,
+            BalanceCategory::Loan | BalanceCategory::Investments
+        ) {
+            continue;
+        }
+
+        allowed_account_ids.insert(account.id);
+    }
+
+    let response = if allowed_account_ids.is_empty() {
+        state
+            .analytics_service
+            .build_sankey(Decimal::ZERO, Vec::new(), "USD")
+    } else {
+        let base_cache_key = format!("{}_sankey_{}_{}", auth_context.jwt_id, start_date, end_date);
+        let cache_key = utils::cache_keys::generate_cache_key_with_account_filter(
+            &base_cache_key,
+            Some(&allowed_account_ids),
+        );
+
+        if let Ok(Some(serialized)) = state.cache_service.get_string(&cache_key).await {
+            if let Ok(cached) =
+                serde_json::from_str::<models::analytics::SankeyResponse>(&serialized)
+            {
+                return Ok(Json(cached));
+            }
+        }
+
+        let allowed_account_ids_vec: Vec<Uuid> = allowed_account_ids.iter().copied().collect();
+        let aggregates = state
+            .db_repository
+            .get_monthly_cash_flow_aggregates_for_user(
+                &user_id,
+                start_date,
+                end_date,
+                Some(&allowed_account_ids_vec),
+            )
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to get sankey income aggregates: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+        let income: Decimal = aggregates.iter().map(|aggregate| aggregate.income).sum();
+
+        let transactions = state
+            .analytics_service
+            .load_spending_transactions(
+                state.db_repository.as_ref(),
+                &user_id,
+                Some(start_date),
+                Some(end_date),
+            )
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to get sankey spending transactions: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+        let transactions = transactions
+            .into_iter()
+            .filter(|transaction| allowed_account_ids.contains(&transaction.account_id))
+            .collect::<Vec<_>>();
+        let categories = state.analytics_service.group_by_category_with_date_range(
+            &transactions,
+            Some(start_date),
+            Some(end_date),
+        );
+
+        let response = state
+            .analytics_service
+            .build_sankey(income, categories, "USD");
+
+        if let Ok(serialized) = serde_json::to_string(&response) {
+            let _ = state
+                .cache_service
+                .set_with_ttl(&cache_key, &serialized, 1800)
+                .await;
+        }
+
+        response
+    };
+
+    Ok(Json(response))
 }
 
 #[utoipa::path(

@@ -2,7 +2,8 @@
 
 use crate::models::analytics::{
     BalanceCategory, CashFlowPoint, CategorySpending, DailySpending, MonthlyCashFlowAggregate,
-    MonthlySpending, TopMerchant,
+    MonthlySpending, SankeyLink, SankeyNode, SankeyNodeKind, SankeyResponse, SankeySummary,
+    TopMerchant,
 };
 use crate::models::transaction::Transaction;
 use crate::services::repository_service::{
@@ -205,7 +206,11 @@ impl AnalyticsService {
     }
 
     fn round_amount(amount: Decimal) -> Decimal {
-        amount.round_dp(2)
+        if amount.is_zero() {
+            Decimal::new(0, 2)
+        } else {
+            amount.round_dp(2)
+        }
     }
 
     fn round_percentage(percentage: Decimal) -> Decimal {
@@ -247,6 +252,150 @@ impl AnalyticsService {
     ) -> Vec<CategorySpending> {
         let filtered_transactions = self.filter_by_date_range(transactions, start_date, end_date);
         Self::group_transactions_by_category(filtered_transactions)
+    }
+
+    fn sankey_id_from_category(name: &str) -> String {
+        let mut id = String::from("category_");
+        let mut previous_was_separator = false;
+
+        for ch in name.chars() {
+            if ch.is_ascii_alphanumeric() {
+                id.push(ch.to_ascii_lowercase());
+                previous_was_separator = false;
+            } else if !previous_was_separator {
+                id.push('_');
+                previous_was_separator = true;
+            }
+        }
+
+        id.trim_matches('_').to_string()
+    }
+
+    pub fn build_sankey(
+        &self,
+        income_total: Decimal,
+        mut category_buckets: Vec<CategorySpending>,
+        currency: &str,
+    ) -> SankeyResponse {
+        category_buckets.retain(|bucket| bucket.value > Decimal::ZERO);
+        category_buckets.sort_by(|a, b| b.value.cmp(&a.value).then_with(|| a.name.cmp(&b.name)));
+
+        let income = Self::round_amount(income_total.max(Decimal::ZERO));
+        let expenses = Self::round_amount(
+            category_buckets
+                .iter()
+                .map(|bucket| bucket.value)
+                .sum::<Decimal>(),
+        );
+        let covered = Self::round_amount(income.min(expenses));
+        let deficit = Self::round_amount((expenses - income).max(Decimal::ZERO));
+        let surplus = Self::round_amount((income - expenses).max(Decimal::ZERO));
+        let coverage_ratio = if expenses > Decimal::ZERO {
+            Some(Self::round_amount(covered / expenses))
+        } else {
+            None
+        };
+
+        if income == Decimal::ZERO && expenses == Decimal::ZERO {
+            return SankeyResponse {
+                nodes: Vec::new(),
+                links: Vec::new(),
+                currency: currency.to_string(),
+                summary: SankeySummary {
+                    income,
+                    expenses,
+                    covered,
+                    deficit,
+                    surplus,
+                    coverage_ratio,
+                },
+            };
+        }
+
+        let mut nodes = vec![
+            SankeyNode {
+                id: "income".to_string(),
+                label: "Income".to_string(),
+                kind: SankeyNodeKind::Income,
+            },
+            SankeyNode {
+                id: "expenses".to_string(),
+                label: "Expenses".to_string(),
+                kind: SankeyNodeKind::Expenses,
+            },
+        ];
+        let mut links = Vec::new();
+
+        if covered > Decimal::ZERO {
+            links.push(SankeyLink {
+                source: "income".to_string(),
+                target: "expenses".to_string(),
+                value: covered,
+            });
+        }
+
+        if deficit > Decimal::ZERO {
+            nodes.push(SankeyNode {
+                id: "debt".to_string(),
+                label: "Debt".to_string(),
+                kind: SankeyNodeKind::Deficit,
+            });
+            links.push(SankeyLink {
+                source: "debt".to_string(),
+                target: "expenses".to_string(),
+                value: deficit,
+            });
+        }
+
+        let surplus_link = if surplus > Decimal::ZERO {
+            Some(SankeyLink {
+                source: "income".to_string(),
+                target: "surplus".to_string(),
+                value: surplus,
+            })
+        } else {
+            None
+        };
+
+        if let Some(link) = surplus_link {
+            links.push(link);
+        }
+
+        for bucket in category_buckets {
+            let node_id = Self::sankey_id_from_category(&bucket.name);
+            nodes.push(SankeyNode {
+                id: node_id.clone(),
+                label: bucket.name.clone(),
+                kind: SankeyNodeKind::Category,
+            });
+            links.push(SankeyLink {
+                source: "expenses".to_string(),
+                target: node_id,
+                value: Self::round_amount(bucket.value),
+            });
+        }
+
+        if surplus > Decimal::ZERO {
+            nodes.push(SankeyNode {
+                id: "surplus".to_string(),
+                label: "Surplus".to_string(),
+                kind: SankeyNodeKind::Surplus,
+            });
+        }
+
+        SankeyResponse {
+            nodes,
+            links,
+            currency: currency.to_string(),
+            summary: SankeySummary {
+                income,
+                expenses,
+                covered,
+                deficit,
+                surplus,
+                coverage_ratio,
+            },
+        }
     }
 
     pub fn calculate_monthly_totals(

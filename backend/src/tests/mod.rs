@@ -47,6 +47,7 @@ mod provider_selection_api_tests;
 mod provider_sync_rate_limit_tests;
 mod read_path_overlay_tests;
 mod repository_service_tests;
+mod sankey_api_tests;
 mod security_resilience_edge_cases_tests;
 #[cfg(feature = "dev-seed")]
 mod seed_password_fallback_tests;
