@@ -13,16 +13,16 @@
 - `docker compose up -d --build` - start the default OSS stack at `http://localhost:8080` (pulls or uses local GHCR-tagged images per compose).
 - `docker compose -f docker-compose.dev.yml up -d --build` - start the development stack with local image builds.
 - `docker compose -f docker-compose.prod.yml up -d --build` - start the production-oriented stack (requires production env and secrets; see `docs/PRODUCTION_TLS.md`).
-- `npm --prefix frontend install` - install frontend dependencies.
-- `npm --prefix frontend run dev` - Next.js dev server on `http://localhost:3001`.
-- `npm --prefix frontend run build` / `npm --prefix frontend test` - frontend build and tests.
-- `npm run precommit` (Husky default): frontend Biome check, `typecheck`, `design:guard`, and `bun test`, then `backend:ci`. Does not reinstall `frontend` deps with `npm ci`, nor Storybook static build, Vitest browser tests, Playwright iframe smoke, or Chromium install; `typescript`/`tsc` still covers `*.stories.tsx` under `src/` with the rest of the app sources. Assumes dependencies are installed. Run `npm run backend:ci && npm run frontend:ci` when you need full local parity with the GitHub frontend job (`frontend:ci`).
+- `bun --cwd=frontend install` - install frontend dependencies.
+- `bun --cwd=frontend run dev` - Next.js dev server on `http://localhost:3001`.
+- `bun --cwd=frontend run build` / `bun --cwd=frontend test` - frontend build and tests.
+- `bun run precommit` (Husky default): frontend Biome check, `typecheck`, `design:guard`, and `bun test`, then `backend:ci`. Does not reinstall `frontend` deps, nor Storybook static build, Vitest browser tests, Playwright iframe smoke, or Chromium install; `typescript`/`tsc` still covers `*.stories.tsx` under `src/` with the rest of the app sources. Assumes dependencies are installed. Run `bun run backend:ci && bun run frontend:ci` when you need full local parity with the GitHub frontend job (`frontend:ci`).
 
 ## Design system guardrails and Storybook AI
 
-- `npm --prefix frontend run design:guard` runs DESIGN.md lint, token drift checks, raw styling guard, and regenerates DTCG + Tailwind exports from `DESIGN.md` (same guard chain as `frontend:design` in root `package.json`).
-- `npm --prefix frontend run storybook` serves Storybook on port 6006. Global Cursor MCP may point at `http://localhost:6006/mcp`; that endpoint exists only while Storybook is running. Start Storybook first, wait until it prints ready, then reload the Cursor window or toggle the Storybook MCP server off and on so the client reconnects. If it still fails, use Output → MCP Logs. Use Storybook MCP tools for component docs and story workflows before inventing new UI patterns.
-- `npm run frontend:playwright-install` (or `npm --prefix frontend run playwright:install`) downloads Playwright’s Chromium for light local use. `npm --prefix frontend run playwright:install-ci` matches CI (`--with-deps`; used by `frontend:ci`).
+- `bun --cwd=frontend run design:guard` runs DESIGN.md lint, token drift checks, raw styling guard, and regenerates DTCG + Tailwind exports from `DESIGN.md` (same guard chain as `frontend:design` in root `package.json`).
+- `bun --cwd=frontend run storybook` serves Storybook on port 6006. Global Cursor MCP may point at `http://localhost:6006/mcp`; that endpoint exists only while Storybook is running. Start Storybook first, wait until it prints ready, then reload the Cursor window or toggle the Storybook MCP server off and on so the client reconnects. If it still fails, use Output → MCP Logs. Use Storybook MCP tools for component docs and story workflows before inventing new UI patterns.
+- `bun run frontend:playwright-install` (or `bun --cwd=frontend run playwright:install`) downloads Playwright’s Chromium for light local use. `bun --cwd=frontend run playwright:install-ci` matches CI (`--with-deps`; used by `frontend:ci`).
 - CI builds static Storybook and runs iframe smoke tests (`test:storybook-runtime`) on pull requests and pushes.
 
 ## Coding Style

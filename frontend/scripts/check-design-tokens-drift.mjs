@@ -8,7 +8,7 @@ try {
     'Tokens must match DESIGN.md.\n' +
       'Edited DESIGN.md?\n' +
       '  no → git pull --rebase origin main\n' +
-      'Run: npm --prefix frontend run design:generate\n' +
+      'Run: bun --cwd=frontend run design:generate\n' +
       'Stage: frontend/src/ui/tokens/generated/\n',
   );
   process.exit(1);

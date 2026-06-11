@@ -34,21 +34,10 @@ const cardContainerClasses = cn(
   ...dashboardCategoryCard.chartHoverBorder
 );
 
-const accountMetaClasses = cn(
-  'flex',
-  'items-center',
-  'gap-2',
-  uiTypographyRecipes.captionStrong,
-  'capitalize',
-  uiTextRecipes.muted,
-  'transition-colors',
-  'duration-300',
-  'ease-out'
-);
-
 const accountMaskClasses = cn(
   uiTypographyRecipes.body,
   uiTextRecipes.subtle,
+  'text-right',
   'transition-colors',
   'duration-500'
 );
@@ -57,6 +46,7 @@ const transactionCountClasses = cn(
   uiTypographyRecipes.captionStrong,
   uiTextRecipes.muted,
   'tabular-nums',
+  'text-right',
   'transition-colors',
   'duration-300',
   'ease-out'
@@ -105,20 +95,26 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
         containerClassName={cardContainerClasses}
         style={hoverBorderStyle}
       >
-        <div className={cn('relative', 'flex', 'min-h-[6rem]', 'items-center', 'p-6')}>
+        <div className={cn('relative', 'flex', 'min-h-[6rem]', 'items-start', 'p-6')}>
           <div className={cn('relative', 'z-10', 'w-full', 'space-y-3')}>
-            <div
-              className={cn(
-                uiTypographyRecipes.cardTitle,
-                uiTextRecipes.primary,
-                'transition-colors',
-                'duration-300',
-                'ease-out'
-              )}
-            >
-              {account.name}
+            <div className={cn('flex', 'items-start', 'justify-between', 'gap-3')}>
+              <div
+                className={cn(
+                  'min-w-0',
+                  'flex-1',
+                  'break-words',
+                  uiTypographyRecipes.cardTitle,
+                  uiTextRecipes.primary,
+                  'transition-colors',
+                  'duration-300',
+                  'ease-out'
+                )}
+              >
+                {account.name}
+              </div>
+              <div className={cn('shrink-0', 'text-right', balanceColor)}>{balanceText}</div>
             </div>
-            <div className={cn('flex', 'items-center', 'gap-3')}>
+            <div className={cn('flex', 'items-center', 'justify-between', 'gap-3')}>
               <IconButton
                 type="button"
                 variant="ghost"
@@ -126,11 +122,11 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
                 title="Import transactions"
                 disabled={!isOnline}
                 onClick={() => setIsImportOpen(true)}
-                className={cn(!isOnline && 'opacity-45')}
+                className={cn('shrink-0', !isOnline && 'opacity-45')}
               >
                 <Upload />
               </IconButton>
-              <div className={cn('flex', 'flex-col', 'gap-0.5')}>
+              <div className={cn('flex', 'flex-col', 'items-end', 'gap-0.5')}>
                 <span className={accountMaskClasses}>••••{account.mask}</span>
                 <span className={transactionCountClasses}>
                   {account.transactions ?? 0}
@@ -139,7 +135,6 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
                   </span>
                 </span>
               </div>
-              <div className={cn('ml-auto', balanceColor)}>{balanceText}</div>
             </div>
           </div>
         </div>
