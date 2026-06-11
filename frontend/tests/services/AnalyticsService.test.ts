@@ -173,6 +173,35 @@ describe('AnalyticsService (date-range endpoints)', () => {
     });
   });
 
+  describe('getSankey', () => {
+    it('calls backend with date range and account filter', async () => {
+      const start = '2024-01-01';
+      const end = '2024-01-31';
+      const accountIds = ['acc_1', 'acc_2'];
+      const mockResponse = {
+        nodes: [],
+        links: [],
+        currency: 'USD',
+        summary: {
+          income: '500.00',
+          expenses: '200.00',
+          covered: '200.00',
+          deficit: '0.00',
+          surplus: '300.00',
+          coverage_ratio: '1.00',
+        },
+      };
+      jest.mocked(ApiClient.get).mockResolvedValue(mockResponse as any);
+
+      const result = await AnalyticsService.getSankey(start, end, accountIds);
+
+      expect(ApiClient.get).toHaveBeenCalledWith(
+        `/analytics/sankey?start_date=${start}&end_date=${end}&account_ids%5B%5D=acc_1&account_ids%5B%5D=acc_2`
+      );
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
   // Removed day-of-week spending endpoint and related UI
 
   describe('Pure Date Range API (no periods)', () => {
