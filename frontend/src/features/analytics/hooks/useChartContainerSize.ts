@@ -29,12 +29,14 @@ export const useChartContainerSize = () => {
       const { width, height } = node.getBoundingClientRect();
       const nextWidth = Math.floor(width);
       const nextHeight = Math.floor(height);
-      if (nextWidth <= 0 || nextHeight <= 0) return;
-      setSize((current) =>
-        current.width === nextWidth && current.height === nextHeight
-          ? current
-          : { width: nextWidth, height: nextHeight }
-      );
+      if (nextWidth <= 0) return;
+      setSize((current) => {
+        const resolvedHeight = nextHeight > 0 ? nextHeight : current.height;
+        if (current.width === nextWidth && current.height === resolvedHeight) {
+          return current;
+        }
+        return { width: nextWidth, height: resolvedHeight };
+      });
     };
 
     const debouncedUpdate = () => {

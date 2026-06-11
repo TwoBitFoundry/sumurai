@@ -418,6 +418,35 @@ export const chartTooltip = {
   row: [font.captionStrong, text.body],
 } as const;
 
+export const sankeyChart = {
+  shell: ['flex', 'min-h-0', 'min-w-0', 'h-full', 'w-full', 'flex-1', 'flex-col'],
+  viewport: ['h-full', 'min-h-[280px]', 'min-w-0', 'w-full', 'flex-1'],
+  emptyState: ['min-h-[280px]'],
+  nodeLabel: [font.badge, text.primary],
+  nodeLabelIncome: ['text-emerald-500', 'dark:text-emerald-300'],
+  nodeLabelExpenses: ['text-violet-500', 'dark:text-violet-300'],
+  nodeLabelDebt: ['text-amber-500', 'dark:text-amber-300'],
+  nodeLabelSurplus: ['text-cyan-500', 'dark:text-cyan-300'],
+  nodeMeta: [font.cardTitle, text.primary],
+  nodePercent: [font.caption, text.muted],
+  margin: { top: 32, right: 52, bottom: 16, left: 52 },
+  animationDurationMs: 800,
+} as const;
+
+export const dashboardStatsCarousel = {
+  shell: ['flex', 'min-w-0', 'flex-col', 'gap-4'],
+  mobile: ['lg:hidden'],
+  desktop: ['hidden', 'lg:flex', 'flex-col', 'gap-4'],
+  header: ['flex', 'items-center', 'justify-between', 'gap-3'],
+  label: [font.captionStrong, text.muted],
+  controls: ['flex', 'items-center', 'gap-2'],
+  viewport: ['flex', 'min-h-[280px]', 'w-full', 'flex-col', 'overflow-hidden'],
+  track: ['flex', 'w-full', 'items-stretch', 'transition-transform', 'duration-500', 'ease-out'],
+  slide: ['flex', 'min-h-[280px]', 'min-h-0', 'min-w-0', 'flex-[0_0_100%]', 'flex-col'],
+  dots: ['flex', 'items-center', 'justify-center', 'gap-2'],
+  dot: ['h-2.5', 'w-2.5', 'rounded-full', 'border', 'transition-all', 'duration-200'],
+} as const;
+
 export const transactionsTable = {
   chromeBar: [...surface.glassPanel, 'backdrop-blur-md backdrop-saturate-[150%]'],
   footer: [

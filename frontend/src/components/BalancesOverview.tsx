@@ -40,6 +40,12 @@ const dashboardSummaryShellLoading = [
   ...semanticSurfaces.mutedChip,
 ] as const;
 
+type BalancesOverviewVariant = 'full' | 'summary' | 'chart';
+
+type BalancesOverviewProps = {
+  variant?: BalancesOverviewVariant;
+};
+
 type BankBarDatum = {
   bank: string;
   cash: number | null;
@@ -48,10 +54,12 @@ type BankBarDatum = {
   loan: number | null;
 };
 
-export function BalancesOverview() {
+export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {}) {
   const { loading, refreshing, error, data, refresh } = useBalancesOverview();
   const { incomeYtd, expensesYtd, loading: ytdLoading } = useYtdIncomeExpenses();
   const { colors } = useTheme();
+  const showSummary = variant !== 'chart';
+  const showChart = variant !== 'summary';
 
   const banks = data?.banks || [];
   const debouncedBanks = useDebouncedChartRecalc(banks);
@@ -267,7 +275,7 @@ export function BalancesOverview() {
       )}
 
       <div className={cn('space-y-5')}>
-        {!loading && overall ? (
+        {showSummary && !loading && overall ? (
           <BalancesInsightsPanel
             overall={overall}
             resetKey={data?.asOf ?? 'default'}
@@ -276,163 +284,173 @@ export function BalancesOverview() {
           />
         ) : null}
 
-        <div
-          ref={chartContainerRef}
-          className={cn(
-            'relative',
-            'mt-4',
-            'w-full',
-            'min-w-0',
-            'overflow-visible',
-            'outline-none',
-            '[&_.recharts-wrapper]:outline-none',
-            '[&_.recharts-surface]:outline-none',
-            '[&_.recharts-wrapper:focus]:outline-none',
-            '[&_.recharts-wrapper:focus-visible]:outline-none',
-            '[&_.recharts-surface:focus]:outline-none',
-            '[&_.recharts-surface:focus-visible]:outline-none',
-            '[&_.recharts-tooltip-cursor]:hidden'
-          )}
-        >
+        {showChart ? (
           <div
-            ref={chartSizeRef}
-            className={cn('w-full', 'min-w-0')}
-            style={{ height: 1 }}
-            aria-hidden
-          />
-          {chartContainerWidth > 0 && chartData.length === 0 && (
+            ref={chartContainerRef}
+            className={cn(
+              'relative',
+              'mt-4',
+              'w-full',
+              'min-w-0',
+              'overflow-visible',
+              'outline-none',
+              '[&_.recharts-wrapper]:outline-none',
+              '[&_.recharts-surface]:outline-none',
+              '[&_.recharts-wrapper:focus]:outline-none',
+              '[&_.recharts-wrapper:focus-visible]:outline-none',
+              '[&_.recharts-surface:focus]:outline-none',
+              '[&_.recharts-surface:focus-visible]:outline-none',
+              '[&_.recharts-tooltip-cursor]:hidden'
+            )}
+          >
             <div
-              className={cn('w-full', 'min-w-0', 'flex', 'items-center', 'justify-center')}
-              style={{ height: totalChartHeight }}
-              data-testid="balances-chart-empty"
-            >
-              <EmptyState
-                icon={Landmark}
-                title="No balances to survey"
-                description="Link your ally accounts to see your full financial picture."
-              />
-            </div>
-          )}
-          {chartContainerWidth > 0 && chartData.length > 0 && (
-            <div
+              ref={chartSizeRef}
               className={cn('w-full', 'min-w-0')}
-              style={{ height: totalChartHeight }}
-              data-testid="balances-chart-plot"
-            >
-              <BarChart
-                width={chartContainerWidth}
-                height={totalChartHeight}
-                data={chartData}
-                stackOffset="sign"
-                accessibilityLayer={false}
-                margin={{
-                  top: 8,
-                  right: 16,
-                  left: 0,
-                  bottom: chartLayout.xAxisHeight,
-                }}
-                onMouseDown={(_state, event) => event.preventDefault()}
-                onMouseLeave={handleChartMouseLeave}
-                onClick={handleChartClick}
+              style={{ height: 1 }}
+              aria-hidden
+            />
+            {chartContainerWidth > 0 && chartData.length === 0 && (
+              <div
+                className={cn('w-full', 'min-w-0', 'flex', 'items-center', 'justify-center')}
+                style={{ height: totalChartHeight }}
+                data-testid="balances-chart-empty"
               >
-                <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
-                <XAxis
-                  dataKey="bank"
-                  interval={0}
-                  tickLine={false}
-                  axisLine={{ stroke: colors.chart.grid }}
-                  height={chartLayout.xAxisHeight}
-                  tick={(props) => (
-                    <BalancesChartXAxisTick
-                      {...props}
-                      fill={colors.chart.axis}
-                      maxCharsPerLine={chartLayout.maxCharsPerLine}
-                    />
-                  )}
+                <EmptyState
+                  icon={Landmark}
+                  title="No balances to survey"
+                  description="Link your ally accounts to see your full financial picture."
                 />
-                <YAxis
-                  type="number"
-                  width={chartLayout.yAxisWidth}
-                  domain={chartLayout.yAxisDomain}
-                  ticks={chartLayout.yAxisTicks}
-                  allowDecimals={false}
-                  tickLine={false}
-                  axisLine={false}
-                  tick={(props) => (
-                    <BalancesChartYAxisTick
-                      {...props}
-                      fill={colors.chart.axis}
-                      fontSize={chartLayout.yTickFontSize}
-                      formatValue={formatBalancesAxisValue}
-                    />
-                  )}
-                />
-                <ReferenceLine y={0} stroke={colors.chart.grid} strokeWidth={1} />
-                <Tooltip
-                  cursor={false}
-                  content={(tooltipProps) => <BalancesBankTooltip {...tooltipProps} />}
-                  {...chartTooltipRechartsProps}
-                  {...touchTooltipProps}
-                />
-                <Bar
-                  dataKey="cash"
-                  name={ACCOUNT_GROUP_LABELS.cash}
-                  stackId="balance"
-                  fill={colors.semantic.cash}
-                  legendType="circle"
-                  onMouseEnter={handleBarMouseEnter}
-                  onMouseLeave={handleBarMouseLeave}
+              </div>
+            )}
+            {chartContainerWidth > 0 && chartData.length > 0 && (
+              <div
+                className={cn('w-full', 'min-w-0')}
+                style={{ height: totalChartHeight }}
+                data-testid="balances-chart-plot"
+              >
+                <BarChart
+                  width={chartContainerWidth}
+                  height={totalChartHeight}
+                  data={chartData}
+                  stackOffset="sign"
+                  accessibilityLayer={false}
+                  margin={{
+                    top: 8,
+                    right: 16,
+                    left: 0,
+                    bottom: chartLayout.xAxisHeight,
+                  }}
+                  onMouseDown={(_state, event) => event.preventDefault()}
+                  onMouseLeave={handleChartMouseLeave}
+                  onClick={handleChartClick}
                 >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cash-${entry.bank}`} {...institutionCellProps(index)} />
-                  ))}
-                </Bar>
-                <Bar
-                  dataKey="investments"
-                  name={ACCOUNT_GROUP_LABELS.investments}
-                  stackId="balance"
-                  fill={colors.semantic.investments}
-                  legendType="circle"
-                  onMouseEnter={handleBarMouseEnter}
-                  onMouseLeave={handleBarMouseLeave}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`investments-${entry.bank}`} {...institutionCellProps(index)} />
-                  ))}
-                </Bar>
-                <Bar
-                  dataKey="credit"
-                  name={ACCOUNT_GROUP_LABELS.credit}
-                  stackId="balance"
-                  fill={colors.semantic.credit}
-                  legendType="circle"
-                  onMouseEnter={handleBarMouseEnter}
-                  onMouseLeave={handleBarMouseLeave}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`credit-${entry.bank}`} {...institutionCellProps(index)} />
-                  ))}
-                </Bar>
-                <Bar
-                  dataKey="loan"
-                  name={ACCOUNT_GROUP_LABELS.loans}
-                  stackId="balance"
-                  fill={colors.semantic.loan}
-                  legendType="circle"
-                  onMouseEnter={handleBarMouseEnter}
-                  onMouseLeave={handleBarMouseLeave}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`loan-${entry.bank}`} {...institutionCellProps(index)} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </div>
-          )}
-        </div>
+                  <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
+                  <XAxis
+                    dataKey="bank"
+                    interval={0}
+                    tickLine={false}
+                    axisLine={{ stroke: colors.chart.grid }}
+                    height={chartLayout.xAxisHeight}
+                    tick={(props) => (
+                      <BalancesChartXAxisTick
+                        {...props}
+                        fill={colors.chart.axis}
+                        maxCharsPerLine={chartLayout.maxCharsPerLine}
+                      />
+                    )}
+                  />
+                  <YAxis
+                    type="number"
+                    width={chartLayout.yAxisWidth}
+                    domain={chartLayout.yAxisDomain}
+                    ticks={chartLayout.yAxisTicks}
+                    allowDecimals={false}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={(props) => (
+                      <BalancesChartYAxisTick
+                        {...props}
+                        fill={colors.chart.axis}
+                        fontSize={chartLayout.yTickFontSize}
+                        formatValue={formatBalancesAxisValue}
+                      />
+                    )}
+                  />
+                  <ReferenceLine y={0} stroke={colors.chart.grid} strokeWidth={1} />
+                  <Tooltip
+                    cursor={false}
+                    content={(tooltipProps) => <BalancesBankTooltip {...tooltipProps} />}
+                    {...chartTooltipRechartsProps}
+                    {...touchTooltipProps}
+                  />
+                  <Bar
+                    dataKey="cash"
+                    name={ACCOUNT_GROUP_LABELS.cash}
+                    stackId="balance"
+                    fill={colors.semantic.cash}
+                    legendType="circle"
+                    onMouseEnter={handleBarMouseEnter}
+                    onMouseLeave={handleBarMouseLeave}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cash-${entry.bank}`} {...institutionCellProps(index)} />
+                    ))}
+                  </Bar>
+                  <Bar
+                    dataKey="investments"
+                    name={ACCOUNT_GROUP_LABELS.investments}
+                    stackId="balance"
+                    fill={colors.semantic.investments}
+                    legendType="circle"
+                    onMouseEnter={handleBarMouseEnter}
+                    onMouseLeave={handleBarMouseLeave}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`investments-${entry.bank}`} {...institutionCellProps(index)} />
+                    ))}
+                  </Bar>
+                  <Bar
+                    dataKey="credit"
+                    name={ACCOUNT_GROUP_LABELS.credit}
+                    stackId="balance"
+                    fill={colors.semantic.credit}
+                    legendType="circle"
+                    onMouseEnter={handleBarMouseEnter}
+                    onMouseLeave={handleBarMouseLeave}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`credit-${entry.bank}`} {...institutionCellProps(index)} />
+                    ))}
+                  </Bar>
+                  <Bar
+                    dataKey="loan"
+                    name={ACCOUNT_GROUP_LABELS.loans}
+                    stackId="balance"
+                    fill={colors.semantic.loan}
+                    legendType="circle"
+                    onMouseEnter={handleBarMouseEnter}
+                    onMouseLeave={handleBarMouseLeave}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`loan-${entry.bank}`} {...institutionCellProps(index)} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   );
+}
+
+export function BalancesOverviewSummary() {
+  return <BalancesOverview variant="summary" />;
+}
+
+export function BalancesOverviewChart() {
+  return <BalancesOverview variant="chart" />;
 }
 
 export default BalancesOverview;

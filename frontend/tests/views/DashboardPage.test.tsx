@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
+import DashboardStatsCarousel from '@/components/DashboardStatsCarousel';
 import { useTheme } from '@/context/ThemeContext';
 import { SpendingByCategoryChart } from '@/features/analytics/components/SpendingByCategoryChart';
 import { useAnalytics } from '@/features/analytics/hooks/useAnalytics';
@@ -30,9 +31,18 @@ jest.mock('@/features/analytics/hooks/useNetWorthSeries', () => ({
   useNetWorthSeries: jest.fn(),
 }));
 
-jest.mock('@/components/BalancesOverview', () => ({
+jest.mock('@/components/DashboardStatsCarousel', () => ({
   __esModule: true,
-  default: () => React.createElement('div', { 'data-testid': 'balances-overview' }),
+  DashboardStatsCarousel: jest.fn(() =>
+    React.createElement('div', { 'data-testid': 'dashboard-stats-carousel' })
+  ),
+  default: jest.fn(() => React.createElement('div', { 'data-testid': 'dashboard-stats-carousel' })),
+}));
+
+jest.mock('@/components/BalancesOverview', () => ({
+  BalancesOverviewSummary: jest.fn(() =>
+    React.createElement('div', { 'data-testid': 'balances-overview-summary' })
+  ),
 }));
 
 jest.mock('@/features/analytics/components/SpendingByCategoryChart', () => ({
@@ -113,11 +123,19 @@ describe('DashboardPage', () => {
 
   it('renders the spending chart and responsive dashboard grid', () => {
     const chartMock = jest.mocked(SpendingByCategoryChart);
+    const statsMock = jest.mocked(DashboardStatsCarousel);
     const noop = jest.fn();
     const { container, unmount } = render(
       <DashboardPage dateRange="current-month" setDateRange={noop} />
     );
 
+    expect(statsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dateRange: 'current-month',
+      }),
+      undefined
+    );
+    expect(screen.getByTestId('dashboard-stats-carousel')).toBeInTheDocument();
     expect(chartMock).toHaveBeenCalledTimes(1);
     expect(chartMock.mock.calls[0][0].data).toEqual([
       expect.objectContaining({ name: 'Food', value: 10 }),
