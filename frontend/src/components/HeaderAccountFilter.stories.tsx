@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { expect, within } from 'storybook/test';
 import { sampleAccounts } from '@/storybook/fixtures/accounts';
 import {
   accountToProviderAccount,
@@ -68,5 +69,17 @@ export const LoadingNoAccounts: Story = {
       selectedAccountIds: [],
       loading: true,
     }),
+  },
+};
+
+export const IconOnly: Story = {
+  args: {
+    triggerStyle: 'icon-only',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: 'Filter accounts' }).className).toContain(
+      'aspect-square'
+    );
   },
 };

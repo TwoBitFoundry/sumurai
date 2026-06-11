@@ -149,6 +149,7 @@ export const Upload: Story = {
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body);
     await expect(body.getByText(/choose file or drop it here/i)).toBeVisible();
+    await expect(body.getByLabelText(/choose an import file/i)).toBeInTheDocument();
     await expect(body.getByText('CSV')).toBeVisible();
     await expect(body.getByText('OFX')).toBeVisible();
     await expect(body.getByText('QBO')).toBeVisible();
