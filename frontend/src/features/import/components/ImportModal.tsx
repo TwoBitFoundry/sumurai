@@ -364,12 +364,20 @@ interface UploadPanelProps {
   onDragOver: (event: React.DragEvent<HTMLLabelElement>) => void;
 }
 
+const importMetaAccentIndex = new Map([['import', 0]]);
+
+const importMetaPillProps = {
+  variant: 'category' as const,
+  categoryName: 'import',
+  accentIndexByName: importMetaAccentIndex,
+};
+
 function ImportSupportedFormats() {
   return (
     <div className={cn('flex', 'max-w-md', 'flex-col', 'items-center', 'gap-2.5')}>
       <div className={cn('flex', 'flex-wrap', 'items-center', 'justify-center', 'gap-2')}>
         {importSupportedFileFormats.map((format) => (
-          <Pill key={format} variant="status" tone="info">
+          <Pill key={format} {...importMetaPillProps}>
             {importFormatLabel(format)}
           </Pill>
         ))}
@@ -416,20 +424,7 @@ function UploadPanel({
       onDrop={onDrop}
       onDragOver={onDragOver}
     >
-      <span
-        className={cn(
-          'flex',
-          'h-14',
-          'w-14',
-          'items-center',
-          'justify-center',
-          'rounded-full',
-          ...uiStatusRecipes.info.strongSurface,
-          ...uiStatusRecipes.info.icon
-        )}
-      >
-        <UploadCloud className={cn('h-7', 'w-7')} aria-hidden="true" />
-      </span>
+      <UploadCloud className={cn('h-7', 'w-7', ...uiStatusRecipes.info.icon)} aria-hidden="true" />
       <span className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
         {selectedFileName ?? 'Choose file or drop it here'}
       </span>
@@ -558,13 +553,13 @@ function PreviewPanel({
   return (
     <div className={importModalShell.sectionStack}>
       <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-1.5', 'md:gap-2')}>
-        <Pill variant="status" tone="info" className={cn('max-w-full', 'truncate')}>
+        <Pill {...importMetaPillProps} className={cn('max-w-full', 'truncate')}>
           {importFormatLabel(validation.format)}
         </Pill>
-        <Pill variant="status" tone="info" className={cn('max-w-full', 'truncate')}>
+        <Pill {...importMetaPillProps} className={cn('max-w-full', 'truncate')}>
           {validation.transaction_count} transactions
         </Pill>
-        <Pill variant="status" tone="info" className={cn('max-w-full', 'truncate')}>
+        <Pill {...importMetaPillProps} className={cn('max-w-full', 'truncate')}>
           {formatDateRange(validation)}
         </Pill>
       </div>
