@@ -182,7 +182,7 @@ export const TransactionsTable: React.FC<Props> = ({
                       'whitespace-nowrap',
                       'px-4',
                       'py-3',
-                      'text-left',
+                      'text-right',
                       uiTypographyRecipes.label
                     )}
                   >
@@ -291,7 +291,15 @@ export const TransactionsTable: React.FC<Props> = ({
                             )}
                           </span>
                         </td>
-                        <td className={cn('whitespace-nowrap', 'px-4', 'py-3', 'align-middle')}>
+                        <td
+                          className={cn(
+                            'whitespace-nowrap',
+                            'px-4',
+                            'py-3',
+                            'align-middle',
+                            'text-right'
+                          )}
+                        >
                           <InlineCategoryCell transaction={r} />
                         </td>
                       </tr>

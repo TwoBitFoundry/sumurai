@@ -1,10 +1,12 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDownLeft, ArrowUpRight, ChevronDown, CircleDollarSign } from 'lucide-react';
-import { type CSSProperties, type ReactNode, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { AccountGroupIcon } from '@/components/AccountGroupIcon';
 import { Amount } from '@/components/Amount';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { InsightCard, type InsightTileAlign } from '@/components/widgets/InsightCard';
+import { InsightsPanelHeader } from '@/components/widgets/InsightsPanel';
+import { InsightsPanelShell } from '@/components/widgets/InsightsPanelShell';
 import { ACCOUNT_GROUP_ACCENT, ACCOUNT_GROUP_LABELS } from '@/domain/accountCategories';
 import { useSessionCollapsible } from '@/hooks/useSessionCollapsible';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
@@ -12,7 +14,7 @@ import type { Totals } from '@/types/analytics';
 import { cn } from '@/ui/primitives';
 import {
   text as semanticTextRecipes,
-  border as uiBorderRecipes,
+  insightsPanel as uiInsightsPanelRecipes,
   status as uiStatusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
@@ -137,204 +139,163 @@ export function BalancesInsightsPanel({
   ];
 
   return (
-    <section
-      data-testid="balances-insights-shell"
-      className={cn(
-        'relative',
-        'overflow-hidden',
-        'rounded-[0.75rem]',
-        'border-2',
-        shellAccent.border,
-        shellAccent.borderDark,
-        'bg-white/80',
-        'transition-colors',
-        'duration-200',
-        'dark:bg-[#111a2f]/70'
-      )}
-    >
-      <div
-        className={cn(
-          'hero-stat-card__gradient',
-          'pointer-events-none',
-          'absolute',
-          'inset-0',
-          'rounded-[inherit]',
-          'opacity-0',
-          'transition-opacity',
-          'duration-300',
-          'group-hover:opacity-100'
-        )}
-        style={{
-          backgroundImage: `linear-gradient(135deg, ${shellAccent.gradFrom}33, ${shellAccent.gradVia}1f, transparent 70%)`,
-        }}
-      />
-      <div
-        className={cn(
-          'pointer-events-none',
-          'absolute',
-          'inset-[2px]',
-          'rounded-[calc(0.75rem-2px)]'
-        )}
-      >
-        <div
-          className={cn('absolute', 'inset-0', 'rounded-[inherit]', 'ring-2')}
-          style={{ '--tw-ring-color': `${shellAccent.ringHex}66` } as CSSProperties}
-        />
-      </div>
-
-      <button
-        type="button"
-        aria-expanded={expanded}
-        aria-controls="balances-insights-panel-body"
-        aria-label="Net worth summary"
-        onClick={toggleExpanded}
-        className={cn('relative', 'z-10', 'w-full', 'text-left', 'p-3', 'md:p-4')}
-      >
-        <div className={cn('flex', 'flex-col', 'gap-y-1.5', 'w-full')}>
-          {showYtdInHeader ? (
-            <div
-              data-testid="balances-ytd-row"
-              className={cn('flex', 'w-full', 'items-start', 'justify-between', 'gap-x-4')}
-            >
-              <div className={cn('flex', 'shrink-0', 'flex-col', 'items-start', 'gap-y-1.5')}>
+    <InsightsPanelShell testId="balances-insights-shell" accent="violet">
+      <div className={cn('relative', 'z-10', 'px-3', 'py-2', 'md:px-4', 'md:py-3')}>
+        <InsightsPanelHeader label="Balance overview" />
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-controls="balances-insights-panel-body"
+          aria-label="Balance overview"
+          onClick={toggleExpanded}
+          className={cn('w-full', 'text-left')}
+        >
+          <div className={cn('flex', 'flex-col', 'gap-y-1.5', 'w-full')}>
+            {showYtdInHeader ? (
+              <div
+                data-testid="balances-ytd-row"
+                className={cn('flex', 'w-full', 'items-start', 'justify-between', 'gap-x-4')}
+              >
+                <div className={cn('flex', 'shrink-0', 'flex-col', 'items-start', 'gap-y-1.5')}>
+                  {netLabel}
+                  {netAmount}
+                </div>
+                <div className={cn('flex', 'shrink-0', 'items-start', 'gap-x-4', 'md:gap-x-6')}>
+                  <div
+                    className={cn(
+                      'inline-grid',
+                      'shrink-0',
+                      'grid-cols-[1fr_auto]',
+                      'gap-x-1',
+                      'gap-y-1.5'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'col-start-1',
+                        'flex',
+                        'items-center',
+                        'justify-end',
+                        'gap-x-1.5'
+                      )}
+                    >
+                      <span
+                        className={cn(...heroStatCardRecipes.iconWell, heroAccents.emerald.icon)}
+                        aria-hidden
+                      >
+                        <ArrowUpRight />
+                      </span>
+                      <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.label)}>
+                        income
+                      </div>
+                    </div>
+                    <div
+                      data-testid="balances-ytd-income"
+                      className={cn(
+                        'col-start-1',
+                        'col-end-3',
+                        'row-start-2',
+                        'grid',
+                        'grid-cols-[1fr_auto]',
+                        'items-baseline',
+                        'gap-x-1'
+                      )}
+                    >
+                      <span
+                        data-testid="balances-ytd-income-value"
+                        className={cn(
+                          'justify-self-end',
+                          uiTypographyRecipes.cardTitle,
+                          uiStatusRecipes.success.text,
+                          'tabular-nums'
+                        )}
+                      >
+                        {fmtUSD(incomeYtd)}
+                      </span>
+                      <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}>
+                        ytd
+                      </span>
+                    </div>
+                  </div>
+                  <div
+                    className={cn(
+                      'inline-grid',
+                      'shrink-0',
+                      'grid-cols-[1fr_auto]',
+                      'gap-x-1',
+                      'gap-y-1.5'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'col-start-1',
+                        'flex',
+                        'items-center',
+                        'justify-end',
+                        'gap-x-1.5'
+                      )}
+                    >
+                      <span
+                        className={cn(...heroStatCardRecipes.iconWell, heroAccents.rose.icon)}
+                        aria-hidden
+                      >
+                        <ArrowDownLeft />
+                      </span>
+                      <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.label)}>
+                        expenses
+                      </div>
+                    </div>
+                    <div
+                      data-testid="balances-ytd-expenses"
+                      className={cn(
+                        'col-start-1',
+                        'col-end-3',
+                        'row-start-2',
+                        'grid',
+                        'grid-cols-[1fr_auto]',
+                        'items-baseline',
+                        'gap-x-1'
+                      )}
+                    >
+                      <span
+                        data-testid="balances-ytd-expenses-value"
+                        className={cn(
+                          'justify-self-end',
+                          uiTypographyRecipes.cardTitle,
+                          uiStatusRecipes.danger.text,
+                          'tabular-nums'
+                        )}
+                      >
+                        {fmtUSD(expensesYtd)}
+                      </span>
+                      <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}>
+                        ytd
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className={cn('flex', 'flex-col', 'items-start', 'gap-y-1.5', 'w-full')}>
                 {netLabel}
                 {netAmount}
               </div>
-              <div className={cn('flex', 'shrink-0', 'items-start', 'gap-x-4', 'md:gap-x-6')}>
-                <div
-                  className={cn(
-                    'inline-grid',
-                    'shrink-0',
-                    'grid-cols-[1fr_auto]',
-                    'gap-x-1',
-                    'gap-y-1.5'
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'col-start-1',
-                      'flex',
-                      'items-center',
-                      'justify-end',
-                      'gap-x-1.5'
-                    )}
-                  >
-                    <span
-                      className={cn(...heroStatCardRecipes.iconWell, heroAccents.emerald.icon)}
-                      aria-hidden
-                    >
-                      <ArrowUpRight />
-                    </span>
-                    <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.label)}>
-                      income
-                    </div>
-                  </div>
-                  <div
-                    data-testid="balances-ytd-income"
-                    className={cn(
-                      'col-start-1',
-                      'col-end-3',
-                      'row-start-2',
-                      'grid',
-                      'grid-cols-[1fr_auto]',
-                      'items-baseline',
-                      'gap-x-1'
-                    )}
-                  >
-                    <span
-                      data-testid="balances-ytd-income-value"
-                      className={cn(
-                        'justify-self-end',
-                        uiTypographyRecipes.cardTitle,
-                        uiStatusRecipes.success.text,
-                        'tabular-nums'
-                      )}
-                    >
-                      {fmtUSD(incomeYtd)}
-                    </span>
-                    <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}>
-                      ytd
-                    </span>
-                  </div>
-                </div>
-                <div
-                  className={cn(
-                    'inline-grid',
-                    'shrink-0',
-                    'grid-cols-[1fr_auto]',
-                    'gap-x-1',
-                    'gap-y-1.5'
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'col-start-1',
-                      'flex',
-                      'items-center',
-                      'justify-end',
-                      'gap-x-1.5'
-                    )}
-                  >
-                    <span
-                      className={cn(...heroStatCardRecipes.iconWell, heroAccents.rose.icon)}
-                      aria-hidden
-                    >
-                      <ArrowDownLeft />
-                    </span>
-                    <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.label)}>
-                      expenses
-                    </div>
-                  </div>
-                  <div
-                    data-testid="balances-ytd-expenses"
-                    className={cn(
-                      'col-start-1',
-                      'col-end-3',
-                      'row-start-2',
-                      'grid',
-                      'grid-cols-[1fr_auto]',
-                      'items-baseline',
-                      'gap-x-1'
-                    )}
-                  >
-                    <span
-                      data-testid="balances-ytd-expenses-value"
-                      className={cn(
-                        'justify-self-end',
-                        uiTypographyRecipes.cardTitle,
-                        uiStatusRecipes.danger.text,
-                        'tabular-nums'
-                      )}
-                    >
-                      {fmtUSD(expensesYtd)}
-                    </span>
-                    <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}>
-                      ytd
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className={cn('flex', 'flex-col', 'items-start', 'gap-y-1.5', 'w-full')}>
-              {netLabel}
-              {netAmount}
-            </div>
-          )}
-          <ChevronDown
-            className={cn(
-              'mx-auto',
-              'h-4',
-              'w-4',
-              'shrink-0',
-              'transition-transform',
-              'duration-200',
-              expanded && 'rotate-180',
-              semanticTextRecipes.subtle
             )}
-          />
-        </div>
-      </button>
+            <ChevronDown
+              className={cn(
+                'mx-auto',
+                'h-4',
+                'w-4',
+                'shrink-0',
+                'transition-transform',
+                'duration-200',
+                expanded && 'rotate-180',
+                semanticTextRecipes.subtle
+              )}
+            />
+          </div>
+        </button>
+      </div>
 
       <AnimatePresence initial={false}>
         {expanded ? (
@@ -348,7 +309,7 @@ export function BalancesInsightsPanel({
             className={cn('relative', 'z-10')}
           >
             <div className={cn('px-3', 'md:px-4')}>
-              <div className={cn('border-t', ...uiBorderRecipes.divider)} />
+              <div className={cn('border-t', ...uiInsightsPanelRecipes.labelDivider)} />
             </div>
             <div
               className={cn(
@@ -423,7 +384,11 @@ export function BalancesInsightsPanel({
                   />
                   <div
                     data-testid="balances-ytd-divider"
-                    className={cn('col-span-full', 'border-t', ...uiBorderRecipes.divider)}
+                    className={cn(
+                      'col-span-full',
+                      'border-t',
+                      ...uiInsightsPanelRecipes.labelDivider
+                    )}
                     aria-hidden
                   />
                 </>
@@ -448,6 +413,6 @@ export function BalancesInsightsPanel({
           </motion.div>
         ) : null}
       </AnimatePresence>
-    </section>
+    </InsightsPanelShell>
   );
 }

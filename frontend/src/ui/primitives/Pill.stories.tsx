@@ -18,6 +18,15 @@ type Story = StoryObj<typeof meta>;
 
 export const Category: Story = {};
 
+export const ImportFormat: Story = {
+  args: {
+    variant: 'category',
+    categoryName: 'import',
+    accentIndexByName: new Map([['import', 0]]),
+    children: 'CSV',
+  },
+};
+
 export const Status: Story = {
   args: {
     variant: 'status',

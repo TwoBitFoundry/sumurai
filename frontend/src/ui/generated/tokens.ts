@@ -1630,6 +1630,28 @@ export const generatedTokens = {
         ],
         "hex": "#f87171"
       }
+    },
+    "effect-accent-outline-glow": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.055,
+          0.647,
+          0.914
+        ],
+        "hex": "#0ea5e9"
+      }
+    },
+    "effect-accent-outline-glow-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.22,
+          0.741,
+          0.973
+        ],
+        "hex": "#38bdf8"
+      }
     }
   },
   "spacing": {

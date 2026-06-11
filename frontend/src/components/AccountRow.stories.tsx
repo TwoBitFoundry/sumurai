@@ -29,6 +29,7 @@ export const Checking: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText(/everyday checking/i)).toBeVisible();
     await expect(canvas.getByText(/\$2,450\.12/)).toBeVisible();
+    await expect(canvas.getByText('••••4821')).toBeVisible();
     await expect(canvas.getByText('tx').parentElement).toHaveTextContent('42tx');
   },
 };
@@ -43,6 +44,27 @@ export const Credit: Story = {
       balance: -842.4,
       transactions: 128,
     },
+  },
+};
+
+export const LongName: Story = {
+  args: {
+    account: {
+      id: 'story-account-row-long',
+      name: 'Premium Rewards Checking With Extra Long Institution Descriptor',
+      mask: '4821',
+      type: 'checking',
+      balance: 2450.12,
+      transactions: 42,
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(/premium rewards checking with extra long institution descriptor/i)
+    ).toHaveClass('break-words');
+    await expect(canvas.getByText(/\$2,450\.12/)).toBeVisible();
+    await expect(canvas.getByText('••••4821')).toBeVisible();
   },
 };
 

@@ -142,7 +142,6 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
         <nav
           className={cn(
             ...appTitleBarRecipes.pillContainer,
-            ...appTitleBarRecipes.contextPillInset,
             chromeBar.square,
             'flex',
             'shrink-0',
@@ -160,6 +159,9 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
             size="inherit"
             className={cn(
               ...appTitleBarRecipes.contextPillTab,
+              '!px-0',
+              'aspect-square',
+              '!gap-0',
               'h-full',
               'w-full',
               'min-h-0',

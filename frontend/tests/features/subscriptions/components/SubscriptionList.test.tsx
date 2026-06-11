@@ -46,6 +46,17 @@ describe('FixedExpenseList', () => {
     );
 
     expect(screen.getByText('Spotify')).toBeInTheDocument();
+    const gradient = screen
+      .getByTestId('fixed-expense-card-spotify')
+      .querySelector('.hero-stat-card__gradient');
+    expect(gradient).toHaveClass('opacity-100');
+    expect(gradient).not.toHaveClass('group-hover:opacity-100');
+    expect(screen.getByTestId('fixed-expense-card-spotify').className).toContain('!border-0');
+    const insetRing = screen
+      .getByTestId('fixed-expense-card-spotify')
+      .querySelector('.hero-stat-card__inset-ring');
+    expect(insetRing).toHaveClass('group-hover:opacity-100');
+    expect((insetRing as HTMLElement).style.boxShadow).toMatch(/^inset 0 0 0 2px #/i);
     expect(
       screen.getByTestId('fixed-expense-card-spotify').querySelector('.tabular-nums')
     ).toHaveTextContent('3tx');

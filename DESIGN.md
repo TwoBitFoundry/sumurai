@@ -151,6 +151,8 @@ colors:
   effect-danger-glow-dark: "{colors.brand-rose-dark}"
   effect-accent-hover: "#3b82f6"
   effect-accent-hover-dark: "#60a5fa"
+  effect-accent-outline-glow: "{colors.brand-sky}"
+  effect-accent-outline-glow-dark: "{colors.brand-sky-dark}"
 typography:
   display:
     fontFamily: "'Cal Sans', system-ui, sans-serif"
@@ -278,7 +280,7 @@ Use uppercase only when the UI needs tight chrome or badge-like hierarchy. If a 
 Keep page framing consistent with the spacing tokens. Favor calm horizontal rhythm, compact control gaps, and comfortable section gaps.
 
 ## Elevation & Depth
-Use blur, inset highlights, soft shadows, and subtle gradients for depth. Reserve the strongest depth for shells, auth flows, and hero surfaces.
+Use blur, inset highlights, soft shadows, and subtle gradients for depth. Reserve the strongest depth for shells, auth flows, and hero surfaces. Use `effect-accent-outline-glow` for CTA drop-shadow glow and inset hover outlines on clipped surfaces.
 
 ## Shapes
 Use larger radii for shells, medium radii for cards and inputs, and pills for chips and status markers. Keep the shape language smooth and modern.

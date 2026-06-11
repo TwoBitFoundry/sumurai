@@ -26,7 +26,8 @@ describe('storybook screen slices responsive contract', () => {
     ) as HTMLElement | null;
 
     expect(statsShell).toBeTruthy();
-    expect(statsShell).toHaveClass('border-2');
+    expect(statsShell).toHaveClass('border-0');
+    expect(statsShell?.querySelector('.hero-stat-card__inset-ring')).toBeTruthy();
   });
 
   it('keeps the settings slice centered with a desktop max width', () => {

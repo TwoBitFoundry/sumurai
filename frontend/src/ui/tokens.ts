@@ -175,120 +175,120 @@ const pillTypography = 'text-[0.6rem] font-bold uppercase tracking-[0.18em]';
 export const categoryAccents: CategoryTheme[] = [
   {
     key: 'sky',
-    tag: `${pillTypography} text-sky-500 dark:text-sky-300 border border-sky-200/70 dark:border-sky-400/30 shadow-[0_18px_52px_-34px_rgba(14,165,233,0.55)] bg-sky-500/20 dark:bg-sky-400/14`,
+    tag: `${pillTypography} text-sky-500 dark:text-sky-300 border border-sky-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(14,165,233,0.55)] bg-sky-500/20 dark:bg-sky-400/14`,
     inlineLabel: `${pillTypography} text-sky-500 dark:text-sky-300`,
     chipSurface:
-      '!border !border-sky-200/60 dark:!border-sky-400/25 !bg-sky-500/20 dark:!bg-sky-400/14 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.35)]',
+      '!border !border-sky-200/60 dark:!border-transparent !bg-sky-500/20 dark:!bg-sky-400/14 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.35)]',
     chipSurfaceSelected:
-      '!border !border-sky-400/70 dark:!border-sky-400/55 !bg-sky-500/50 dark:!bg-sky-500/40 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.5)]',
+      '!border !border-sky-500 dark:!border-transparent !bg-sky-500/20 dark:!bg-sky-400/14',
     dot: 'bg-sky-500/90 dark:bg-sky-300/85',
     ring: 'ring-sky-400',
     ringHex: '#38bdf8',
   },
   {
     key: 'emerald',
-    tag: `${pillTypography} text-emerald-500 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-400/30 shadow-[0_18px_52px_-34px_rgba(16,185,129,0.55)] bg-emerald-500/20 dark:bg-emerald-400/14`,
+    tag: `${pillTypography} text-emerald-500 dark:text-emerald-300 border border-emerald-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(16,185,129,0.55)] bg-emerald-500/20 dark:bg-emerald-400/14`,
     inlineLabel: `${pillTypography} text-emerald-500 dark:text-emerald-300`,
     chipSurface:
-      '!border !border-emerald-200/60 dark:!border-emerald-400/25 !bg-emerald-500/20 dark:!bg-emerald-400/14 shadow-[0_10px_28px_-18px_rgba(16,185,129,0.35)]',
+      '!border !border-emerald-200/60 dark:!border-transparent !bg-emerald-500/20 dark:!bg-emerald-400/14 shadow-[0_10px_28px_-18px_rgba(16,185,129,0.35)]',
     chipSurfaceSelected:
-      '!border !border-emerald-400/70 dark:!border-emerald-400/55 !bg-emerald-500/50 dark:!bg-emerald-500/40 shadow-[0_10px_28px_-18px_rgba(16,185,129,0.5)]',
+      '!border !border-emerald-500 dark:!border-transparent !bg-emerald-500/20 dark:!bg-emerald-400/14',
     dot: 'bg-emerald-500/90 dark:bg-emerald-300/80',
     ring: 'ring-emerald-400',
     ringHex: '#34d399',
   },
   {
     key: 'cyan',
-    tag: `${pillTypography} text-cyan-500 dark:text-cyan-300 border border-cyan-200/70 dark:border-cyan-400/30 shadow-[0_18px_52px_-34px_rgba(6,182,212,0.52)] bg-cyan-500/20 dark:bg-cyan-400/14`,
+    tag: `${pillTypography} text-cyan-500 dark:text-cyan-300 border border-cyan-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(6,182,212,0.52)] bg-cyan-500/20 dark:bg-cyan-400/14`,
     inlineLabel: `${pillTypography} text-cyan-500 dark:text-cyan-300`,
     chipSurface:
-      '!border !border-cyan-200/60 dark:!border-cyan-400/25 !bg-cyan-500/20 dark:!bg-cyan-400/14 shadow-[0_10px_28px_-18px_rgba(6,182,212,0.35)]',
+      '!border !border-cyan-200/60 dark:!border-transparent !bg-cyan-500/20 dark:!bg-cyan-400/14 shadow-[0_10px_28px_-18px_rgba(6,182,212,0.35)]',
     chipSurfaceSelected:
-      '!border !border-cyan-400/70 dark:!border-cyan-400/55 !bg-cyan-500/50 dark:!bg-cyan-500/40 shadow-[0_10px_28px_-18px_rgba(6,182,212,0.5)]',
+      '!border !border-cyan-500 dark:!border-transparent !bg-cyan-500/20 dark:!bg-cyan-400/14',
     dot: 'bg-cyan-500/90 dark:bg-cyan-300/80',
     ring: 'ring-cyan-400',
     ringHex: '#22d3ee',
   },
   {
     key: 'violet',
-    tag: `${pillTypography} text-violet-500 dark:text-violet-300 border border-violet-200/70 dark:border-violet-400/30 shadow-[0_18px_52px_-34px_rgba(139,92,246,0.54)] bg-violet-500/20 dark:bg-violet-400/14`,
+    tag: `${pillTypography} text-violet-500 dark:text-violet-300 border border-violet-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(139,92,246,0.54)] bg-violet-500/20 dark:bg-violet-400/14`,
     inlineLabel: `${pillTypography} text-violet-500 dark:text-violet-300`,
     chipSurface:
-      '!border !border-violet-200/60 dark:!border-violet-400/25 !bg-violet-500/20 dark:!bg-violet-400/14 shadow-[0_10px_28px_-18px_rgba(139,92,246,0.35)]',
+      '!border !border-violet-200/60 dark:!border-transparent !bg-violet-500/20 dark:!bg-violet-400/14 shadow-[0_10px_28px_-18px_rgba(139,92,246,0.35)]',
     chipSurfaceSelected:
-      '!border !border-violet-400/70 dark:!border-violet-400/55 !bg-violet-500/50 dark:!bg-violet-500/40 shadow-[0_10px_28px_-18px_rgba(139,92,246,0.5)]',
+      '!border !border-violet-500 dark:!border-transparent !bg-violet-500/20 dark:!bg-violet-400/14',
     dot: 'bg-violet-500/90 dark:bg-violet-300/80',
     ring: 'ring-violet-400',
     ringHex: '#a78bfa',
   },
   {
     key: 'amber',
-    tag: `${pillTypography} text-amber-500 dark:text-amber-300 border border-amber-200/70 dark:border-amber-400/30 shadow-[0_18px_52px_-34px_rgba(245,158,11,0.5)] bg-amber-500/20 dark:bg-amber-400/14`,
+    tag: `${pillTypography} text-amber-500 dark:text-amber-300 border border-amber-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(245,158,11,0.5)] bg-amber-500/20 dark:bg-amber-400/14`,
     inlineLabel: `${pillTypography} text-amber-500 dark:text-amber-300`,
     chipSurface:
-      '!border !border-amber-200/60 dark:!border-amber-400/25 !bg-amber-500/20 dark:!bg-amber-400/14 shadow-[0_10px_28px_-18px_rgba(245,158,11,0.35)]',
+      '!border !border-amber-200/60 dark:!border-transparent !bg-amber-500/20 dark:!bg-amber-400/14 shadow-[0_10px_28px_-18px_rgba(245,158,11,0.35)]',
     chipSurfaceSelected:
-      '!border !border-amber-400/70 dark:!border-amber-400/55 !bg-amber-500/50 dark:!bg-amber-500/40 shadow-[0_10px_28px_-18px_rgba(245,158,11,0.5)]',
+      '!border !border-amber-500 dark:!border-transparent !bg-amber-500/20 dark:!bg-amber-400/14',
     dot: 'bg-amber-500/90 dark:bg-amber-300/85',
     ring: 'ring-amber-400',
     ringHex: '#fbbf24',
   },
   {
     key: 'rose',
-    tag: `${pillTypography} text-rose-500 dark:text-rose-300 border border-rose-200/70 dark:border-rose-400/30 shadow-[0_18px_52px_-34px_rgba(244,63,94,0.5)] bg-rose-500/20 dark:bg-rose-400/14`,
+    tag: `${pillTypography} text-rose-500 dark:text-rose-300 border border-rose-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(244,63,94,0.5)] bg-rose-500/20 dark:bg-rose-400/14`,
     inlineLabel: `${pillTypography} text-rose-500 dark:text-rose-300`,
     chipSurface:
-      '!border !border-rose-200/60 dark:!border-rose-400/25 !bg-rose-500/20 dark:!bg-rose-400/14 shadow-[0_10px_28px_-18px_rgba(244,63,94,0.35)]',
+      '!border !border-rose-200/60 dark:!border-transparent !bg-rose-500/20 dark:!bg-rose-400/14 shadow-[0_10px_28px_-18px_rgba(244,63,94,0.35)]',
     chipSurfaceSelected:
-      '!border !border-rose-400/70 dark:!border-rose-400/55 !bg-rose-500/50 dark:!bg-rose-500/40 shadow-[0_10px_28px_-18px_rgba(244,63,94,0.5)]',
+      '!border !border-rose-500 dark:!border-transparent !bg-rose-500/20 dark:!bg-rose-400/14',
     dot: 'bg-rose-500/90 dark:bg-rose-300/80',
     ring: 'ring-rose-400',
     ringHex: '#fb7185',
   },
   {
     key: 'indigo',
-    tag: `${pillTypography} text-indigo-500 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-400/30 shadow-[0_18px_52px_-34px_rgba(99,102,241,0.5)] bg-indigo-500/20 dark:bg-indigo-400/14`,
+    tag: `${pillTypography} text-indigo-500 dark:text-indigo-300 border border-indigo-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(99,102,241,0.5)] bg-indigo-500/20 dark:bg-indigo-400/14`,
     inlineLabel: `${pillTypography} text-indigo-500 dark:text-indigo-300`,
     chipSurface:
-      '!border !border-indigo-200/60 dark:!border-indigo-400/25 !bg-indigo-500/20 dark:!bg-indigo-400/14 shadow-[0_10px_28px_-18px_rgba(99,102,241,0.35)]',
+      '!border !border-indigo-200/60 dark:!border-transparent !bg-indigo-500/20 dark:!bg-indigo-400/14 shadow-[0_10px_28px_-18px_rgba(99,102,241,0.35)]',
     chipSurfaceSelected:
-      '!border !border-indigo-400/70 dark:!border-indigo-400/55 !bg-indigo-500/50 dark:!bg-indigo-500/40 shadow-[0_10px_28px_-18px_rgba(99,102,241,0.5)]',
+      '!border !border-indigo-500 dark:!border-transparent !bg-indigo-500/20 dark:!bg-indigo-400/14',
     dot: 'bg-indigo-500/90 dark:bg-indigo-300/80',
     ring: 'ring-indigo-400',
     ringHex: '#818cf8',
   },
   {
     key: 'fuchsia',
-    tag: `${pillTypography} text-fuchsia-500 dark:text-fuchsia-300 border border-fuchsia-200/70 dark:border-fuchsia-400/30 shadow-[0_18px_52px_-34px_rgba(232,121,249,0.5)] bg-fuchsia-500/20 dark:bg-fuchsia-400/14`,
+    tag: `${pillTypography} text-fuchsia-500 dark:text-fuchsia-300 border border-fuchsia-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(232,121,249,0.5)] bg-fuchsia-500/20 dark:bg-fuchsia-400/14`,
     inlineLabel: `${pillTypography} text-fuchsia-500 dark:text-fuchsia-300`,
     chipSurface:
-      '!border !border-fuchsia-200/60 dark:!border-fuchsia-400/25 !bg-fuchsia-500/20 dark:!bg-fuchsia-400/14 shadow-[0_10px_28px_-18px_rgba(232,121,249,0.35)]',
+      '!border !border-fuchsia-200/60 dark:!border-transparent !bg-fuchsia-500/20 dark:!bg-fuchsia-400/14 shadow-[0_10px_28px_-18px_rgba(232,121,249,0.35)]',
     chipSurfaceSelected:
-      '!border !border-fuchsia-400/70 dark:!border-fuchsia-400/55 !bg-fuchsia-500/50 dark:!bg-fuchsia-500/40 shadow-[0_10px_28px_-18px_rgba(232,121,249,0.5)]',
+      '!border !border-fuchsia-500 dark:!border-transparent !bg-fuchsia-500/20 dark:!bg-fuchsia-400/14',
     dot: 'bg-fuchsia-500/90 dark:bg-fuchsia-300/80',
     ring: 'ring-fuchsia-400',
     ringHex: '#e879f9',
   },
   {
     key: 'teal',
-    tag: `${pillTypography} text-teal-500 dark:text-teal-300 border border-teal-200/70 dark:border-teal-400/30 shadow-[0_18px_52px_-34px_rgba(20,184,166,0.5)] bg-teal-500/20 dark:bg-teal-400/14`,
+    tag: `${pillTypography} text-teal-500 dark:text-teal-300 border border-teal-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(20,184,166,0.5)] bg-teal-500/20 dark:bg-teal-400/14`,
     inlineLabel: `${pillTypography} text-teal-500 dark:text-teal-300`,
     chipSurface:
-      '!border !border-teal-200/60 dark:!border-teal-400/25 !bg-teal-500/20 dark:!bg-teal-400/14 shadow-[0_10px_28px_-18px_rgba(20,184,166,0.35)]',
+      '!border !border-teal-200/60 dark:!border-transparent !bg-teal-500/20 dark:!bg-teal-400/14 shadow-[0_10px_28px_-18px_rgba(20,184,166,0.35)]',
     chipSurfaceSelected:
-      '!border !border-teal-400/70 dark:!border-teal-400/55 !bg-teal-500/50 dark:!bg-teal-500/40 shadow-[0_10px_28px_-18px_rgba(20,184,166,0.5)]',
+      '!border !border-teal-500 dark:!border-transparent !bg-teal-500/20 dark:!bg-teal-400/14',
     dot: 'bg-teal-500/90 dark:bg-teal-300/80',
     ring: 'ring-teal-400',
     ringHex: '#2dd4bf',
   },
   {
     key: 'lime',
-    tag: `${pillTypography} text-lime-500 dark:text-lime-300 border border-lime-200/70 dark:border-lime-400/30 shadow-[0_18px_52px_-34px_rgba(132,204,22,0.48)] bg-lime-500/20 dark:bg-lime-400/14`,
+    tag: `${pillTypography} text-lime-500 dark:text-lime-300 border border-lime-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(132,204,22,0.48)] bg-lime-500/20 dark:bg-lime-400/14`,
     inlineLabel: `${pillTypography} text-lime-500 dark:text-lime-300`,
     chipSurface:
-      '!border !border-lime-200/60 dark:!border-lime-400/25 !bg-lime-500/20 dark:!bg-lime-400/14 shadow-[0_10px_28px_-18px_rgba(132,204,22,0.35)]',
+      '!border !border-lime-200/60 dark:!border-transparent !bg-lime-500/20 dark:!bg-lime-400/14 shadow-[0_10px_28px_-18px_rgba(132,204,22,0.35)]',
     chipSurfaceSelected:
-      '!border !border-lime-400/70 dark:!border-lime-400/55 !bg-lime-500/50 dark:!bg-lime-500/40 shadow-[0_10px_28px_-18px_rgba(132,204,22,0.5)]',
+      '!border !border-lime-500 dark:!border-transparent !bg-lime-500/20 dark:!bg-lime-400/14',
     dot: 'bg-lime-500/90 dark:bg-lime-300/80',
     ring: 'ring-lime-400',
     ringHex: '#a3e635',

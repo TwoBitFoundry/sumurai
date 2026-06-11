@@ -3,14 +3,14 @@
   "configurations": [
     {
       "name": "Frontend (Next.js)",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "frontend", "run", "dev"],
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["--cwd=frontend", "run", "dev"],
       "port": 3001
     },
     {
       "name": "Storybook",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "frontend", "run", "storybook"],
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["--cwd=frontend", "run", "storybook"],
       "port": 6006
     },
     {

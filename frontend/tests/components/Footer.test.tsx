@@ -22,5 +22,20 @@ describe('Footer', () => {
     expect(actionButtons).toHaveClass('flex-nowrap');
     expect(actionButtons).not.toHaveClass('flex-col');
     expect(getByRole('link', { name: /^github$/i })).toBeTruthy();
+    expect(getByRole('link', { name: /contribute/i }).className).toContain(
+      '--color-effect-accent-outline-glow'
+    );
+    expect(getByRole('link', { name: /contribute/i }).className).toContain('--color-brand-sky');
+    expect(getByRole('link', { name: /buy us a coffee/i }).className).toContain(
+      '--color-effect-warning-glow'
+    );
+    expect(getByRole('link', { name: /buy us a coffee/i }).className).toContain(
+      '--color-brand-amber'
+    );
+    expect(getByRole('link', { name: /^github$/i }).className).toContain('--color-border-control');
+    for (const name of [/contribute/i, /buy us a coffee/i, /^github$/i]) {
+      expect(getByRole('link', { name }).className).toContain('hover:-translate-y-0.5');
+      expect(getByRole('link', { name }).className).toContain('active:scale-[0.98]');
+    }
   });
 });

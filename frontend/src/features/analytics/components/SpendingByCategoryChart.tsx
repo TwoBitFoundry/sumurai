@@ -2,7 +2,7 @@ import { BarChart3 } from 'lucide-react';
 import React from 'react';
 import { Cell, Pie, PieChart, Tooltip } from 'recharts';
 import { cn, EmptyState } from '@/ui/primitives';
-import { text as uiTextRecipes } from '@/ui/recipes';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { chart } from '@/ui/tokens';
 import { useTheme } from '../../../context/ThemeContext';
 import { fmtUSD } from '../../../utils/format';
@@ -133,7 +133,7 @@ const SpendingByCategoryChartFn: React.FC<Props> = ({
           >
             <div
               className={cn(
-                'font-display',
+                uiTypographyRecipes.cardTitle,
                 'font-bold',
                 'leading-none',
                 'tabular-nums',

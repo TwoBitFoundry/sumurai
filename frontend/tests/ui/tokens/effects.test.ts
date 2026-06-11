@@ -1,7 +1,16 @@
 import generatedTokens from '@/ui/generated/tokens';
 import { effect as uiEffectRecipes } from '@/ui/recipes';
 
-const expectedRoles = ['glassShadow', 'successGlow', 'dangerGlow', 'accentHover'];
+const expectedRoles = [
+  'glassShadow',
+  'successGlow',
+  'dangerGlow',
+  'warningGlow',
+  'accentHover',
+  'accentOutlineGlow',
+  'accentOutlineGlowCta',
+  'accentOutlineGlowHover',
+];
 
 const expectedTokenKeys = [
   'effect-glass-shadow',
@@ -14,6 +23,8 @@ const expectedTokenKeys = [
   'effect-danger-glow-dark',
   'effect-accent-hover',
   'effect-accent-hover-dark',
+  'effect-accent-outline-glow',
+  'effect-accent-outline-glow-dark',
 ];
 
 describe('design token effect recipes', () => {
@@ -38,9 +49,25 @@ describe('design token effect recipes', () => {
       'shadow-[0_0_12px_var(--color-effect-danger-glow)]',
       'dark:shadow-[0_0_12px_var(--color-effect-danger-glow)]',
     ]);
+    expect(uiEffectRecipes.warningGlow).toEqual([
+      'shadow-[0_0_12px_var(--color-effect-warning-glow)]',
+      'dark:shadow-[0_0_12px_var(--color-effect-warning-glow)]',
+    ]);
     expect(uiEffectRecipes.accentHover).toEqual([
       'hover:shadow-[0_18px_44px_-30px_var(--color-effect-accent-hover)]',
       'dark:hover:shadow-[0_20px_52px_-34px_var(--color-effect-accent-hover)]',
+    ]);
+    expect(uiEffectRecipes.accentOutlineGlow).toEqual([
+      'shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
+      'dark:shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_50%,transparent)]',
+    ]);
+    expect(uiEffectRecipes.accentOutlineGlowCta).toEqual([
+      'shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
+      'dark:shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
+    ]);
+    expect(uiEffectRecipes.accentOutlineGlowHover).toEqual([
+      'hover:shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
+      'dark:hover:shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_50%,transparent)]',
     ]);
   });
 });

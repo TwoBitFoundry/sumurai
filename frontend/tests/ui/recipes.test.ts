@@ -1,4 +1,5 @@
 import {
+  alert,
   authLayout,
   border,
   budgetProgress,
@@ -91,12 +92,16 @@ describe('shared UI recipes', () => {
 
   it('exposes flat sky CTA and progress fill recipes', () => {
     expect(buttonCta.gradient).toEqual(['bg-[var(--color-brand-sky)]']);
+    expect(buttonCta.shadow).toEqual([
+      'shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
+      'dark:shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
+    ]);
     expect(budgetProgress.fillWithin).toContain('bg-[var(--color-brand-sky)]');
     expect(budgetProgress.fillWithin).not.toContain('brand-violet');
   });
 
   it('exposes the success and drawer modal recipes', () => {
-    expect(successCta.gradient).toContain('from-[var(--color-brand-emerald)]');
+    expect(successCta.gradient).toEqual(['bg-[var(--color-brand-emerald)]']);
     expect(modalDrawer.formRow).toContain('items-end');
     expect(modalDrawer.contentMotion).toContain('modal-drawer-content');
     expect(modalDrawer.overlayMotion).toContain('modal-drawer-overlay');
@@ -148,6 +153,12 @@ describe('shared UI recipes', () => {
       'border-[var(--color-status-danger-border)]',
       'dark:border-[var(--color-status-danger-border)]',
     ]);
+    expect(status.danger.alertBorder).toEqual(['border-[var(--color-status-danger-border)]']);
+  });
+
+  it('exposes alert shell recipes with borderless dark mode', () => {
+    expect(alert.shell.join(' ')).toContain('dark:border-0');
+    expect(alert.tone.solid).toContain('backdrop-blur-sm');
   });
 
   it('exposes auth layout recipes for mobile, tablet, and desktop tiers', () => {

@@ -277,7 +277,7 @@ describe('BankCard', () => {
     await user.click(local.getByRole('button', { name: 'Show accounts' }));
     await waitFor(() => {
       expect(local.getByText('Checking')).toBeVisible();
-      expect(local.getByText('••1234')).toBeVisible();
+      expect(local.getByText('••••1234')).toBeVisible();
     });
 
     await user.click(local.getByRole('button', { name: 'Sync now' }));

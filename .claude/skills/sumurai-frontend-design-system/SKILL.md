@@ -34,7 +34,7 @@ Then read the references in this skill directory:
 - Use `@/ui/tokens` only for runtime JS values such as chart series, finance colors, category accents, and account-type dots. `frontend/src/ui/tokens.ts` re-exports generated token data from `frontend/src/ui/generated/tokens`; do not hand-copy the same constants into views.
 - Do not import or introduce a monolithic `designTokens` object in app code; use named exports from `@/ui/tokens` and recipes.
 - Do not hardcode Tailwind palette utility colors when a CSS variable from generated theme output or a shared recipe exists.
-- If a new reusable visual role is needed, update `DESIGN.md`, run `npm --prefix frontend run design:guard`, and expose it through primitives or `recipes.ts` as appropriate.
+- If a new reusable visual role is needed, update `DESIGN.md`, run `bun --cwd=frontend run design:guard`, and expose it through primitives or `recipes.ts` as appropriate.
 - Keep page views focused on composition, state wiring, and data flow; move reusable UI into primitives or feature components.
 - Keep raw hex values, arbitrary gradients, shadows, radii, and one-off surface chrome out of views unless intentionally local; if you rely on a local exception, say so in the implementation summary.
 - Do not read or write `.env` files.
@@ -55,8 +55,8 @@ Then read the references in this skill directory:
 
 Run focused checks based on the change:
 
-- `npm --prefix frontend run design:lint`
-- `npm --prefix frontend run design:guard` when `DESIGN.md` or token generation is involved
-- `npm --prefix frontend test`
-- `npm --prefix frontend run typecheck`
-- `npm --prefix frontend run build`
+- `bun --cwd=frontend run design:lint`
+- `bun --cwd=frontend run design:guard` when `DESIGN.md` or token generation is involved
+- `bun --cwd=frontend test`
+- `bun --cwd=frontend run typecheck`
+- `bun --cwd=frontend run build`

@@ -85,6 +85,7 @@
   --color-status-danger-icon: #ef4444;
   --color-effect-success-glow: #10b981;
   --color-effect-warning-glow: #f59e0b;
+  --color-effect-accent-outline-glow: #0ea5e9;
   --spacing-page-x: 16px;
   --spacing-page-y: 16px;
   --spacing-shell-x: 16px;
@@ -189,4 +190,5 @@
   --color-effect-success-glow: #34d399;
   --color-effect-warning-glow: #fbbf24;
   --color-effect-danger-glow: #f87171;
+  --color-effect-accent-outline-glow: #38bdf8;
 }

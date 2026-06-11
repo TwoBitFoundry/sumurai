@@ -14,7 +14,8 @@ describe('AccountsSummaryStats', () => {
     render(<AccountsSummaryStats summary={defaultSummary} lastSyncValue="12m ago" />);
 
     const shell = screen.getByTestId('accounts-summary-shell');
-    expect(shell.className).toContain('border-violet-300');
+    expect(shell.className).toContain('border-0');
+    expect(shell.querySelector('.hero-stat-card__inset-ring')).not.toBeNull();
     expect(screen.getByText('Account summary')).toBeInTheDocument();
   });
 
