@@ -1,10 +1,9 @@
 export const transactionsRowRecipes = {
   shell: [
-    'relative rounded-md border-b border-slate-200/70 transition-[box-shadow,colors] duration-150 ease-out',
+    'group relative rounded-md border-b border-slate-200/70 transition-[box-shadow,colors] duration-150 ease-out',
     'dark:border-slate-700/50',
-    'hover:ring-2',
-    'hover:ring-emerald-400/60',
-    'dark:hover:ring-emerald-400/50',
+    'hover:shadow-[inset_0_0_0_2px_rgba(52,211,153,0.6)]',
+    'dark:hover:shadow-[inset_0_0_0_2px_rgba(52,211,153,0.5)]',
   ],
   mainSurface: ['absolute', 'inset-0', 'z-0', 'rounded-md', 'bg-transparent'],
   mainSurfaceHost: ['relative', 'min-w-0', 'w-full'],

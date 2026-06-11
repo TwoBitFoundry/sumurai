@@ -1,7 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, Flame, Repeat2, Wallet } from 'lucide-react';
-import { type CSSProperties, useState } from 'react';
+import { useState } from 'react';
 import { InsightCard } from '@/components/widgets/InsightCard';
+import { InsightsPanelHeader } from '@/components/widgets/InsightsPanel';
+import { InsightsPanelShell } from '@/components/widgets/InsightsPanelShell';
 import type { BudgetInsights } from '@/domain/BudgetInsightsCalculator';
 import { FixedExpenseCalculator } from '@/domain/FixedExpenseCalculator';
 import { useSessionCollapsible } from '@/hooks/useSessionCollapsible';
@@ -9,10 +11,9 @@ import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import { cn } from '@/ui/primitives';
 import {
   text as semanticTextRecipes,
-  border as uiBorderRecipes,
+  insightsPanel as uiInsightsPanelRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { heroAccents } from '@/ui/tokens';
 import type { FixedExpenseSummary } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
 import { BudgetProgress } from './BudgetProgress';
@@ -55,7 +56,6 @@ export function BudgetInsightsPanel({
 
   const toggle = (id: string) => setFlipped((prev) => ({ ...prev, [id]: !prev[id] }));
   const overBudget = totalSpent > totalBudgeted;
-  const shellAccent = heroAccents.sky;
 
   const { monthlyTotal, yearToDate } = FixedExpenseCalculator.computeFixedExpenseHeroStats(
     fixedExpenses,
@@ -199,126 +199,87 @@ export function BudgetInsightsPanel({
   })();
 
   return (
-    <section
-      data-testid="budget-insights-shell"
-      className={cn(
-        'relative',
-        'overflow-hidden',
-        'rounded-[0.75rem]',
-        'border-2',
-        shellAccent.border,
-        shellAccent.borderDark,
-        'bg-white/80',
-        'transition-colors',
-        'duration-200',
-        'dark:bg-[#111a2f]/70'
-      )}
-    >
-      <div
-        className={cn(
-          'hero-stat-card__gradient',
-          'pointer-events-none',
-          'absolute',
-          'inset-0',
-          'rounded-[inherit]',
-          'opacity-0',
-          'transition-opacity',
-          'duration-300',
-          'group-hover:opacity-100'
-        )}
-        style={{
-          backgroundImage: `linear-gradient(135deg, ${shellAccent.gradFrom}33, ${shellAccent.gradVia}1f, transparent 70%)`,
-        }}
-      />
-      <div
-        className={cn(
-          'pointer-events-none',
-          'absolute',
-          'inset-[2px]',
-          'rounded-[calc(0.75rem-2px)]'
-        )}
-      >
-        <div
-          className={cn('absolute', 'inset-0', 'rounded-[inherit]', 'ring-2')}
-          style={{ '--tw-ring-color': `${shellAccent.ringHex}66` } as CSSProperties}
-        />
-      </div>
-
-      <button
-        type="button"
-        aria-expanded={expanded}
-        aria-controls="budget-insights-panel-body"
-        aria-label="Budget summary"
-        onClick={toggleExpanded}
-        className={cn('relative', 'z-10', 'w-full', 'text-left', 'p-3', 'md:p-4')}
-      >
-        <div
-          className={cn(
-            'grid',
-            'grid-cols-[auto_1fr_auto]',
-            'grid-rows-[auto_auto]',
-            'items-baseline',
-            'gap-x-2',
-            'gap-y-2',
-            'md:gap-x-3',
-            'md:gap-y-2.5'
-          )}
+    <InsightsPanelShell testId="budget-insights-shell" accent="sky">
+      <div className={cn('relative', 'z-10', 'px-3', 'py-2', 'md:px-4', 'md:py-3')}>
+        <InsightsPanelHeader label="Budget summary" />
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-controls="budget-insights-panel-body"
+          aria-label="Budget summary"
+          onClick={toggleExpanded}
+          className={cn('w-full', 'text-left')}
         >
-          <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.subtle)}>
-            Total Spent
-          </div>
-          <div aria-hidden />
-          <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.subtle, 'text-right')}>
-            Total Planned
-          </div>
+          <div
+            className={cn(
+              'grid',
+              'grid-cols-[auto_1fr_auto]',
+              'grid-rows-[auto_auto]',
+              'items-baseline',
+              'gap-x-2',
+              'gap-y-2',
+              'md:gap-x-3',
+              'md:gap-y-2.5'
+            )}
+          >
+            <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.subtle)}>
+              Total Spent
+            </div>
+            <div aria-hidden />
+            <div
+              className={cn(uiTypographyRecipes.label, semanticTextRecipes.subtle, 'text-right')}
+            >
+              Total Planned
+            </div>
 
-          <div
-            className={cn(
-              'shrink-0',
-              'text-[1.45rem]',
-              'font-semibold',
-              'leading-none',
-              'tracking-[-0.02em]',
-              'md:text-[1.65rem]',
-              'lg:text-2xl',
-              overBudget ? semanticTextRecipes.danger : semanticTextRecipes.body
-            )}
-          >
-            {fmtUSD(totalSpent)}
-          </div>
-          <div className={cn('min-w-0', 'w-full', 'self-center')}>
-            <BudgetProgress amount={totalBudgeted} spent={totalSpent} showCaptions={false} />
-          </div>
-          <div
-            className={cn(
-              'shrink-0',
-              'text-[1.45rem]',
-              'font-semibold',
-              'leading-none',
-              'tracking-[-0.02em]',
-              'md:text-[1.65rem]',
-              'lg:text-2xl',
-              'text-right',
-              semanticTextRecipes.primary
-            )}
-          >
-            {fmtUSD(totalBudgeted)}
-          </div>
-          <div className={cn('col-span-3', 'flex', 'justify-center')}>
-            <ChevronDown
+            <div
               className={cn(
-                'h-4',
-                'w-4',
                 'shrink-0',
-                'transition-transform',
-                'duration-200',
-                expanded && 'rotate-180',
-                semanticTextRecipes.subtle
+                'text-[1.45rem]',
+                'font-semibold',
+                'leading-none',
+                'tracking-[-0.02em]',
+                'md:text-[1.65rem]',
+                'lg:text-2xl',
+                overBudget ? semanticTextRecipes.danger : semanticTextRecipes.body
               )}
-            />
+            >
+              {fmtUSD(totalSpent)}
+            </div>
+            <div className={cn('min-w-0', 'w-full', 'self-center')}>
+              <BudgetProgress amount={totalBudgeted} spent={totalSpent} showCaptions={false} />
+            </div>
+            <div
+              className={cn(
+                'shrink-0',
+                'text-[1.45rem]',
+                'font-semibold',
+                'leading-none',
+                'tracking-[-0.02em]',
+                'md:text-[1.65rem]',
+                'lg:text-2xl',
+                'text-right',
+                semanticTextRecipes.primary
+              )}
+            >
+              {fmtUSD(totalBudgeted)}
+            </div>
+            <div className={cn('col-span-3', 'flex', 'justify-center')}>
+              <ChevronDown
+                className={cn(
+                  'h-4',
+                  'w-4',
+                  'shrink-0',
+                  'transition-transform',
+                  'duration-200',
+                  expanded && 'rotate-180',
+                  semanticTextRecipes.subtle
+                )}
+              />
+            </div>
           </div>
-        </div>
-      </button>
+        </button>
+      </div>
 
       <AnimatePresence initial={false}>
         {expanded ? (
@@ -332,7 +293,7 @@ export function BudgetInsightsPanel({
             className={cn('relative', 'z-10')}
           >
             <div className={cn('px-3', 'md:px-4')}>
-              <div className={cn('border-t', ...uiBorderRecipes.divider)} />
+              <div className={cn('border-t', ...uiInsightsPanelRecipes.labelDivider)} />
             </div>
             <div
               className={cn(
@@ -352,6 +313,6 @@ export function BudgetInsightsPanel({
           </motion.div>
         ) : null}
       </AnimatePresence>
-    </section>
+    </InsightsPanelShell>
   );
 }

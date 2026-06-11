@@ -64,6 +64,7 @@ describe('TransactionsFilters', () => {
     expect(foodButton.className).toContain('py-0');
     expect(foodButton.className).toContain('text-sky-500');
     expect(foodButton.className).toContain('!bg-sky-500/20');
+    expect(foodButton.className).toContain('!border-sky-200/60');
     expect(foodButton.className).not.toContain('linear-gradient');
     expect(foodButton.className).not.toContain('text-slate-800');
     expect(foodButton.className).not.toContain('h-11');
@@ -104,9 +105,11 @@ describe('TransactionsFilters', () => {
       'aria-pressed',
       'true'
     );
-    expect(screen.getByRole('button', { name: 'Entertainment' }).className).toContain(
-      'ring-emerald-400'
-    );
+    const entertainmentButton = screen.getByRole('button', { name: 'Entertainment' });
+    expect(entertainmentButton.className).toContain('ring-emerald-400');
+    expect(entertainmentButton.className).toContain('!border-emerald-500');
+    expect(entertainmentButton.className).toContain('!bg-emerald-500/20');
+    expect(entertainmentButton.className).not.toContain('!bg-emerald-500/50');
   });
 
   it('shows a delete affordance for custom categories without toggling the filter', async () => {

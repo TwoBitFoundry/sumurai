@@ -43,9 +43,16 @@ describe('TransactionInsightsPanel', () => {
     render(<TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="k1" />);
     expect(screen.getByTestId('transaction-insights-shell')).toBeInTheDocument();
     expect(screen.getByText('All transactions')).toBeInTheDocument();
-    expect(screen.getByTestId('transaction-insights-shell').className).toContain(
-      'border-emerald-300'
-    );
+    expect(screen.getByTestId('transaction-insights-shell').className).toContain('border-0');
+    const gradient = screen
+      .getByTestId('transaction-insights-shell')
+      .querySelector('.hero-stat-card__gradient');
+    expect(gradient).toHaveClass('opacity-100');
+    expect(gradient).not.toHaveClass('group-hover:opacity-100');
+    const insetRing = screen
+      .getByTestId('transaction-insights-shell')
+      .querySelector('.hero-stat-card__inset-ring');
+    expect(insetRing).toHaveClass('opacity-0', 'group-hover:opacity-100');
   });
 
   it('shows Loading… indicator when isLoading is true', () => {
@@ -128,9 +135,7 @@ describe('TransactionInsightsPanel', () => {
     );
     expect(screen.getByText('Category Total')).toBeInTheDocument();
     expect(screen.getByText('Category filter')).toBeInTheDocument();
-    expect(screen.getByTestId('transaction-insights-shell').className).toContain(
-      'border-emerald-300'
-    );
+    expect(screen.getByTestId('transaction-insights-shell').className).toContain('border-0');
     expect(
       screen.getByTestId('insight-card-category-total').querySelector('svg')?.parentElement
     ).toHaveClass('text-emerald-500');

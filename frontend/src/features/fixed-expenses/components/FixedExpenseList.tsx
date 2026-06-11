@@ -267,9 +267,8 @@ function FixedExpenseCard({
   const referenceToday = new Date();
   const dueDates = listFixedExpenseDueDatesInMonth(item, month, referenceToday);
   const monthState = resolveFixedExpenseMonthState(item, month, referenceToday, dueDates);
-  const cardAccentStyle = {
-    borderColor: `${tagTheme.ringHex}99`,
-    '--tw-ring-color': `${tagTheme.ringHex}66`,
+  const hoverInsetRingStyle = {
+    boxShadow: `inset 0 0 0 2px ${tagTheme.ringHex}`,
   } as CSSProperties;
 
   return (
@@ -278,12 +277,9 @@ function FixedExpenseCard({
         data-testid={`fixed-expense-card-${item.normalized_merchant}`}
         className={cn(
           heroStatCardRecipes.shell,
-          'border-2',
-          heroStyles.hoverBorder,
-          heroStyles.hoverBorderDark,
+          '!border-0',
           'flex w-full flex-col gap-1.5 !px-3.5 !py-2 text-left md:!px-4'
         )}
-        style={cardAccentStyle}
       >
         <div
           className={cn(
@@ -292,14 +288,27 @@ function FixedExpenseCard({
             'absolute',
             'inset-0',
             'rounded-[length:inherit]',
-            'opacity-0',
-            'group-hover:opacity-100',
-            'transition-opacity',
-            'duration-300'
+            'opacity-100'
           )}
           style={{
             backgroundImage: `linear-gradient(135deg, ${heroStyles.gradFrom}33, ${heroStyles.gradVia}1f, transparent 70%)`,
           }}
+        />
+        <div
+          aria-hidden
+          className={cn(
+            'hero-stat-card__inset-ring',
+            'pointer-events-none',
+            'absolute',
+            'inset-0',
+            'z-[1]',
+            'rounded-[length:inherit]',
+            'opacity-0',
+            'transition-opacity',
+            'duration-200',
+            'group-hover:opacity-100'
+          )}
+          style={hoverInsetRingStyle}
         />
         <div className={cn('relative', 'z-10', 'flex', 'flex-col', 'gap-1.5')}>
           <div className={cn('flex', 'items-start', 'justify-between', 'gap-2')}>

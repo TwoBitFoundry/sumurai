@@ -44,6 +44,11 @@ describe('BudgetInsightsPanel', () => {
     render(<BudgetInsightsPanel {...defaultProps} />);
 
     expect(screen.getByTestId('budget-insights-shell')).toBeInTheDocument();
+    expect(screen.getByText('Budget summary')).toBeInTheDocument();
+    expect(screen.getByTestId('budget-insights-shell').className).toContain('border-0');
+    expect(
+      screen.getByTestId('budget-insights-shell').querySelector('.hero-stat-card__inset-ring')
+    ).not.toBeNull();
     expect(screen.getByRole('button', { name: /budget summary/i })).toHaveAttribute(
       'aria-expanded',
       'false'

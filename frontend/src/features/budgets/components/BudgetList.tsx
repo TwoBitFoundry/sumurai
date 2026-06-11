@@ -74,9 +74,8 @@ export function BudgetList({
         const displayName = formatCategoryName(b.category);
         const tagTheme = getTagThemeForCategory(b.category, accentIndexByName);
         const heroStyles = getHeroAccentTheme(getHeroAccentForCategoryKey(tagTheme.key));
-        const cardAccentStyle = {
-          borderColor: `${tagTheme.ringHex}99`,
-          '--tw-ring-color': `${tagTheme.ringHex}66`,
+        const hoverInsetRingStyle = {
+          boxShadow: `inset 0 0 0 2px ${tagTheme.ringHex}`,
         } as CSSProperties;
         const draft = drafts[b.id] ?? String(b.amount);
         const parsedDraft = Number(draft);
@@ -87,12 +86,9 @@ export function BudgetList({
             <div
               className={cn(
                 heroStatCardRecipes.shell,
-                'border-2',
-                heroStyles.hoverBorder,
-                heroStyles.hoverBorderDark,
+                '!border-0',
                 'flex h-full flex-col p-3.5 pt-4 md:p-3.5 md:pt-4 lg:p-4 lg:pt-5'
               )}
-              style={cardAccentStyle}
             >
               <div
                 className={cn(
@@ -101,25 +97,35 @@ export function BudgetList({
                   'absolute',
                   'inset-0',
                   'rounded-[length:inherit]',
-                  'opacity-0',
-                  'transition-opacity',
-                  'duration-300',
-                  'group-hover:opacity-100'
+                  'opacity-100'
                 )}
                 style={{
                   backgroundImage: `linear-gradient(135deg, ${heroStyles.gradFrom}33, ${heroStyles.gradVia}1f, transparent 70%)`,
                 }}
               />
-              <div className={cn(heroStatCardRecipes.ring)}>
-                <div className={cn(heroStatCardRecipes.ringLine)} style={cardAccentStyle} />
-              </div>
+              <div
+                aria-hidden
+                className={cn(
+                  'hero-stat-card__inset-ring',
+                  'pointer-events-none',
+                  'absolute',
+                  'inset-0',
+                  'z-[1]',
+                  'rounded-[length:inherit]',
+                  'opacity-0',
+                  'transition-opacity',
+                  'duration-200',
+                  'group-hover:opacity-100'
+                )}
+                style={hoverInsetRingStyle}
+              />
               <div className={cn('relative z-10 flex items-start justify-between gap-3')}>
                 <Pill
                   variant="category"
                   categoryName={b.category}
                   accentIndexByName={accentIndexByName}
                   className={cn(
-                    'transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10'
+                    'transition-all duration-300 backdrop-blur-sm dark:ring-1 dark:ring-white/10'
                   )}
                 >
                   {displayName}

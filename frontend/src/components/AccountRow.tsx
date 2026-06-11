@@ -47,11 +47,10 @@ const accountMetaClasses = cn(
 );
 
 const accountMaskClasses = cn(
-  'font-mono',
+  uiTypographyRecipes.body,
   uiTextRecipes.subtle,
   'transition-colors',
-  'duration-300',
-  'ease-out'
+  'duration-500'
 );
 
 const transactionCountClasses = cn(
@@ -132,7 +131,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
                 <Upload />
               </IconButton>
               <div className={cn('flex', 'flex-col', 'gap-0.5')}>
-                <span className={accountMaskClasses}>••{account.mask}</span>
+                <span className={accountMaskClasses}>••••{account.mask}</span>
                 <span className={transactionCountClasses}>
                   {account.transactions ?? 0}
                   <span className={cn(uiTypographyRecipes.caption, uiTextRecipes.body, 'ml-0.5')}>

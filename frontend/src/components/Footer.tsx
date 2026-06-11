@@ -1,10 +1,12 @@
 import { Handshake, Star } from 'lucide-react';
 import { cn } from '@/ui/primitives';
+import { buttonRecipes } from '@/ui/primitives/Button';
 import {
   appLayout,
+  buttonCta,
   border as uiBorderRecipes,
+  effect as uiEffectRecipes,
   radius as uiRadiusRecipes,
-  surface as uiSurfaceRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
@@ -19,7 +21,7 @@ const footerActionTypography = [
   'lg:tracking-[0.14em]',
 ] as const;
 
-const footerActionLink = [
+const footerActionLayout = [
   'shrink-0',
   'px-2',
   'py-1.5',
@@ -33,7 +35,35 @@ const footerActionLink = [
   'gap-1',
   'lg:gap-2',
   'whitespace-nowrap',
-  'transition-colors',
+  'overflow-visible',
+] as const;
+
+const footerActionInteraction = [
+  'transition-all',
+  'duration-200',
+  'ease-out',
+  ...buttonCta.hover,
+  'active:scale-[0.98]',
+] as const;
+
+const footerSkyCtaLink = [
+  uiTextRecipes.inverse,
+  ...buttonCta.gradient,
+  'backdrop-blur-sm',
+  'border',
+  'border-sky-400/30',
+  'dark:border-sky-500/30',
+  ...buttonCta.shadow,
+] as const;
+
+const footerCoffeeCtaLink = [
+  uiTextRecipes.inverse,
+  'bg-[var(--color-brand-amber)]',
+  'backdrop-blur-sm',
+  'border',
+  'border-amber-400/30',
+  'dark:border-amber-500/30',
+  ...uiEffectRecipes.warningGlow,
 ] as const;
 
 export function Footer() {
@@ -87,7 +117,11 @@ export function Footer() {
               'flex-nowrap',
               'gap-2',
               'overflow-x-auto',
+              'overflow-y-visible',
+              'p-3',
+              '-m-3',
               'md:w-auto',
+              'md:overflow-visible',
               'lg:gap-3'
             )}
           >
@@ -95,18 +129,7 @@ export function Footer() {
               href="https://github.com/TwoBitFoundry/sumurai/blob/main/CONTRIBUTING.md"
               target="_blank"
               rel="noopener noreferrer"
-              className={cn(
-                footerActionLink,
-                uiTextRecipes.inverse,
-                'bg-sky-500/80',
-                'backdrop-blur-sm',
-                'hover:bg-sky-600/80',
-                'dark:bg-sky-600/80',
-                'dark:hover:bg-sky-700/80',
-                'border',
-                'border-sky-400/30',
-                'dark:border-sky-500/30'
-              )}
+              className={cn(footerActionLayout, footerActionInteraction, ...footerSkyCtaLink)}
             >
               <Handshake className={cn('h-3.5', 'w-3.5', 'lg:h-4', 'lg:w-4')} />
               Contribute
@@ -115,18 +138,7 @@ export function Footer() {
               href="https://www.buymeacoffee.com/twobitfoundry"
               target="_blank"
               rel="noopener noreferrer"
-              className={cn(
-                footerActionLink,
-                uiTextRecipes.inverse,
-                'bg-amber-500/80',
-                'backdrop-blur-sm',
-                'hover:bg-amber-600/80',
-                'dark:bg-amber-600/80',
-                'dark:hover:bg-amber-700/80',
-                'border',
-                'border-amber-400/30',
-                'dark:border-amber-500/30'
-              )}
+              className={cn(footerActionLayout, footerActionInteraction, ...footerCoffeeCtaLink)}
             >
               <img
                 src="/bmc-new-btn-logo.svg"
@@ -140,13 +152,9 @@ export function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                footerActionLink,
-                uiTextRecipes.body,
-                'border',
-                ...uiBorderRecipes.default,
-                ...uiSurfaceRecipes.card,
-                'hover:bg-[var(--color-surface-hover-row)]',
-                'dark:hover:bg-[var(--color-surface-hover-row)]'
+                footerActionLayout,
+                footerActionInteraction,
+                ...buttonRecipes.secondary
               )}
             >
               <Star className={cn('h-3.5', 'w-3.5', 'lg:h-4', 'lg:w-4')} />

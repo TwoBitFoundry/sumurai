@@ -1,52 +1,46 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 import {
-  radius as uiRadiusRecipes,
+  alert as uiAlertRecipes,
   status as uiStatusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { cn } from './utils';
 
-const alertVariants = cva(
-  [
-    `relative ${uiRadiusRecipes.standard} border px-4 py-3 shadow-sm`,
-    'transition-colors duration-300',
-  ],
-  {
-    variants: {
-      variant: {
-        info: [
-          ...uiStatusRecipes.info.border,
-          ...uiStatusRecipes.info.surface,
-          ...uiStatusRecipes.info.text,
-        ],
-        success: [
-          ...uiStatusRecipes.success.border,
-          ...uiStatusRecipes.success.surface,
-          ...uiStatusRecipes.success.text,
-        ],
-        warning: [
-          ...uiStatusRecipes.warning.border,
-          ...uiStatusRecipes.warning.surface,
-          ...uiStatusRecipes.warning.text,
-        ],
-        error: [
-          ...uiStatusRecipes.danger.border,
-          ...uiStatusRecipes.danger.surface,
-          ...uiStatusRecipes.danger.text,
-        ],
-      },
-      tone: {
-        solid: 'backdrop-blur-sm backdrop-saturate-[140%]',
-        subtle: 'backdrop-blur-xs backdrop-saturate-[120%]',
-      },
+const alertVariants = cva([...uiAlertRecipes.shell], {
+  variants: {
+    variant: {
+      info: [
+        ...uiStatusRecipes.info.alertBorder,
+        ...uiStatusRecipes.info.surface,
+        ...uiStatusRecipes.info.text,
+      ],
+      success: [
+        ...uiStatusRecipes.success.alertBorder,
+        ...uiStatusRecipes.success.surface,
+        ...uiStatusRecipes.success.text,
+      ],
+      warning: [
+        ...uiStatusRecipes.warning.alertBorder,
+        ...uiStatusRecipes.warning.surface,
+        ...uiStatusRecipes.warning.text,
+      ],
+      error: [
+        ...uiStatusRecipes.danger.alertBorder,
+        ...uiStatusRecipes.danger.surface,
+        ...uiStatusRecipes.danger.text,
+      ],
     },
-    defaultVariants: {
-      variant: 'info',
-      tone: 'solid',
+    tone: {
+      solid: uiAlertRecipes.tone.solid,
+      subtle: uiAlertRecipes.tone.subtle,
     },
-  }
-);
+  },
+  defaultVariants: {
+    variant: 'info',
+    tone: 'solid',
+  },
+});
 
 export interface AlertProps
   extends React.HTMLAttributes<HTMLDivElement>,

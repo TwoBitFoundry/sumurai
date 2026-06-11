@@ -76,6 +76,7 @@ export const border = {
     'dark:border-[color:color-mix(in_srgb,var(--color-border-glass)_12%,transparent)]',
   ],
   control: ['border-[var(--color-border-control)]', 'dark:border-[var(--color-border-control)]'],
+  strong: ['border-[var(--color-border-strong)]', 'dark:border-[var(--color-border-strong)]'],
   divider: ['border-[var(--color-border-divider)]', 'dark:border-[var(--color-border-divider)]'],
   hoverAccent: [
     'border-[var(--color-border-hover-accent)]',
@@ -86,6 +87,13 @@ export const border = {
     'dark:border-[var(--color-border-focus-active)]',
   ],
   danger: ['border-[var(--color-border-danger)]', 'dark:border-[var(--color-border-danger)]'],
+} as const;
+
+export const insightsPanel = {
+  labelDivider: [
+    'border-[var(--color-border-strong)]',
+    'dark:border-[var(--color-border-divider)]',
+  ],
 } as const;
 
 export const effect = {
@@ -105,6 +113,22 @@ export const effect = {
     'shadow-[0_0_12px_var(--color-effect-danger-glow)]',
     'dark:shadow-[0_0_12px_var(--color-effect-danger-glow)]',
   ],
+  warningGlow: [
+    'shadow-[0_0_12px_var(--color-effect-warning-glow)]',
+    'dark:shadow-[0_0_12px_var(--color-effect-warning-glow)]',
+  ],
+  accentOutlineGlow: [
+    'shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
+    'dark:shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_50%,transparent)]',
+  ],
+  accentOutlineGlowCta: [
+    'shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
+    'dark:shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
+  ],
+  accentOutlineGlowHover: [
+    'hover:shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
+    'dark:hover:shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_50%,transparent)]',
+  ],
   pageShellInsetRing: [
     'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]',
     'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.48)]',
@@ -114,23 +138,14 @@ export const effect = {
 export const buttonCta = {
   gradient: ['bg-[var(--color-brand-sky)]'],
   shadow: [
-    'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.78)]',
-    'dark:shadow-[0_22px_60px_-32px_rgba(56,189,248,0.65)]',
+    'shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
+    'dark:shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
   ],
-  hover: [
-    'hover:-translate-y-0.5',
-    'hover:shadow-[0_28px_70px_-35px_rgba(14,165,233,0.85)]',
-    'disabled:hover:translate-y-0',
-  ],
+  hover: ['hover:-translate-y-0.5', 'disabled:hover:translate-y-0'],
 } as const;
 
 export const successCta = {
-  gradient: [
-    'bg-gradient-to-r',
-    'from-[var(--color-brand-emerald)]',
-    'via-[var(--color-brand-emerald)]',
-    'to-[var(--color-brand-sky)]',
-  ],
+  gradient: ['bg-[var(--color-brand-emerald)]'],
   hover: ['hover:-translate-y-[2px]', 'active:scale-[0.98]', 'disabled:active:scale-100'],
   focus: [
     'focus-visible:outline-none',
@@ -152,6 +167,7 @@ export const status = {
       'border-[var(--color-status-info-border)]',
       'dark:border-[var(--color-status-info-border)]',
     ],
+    alertBorder: ['border-[var(--color-status-info-border)]'],
     text: ['text-[var(--color-status-info-text)]', 'dark:text-[var(--color-status-info-text)]'],
     strongSurface: [
       'bg-[var(--color-status-info-strong-surface)]',
@@ -168,6 +184,7 @@ export const status = {
       'border-[var(--color-status-success-border)]',
       'dark:border-[var(--color-status-success-border)]',
     ],
+    alertBorder: ['border-[var(--color-status-success-border)]'],
     text: [
       'text-[var(--color-status-success-text)]',
       'dark:text-[var(--color-status-success-text)]',
@@ -190,6 +207,7 @@ export const status = {
       'border-[var(--color-status-warning-border)]',
       'dark:border-[var(--color-status-warning-border)]',
     ],
+    alertBorder: ['border-[var(--color-status-warning-border)]'],
     text: [
       'text-[var(--color-status-warning-text)]',
       'dark:text-[var(--color-status-warning-text)]',
@@ -212,6 +230,7 @@ export const status = {
       'border-[var(--color-status-danger-border)]',
       'dark:border-[var(--color-status-danger-border)]',
     ],
+    alertBorder: ['border-[var(--color-status-danger-border)]'],
     text: ['text-[var(--color-status-danger-text)]', 'dark:text-[var(--color-status-danger-text)]'],
     strongSurface: [
       'bg-[var(--color-status-danger-strong-surface)]',
@@ -299,6 +318,17 @@ export const budgetProgress = {
 
 export const radius = {
   standard: 'rounded-[length:var(--radius-standard)]',
+} as const;
+
+export const alert = {
+  shell: [
+    `relative ${radius.standard} border dark:border-0 px-4 py-3 shadow-sm`,
+    'transition-colors duration-300',
+  ],
+  tone: {
+    solid: 'backdrop-blur-sm backdrop-saturate-[140%]',
+    subtle: 'backdrop-blur-xs backdrop-saturate-[120%]',
+  },
 } as const;
 
 export const dashboardCategoryCard = {

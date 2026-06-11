@@ -53,6 +53,7 @@ describe('primitive typography recipes', () => {
     expect(buttonRecipes.base.join(' ')).toContain('uppercase');
     expect(buttonRecipes.secondary.join(' ')).toContain(uiTextRecipes.muted);
     expect(buttonRecipes.danger.join(' ')).toContain('color-status-danger-text');
+    expect(buttonRecipes.danger.join(' ')).toContain('dark:border-0');
   });
 
   it('keeps title bar layout recipes free of baked-in text colors', () => {
