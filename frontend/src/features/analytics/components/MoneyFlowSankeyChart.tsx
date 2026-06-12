@@ -1,4 +1,5 @@
-import { BarChart3 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Waypoints } from 'lucide-react';
 import { useMemo } from 'react';
 import type { SankeyLinkProps, SankeyNodeProps, TooltipContentProps } from 'recharts';
 import { Sankey, Tooltip } from 'recharts';
@@ -500,92 +501,95 @@ function MoneyFlowSankeyChartContent({
   const chartNodePadding =
     externalHeight && externalHeight > 0 ? sankeyLayout.nodePadding : naturalLayout.nodePadding;
 
-  if (error) {
-    return (
-      <EmptyState
-        icon={BarChart3}
-        title="Money flow unavailable"
-        description="Could not load data for this period."
-        className={cn(...sankeyChart.emptyState, className)}
-      />
-    );
-  }
-
-  if (loading && !data) {
-    return (
-      <EmptyState
-        icon={BarChart3}
-        title="Loading money flow"
-        description="Fetching the selected window."
-        className={cn(...sankeyChart.emptyState, className)}
-      />
-    );
-  }
-
-  if (categoryNodes.length === 0 || chartData.links.length === 0) {
-    return (
-      <EmptyState
-        icon={BarChart3}
-        title="No money flow yet"
-        description="No category spending was found for this range."
-        className={cn(...sankeyChart.emptyState, className)}
-      />
-    );
-  }
+  const isChart =
+    !error && !(loading && !data) && categoryNodes.length > 0 && chartData.links.length > 0;
+  const stateKey = error ? 'error' : loading && !data ? 'loading' : !isChart ? 'empty' : 'chart';
 
   return (
-    <div className={cn(...sankeyChart.shell, className)}>
-      <div
-        ref={containerSize ? undefined : chartContainerRef}
-        className={cn(...sankeyChart.viewport)}
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={stateKey}
+        className={cn(...(isChart ? sankeyChart.shell : sankeyChart.emptyState), className)}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
       >
-        {layoutWidth > 0 && chartHeight > 0 ? (
-          <SankeyAnimationProvider>
-            <Sankey
-              key={`${layoutWidth}x${chartHeight}`}
-              width={layoutWidth}
-              height={chartHeight}
-              data={chartData}
-              nodePadding={chartNodePadding}
-              nodeWidth={14}
-              iterations={32}
-              margin={chartMargin}
-              align="left"
-              verticalAlign="justify"
-              node={(props) => (
-                <SankeyNodeShape
-                  {...props}
-                  payload={props.payload as unknown as SankeyNodePayload}
-                  colors={colors}
-                  mode={mode}
-                  accentIndexByName={accentIndexByName}
-                />
-              )}
-              link={(props) => (
-                <SankeyLinkShape
-                  {...props}
-                  payload={props.payload as unknown as SankeyLinkPayload}
-                  colors={colors}
-                  accentIndexByName={accentIndexByName}
-                />
-              )}
-            >
-              <SankeyNodeGlowDefs />
-              <Tooltip
-                cursor={false}
-                content={(props) => (
-                  <SankeyTooltipContent
-                    {...props}
-                    expenseTotal={normalizeAmount(data?.summary.expenses)}
+        {stateKey === 'error' && (
+          <EmptyState
+            icon={Waypoints}
+            title="Money flow unavailable"
+            description="Could not load data for this period."
+          />
+        )}
+        {stateKey === 'loading' && (
+          <EmptyState
+            icon={Waypoints}
+            title="Loading money flow"
+            description="Fetching the selected window."
+          />
+        )}
+        {stateKey === 'empty' && (
+          <EmptyState
+            icon={Waypoints}
+            title="No money flow yet"
+            description="No category spending was found for this range."
+          />
+        )}
+        {stateKey === 'chart' && (
+          <div
+            ref={containerSize ? undefined : chartContainerRef}
+            className={cn(...sankeyChart.viewport)}
+          >
+            {layoutWidth > 0 && chartHeight > 0 ? (
+              <SankeyAnimationProvider>
+                <Sankey
+                  key={`${layoutWidth}x${chartHeight}`}
+                  width={layoutWidth}
+                  height={chartHeight}
+                  data={chartData}
+                  nodePadding={chartNodePadding}
+                  nodeWidth={14}
+                  iterations={32}
+                  margin={chartMargin}
+                  align="left"
+                  verticalAlign="justify"
+                  node={(props) => (
+                    <SankeyNodeShape
+                      {...props}
+                      payload={props.payload as unknown as SankeyNodePayload}
+                      colors={colors}
+                      mode={mode}
+                      accentIndexByName={accentIndexByName}
+                    />
+                  )}
+                  link={(props) => (
+                    <SankeyLinkShape
+                      {...props}
+                      payload={props.payload as unknown as SankeyLinkPayload}
+                      colors={colors}
+                      accentIndexByName={accentIndexByName}
+                    />
+                  )}
+                >
+                  <SankeyNodeGlowDefs />
+                  <Tooltip
+                    cursor={false}
+                    content={(props) => (
+                      <SankeyTooltipContent
+                        {...props}
+                        expenseTotal={normalizeAmount(data?.summary.expenses)}
+                      />
+                    )}
+                    {...chartTooltipRechartsProps}
                   />
-                )}
-                {...chartTooltipRechartsProps}
-              />
-            </Sankey>
-          </SankeyAnimationProvider>
-        ) : null}
-      </div>
-    </div>
+                </Sankey>
+              </SankeyAnimationProvider>
+            ) : null}
+          </div>
+        )}
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
