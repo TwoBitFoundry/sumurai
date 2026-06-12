@@ -1,7 +1,7 @@
-import { Button, cn } from '@/ui/primitives';
+import { Button, cn, Pill } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
-import type { DateRangeKey as DateRange } from '@/utils/dateRanges';
+import { type DateRangeKey as DateRange, formatDateRangeLabel } from '@/utils/dateRanges';
 
 const options: Array<{ key: DateRange; label: string }> = [
   { key: 'current-month', label: '1M' },
@@ -11,6 +11,21 @@ const options: Array<{ key: DateRange; label: string }> = [
   { key: 'past-year', label: '1Y' },
   { key: 'all-time', label: '5Y' },
 ];
+
+export function DateRangeLabelPill({ dateRange }: { dateRange: DateRange }) {
+  const rangeLabel = formatDateRangeLabel(dateRange);
+
+  return (
+    <Pill
+      variant="status"
+      tone="info"
+      className="!border-0"
+      aria-label={`Selected date range: ${rangeLabel}`}
+    >
+      {rangeLabel}
+    </Pill>
+  );
+}
 
 export function DateRangePillSlider({
   dateRange,
@@ -30,6 +45,7 @@ export function DateRangePillSlider({
         'max-w-full',
         'overflow-x-auto'
       )}
+      data-testid="date-range-pill-slider"
     >
       {options.map((option) => {
         const isActive = option.key === dateRange;

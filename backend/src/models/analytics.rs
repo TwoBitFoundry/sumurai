@@ -79,7 +79,9 @@ pub enum SankeyNodeKind {
     Expenses,
     Category,
     Deficit,
-    Surplus,
+    Savings,
+    FixedExpenses,
+    FreeSpending,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]

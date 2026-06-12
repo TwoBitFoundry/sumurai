@@ -14,6 +14,7 @@ interface DashboardChartCardProps {
     label: string;
     onClick: () => void;
   };
+  headerTrailing?: ReactNode;
   children: ReactNode;
 }
 
@@ -25,6 +26,7 @@ export const DashboardChartCard = ({
   className,
   bodyClassName,
   headerAction,
+  headerTrailing,
   children,
 }: DashboardChartCardProps) => {
   return (
@@ -32,7 +34,7 @@ export const DashboardChartCard = ({
       padding="none"
       containerClassName={cn(
         'h-full',
-        'overflow-visible',
+        '!overflow-visible',
         'p-4',
         'pt-5',
         'md:p-8',
@@ -41,14 +43,15 @@ export const DashboardChartCard = ({
       )}
       className={cn('flex', 'h-full', 'min-h-0', 'flex-col', 'overflow-visible')}
     >
-      <div className={cn('mb-3', 'md:mb-4', 'flex', 'items-center', 'justify-between')}>
-        <div>
+      <div className={cn('mb-3', 'md:mb-4', 'flex', 'items-start', 'justify-between', 'gap-3')}>
+        <div className={cn('min-w-0', 'flex-1')}>
           <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>{title}</h2>
           {description && (
             <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>{description}</p>
           )}
         </div>
-        <div className={cn('flex', 'items-center', 'gap-2')}>
+        <div className={cn('flex', 'shrink-0', 'items-center', 'gap-2')}>
+          {headerTrailing}
           {headerAction && (
             <button
               type="button"

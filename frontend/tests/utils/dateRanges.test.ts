@@ -1,4 +1,4 @@
-import { computeDateRange } from '@/utils/dateRanges';
+import { computeDateRange, formatDateRangeLabel } from '@/utils/dateRanges';
 
 const localYmd = (d: Date) => {
   const yyyy = d.getFullYear();
@@ -37,5 +37,23 @@ describe('computeDateRange', () => {
     const r = computeDateRange('all-time');
     expect(r.start).toBe(start);
     expect(r.end).toBe(end);
+  });
+});
+
+describe('formatDateRangeLabel', () => {
+  it('formats a range with start and end dates', () => {
+    const { start, end } = computeDateRange('current-month');
+    const formatPart = (iso: string) => {
+      const [year, month, day] = iso.split('-').map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    };
+
+    expect(formatDateRangeLabel('current-month')).toBe(
+      `${formatPart(start!)} – ${formatPart(end!)}`
+    );
   });
 });

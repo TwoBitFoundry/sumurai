@@ -271,6 +271,47 @@ impl AnalyticsService {
         id.trim_matches('_').to_string()
     }
 
+    const FIXED_EXPENSE_CATEGORY_PRIMARIES: &'static [&'static str] = &[
+        "SUBSCRIPTION",
+        "RENT_AND_UTILITIES",
+        "LOAN_PAYMENTS",
+        "INSURANCE",
+    ];
+
+    fn is_fixed_expense_category(name: &str) -> bool {
+        let normalized = name.trim().replace(' ', "_").to_uppercase();
+        if normalized == "BILL" {
+            return true;
+        }
+        Self::FIXED_EXPENSE_CATEGORY_PRIMARIES.contains(&normalized.as_str())
+    }
+
+    fn push_category_links(
+        links: &mut Vec<SankeyLink>,
+        source_id: &str,
+        buckets: &[CategorySpending],
+    ) {
+        for bucket in buckets {
+            let node_id = Self::sankey_id_from_category(&bucket.name);
+            links.push(SankeyLink {
+                source: source_id.to_string(),
+                target: node_id,
+                value: Self::round_amount(bucket.value),
+            });
+        }
+    }
+
+    fn push_category_nodes(nodes: &mut Vec<SankeyNode>, buckets: &[CategorySpending]) {
+        for bucket in buckets {
+            let node_id = Self::sankey_id_from_category(&bucket.name);
+            nodes.push(SankeyNode {
+                id: node_id,
+                label: bucket.name.clone(),
+                kind: SankeyNodeKind::Category,
+            });
+        }
+    }
+
     pub fn build_sankey(
         &self,
         income_total: Decimal,
@@ -326,7 +367,7 @@ impl AnalyticsService {
         ];
         let mut links = Vec::new();
 
-        if covered > Decimal::ZERO {
+        if income > Decimal::ZERO {
             links.push(SankeyLink {
                 source: "income".to_string(),
                 target: "expenses".to_string(),
@@ -347,40 +388,70 @@ impl AnalyticsService {
             });
         }
 
-        let surplus_link = if surplus > Decimal::ZERO {
-            Some(SankeyLink {
+        if surplus > Decimal::ZERO {
+            nodes.push(SankeyNode {
+                id: "savings".to_string(),
+                label: "Savings".to_string(),
+                kind: SankeyNodeKind::Savings,
+            });
+            links.push(SankeyLink {
                 source: "income".to_string(),
-                target: "surplus".to_string(),
+                target: "savings".to_string(),
                 value: surplus,
-            })
-        } else {
-            None
-        };
-
-        if let Some(link) = surplus_link {
-            links.push(link);
+            });
         }
 
+        let mut fixed_buckets = Vec::new();
+        let mut free_buckets = Vec::new();
         for bucket in category_buckets {
-            let node_id = Self::sankey_id_from_category(&bucket.name);
+            if Self::is_fixed_expense_category(&bucket.name) {
+                fixed_buckets.push(bucket);
+            } else {
+                free_buckets.push(bucket);
+            }
+        }
+
+        let fixed_total = Self::round_amount(
+            fixed_buckets
+                .iter()
+                .map(|bucket| bucket.value)
+                .sum::<Decimal>(),
+        );
+        let free_total = Self::round_amount(
+            free_buckets
+                .iter()
+                .map(|bucket| bucket.value)
+                .sum::<Decimal>(),
+        );
+
+        if fixed_total > Decimal::ZERO {
             nodes.push(SankeyNode {
-                id: node_id.clone(),
-                label: bucket.name.clone(),
-                kind: SankeyNodeKind::Category,
+                id: "fixed_expenses".to_string(),
+                label: "Fixed Expenses".to_string(),
+                kind: SankeyNodeKind::FixedExpenses,
             });
             links.push(SankeyLink {
                 source: "expenses".to_string(),
-                target: node_id,
-                value: Self::round_amount(bucket.value),
+                target: "fixed_expenses".to_string(),
+                value: fixed_total,
             });
+            Self::push_category_nodes(&mut nodes, &fixed_buckets);
+            Self::push_category_links(&mut links, "fixed_expenses", &fixed_buckets);
         }
 
-        if surplus > Decimal::ZERO {
+        if free_total > Decimal::ZERO {
             nodes.push(SankeyNode {
-                id: "surplus".to_string(),
-                label: "Surplus".to_string(),
-                kind: SankeyNodeKind::Surplus,
+                id: "free_spending".to_string(),
+                label: "Free Spending".to_string(),
+                kind: SankeyNodeKind::FreeSpending,
             });
+            links.push(SankeyLink {
+                source: "expenses".to_string(),
+                target: "free_spending".to_string(),
+                value: free_total,
+            });
+            Self::push_category_nodes(&mut nodes, &free_buckets);
+            Self::push_category_links(&mut links, "free_spending", &free_buckets);
         }
 
         SankeyResponse {

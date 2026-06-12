@@ -98,15 +98,11 @@ export const Journey: Story = {
       expect(canvas.getByTestId('sankey-node-income')).toBeVisible();
     });
 
-    await userEvent.click(
-      canvas.getByRole('button', { name: /show next financial breakdown slide/i })
-    );
+    await userEvent.click(canvas.getByRole('tab', { name: /show balances now/i }));
     await waitFor(() => {
       expect(canvas.getByTestId('balances-chart-plot')).toBeVisible();
     });
-    await userEvent.click(
-      canvas.getByRole('button', { name: /show previous financial breakdown slide/i })
-    );
+    await userEvent.click(canvas.getByRole('tab', { name: /show money flow/i }));
     await waitFor(() => {
       expect(canvas.getByTestId('sankey-node-income')).toBeVisible();
     });

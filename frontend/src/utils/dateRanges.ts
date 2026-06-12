@@ -58,3 +58,23 @@ export function computeDateRange(key?: DateRangeKey): { start?: string; end?: st
       return {};
   }
 }
+
+function formatAnalyticsDateLabel(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+export function formatDateRangeLabel(key: DateRangeKey): string {
+  const { start, end } = computeDateRange(key);
+  if (!start || !end) {
+    return '';
+  }
+  if (start === end) {
+    return formatAnalyticsDateLabel(start);
+  }
+  return `${formatAnalyticsDateLabel(start)} – ${formatAnalyticsDateLabel(end)}`;
+}

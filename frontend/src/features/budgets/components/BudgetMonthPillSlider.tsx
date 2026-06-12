@@ -1,14 +1,25 @@
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { LONGEST_BUDGET_MONTH_LABEL } from '@/features/budgets/hooks/useBudgetMonth';
-import { Button, cn } from '@/ui/primitives';
+import { Button, cn, Pill } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { chromeBar, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { chromeBar, text as uiTextRecipes } from '@/ui/recipes';
 
 interface BudgetMonthPillSliderProps {
-  monthLabel: string;
   onPreviousMonth: () => void;
   onNextMonth: () => void;
   onCurrentMonth: () => void;
+}
+
+export function BudgetMonthLabelPill({ monthLabel }: { monthLabel: string }) {
+  return (
+    <Pill
+      variant="status"
+      tone="info"
+      className="!border-0"
+      aria-label={`Selected budget month: ${monthLabel}`}
+    >
+      {monthLabel}
+    </Pill>
+  );
 }
 
 const pillControlClassName = cn(
@@ -23,7 +34,6 @@ const pillControlClassName = cn(
 );
 
 export function BudgetMonthPillSlider({
-  monthLabel,
   onPreviousMonth,
   onNextMonth,
   onCurrentMonth,
@@ -81,29 +91,6 @@ export function BudgetMonthPillSlider({
           <ChevronRightIcon className={chromeBar.glyph} />
         </span>
       </Button>
-      <span
-        className={cn(
-          'inline-grid',
-          'h-full',
-          'shrink-0',
-          'items-center',
-          'px-2',
-          uiTypographyRecipes.bodyStrong,
-          uiTextRecipes.primary
-        )}
-      >
-        <span
-          className={cn('invisible', 'col-start-1', 'row-start-1', 'whitespace-nowrap')}
-          aria-hidden
-        >
-          {LONGEST_BUDGET_MONTH_LABEL}
-        </span>
-        <span
-          className={cn('col-start-1', 'row-start-1', 'justify-self-start', 'whitespace-nowrap')}
-        >
-          {monthLabel}
-        </span>
-      </span>
     </div>
   );
 }

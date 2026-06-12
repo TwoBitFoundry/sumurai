@@ -80,7 +80,7 @@ export type SankeyLayoutMetrics = {
 const SANKEY_MIN_HEIGHT = 280;
 const SANKEY_MAX_HEIGHT = 560;
 const SANKEY_ROW_HEIGHT = 38;
-const SANKEY_HEIGHT_PADDING = 56;
+const SANKEY_HEIGHT_PADDING = 40;
 const SANKEY_MIN_NODE_PADDING = 6;
 const SANKEY_MAX_NODE_PADDING = 14;
 
@@ -89,12 +89,15 @@ export function resolveSankeyLayoutMetrics(
   availableHeight?: number
 ): SankeyLayoutMetrics {
   const categoryCount = nodes.filter((node) => node.kind === 'Category').length;
-  const hasSurplus = nodes.some((node) => node.kind === 'Surplus');
+  const hasSavings = nodes.some((node) => node.kind === 'Savings');
+  const hasFixedExpenses = nodes.some((node) => node.kind === 'FixedExpenses');
+  const hasFreeSpending = nodes.some((node) => node.kind === 'FreeSpending');
   const leftCount = nodes.filter(
     (node) => node.kind === 'Income' || node.kind === 'Deficit'
   ).length;
-  const rightCount = categoryCount + (hasSurplus ? 1 : 0);
-  const columnNodes = Math.max(leftCount, rightCount, 2);
+  const secondColumnCount = 1 + (hasSavings ? 1 : 0);
+  const thirdColumnCount = (hasFixedExpenses ? 1 : 0) + (hasFreeSpending ? 1 : 0);
+  const columnNodes = Math.max(leftCount, secondColumnCount, thirdColumnCount, categoryCount, 2);
   const naturalHeight = Math.max(
     SANKEY_MIN_HEIGHT,
     columnNodes * SANKEY_ROW_HEIGHT + SANKEY_HEIGHT_PADDING
@@ -103,7 +106,7 @@ export function resolveSankeyLayoutMetrics(
     availableHeight != null && availableHeight > 0
       ? Math.max(SANKEY_MIN_HEIGHT, Math.floor(availableHeight))
       : Math.min(SANKEY_MAX_HEIGHT, naturalHeight);
-  const innerHeight = height - 24;
+  const innerHeight = height - 16;
   const nodePadding =
     columnNodes <= 1
       ? 10
@@ -131,8 +134,13 @@ const resolveNodeValue = (node: SankeyNode, response: SankeyResponse) => {
       return toNumericLinkValue(response.summary.expenses);
     case 'Deficit':
       return toNumericLinkValue(response.summary.deficit);
-    case 'Surplus':
+    case 'Savings':
       return toNumericLinkValue(response.summary.surplus);
+    case 'FixedExpenses':
+    case 'FreeSpending':
+      return (response.links ?? [])
+        .filter((link) => link.source === node.id)
+        .reduce((sum, link) => sum + toNumericLinkValue(link.value), 0);
     case 'Category':
       return (response.links ?? [])
         .filter((link) => link.target === node.id)

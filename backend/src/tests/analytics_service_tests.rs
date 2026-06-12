@@ -800,25 +800,80 @@ fn given_income_exceeds_expenses_when_building_sankey_then_balances_with_surplus
         vec![
             &SankeyNodeKind::Income,
             &SankeyNodeKind::Expenses,
+            &SankeyNodeKind::Savings,
+            &SankeyNodeKind::FreeSpending,
             &SankeyNodeKind::Category,
             &SankeyNodeKind::Category,
-            &SankeyNodeKind::Surplus,
         ]
     );
 
-    assert_eq!(result.links.len(), 4);
+    assert_eq!(result.links.len(), 5);
     assert_eq!(result.links[0].source, "income");
     assert_eq!(result.links[0].target, "expenses");
     assert_eq!(result.links[0].value, dec!(500.00));
     assert_eq!(result.links[1].source, "income");
-    assert_eq!(result.links[1].target, "surplus");
+    assert_eq!(result.links[1].target, "savings");
     assert_eq!(result.links[1].value, dec!(500.00));
     assert_eq!(result.links[2].source, "expenses");
-    assert_eq!(result.links[2].target, "category_food");
-    assert_eq!(result.links[2].value, dec!(300.00));
-    assert_eq!(result.links[3].source, "expenses");
-    assert_eq!(result.links[3].target, "category_housing");
-    assert_eq!(result.links[3].value, dec!(200.00));
+    assert_eq!(result.links[2].target, "free_spending");
+    assert_eq!(result.links[2].value, dec!(500.00));
+    assert_eq!(result.links[3].source, "free_spending");
+    assert_eq!(result.links[3].target, "category_food");
+    assert_eq!(result.links[3].value, dec!(300.00));
+    assert_eq!(result.links[4].source, "free_spending");
+    assert_eq!(result.links[4].target, "category_housing");
+    assert_eq!(result.links[4].value, dec!(200.00));
+}
+
+#[test]
+fn given_mixed_fixed_and_free_categories_when_building_sankey_then_splits_through_intermediaries() {
+    let analytics = AnalyticsService::new();
+    let categories = vec![
+        CategorySpending {
+            name: "SUBSCRIPTION".to_string(),
+            value: dec!(100.00),
+        },
+        CategorySpending {
+            name: "RENT_AND_UTILITIES".to_string(),
+            value: dec!(200.00),
+        },
+        CategorySpending {
+            name: "FOOD_AND_DRINK".to_string(),
+            value: dec!(300.00),
+        },
+    ];
+
+    let result = analytics.build_sankey(dec!(700.00), categories, "USD");
+
+    assert_eq!(result.summary.expenses, dec!(600.00));
+    assert!(result.nodes.iter().any(|node| node.id == "fixed_expenses"));
+    assert!(result.nodes.iter().any(|node| node.id == "free_spending"));
+    assert_eq!(
+        result
+            .links
+            .iter()
+            .find(|link| link.source == "expenses" && link.target == "fixed_expenses")
+            .map(|link| link.value),
+        Some(dec!(300.00))
+    );
+    assert_eq!(
+        result
+            .links
+            .iter()
+            .find(|link| link.source == "expenses" && link.target == "free_spending")
+            .map(|link| link.value),
+        Some(dec!(300.00))
+    );
+    assert!(result
+        .links
+        .iter()
+        .any(|link| { link.source == "fixed_expenses" && link.target == "category_subscription" }));
+    assert!(result.links.iter().any(|link| {
+        link.source == "fixed_expenses" && link.target == "category_rent_and_utilities"
+    }));
+    assert!(result.links.iter().any(|link| {
+        link.source == "free_spending" && link.target == "category_food_and_drink"
+    }));
 }
 
 #[test]

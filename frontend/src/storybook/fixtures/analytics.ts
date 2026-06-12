@@ -19,7 +19,12 @@ export const sampleTopMerchants: AnalyticsTopMerchantsResponse[] = [
   { name: 'Coffee Collective Wholesale Roasters Group', amount: 72.4, count: 11, percentage: 4 },
 ];
 
-const sampleSankeyCategories = ['food_and_drink', 'transportation', 'shopping'] as const;
+const sampleSankeyCategories = [
+  'food_and_drink',
+  'transportation',
+  'shopping',
+  'subscription',
+] as const;
 
 export const sampleSankeyAccentIndexByName = buildCategoryAccentIndex(sampleSankeyCategories);
 
@@ -28,6 +33,7 @@ export const sampleSankeyDeficit = {
     { id: 'income', label: 'Income', kind: 'Income' as const },
     { id: 'expenses', label: 'Expenses', kind: 'Expenses' as const },
     { id: 'debt', label: 'Debt', kind: 'Deficit' as const },
+    { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' as const },
     { id: 'food_and_drink', label: 'Food & Drink', kind: 'Category' as const },
     { id: 'transportation', label: 'Transport', kind: 'Category' as const },
     { id: 'shopping', label: 'Shopping', kind: 'Category' as const },
@@ -35,9 +41,10 @@ export const sampleSankeyDeficit = {
   links: [
     { source: 'income', target: 'expenses', value: 1200 },
     { source: 'debt', target: 'expenses', value: 300 },
-    { source: 'expenses', target: 'food_and_drink', value: 700 },
-    { source: 'expenses', target: 'transportation', value: 500 },
-    { source: 'expenses', target: 'shopping', value: 300 },
+    { source: 'expenses', target: 'free_spending', value: 1500 },
+    { source: 'free_spending', target: 'food_and_drink', value: 700 },
+    { source: 'free_spending', target: 'transportation', value: 500 },
+    { source: 'free_spending', target: 'shopping', value: 300 },
   ],
   currency: 'USD',
   summary: {
@@ -54,17 +61,23 @@ export const sampleSankeySurplus = {
   nodes: [
     { id: 'income', label: 'Income', kind: 'Income' as const },
     { id: 'expenses', label: 'Expenses', kind: 'Expenses' as const },
+    { id: 'savings', label: 'Savings', kind: 'Savings' as const },
+    { id: 'fixed_expenses', label: 'Fixed Expenses', kind: 'FixedExpenses' as const },
+    { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' as const },
+    { id: 'subscription', label: 'SUBSCRIPTION', kind: 'Category' as const },
     { id: 'food_and_drink', label: 'Food & Drink', kind: 'Category' as const },
     { id: 'transportation', label: 'Transport', kind: 'Category' as const },
     { id: 'shopping', label: 'Shopping', kind: 'Category' as const },
-    { id: 'surplus', label: 'Surplus', kind: 'Surplus' as const },
   ],
   links: [
     { source: 'income', target: 'expenses', value: 1500 },
-    { source: 'expenses', target: 'food_and_drink', value: 700 },
-    { source: 'expenses', target: 'transportation', value: 500 },
-    { source: 'expenses', target: 'shopping', value: 300 },
-    { source: 'income', target: 'surplus', value: 100 },
+    { source: 'income', target: 'savings', value: 100 },
+    { source: 'expenses', target: 'fixed_expenses', value: 150 },
+    { source: 'expenses', target: 'free_spending', value: 1350 },
+    { source: 'fixed_expenses', target: 'subscription', value: 150 },
+    { source: 'free_spending', target: 'food_and_drink', value: 700 },
+    { source: 'free_spending', target: 'transportation', value: 500 },
+    { source: 'free_spending', target: 'shopping', value: 150 },
   ],
   currency: 'USD',
   summary: {
@@ -81,15 +94,17 @@ export const sampleSankeyNoIncome = {
   nodes: [
     { id: 'expenses', label: 'Expenses', kind: 'Expenses' as const },
     { id: 'debt', label: 'Debt', kind: 'Deficit' as const },
+    { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' as const },
     { id: 'food_and_drink', label: 'Food & Drink', kind: 'Category' as const },
     { id: 'transportation', label: 'Transport', kind: 'Category' as const },
     { id: 'shopping', label: 'Shopping', kind: 'Category' as const },
   ],
   links: [
     { source: 'debt', target: 'expenses', value: 1500 },
-    { source: 'expenses', target: 'food_and_drink', value: 700 },
-    { source: 'expenses', target: 'transportation', value: 500 },
-    { source: 'expenses', target: 'shopping', value: 300 },
+    { source: 'expenses', target: 'free_spending', value: 1500 },
+    { source: 'free_spending', target: 'food_and_drink', value: 700 },
+    { source: 'free_spending', target: 'transportation', value: 500 },
+    { source: 'free_spending', target: 'shopping', value: 300 },
   ],
   currency: 'USD',
   summary: {

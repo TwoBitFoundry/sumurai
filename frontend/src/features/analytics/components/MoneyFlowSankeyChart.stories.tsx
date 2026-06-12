@@ -51,16 +51,18 @@ export const Deficit: Story = {
   },
 };
 
-export const Surplus: Story = {
+export const Savings: Story = {
   args: {
     data: sampleSankeySurplus,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await waitFor(() => {
-      expect(canvas.getByTestId('sankey-node-surplus')).toBeVisible();
+      expect(canvas.getByTestId('sankey-node-savings')).toBeVisible();
     });
+    expect(canvas.getByText('Savings')).toBeVisible();
     expect(canvas.queryByText('Debt')).not.toBeInTheDocument();
+    expect(canvas.queryByText('Surplus')).not.toBeInTheDocument();
   },
 };
 

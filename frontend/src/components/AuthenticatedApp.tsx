@@ -1,8 +1,14 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 import { BottomContextualBar } from '@/components/BottomContextualBar';
-import { DateRangePillSlider } from '@/features/analytics/components/DateRangePillSlider';
-import { BudgetMonthPillSlider } from '@/features/budgets/components/BudgetMonthPillSlider';
+import {
+  DateRangeLabelPill,
+  DateRangePillSlider,
+} from '@/features/analytics/components/DateRangePillSlider';
+import {
+  BudgetMonthLabelPill,
+  BudgetMonthPillSlider,
+} from '@/features/budgets/components/BudgetMonthPillSlider';
 import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
 import { TransactionsSearchBar } from '@/features/transactions/components/TransactionsSearchBar';
 import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
@@ -68,7 +74,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
 
   const bottomBarContent =
     tab === 'dashboard' ? (
-      <BottomContextualBar>
+      <BottomContextualBar topContent={<DateRangeLabelPill dateRange={dateRange} />}>
         <DateRangePillSlider dateRange={dateRange} onChange={setDateRange} />
       </BottomContextualBar>
     ) : tab === 'transactions' ? (
@@ -89,9 +95,10 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
         />
       </BottomContextualBar>
     ) : tab === 'budgets' ? (
-      <BottomContextualBar>
+      <BottomContextualBar
+        topContent={<BudgetMonthLabelPill monthLabel={budgetMonth.monthLabel} />}
+      >
         <BudgetMonthPillSlider
-          monthLabel={budgetMonth.monthLabel}
           onPreviousMonth={budgetMonth.goToPreviousMonth}
           onNextMonth={budgetMonth.goToNextMonth}
           onCurrentMonth={budgetMonth.goToCurrentMonth}

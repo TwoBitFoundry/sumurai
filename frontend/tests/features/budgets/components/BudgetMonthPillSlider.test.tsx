@@ -1,5 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { BudgetMonthPillSlider } from '@/features/budgets/components/BudgetMonthPillSlider';
+import {
+  BudgetMonthLabelPill,
+  BudgetMonthPillSlider,
+} from '@/features/budgets/components/BudgetMonthPillSlider';
 
 describe('BudgetMonthPillSlider', () => {
   it('renders month navigation and calls handlers', () => {
@@ -9,7 +12,6 @@ describe('BudgetMonthPillSlider', () => {
 
     render(
       <BudgetMonthPillSlider
-        monthLabel="May 2026"
         onPreviousMonth={onPreviousMonth}
         onNextMonth={onNextMonth}
         onCurrentMonth={onCurrentMonth}
@@ -20,22 +22,16 @@ describe('BudgetMonthPillSlider', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next month' }));
     fireEvent.click(screen.getByRole('button', { name: 'This month' }));
 
-    expect(screen.getByText('May 2026')).toBeInTheDocument();
     expect(onPreviousMonth).toHaveBeenCalledTimes(1);
     expect(onNextMonth).toHaveBeenCalledTimes(1);
     expect(onCurrentMonth).toHaveBeenCalledTimes(1);
   });
+});
 
-  it('uses stronger body text for the month label', () => {
-    render(
-      <BudgetMonthPillSlider
-        monthLabel="May 2026"
-        onPreviousMonth={jest.fn()}
-        onNextMonth={jest.fn()}
-        onCurrentMonth={jest.fn()}
-      />
-    );
+describe('BudgetMonthLabelPill', () => {
+  it('shows the selected budget month in a non-interactive pill', () => {
+    render(<BudgetMonthLabelPill monthLabel="May 2026" />);
 
-    expect(screen.getByText('May 2026').parentElement).toHaveClass('font-body-strong');
+    expect(screen.getByLabelText(/selected budget month:/i)).toHaveTextContent('May 2026');
   });
 });

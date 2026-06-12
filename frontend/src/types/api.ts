@@ -268,7 +268,14 @@ export interface AnalyticsCashFlowResponse {
   currency: string;
 }
 
-export type SankeyNodeKind = 'Income' | 'Expenses' | 'Category' | 'Deficit' | 'Surplus';
+export type SankeyNodeKind =
+  | 'Income'
+  | 'Expenses'
+  | 'Category'
+  | 'Deficit'
+  | 'Savings'
+  | 'FixedExpenses'
+  | 'FreeSpending';
 
 export interface SankeyNode {
   id: string;

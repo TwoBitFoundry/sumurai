@@ -1,7 +1,7 @@
 import { mock, spyOn } from 'bun:test';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
-import { getThemeColors } from '@/ui/tokens';
+import { getCategoryLabelHex, getThemeColors } from '@/ui/tokens';
 import { buildCategoryAccentIndex, getTagThemeForCategory } from '@/utils/categories';
 
 let mockNodeHeight = 20;
@@ -19,8 +19,12 @@ const resolveMockNodeValue = (
     return sumLinks((link) => String(link.sourceId ?? '') === nodeId);
   }
 
-  if (nodeKind === 'Surplus') {
+  if (nodeKind === 'Savings') {
     return sumLinks((link) => String(link.targetId ?? '') === nodeId);
+  }
+
+  if (nodeKind === 'FixedExpenses' || nodeKind === 'FreeSpending') {
+    return sumLinks((link) => String(link.sourceId ?? '') === nodeId);
   }
 
   return sumLinks((link) => String(link.targetId ?? '') === nodeId);
@@ -149,13 +153,15 @@ describe('MoneyFlowSankeyChart', () => {
       nodes: [
         { id: 'income', label: 'Income', kind: 'Income' },
         { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+        { id: 'savings', label: 'Savings', kind: 'Savings' },
+        { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' },
         { id: 'food_and_drink', label: 'Food & Drink', kind: 'Category' },
-        { id: 'surplus', label: 'Surplus', kind: 'Surplus' },
       ],
       links: [
         { source: 'income', target: 'expenses', value: 800 },
-        { source: 'expenses', target: 'food_and_drink', value: 800 },
-        { source: 'income', target: 'surplus', value: 200 },
+        { source: 'income', target: 'savings', value: 200 },
+        { source: 'expenses', target: 'free_spending', value: 800 },
+        { source: 'free_spending', target: 'food_and_drink', value: 800 },
       ],
       currency: 'USD',
       summary: {
@@ -178,7 +184,18 @@ describe('MoneyFlowSankeyChart', () => {
     expect(await screen.findByTestId('sankey-node-income')).toBeVisible();
     expect(screen.getByText('125%')).toBeVisible();
     expect(screen.getByText('25%')).toBeVisible();
-    expect(screen.getAllByText('100%')).toHaveLength(2);
+    expect(screen.getAllByText('100%')).toHaveLength(1);
+    const savingsNode = screen.getByTestId('sankey-node-savings');
+    const savingsRect = savingsNode.querySelector('rect');
+    const savingsLabel = savingsNode.querySelector('text:first-of-type');
+    const savingsAmount = savingsNode.querySelector('text:nth-of-type(2)');
+    expect(savingsLabel).toHaveTextContent('Savings');
+    expect(savingsLabel).toHaveClass('font-label');
+    expect(savingsAmount).toHaveClass('font-card-title');
+    expect(Number(savingsLabel?.getAttribute('y'))).toBeGreaterThan(
+      Number(savingsRect?.getAttribute('y')) + Number(savingsRect?.getAttribute('height'))
+    );
+    expect(savingsNode.querySelector('text:last-of-type')).not.toHaveAttribute('transform');
     const incomeNode = screen.getByTestId('sankey-node-income');
     const percentLabel = incomeNode.querySelector('text:last-of-type');
     expect(percentLabel).toHaveAttribute('transform', 'rotate(270 -10 40)');
@@ -189,7 +206,7 @@ describe('MoneyFlowSankeyChart', () => {
     expect(categoryNode.querySelector('text:first-of-type')).toHaveClass('font-label');
     expect(categoryNode.querySelector('text:nth-of-type(2)')).toHaveClass('font-card-title');
     const categoryPercentLabel = categoryNode.querySelector('text:last-of-type');
-    expect(categoryPercentLabel).toHaveAttribute('transform', 'rotate(270 266 104)');
+    expect(categoryPercentLabel).toHaveAttribute('transform', 'rotate(270 266 168)');
     expect(Number(categoryPercentLabel?.getAttribute('x'))).toBeGreaterThan(
       Number(categoryNode.querySelector('rect')?.getAttribute('x')) +
         Number(categoryNode.querySelector('rect')?.getAttribute('width'))
@@ -200,22 +217,22 @@ describe('MoneyFlowSankeyChart', () => {
     );
     expect(screen.getByTestId('sankey-node-expenses').querySelector('rect')).toHaveAttribute(
       'fill',
-      '#8b5cf6'
+      getThemeColors('light').semantic.credit
     );
     expect(screen.getByTestId('sankey-node-food_and_drink').querySelector('rect')).toHaveAttribute(
       'fill',
       '#38bdf8'
     );
-    expect(screen.getByTestId('sankey-node-surplus').querySelector('rect')).toHaveAttribute(
+    expect(screen.getByTestId('sankey-node-savings').querySelector('rect')).toHaveAttribute(
       'fill',
       '#06b6d4'
     );
-    expect(screen.getByTestId('sankey-link-1')).toHaveAttribute('stroke', '#38bdf8');
+    expect(screen.getByTestId('sankey-link-3')).toHaveAttribute('stroke', '#38bdf8');
     expect(mockSankey).toHaveBeenCalled();
   });
 
   it('hides the percent label when the node is too short', () => {
-    mockNodeHeight = 16;
+    mockNodeHeight = 12;
 
     render(
       <MoneyFlowSankeyChart
@@ -223,11 +240,13 @@ describe('MoneyFlowSankeyChart', () => {
           nodes: [
             { id: 'income', label: 'Income', kind: 'Income' },
             { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+            { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' },
             { id: 'food_and_drink', label: 'Food & Drink', kind: 'Category' },
           ],
           links: [
             { source: 'income', target: 'expenses', value: 500 },
-            { source: 'expenses', target: 'food_and_drink', value: 500 },
+            { source: 'expenses', target: 'free_spending', value: 500 },
+            { source: 'free_spending', target: 'food_and_drink', value: 500 },
           ],
           currency: 'USD',
           summary: {
@@ -245,10 +264,50 @@ describe('MoneyFlowSankeyChart', () => {
     expect(screen.queryByText('100%')).toBeNull();
   });
 
+  it('shows savings label and amount when the savings node is short', () => {
+    mockNodeHeight = 8;
+
+    render(
+      <MoneyFlowSankeyChart
+        data={{
+          nodes: [
+            { id: 'income', label: 'Income', kind: 'Income' },
+            { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+            { id: 'savings', label: 'Savings', kind: 'Savings' },
+            { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' },
+            { id: 'food_and_drink', label: 'Food & Drink', kind: 'Category' },
+          ],
+          links: [
+            { source: 'income', target: 'expenses', value: 950 },
+            { source: 'income', target: 'savings', value: 50 },
+            { source: 'expenses', target: 'free_spending', value: 950 },
+            { source: 'free_spending', target: 'food_and_drink', value: 950 },
+          ],
+          currency: 'USD',
+          summary: {
+            income: 1000,
+            expenses: 950,
+            covered: 950,
+            deficit: 0,
+            surplus: 50,
+            coverage_ratio: 1,
+          },
+        }}
+      />
+    );
+
+    const savingsNode = screen.getByTestId('sankey-node-savings');
+    expect(savingsNode.querySelector('text:first-of-type')).toHaveTextContent('Savings');
+    expect(savingsNode.querySelector('text:nth-of-type(2)')).toHaveTextContent('$50.00');
+    expect(screen.queryByText('5.3%')).toBeNull();
+  });
+
   it('uses dark theme tokens for node and link colors', async () => {
     const darkColors = getThemeColors('dark');
     const accentIndexByName = buildCategoryAccentIndex(['food_and_drink']);
-    const categoryColor = getTagThemeForCategory('food_and_drink', accentIndexByName).ringHex;
+    const categoryTheme = getTagThemeForCategory('food_and_drink', accentIndexByName);
+    const categoryColor = categoryTheme.ringHex;
+    const categoryLabelColor = getCategoryLabelHex(categoryTheme, 'dark');
     mockUseTheme.mockReturnValue({
       preference: 'dark',
       mode: 'dark',
@@ -264,11 +323,13 @@ describe('MoneyFlowSankeyChart', () => {
           nodes: [
             { id: 'income', label: 'Income', kind: 'Income' },
             { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+            { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' },
             { id: 'food_and_drink', label: 'Food & Drink', kind: 'Category' },
           ],
           links: [
             { source: 'income', target: 'expenses', value: 500 },
-            { source: 'expenses', target: 'food_and_drink', value: 500 },
+            { source: 'expenses', target: 'free_spending', value: 500 },
+            { source: 'free_spending', target: 'food_and_drink', value: 500 },
           ],
           currency: 'USD',
           summary: {
@@ -290,13 +351,78 @@ describe('MoneyFlowSankeyChart', () => {
     );
     expect(screen.getByTestId('sankey-node-expenses').querySelector('rect')).toHaveAttribute(
       'fill',
-      darkColors.semantic.netWorth
+      darkColors.semantic.credit
+    );
+    expect(screen.getByTestId('sankey-node-free_spending').querySelector('rect')).toHaveAttribute(
+      'fill',
+      darkColors.semantic.loan
     );
     expect(screen.getByTestId('sankey-node-food_and_drink').querySelector('rect')).toHaveAttribute(
       'fill',
       categoryColor
     );
-    expect(screen.getByTestId('sankey-link-1')).toHaveAttribute('stroke', categoryColor);
+    expect(screen.getByTestId('sankey-node-food_and_drink').querySelector('text')).toHaveAttribute(
+      'fill',
+      categoryLabelColor
+    );
+    expect(screen.getByTestId('sankey-link-1')).toHaveAttribute('stroke', darkColors.semantic.loan);
+    expect(screen.getByTestId('sankey-link-2')).toHaveAttribute('stroke', categoryColor);
+  });
+
+  it('shows the category name without the free spending section prefix in the tooltip', () => {
+    render(
+      <SankeyTooltipContent
+        active
+        label="FREE SPENDING - GENERAL MERCHANDISE"
+        payload={[
+          {
+            name: 'FREE SPENDING - GENERAL MERCHANDISE',
+            value: 700,
+            payload: {
+              source: {
+                id: 'free_spending',
+                label: 'Free Spending',
+                name: 'Free Spending',
+                kind: 'FreeSpending',
+              },
+              target: {
+                id: 'category_general_merchandise',
+                label: 'GENERAL_MERCHANDISE',
+                name: 'GENERAL MERCHANDISE',
+                kind: 'Category',
+              },
+              value: 700,
+              percentOfExpenses: 46.7,
+            },
+          } as never,
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Merch')).toBeVisible();
+    expect(screen.queryByText(/free spending/i)).toBeNull();
+  });
+
+  it('falls back to the tooltip label when the payload is not a resolved node', () => {
+    render(
+      <SankeyTooltipContent
+        active
+        label="FREE SPENDING - GENERAL MERCHANDISE"
+        payload={[
+          {
+            name: 'FREE SPENDING - GENERAL MERCHANDISE',
+            value: 700,
+            payload: {
+              source: 3,
+              target: 5,
+              value: 700,
+            },
+          } as never,
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Merch')).toBeVisible();
   });
 
   it('shows the percentage line in the tooltip', () => {
@@ -435,11 +561,13 @@ describe('MoneyFlowSankeyChart', () => {
           nodes: [
             { id: 'income', label: 'Income', kind: 'Income' },
             { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+            { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' },
             { id: 'category_travel', label: 'TRAVEL', kind: 'Category' },
           ],
           links: [
             { source: 'income', target: 'expenses', value: 1222.51 },
-            { source: 'expenses', target: 'category_travel', value: 1222.51 },
+            { source: 'expenses', target: 'free_spending', value: 1222.51 },
+            { source: 'free_spending', target: 'category_travel', value: 1222.51 },
           ],
           currency: 'USD',
           summary: {

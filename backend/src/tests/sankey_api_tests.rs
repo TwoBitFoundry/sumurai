@@ -213,12 +213,17 @@ async fn given_mixed_account_scope_when_getting_sankey_then_excludes_loan_and_in
     assert_eq!(value["summary"]["covered"], "200.00");
     assert_eq!(value["summary"]["deficit"], "0.00");
     assert_eq!(value["summary"]["surplus"], "300.00");
-    assert_eq!(value["nodes"].as_array().unwrap().len(), 4);
+    assert_eq!(value["nodes"].as_array().unwrap().len(), 5);
     assert!(value["nodes"]
         .as_array()
         .unwrap()
         .iter()
-        .all(|node| node["id"] != "debt"));
+        .any(|node| node["id"] == "free_spending"));
+    assert!(value["nodes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|node| node["id"] == "savings"));
     assert!(value["links"]
         .as_array()
         .unwrap()

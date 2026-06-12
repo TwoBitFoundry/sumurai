@@ -213,7 +213,7 @@ describe('useSankey', () => {
 
     await act(async () => {
       deferred.resolve({
-        nodes: [{ id: 'surplus', label: 'Surplus', kind: 'Surplus' }],
+        nodes: [{ id: 'savings', label: 'Savings', kind: 'Savings' }],
         links: [],
         currency: 'USD',
         summary: {

@@ -14,12 +14,26 @@ describe('BottomContextualBar', () => {
     );
 
     const bar = screen.getByTestId('bottom-contextual-bar');
-    const children = Array.from(bar.children);
+    const controls = screen.getByTestId('bottom-contextual-bar-controls');
+    const children = Array.from(controls.children);
 
-    expect(bar.className).toContain('gap-3');
+    expect(controls.className).toContain('gap-3');
     expect(children[0]).toHaveClass('shrink-0');
     expect(children[0]).toContainElement(screen.getByTestId('header-account-filter'));
     expect(children[1]).toHaveClass('min-w-0', 'flex-1');
     expect(children[1]).toContainElement(screen.getByTestId('contextual-menu'));
+    expect(bar).toContainElement(controls);
+  });
+
+  it('renders top content centered across the full bar width', () => {
+    render(
+      <BottomContextualBar topContent={<div data-testid="top-content">Range</div>}>
+        <div data-testid="contextual-menu">Menu</div>
+      </BottomContextualBar>
+    );
+
+    const topRow = screen.getByTestId('bottom-contextual-bar-top');
+    expect(topRow.className).toContain('justify-center');
+    expect(topRow).toContainElement(screen.getByTestId('top-content'));
   });
 });

@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, screen, userEvent, waitFor, within } from 'storybook/test';
 import { BottomContextualBar } from '@/components/BottomContextualBar';
-import { BudgetMonthPillSlider } from '@/features/budgets/components/BudgetMonthPillSlider';
+import {
+  BudgetMonthLabelPill,
+  BudgetMonthPillSlider,
+} from '@/features/budgets/components/BudgetMonthPillSlider';
 import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import { sampleFixedExpenses } from '@/storybook/fixtures/fixed-expenses';
@@ -92,9 +95,10 @@ function BudgetsJourney() {
     <AccountFilterStoryProvider>
       <StoryApiScope handlers={handlers}>
         <BudgetsPage monthControl={monthControl} />
-        <BottomContextualBar>
+        <BottomContextualBar
+          topContent={<BudgetMonthLabelPill monthLabel={monthControl.monthLabel} />}
+        >
           <BudgetMonthPillSlider
-            monthLabel={monthControl.monthLabel}
             onPreviousMonth={monthControl.goToPreviousMonth}
             onNextMonth={monthControl.goToNextMonth}
             onCurrentMonth={monthControl.goToCurrentMonth}

@@ -2,7 +2,10 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { BottomContextualBar } from '@/components/BottomContextualBar';
-import { DateRangePillSlider } from '@/features/analytics/components/DateRangePillSlider';
+import {
+  DateRangeLabelPill,
+  DateRangePillSlider,
+} from '@/features/analytics/components/DateRangePillSlider';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import { sampleSankeySurplus } from '@/storybook/fixtures/analytics';
 import { AuthenticatedScreenShell } from '@/storybook/screenSlices/AuthenticatedScreenShell';
@@ -80,7 +83,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         <AuthenticatedScreenShell
           currentTab="dashboard"
           bottomBarContent={
-            <BottomContextualBar>
+            <BottomContextualBar topContent={<DateRangeLabelPill dateRange={dateRange} />}>
               <DateRangePillSlider dateRange={dateRange} onChange={setDateRange} />
             </BottomContextualBar>
           }
@@ -118,9 +121,7 @@ export const HappyPath: Story = {
     await waitFor(() => {
       expect(canvas.getByTestId('sankey-node-income')).toBeVisible();
     });
-    await userEvent.click(
-      canvas.getByRole('button', { name: /show next financial breakdown slide/i })
-    );
+    await userEvent.click(canvas.getByRole('tab', { name: /show balances now/i }));
     await waitFor(() => {
       expect(canvas.getByTestId('balances-chart-plot')).toBeVisible();
     });

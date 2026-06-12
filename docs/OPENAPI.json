@@ -4739,7 +4739,9 @@
           "Expenses",
           "Category",
           "Deficit",
-          "Surplus"
+          "Savings",
+          "FixedExpenses",
+          "FreeSpending"
         ]
       },
       "SankeyResponse": {

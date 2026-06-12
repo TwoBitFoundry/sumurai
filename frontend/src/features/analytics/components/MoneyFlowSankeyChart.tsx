@@ -5,6 +5,7 @@ import { Sankey, Tooltip } from 'recharts';
 import type { SankeyResponse } from '@/types/api';
 import { Alert, cn, EmptyState } from '@/ui/primitives';
 import { sankeyChart, text as uiTextRecipes } from '@/ui/recipes';
+import { getCategoryLabelHex, type ThemeMode } from '@/ui/tokens';
 import { formatCategoryName, getTagThemeForCategory } from '@/utils/categories';
 import type { DateRangeKey } from '@/utils/dateRanges';
 import { fmtUSD } from '@/utils/format';
@@ -117,39 +118,62 @@ function resolveNodeFill(
     return colors.semantic.cash;
   }
   if (node.kind === 'Expenses') {
-    return colors.semantic.netWorth;
+    return colors.semantic.credit;
   }
   if (node.kind === 'Deficit') {
     return colors.semantic.credit;
   }
-  if (node.kind === 'Surplus') {
+  if (node.kind === 'Savings') {
     return colors.semantic.investments;
+  }
+  if (node.kind === 'FixedExpenses') {
+    return colors.semantic.credit;
+  }
+  if (node.kind === 'FreeSpending') {
+    return colors.semantic.loan;
   }
   return getTagThemeForCategory(resolveSankeyCategoryKey(node), accentIndexByName).ringHex;
 }
 
-function resolveSankeyCategoryKey(payload: Pick<SankeyNodePayload, 'id' | 'label' | 'name'>) {
-  return payload.label ?? payload.name ?? payload.id.replace(/^category_/, '');
+function formatSankeyTooltipLabel(label: string) {
+  return label
+    .replace(/^(?:expenses|fixed expenses|free spending)\s*[-–—:→]\s*/i, '')
+    .replace(/^(?:expenses|fixed expenses|free spending)\s+→\s*/i, '')
+    .replace(/\s*[-–—:→]\s*(?:expenses|fixed expenses|free spending)$/i, '')
+    .trim();
+}
+
+function isSankeyCategoryNode(payload: Pick<SankeyNodePayload, 'id' | 'kind'>) {
+  return payload.kind === 'Category' || (payload.id?.startsWith('category_') ?? false);
+}
+
+function isSankeyNodePayload(payload: unknown): payload is SankeyNodePayload {
+  return (
+    payload != null &&
+    typeof payload === 'object' &&
+    'kind' in payload &&
+    typeof (payload as SankeyNodePayload).kind === 'string'
+  );
+}
+
+function resolveSankeyCategoryKey(
+  payload: Pick<SankeyNodePayload, 'id' | 'label' | 'name' | 'kind'>
+) {
+  const raw =
+    payload.label ?? payload.name ?? (payload.id ? payload.id.replace(/^category_/, '') : '');
+  return formatSankeyTooltipLabel(raw);
 }
 
 function resolveNodeLabel(payload: SankeyNodePayload) {
-  if (payload.kind === 'Category') {
+  if (isSankeyCategoryNode(payload)) {
     return formatCategoryName(resolveSankeyCategoryKey(payload));
   }
-  return payload.label ?? payload.name ?? formatCategoryName(payload.id);
-}
-
-function formatSankeyTooltipLabel(label: string) {
-  return label
-    .replace(/^expenses\s*[-–—:]\s*/i, '')
-    .replace(/^expenses\s+→\s*/i, '')
-    .replace(/\s*[-–—:]\s*expenses$/i, '')
-    .trim();
+  return payload.label ?? payload.name ?? formatCategoryName(payload.id ?? '');
 }
 
 function resolveTooltipLabel(entry: SankeyNodePayload | SankeyLinkPayload, fallback?: string) {
   if (isSankeyLinkPayload(entry)) {
-    if (entry.target.kind === 'Category') {
+    if (isSankeyCategoryNode(entry.target)) {
       return resolveNodeLabel(entry.target);
     }
 
@@ -160,33 +184,27 @@ function resolveTooltipLabel(entry: SankeyNodePayload | SankeyLinkPayload, fallb
     return `${resolveNodeLabel(entry.source)} → ${resolveNodeLabel(entry.target)}`;
   }
 
-  const entryLabel = resolveNodeLabel(entry);
-  return formatCategoryName(formatSankeyTooltipLabel(entryLabel || fallback || ''));
+  if (isSankeyNodePayload(entry)) {
+    const entryLabel = resolveNodeLabel(entry);
+    return formatCategoryName(formatSankeyTooltipLabel(entryLabel || fallback || ''));
+  }
+
+  return formatCategoryName(formatSankeyTooltipLabel(fallback ?? ''));
 }
 
-function resolveNodeLabelClass(
+function resolveNodeLabelFill(
   payload: SankeyNodePayload,
-  accentIndexByName: ReadonlyMap<string, number>
+  colors: ReturnType<typeof useTheme>['colors'],
+  accentIndexByName: ReadonlyMap<string, number>,
+  mode: ThemeMode
 ) {
-  if (payload.kind === 'Category') {
-    return cn(
-      ...sankeyChart.nodeLabel,
-      getTagThemeForCategory(resolveSankeyCategoryKey(payload), accentIndexByName).inlineLabel
+  if (isSankeyCategoryNode(payload)) {
+    return getCategoryLabelHex(
+      getTagThemeForCategory(resolveSankeyCategoryKey(payload), accentIndexByName),
+      mode
     );
   }
-  if (payload.kind === 'Income') {
-    return cn(...sankeyChart.nodeLabel, ...sankeyChart.nodeLabelIncome);
-  }
-  if (payload.kind === 'Expenses') {
-    return cn(...sankeyChart.nodeLabel, ...sankeyChart.nodeLabelExpenses);
-  }
-  if (payload.kind === 'Deficit') {
-    return cn(...sankeyChart.nodeLabel, ...sankeyChart.nodeLabelDebt);
-  }
-  if (payload.kind === 'Surplus') {
-    return cn(...sankeyChart.nodeLabel, ...sankeyChart.nodeLabelSurplus);
-  }
-  return cn(...sankeyChart.nodeLabel, uiTextRecipes.primary);
+  return resolveNodeFill(payload, colors, accentIndexByName);
 }
 
 function resolveLinkStroke(
@@ -197,16 +215,28 @@ function resolveLinkStroke(
   if (link.target.kind === 'Category') {
     return getTagThemeForCategory(resolveSankeyCategoryKey(link.target), accentIndexByName).ringHex;
   }
+  if (link.target.kind === 'Savings') {
+    return colors.semantic.investments;
+  }
+  if (link.target.kind === 'FixedExpenses') {
+    return colors.semantic.credit;
+  }
+  if (link.target.kind === 'FreeSpending') {
+    return colors.semantic.loan;
+  }
   if (link.source.kind === 'Income') {
     return colors.semantic.cash;
   }
   if (link.source.kind === 'Deficit') {
     return colors.semantic.credit;
   }
-  if (link.source.kind === 'Surplus') {
+  if (link.source.kind === 'Expenses') {
+    return colors.semantic.credit;
+  }
+  if (link.source.kind === 'Savings') {
     return colors.semantic.investments;
   }
-  return colors.semantic.netWorth;
+  return colors.semantic.credit;
 }
 
 function isSankeyLinkPayload(
@@ -216,8 +246,19 @@ function isSankeyLinkPayload(
     payload != null &&
     'source' in payload &&
     'target' in payload &&
-    'sourceId' in payload &&
-    'targetId' in payload
+    typeof payload.source === 'object' &&
+    typeof payload.target === 'object' &&
+    'value' in payload
+  );
+}
+
+function SankeyNodeGlowDefs() {
+  return (
+    <defs>
+      <filter id={sankeyChart.nodeGlow.filterId} x="-100%" y="-100%" width="300%" height="300%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation={sankeyChart.nodeGlow.blurStdDeviation} />
+      </filter>
+    </defs>
   );
 }
 
@@ -226,40 +267,49 @@ function SankeyNodeShape({
   y,
   width,
   height,
+  value,
   payload,
   colors,
+  mode,
   accentIndexByName,
 }: SankeyNodeProps & {
+  value?: number;
   payload: SankeyNodePayload;
   colors: ReturnType<typeof useTheme>['colors'];
+  mode: ThemeMode;
   accentIndexByName: ReadonlyMap<string, number>;
 }) {
   const nodeX = useSankeyNodeScalar(payload.id, 'x', x);
   const nodeY = useSankeyNodeScalar(payload.id, 'y', y);
   const nodeWidth = useSankeyNodeScalar(payload.id, 'width', width);
   const nodeHeight = useSankeyNodeScalar(payload.id, 'height', height);
+
   const fill = resolveNodeFill(payload, colors, accentIndexByName);
   const label = resolveNodeLabel(payload);
-  const amount = fmtUSD(normalizeAmount(payload.value));
-  const showLabel = height >= 18;
-  const showPercent = height >= 28 && payload.percentOfExpenses != null;
+  const amount = fmtUSD(normalizeAmount(value ?? payload.value));
+  const isTopHub = payload.kind === 'Expenses' || payload.kind === 'FreeSpending';
+  const isBottomHub = payload.kind === 'Savings' || payload.kind === 'FixedExpenses';
+  const isHubNode = isTopHub || isBottomHub;
+  const showLabel = isHubNode || height >= 18;
+  const showCategoryPercent =
+    payload.kind === 'Category' && height >= 16 && payload.percentOfExpenses != null;
+  const showSourcePercent =
+    (payload.kind === 'Income' || payload.kind === 'Deficit') &&
+    height >= 16 &&
+    payload.percentOfExpenses != null;
+  const showSavingsPercent =
+    payload.kind === 'Savings' && height >= 16 && payload.percentOfExpenses != null;
   const centerY = nodeY + nodeHeight / 2;
-  const percentX =
-    payload.kind === 'Category' || payload.kind === 'Surplus' ? nodeX + nodeWidth + 10 : nodeX - 10;
-  const anchor =
-    payload.kind === 'Expenses'
-      ? 'middle'
-      : payload.kind === 'Category' || payload.kind === 'Surplus'
-        ? 'end'
-        : 'start';
-  const labelX =
-    payload.kind === 'Expenses'
-      ? nodeX + nodeWidth / 2
-      : payload.kind === 'Category' || payload.kind === 'Surplus'
-        ? nodeX - 10
-        : nodeX + nodeWidth + 10;
-  const valueY = payload.kind === 'Expenses' ? nodeY - 10 : centerY + 14;
-  const labelY = payload.kind === 'Expenses' ? nodeY - 26 : centerY - 6;
+  const percentX = payload.kind === 'Category' ? nodeX + nodeWidth + 10 : nodeX - 10;
+  const anchor = isHubNode ? 'middle' : payload.kind === 'Category' ? 'end' : 'start';
+  const labelX = isHubNode
+    ? nodeX + nodeWidth / 2
+    : payload.kind === 'Category'
+      ? nodeX - 10
+      : nodeX + nodeWidth + 10;
+  const labelY = isTopHub ? nodeY - 26 : isBottomHub ? nodeY + nodeHeight + 14 : centerY - 6;
+  const valueY = isTopHub ? nodeY - 10 : isBottomHub ? nodeY + nodeHeight + 30 : centerY + 14;
+  const savingsPercentY = nodeY + nodeHeight + 46;
   const percentTransform = `rotate(270 ${percentX} ${centerY})`;
 
   return (
@@ -272,8 +322,19 @@ function SankeyNodeShape({
         rx={8}
         ry={8}
         fill={fill}
-        stroke={colors.chart.grid}
-        strokeOpacity={0.28}
+        fillOpacity={sankeyChart.nodeGlow.opacity}
+        filter={`url(#${sankeyChart.nodeGlow.filterId})`}
+      />
+      <rect
+        x={nodeX}
+        y={nodeY}
+        width={nodeWidth}
+        height={nodeHeight}
+        rx={8}
+        ry={8}
+        fill={fill}
+        stroke={fill}
+        strokeOpacity={sankeyChart.nodeGlow.strokeOpacity}
       />
       {showLabel ? (
         <>
@@ -281,7 +342,8 @@ function SankeyNodeShape({
             x={labelX}
             y={labelY}
             textAnchor={anchor}
-            className={resolveNodeLabelClass(payload, accentIndexByName)}
+            fill={resolveNodeLabelFill(payload, colors, accentIndexByName, mode)}
+            className={cn(...sankeyChart.nodeLabel)}
           >
             {label}
           </text>
@@ -290,13 +352,35 @@ function SankeyNodeShape({
           </text>
         </>
       ) : null}
-      {showPercent ? (
+      {showSourcePercent ? (
         <text
           x={percentX}
           y={centerY}
           textAnchor="middle"
           dominantBaseline="middle"
           transform={percentTransform}
+          className={cn(...sankeyChart.nodePercent)}
+        >
+          {formatSankeyPercent(payload.percentOfExpenses)}
+        </text>
+      ) : null}
+      {showCategoryPercent ? (
+        <text
+          x={percentX}
+          y={centerY}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          transform={percentTransform}
+          className={cn(...sankeyChart.nodePercent)}
+        >
+          {formatSankeyPercent(payload.percentOfExpenses)}
+        </text>
+      ) : null}
+      {showSavingsPercent ? (
+        <text
+          x={labelX}
+          y={savingsPercentY}
+          textAnchor="middle"
           className={cn(...sankeyChart.nodePercent)}
         >
           {formatSankeyPercent(payload.percentOfExpenses)}
@@ -321,7 +405,7 @@ export function SankeyTooltipContent({
     return null;
   }
 
-  const tooltipLabel = resolveTooltipLabel(entry, String(label ?? ''));
+  const tooltipLabel = resolveTooltipLabel(entry, String(label ?? payload[0]?.name ?? ''));
   const tooltipAmount = fmtUSD(normalizeAmount(payload[0]?.value ?? entry.value));
   const tooltipPercentValue =
     entry.percentOfExpenses ??
@@ -392,7 +476,7 @@ function MoneyFlowSankeyChartContent({
   loading = false,
   error = null,
 }: MoneyFlowSankeyChartContentProps) {
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
   const {
     ref: chartContainerRef,
     width: measuredWidth,
@@ -400,6 +484,7 @@ function MoneyFlowSankeyChartContent({
   } = useChartContainerSize();
   const chartData = useMemo<SankeyChartData>(() => sankeyResponseToChartData(data), [data]);
   const categoryNodes = chartData.nodes.filter((node) => node.kind === 'Category');
+  const chartMargin = sankeyChart.margin;
   const layoutWidth = containerSize?.width ?? measuredWidth;
   const layoutHeight = containerSize?.height ?? measuredHeight;
   const naturalLayout = useMemo(
@@ -452,19 +537,22 @@ function MoneyFlowSankeyChartContent({
         {layoutWidth > 0 && chartHeight > 0 ? (
           <SankeyAnimationProvider>
             <Sankey
+              key={`${layoutWidth}x${chartHeight}`}
               width={layoutWidth}
               height={chartHeight}
               data={chartData}
               nodePadding={chartNodePadding}
               nodeWidth={14}
               iterations={32}
-              margin={sankeyChart.margin}
+              margin={chartMargin}
+              align="left"
               verticalAlign="justify"
               node={(props) => (
                 <SankeyNodeShape
                   {...props}
                   payload={props.payload as unknown as SankeyNodePayload}
                   colors={colors}
+                  mode={mode}
                   accentIndexByName={accentIndexByName}
                 />
               )}
@@ -477,6 +565,7 @@ function MoneyFlowSankeyChartContent({
                 />
               )}
             >
+              <SankeyNodeGlowDefs />
               <Tooltip
                 cursor={false}
                 content={(props) => (
