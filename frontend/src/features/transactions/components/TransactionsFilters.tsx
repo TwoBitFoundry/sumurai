@@ -1,9 +1,9 @@
 import { Search } from 'lucide-react';
 import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CustomCategory } from '@/types/api';
 import { Button, cn, Input } from '@/ui/primitives';
-import { pillScrollFadeRecipes } from '@/ui/primitives/Pill';
+import { buildPillScrollMask, pillScrollFadeRecipes } from '@/ui/primitives/Pill';
 import {
   control,
   placeholder as uiPlaceholderRecipes,
@@ -25,7 +25,6 @@ interface Props {
   showSearch?: boolean;
   showCategories?: boolean;
   showFilterLabel?: boolean;
-  scrollFadeSurface?: keyof typeof pillScrollFadeRecipes;
 }
 
 export const TransactionsFilters: React.FC<Props> = ({
@@ -38,9 +37,7 @@ export const TransactionsFilters: React.FC<Props> = ({
   showSearch = true,
   showCategories = true,
   showFilterLabel = true,
-  scrollFadeSurface = 'card',
 }) => {
-  const scrollFade = pillScrollFadeRecipes[scrollFadeSurface];
   const { accentIndexByName } = useCategories();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [deleteTarget, setDeleteTarget] = useState<CustomCategory | null>(null);
@@ -51,13 +48,16 @@ export const TransactionsFilters: React.FC<Props> = ({
     const el = scrollContainerRef.current;
     if (!el) return;
 
-    setShowLeftFade(el.scrollLeft > 0);
-    setShowRightFade(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
+    const maxScrollLeft = Math.max(0, el.scrollWidth - el.clientWidth);
+    setShowLeftFade(el.scrollLeft > 1);
+    setShowRightFade(el.scrollLeft < maxScrollLeft - 1);
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     checkScroll();
+  }, [checkScroll]);
 
+  useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) {
       return;
@@ -84,6 +84,8 @@ export const TransactionsFilters: React.FC<Props> = ({
     });
     return () => cancelAnimationFrame(frame);
   }, [categories.length, showCategories, checkScroll]);
+
+  const scrollMask = buildPillScrollMask(showLeftFade, showRightFade);
 
   const handleDeleteSuccess = () => {
     if (deleteTarget && selectedCategory === deleteTarget.display_name) {
@@ -144,21 +146,17 @@ export const TransactionsFilters: React.FC<Props> = ({
               Filter
             </span>
           ) : null}
-          <div className={cn('relative', 'min-w-0', 'w-full', 'md:flex-1', 'overflow-hidden')}>
+          <div className={cn(...pillScrollFadeRecipes.container)}>
             <div
               ref={scrollContainerRef}
               onScroll={checkScroll}
-              className={cn(
-                'scrollbar-hide',
-                'flex',
-                'items-center',
-                'gap-1',
-                'overflow-x-auto',
-                'px-1',
-                'pb-1',
-                'pt-1'
-              )}
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              className={cn(...pillScrollFadeRecipes.scroll)}
+              style={{
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                maskImage: scrollMask,
+                WebkitMaskImage: scrollMask,
+              }}
             >
               {categories.map((name) => {
                 const isSelected = selectedCategory === name;
@@ -172,7 +170,7 @@ export const TransactionsFilters: React.FC<Props> = ({
                   <span
                     key={name}
                     className={cn(
-                      'group relative inline-flex items-center',
+                      'group relative inline-flex shrink-0 items-center',
                       isCustom && 'transition-all duration-200 ease-out hover:-translate-y-[2px]'
                     )}
                   >
@@ -244,8 +242,6 @@ export const TransactionsFilters: React.FC<Props> = ({
                 );
               })}
             </div>
-            {showLeftFade ? <div className={scrollFade.left} /> : null}
-            {showRightFade ? <div className={scrollFade.right} /> : null}
           </div>
         </div>
       )}

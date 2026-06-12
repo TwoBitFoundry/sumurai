@@ -73,6 +73,56 @@ pub enum BalanceCategory {
     Investments,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+pub enum SankeyNodeKind {
+    Income,
+    Expenses,
+    Category,
+    Deficit,
+    Savings,
+    FixedExpenses,
+    FreeSpending,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct SankeyNode {
+    pub id: String,
+    pub label: String,
+    pub kind: SankeyNodeKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct SankeyLink {
+    pub source: String,
+    pub target: String,
+    #[schema(value_type = String)]
+    pub value: Decimal,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct SankeySummary {
+    #[schema(value_type = String)]
+    pub income: Decimal,
+    #[schema(value_type = String)]
+    pub expenses: Decimal,
+    #[schema(value_type = String)]
+    pub covered: Decimal,
+    #[schema(value_type = String)]
+    pub deficit: Decimal,
+    #[schema(value_type = String)]
+    pub surplus: Decimal,
+    #[schema(value_type = Option<String>)]
+    pub coverage_ratio: Option<Decimal>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct SankeyResponse {
+    pub nodes: Vec<SankeyNode>,
+    pub links: Vec<SankeyLink>,
+    pub currency: String,
+    pub summary: SankeySummary,
+}
+
 pub struct DateRangeQuery {
     pub start_date: Option<String>,
     pub end_date: Option<String>,

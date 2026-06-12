@@ -355,6 +355,8 @@ export const dashboardCategoryCard = {
     'transition-all duration-300',
     'hover:!border-[var(--dashboard-category-card-hover-border)]',
   ],
+  metricRow: ['flex min-w-0 items-center justify-between gap-x-2 gap-y-1'],
+  metricCluster: ['flex min-w-0 flex-wrap items-baseline justify-end gap-x-2 gap-y-0.5'],
 } as const;
 
 export const modalBackdrop = {
@@ -416,6 +418,62 @@ export const chartTooltip = {
   fade: ['transition-opacity', 'ease-out', 'duration-200'],
   label: [font.caption, text.muted],
   row: [font.captionStrong, text.body],
+} as const;
+
+export const sankeyChart = {
+  shell: [
+    'flex',
+    'min-h-0',
+    'min-w-0',
+    'h-full',
+    'w-full',
+    'flex-1',
+    'flex-col',
+    'overflow-visible',
+  ],
+  viewport: [
+    'h-full',
+    'min-h-[280px]',
+    'min-w-0',
+    'w-full',
+    'flex-1',
+    'overflow-visible',
+    '[&_.recharts-wrapper]:overflow-visible',
+    '[&_.recharts-surface]:overflow-visible',
+  ],
+  emptyState: ['min-h-[280px]'],
+  nodeLabel: [font.badge],
+  nodeMeta: [font.cardTitle, text.primary, 'fill-current'],
+  nodePercent: [font.caption, text.muted, 'fill-current'],
+  nodeGlow: {
+    filterId: 'sankey-node-glow-blur',
+    opacity: 0.55,
+    blurStdDeviation: 5,
+    strokeOpacity: 0.38,
+  },
+  margin: { top: 8, right: 24, bottom: 28, left: 24 },
+  animationDurationMs: 800,
+} as const;
+
+export const dashboardStatsCarousel = {
+  shell: ['flex', 'min-w-0', 'flex-col', 'gap-4'],
+  header: ['flex', 'items-center', 'justify-between', 'gap-3'],
+  label: [font.captionStrong, text.muted],
+  viewport: ['flex', 'min-h-[280px]', 'w-full', 'flex-col', 'overflow-hidden'],
+  panelStack: [
+    'grid',
+    'min-h-[280px]',
+    'w-full',
+    'min-w-0',
+    'overflow-visible',
+    '[&>*]:col-start-1',
+    '[&>*]:row-start-1',
+    '[&>*]:min-h-0',
+    '[&>*]:w-full',
+  ],
+  panel: ['flex', 'min-h-[280px]', 'min-h-0', 'min-w-0', 'flex-col', 'overflow-visible'],
+  panelActive: ['relative', 'z-10'],
+  panelHidden: ['invisible', 'pointer-events-none', 'z-0'],
 } as const;
 
 export const transactionsTable = {

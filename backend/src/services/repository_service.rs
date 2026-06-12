@@ -114,7 +114,11 @@ pub trait DatabaseRepository: Send + Sync {
     async fn update_user_provider(&self, user_id: &Uuid, provider: &str) -> Result<()>;
 
     async fn get_transactions_for_user(&self, user_id: &Uuid) -> Result<Vec<Transaction>>;
-    async fn get_spending_transactions_for_user(&self, user_id: &Uuid) -> Result<Vec<Transaction>>;
+    async fn get_spending_transactions_for_user(
+        &self,
+        user_id: &Uuid,
+        account_ids: Option<&[Uuid]>,
+    ) -> Result<Vec<Transaction>>;
     async fn get_transactions_with_account_for_user(
         &self,
         user_id: &Uuid,
@@ -135,6 +139,7 @@ pub trait DatabaseRepository: Send + Sync {
         user_id: &Uuid,
         start_date: chrono::NaiveDate,
         end_date: chrono::NaiveDate,
+        account_ids: Option<&[Uuid]>,
     ) -> Result<Vec<Transaction>>;
     async fn get_monthly_cash_flow_aggregates_for_user(
         &self,
@@ -1539,22 +1544,40 @@ impl DatabaseRepository for PostgresRepository {
         Ok(rows.into_iter().map(Into::into).collect())
     }
 
-    async fn get_spending_transactions_for_user(&self, user_id: &Uuid) -> Result<Vec<Transaction>> {
+    async fn get_spending_transactions_for_user(
+        &self,
+        user_id: &Uuid,
+        account_ids: Option<&[Uuid]>,
+    ) -> Result<Vec<Transaction>> {
+        if matches!(account_ids, Some([])) {
+            return Ok(Vec::new());
+        }
+
         let user_id = *user_id;
+        let account_ids = account_ids.map(|ids| ids.to_vec());
         let rows = self
             .with_tenant(&user_id, move |txn| {
                 Box::pin(async move {
-                    Ok(Self::transaction_with_effective_category_select(
+                    let mut query = Self::transaction_with_effective_category_select(
                         Self::transactions_with_category_override_join(),
                     )
                     .filter(transactions::Column::UserId.eq(user_id))
                     .filter(Self::spending_category_filter())
                     .order_by_desc(transactions::Column::Date)
-                    .order_by_desc(transactions::Column::CreatedAt)
-                    .limit(1000)
-                    .into_model::<EffectiveCategoryTransactionRow>()
-                    .all(txn)
-                    .await?)
+                    .order_by_desc(transactions::Column::CreatedAt);
+
+                    if let Some(ref ids) = account_ids {
+                        if !ids.is_empty() {
+                            query =
+                                query.filter(transactions::Column::AccountId.is_in(ids.clone()));
+                        }
+                    }
+
+                    Ok(query
+                        .limit(1000)
+                        .into_model::<EffectiveCategoryTransactionRow>()
+                        .all(txn)
+                        .await?)
                 })
             })
             .await?;
@@ -2225,12 +2248,18 @@ impl DatabaseRepository for PostgresRepository {
         user_id: &Uuid,
         start_date: chrono::NaiveDate,
         end_date: chrono::NaiveDate,
+        account_ids: Option<&[Uuid]>,
     ) -> Result<Vec<Transaction>> {
+        if matches!(account_ids, Some([])) {
+            return Ok(Vec::new());
+        }
+
         let user_id = *user_id;
+        let account_ids = account_ids.map(|ids| ids.to_vec());
         let rows = self
             .with_tenant(&user_id, move |txn| {
                 Box::pin(async move {
-                    Ok(Self::transaction_with_effective_category_select(
+                    let mut query = Self::transaction_with_effective_category_select(
                         Self::transactions_with_category_override_join(),
                     )
                     .filter(transactions::Column::UserId.eq(user_id))
@@ -2238,11 +2267,20 @@ impl DatabaseRepository for PostgresRepository {
                     .filter(transactions::Column::Date.lte(end_date))
                     .filter(Self::spending_category_filter())
                     .order_by_desc(transactions::Column::Date)
-                    .order_by_desc(transactions::Column::CreatedAt)
-                    .limit(1000)
-                    .into_model::<EffectiveCategoryTransactionRow>()
-                    .all(txn)
-                    .await?)
+                    .order_by_desc(transactions::Column::CreatedAt);
+
+                    if let Some(ref ids) = account_ids {
+                        if !ids.is_empty() {
+                            query =
+                                query.filter(transactions::Column::AccountId.is_in(ids.clone()));
+                        }
+                    }
+
+                    Ok(query
+                        .limit(1000)
+                        .into_model::<EffectiveCategoryTransactionRow>()
+                        .all(txn)
+                        .await?)
                 })
             })
             .await?;

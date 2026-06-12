@@ -1,5 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { DateRangePillSlider } from '@/features/analytics/components/DateRangePillSlider';
+import {
+  DateRangeLabelPill,
+  DateRangePillSlider,
+} from '@/features/analytics/components/DateRangePillSlider';
+import { formatDateRangeLabel } from '@/utils/dateRanges';
 
 describe('DateRangePillSlider', () => {
   it('renders compact labels and calls onChange with the selected range', () => {
@@ -35,8 +39,16 @@ describe('DateRangePillSlider', () => {
   it('constrains the pill shell so it can shrink beside the account filter', () => {
     render(<DateRangePillSlider dateRange="current-month" onChange={jest.fn()} />);
 
-    const shell = screen.getByRole('button', { name: '1M' }).parentElement;
-    expect(shell?.className).toContain('min-w-0');
-    expect(shell?.className).toContain('overflow-x-auto');
+    const shell = screen.getByTestId('date-range-pill-slider');
+    expect(shell.className).toContain('min-w-0');
+    expect(shell.className).toContain('overflow-x-auto');
+  });
+
+  it('shows the selected date range in a non-interactive pill', () => {
+    render(<DateRangeLabelPill dateRange="current-month" />);
+
+    expect(screen.getByLabelText(/selected date range:/i)).toHaveTextContent(
+      formatDateRangeLabel('current-month')
+    );
   });
 });

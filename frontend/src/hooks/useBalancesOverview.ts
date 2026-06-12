@@ -9,6 +9,24 @@ import type { BalancesOverview } from '../types/analytics';
 import { accountIdsCacheKey, accountRosterCacheKey } from '../utils/cacheKeys';
 import { useAccountFilter } from './useAccountFilter';
 
+const EMPTY_TOTALS = {
+  cash: 0,
+  credit: 0,
+  loan: 0,
+  investments: 0,
+  positivesTotal: 0,
+  negativesTotal: 0,
+  net: 0,
+  ratio: null,
+} as const;
+
+const EMPTY_BALANCES: BalancesOverview = {
+  asOf: '',
+  overall: EMPTY_TOTALS,
+  banks: [],
+  mixedCurrency: false,
+};
+
 export type UseBalancesOverview = {
   loading: boolean;
   refreshing: boolean;
@@ -34,7 +52,7 @@ export function useBalancesOverview(): UseBalancesOverview {
     enabled: !accountsLoading,
     queryFn: async () => {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
-        return null;
+        return EMPTY_BALANCES;
       }
 
       const accountIds =

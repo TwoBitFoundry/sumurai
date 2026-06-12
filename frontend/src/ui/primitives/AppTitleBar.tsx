@@ -1,5 +1,4 @@
 import { cva } from 'class-variance-authority';
-import { motion } from 'framer-motion';
 import {
   ArrowLeftRight,
   Building2,
@@ -155,8 +154,6 @@ export const TABS: Array<{
   { key: 'accounts', label: 'Accounts', icon: Building2 },
 ];
 
-export const APP_TITLE_BAR_ACTIVE_PILL_LAYOUT_ID = 'title-bar-pill-active';
-
 export interface AppTitleBarProps {
   state: 'unauthenticated' | 'onboarding' | 'authenticated';
   scrolled: boolean;
@@ -222,15 +219,6 @@ export const AppTitleBar = ({
                 : ['!px-0', 'aspect-square', '!gap-0', semanticTextRecipes.muted]
             )}
           >
-            {currentTab === key ? (
-              <motion.div
-                layout
-                layoutId={APP_TITLE_BAR_ACTIVE_PILL_LAYOUT_ID}
-                data-slot="active-pill"
-                className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
-                transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-              />
-            ) : null}
             <span className={cn('relative z-10 shrink-0', ...appTitleBarRecipes.pillTabIconWell)}>
               <Icon className={cn(...appTitleBarRecipes.pillTabIcon)} />
             </span>

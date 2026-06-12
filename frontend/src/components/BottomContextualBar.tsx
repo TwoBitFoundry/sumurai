@@ -2,16 +2,42 @@ import type { ReactNode } from 'react';
 import { cn } from '@/ui/primitives';
 import { HeaderAccountFilter } from './HeaderAccountFilter';
 
-export function BottomContextualBar({ children }: { children: ReactNode }) {
+export function BottomContextualBar({
+  children,
+  topContent,
+}: {
+  children: ReactNode;
+  topContent?: ReactNode;
+}) {
   return (
     <div
-      className={cn('flex', 'w-full', 'min-w-0', 'max-w-full', 'items-center', 'gap-3')}
+      className={cn(
+        'flex',
+        'w-full',
+        'min-w-0',
+        'max-w-full',
+        'flex-col',
+        topContent ? 'gap-1.5' : undefined
+      )}
       data-testid="bottom-contextual-bar"
     >
-      <div className={cn('shrink-0')}>
-        <HeaderAccountFilter triggerStyle="icon-only" />
+      {topContent ? (
+        <div
+          className={cn('flex', 'w-full', 'justify-center')}
+          data-testid="bottom-contextual-bar-top"
+        >
+          {topContent}
+        </div>
+      ) : null}
+      <div
+        className={cn('flex', 'w-full', 'min-w-0', 'max-w-full', 'items-center', 'gap-3')}
+        data-testid="bottom-contextual-bar-controls"
+      >
+        <div className={cn('shrink-0')}>
+          <HeaderAccountFilter triggerStyle="icon-only" />
+        </div>
+        <div className={cn('min-w-0', 'flex-1')}>{children}</div>
       </div>
-      <div className={cn('min-w-0', 'flex-1')}>{children}</div>
     </div>
   );
 }

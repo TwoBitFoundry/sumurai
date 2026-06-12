@@ -887,7 +887,7 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
 
     mock_db
         .expect_get_spending_transactions_for_user()
-        .returning(move |_| {
+        .returning(move |_, _| {
             let transactions = vec![
                 Transaction {
                     id: Uuid::new_v4(),
@@ -980,7 +980,7 @@ async fn given_authenticated_user_when_get_spending_with_foreign_account_ids_the
 
     mock_db
         .expect_get_spending_transactions_for_user()
-        .returning(move |_| Box::pin(async { Ok(vec![]) }));
+        .returning(move |_, _| Box::pin(async { Ok(vec![]) }));
 
     mock_db
         .expect_get_all_provider_connections_by_user()
@@ -1066,7 +1066,7 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
 
     mock_db
         .expect_get_spending_transactions_for_user()
-        .returning(move |_| {
+        .returning(move |_, _| {
             let transactions = vec![
                 Transaction {
                     id: Uuid::new_v4(),
@@ -1162,7 +1162,7 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
 
     mock_db
         .expect_get_spending_transactions_for_user()
-        .returning(move |_| {
+        .returning(move |_, _| {
             let transactions = vec![
                 Transaction {
                     id: Uuid::new_v4(),
@@ -1292,7 +1292,7 @@ async fn given_authenticated_user_when_get_categories_with_foreign_account_ids_t
 
     mock_db
         .expect_get_spending_transactions_for_user()
-        .returning(move |_| Box::pin(async { Ok(vec![]) }));
+        .returning(move |_, _| Box::pin(async { Ok(vec![]) }));
 
     mock_db
         .expect_get_all_provider_connections_by_user()

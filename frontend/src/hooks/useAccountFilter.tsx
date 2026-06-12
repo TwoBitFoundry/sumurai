@@ -8,6 +8,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -124,7 +125,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
     channelRef.current?.postMessage({ type: 'filter-changed', selectedIds: selectedAccountIds });
   }, [selectedAccountIds]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const previousAllAccountIds = previousAllAccountIdsRef.current;
 
     setSelectedAccountIds((prev) => {

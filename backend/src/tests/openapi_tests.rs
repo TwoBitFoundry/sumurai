@@ -175,6 +175,39 @@ fn given_export_when_generating_openapi_then_documents_endpoint_and_query_params
 }
 
 #[test]
+fn given_sankey_when_generating_openapi_then_documents_endpoint_and_schemas() {
+    let spec = serde_json::to_value(init_openapi()).unwrap();
+    let path = &spec["paths"]["/api/analytics/sankey"]["get"];
+
+    assert_eq!(path["tags"], serde_json::json!(["Analytics"]));
+    assert_eq!(
+        path["parameters"][0]["name"],
+        serde_json::json!("start_date")
+    );
+    assert_eq!(path["parameters"][1]["name"], serde_json::json!("end_date"));
+    assert_eq!(
+        path["parameters"][2]["name"],
+        serde_json::json!("account_ids")
+    );
+    assert_eq!(
+        path["responses"]["200"]["content"]["application/json"]["schema"]["$ref"],
+        serde_json::json!("#/components/schemas/SankeyResponse")
+    );
+    assert_eq!(
+        path["responses"]["400"]["description"],
+        serde_json::json!("Bad request")
+    );
+    assert_eq!(
+        spec["components"]["schemas"]["SankeyNodeKind"]["type"],
+        serde_json::json!("string")
+    );
+    assert_eq!(
+        spec["components"]["schemas"]["SankeyResponse"]["type"],
+        serde_json::json!("object")
+    );
+}
+
+#[test]
 #[ignore]
 fn regenerate_openapi_artifacts() {
     let spec = serde_json::to_string_pretty(&init_openapi()).unwrap();

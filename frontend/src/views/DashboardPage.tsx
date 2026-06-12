@@ -11,12 +11,14 @@ import {
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import BalancesOverview from '../components/BalancesOverview';
+import { BalancesOverviewSummary } from '../components/BalancesOverview';
+import DashboardStatsCarousel from '../components/DashboardStatsCarousel';
 import { useTheme } from '../context/ThemeContext';
 import { DashboardCalculator } from '../domain/DashboardCalculator';
 import { categoriesToDonut } from '../features/analytics/adapters/chartData';
 import { BudgetVsActualChart } from '../features/analytics/components/BudgetVsActualChart';
 import { CashFlowChart } from '../features/analytics/components/CashFlowChart';
+import { ChartFadePresence } from '../features/analytics/components/ChartFadePresence';
 import {
   ChartGlassTooltip,
   chartTooltipRechartsProps,
@@ -99,227 +101,270 @@ const DashboardPage: React.FC<{
       <PageLayout
         title="Appraise the Treasury"
         subtitle="Track your total balances and net worth across accounts."
-        stats={<BalancesOverview />}
+        stats={<BalancesOverviewSummary />}
       >
-        <div
-          className={cn(
-            'grid',
-            'w-full',
-            'min-w-0',
-            'max-w-full',
-            'grid-cols-1',
-            'lg:grid-cols-2',
-            'auto-rows-[minmax(390px,auto)]',
-            'gap-4',
-            'md:gap-6',
-            'items-stretch'
-          )}
-        >
-          <DashboardChartCard
-            className={cn('min-w-0', 'col-span-1')}
-            title="Spending over time"
-            refreshingLabel="Reading the field..."
-            isRefreshing={!analyticsLoading && analyticsRefreshing}
-          >
-            {analyticsLoading && (
-              <div className={cn('mb-2', uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                Fetching analytics
-              </div>
+        <div className={cn('space-y-6')}>
+          <DashboardStatsCarousel dateRange={dateRange} />
+
+          <div
+            className={cn(
+              'grid',
+              'w-full',
+              'min-w-0',
+              'max-w-full',
+              'grid-cols-1',
+              'lg:grid-cols-2',
+              'auto-rows-[minmax(390px,auto)]',
+              'gap-4',
+              'md:gap-6',
+              'items-stretch'
             )}
-            {byCat.length === 0 ? (
-              <div className={cn('flex-1', 'min-h-0', 'flex', 'items-center', 'justify-center')}>
-                <SpendingByCategoryChart
-                  data={byCat}
-                  total={monthSpend}
-                  hoveredCategory={hoveredCategory}
-                  setHoveredCategory={setHoveredCategory}
-                />
-              </div>
-            ) : (
-              <div
-                className={cn(
-                  'grid',
-                  'grid-cols-[repeat(auto-fit,minmax(180px,1fr))]',
-                  'flex-1',
-                  'min-h-0',
-                  'gap-4',
-                  'overflow-hidden'
+          >
+            <DashboardChartCard
+              className={cn('min-w-0', 'col-span-1')}
+              title="Spending over time"
+              refreshingLabel="Reading the field..."
+              isRefreshing={!analyticsLoading && analyticsRefreshing}
+            >
+              <ChartFadePresence stateKey={byCat.length === 0 ? 'empty' : 'chart'}>
+                {analyticsLoading && (
+                  <div className={cn('mb-2', uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+                    Fetching analytics
+                  </div>
                 )}
-              >
-                <div className={cn('min-w-0', 'min-h-0', 'flex', 'items-center', 'justify-center')}>
-                  <SpendingByCategoryChart
-                    data={byCat}
-                    total={monthSpend}
-                    hoveredCategory={hoveredCategory}
-                    setHoveredCategory={setHoveredCategory}
-                  />
-                </div>
-                <div
-                  className={cn(
-                    'flex-1',
-                    'min-w-0',
-                    'self-center',
-                    'flex',
-                    'flex-col',
-                    'gap-[length:var(--spacing-compact-gap)]'
-                  )}
-                >
-                  {(() => {
-                    const categorySum = byCat.reduce(
-                      (sum, c) => sum + (Number.isFinite(c.value) ? c.value : 0),
-                      0
-                    );
-                    const top = byCat.slice(0, 5);
-                    return top.map((cat) => {
-                      const percentage =
-                        categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
-                      const isHovered = hoveredCategory === cat.name;
-                      return (
-                        <button
-                          key={`topcard-${cat.name}`}
-                          type="button"
-                          className={cn('p-2', dashboardCategoryCard.shell)}
-                          style={isHovered ? { borderColor: colors.chart.primary[0] } : undefined}
-                          onMouseEnter={() => handleCategoryHover(cat.name)}
-                          onMouseLeave={() => handleCategoryHover(null)}
-                          onClick={() => handleCategoryHover(cat.name)}
-                        >
-                          <div className={cn('flex', 'items-center', 'justify-between', 'gap-2')}>
-                            <Pill
-                              categoryName={cat.categoryKey}
-                              accentIndexByName={accentIndexByName}
-                              className={cn('min-w-0', 'truncate')}
+                {byCat.length === 0 ? (
+                  <div
+                    className={cn('flex-1', 'min-h-0', 'flex', 'items-center', 'justify-center')}
+                  >
+                    <SpendingByCategoryChart
+                      data={byCat}
+                      total={monthSpend}
+                      hoveredCategory={hoveredCategory}
+                      setHoveredCategory={setHoveredCategory}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className={cn(
+                      'grid',
+                      'grid-cols-[repeat(auto-fit,minmax(180px,1fr))]',
+                      'flex-1',
+                      'min-h-0',
+                      'gap-4',
+                      'overflow-hidden'
+                    )}
+                  >
+                    <div
+                      className={cn('min-w-0', 'min-h-0', 'flex', 'items-center', 'justify-center')}
+                    >
+                      <SpendingByCategoryChart
+                        data={byCat}
+                        total={monthSpend}
+                        hoveredCategory={hoveredCategory}
+                        setHoveredCategory={setHoveredCategory}
+                      />
+                    </div>
+                    <div
+                      className={cn(
+                        'flex-1',
+                        'min-w-0',
+                        'self-center',
+                        'flex',
+                        'flex-col',
+                        'gap-[length:var(--spacing-compact-gap)]'
+                      )}
+                    >
+                      {(() => {
+                        const categorySum = byCat.reduce(
+                          (sum, c) => sum + (Number.isFinite(c.value) ? c.value : 0),
+                          0
+                        );
+                        const top = byCat.slice(0, 5);
+                        return top.map((cat) => {
+                          const percentage =
+                            categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
+                          const isHovered = hoveredCategory === cat.name;
+                          return (
+                            <button
+                              key={`topcard-${cat.name}`}
+                              type="button"
+                              className={cn('p-2', dashboardCategoryCard.shell)}
+                              style={
+                                isHovered ? { borderColor: colors.chart.primary[0] } : undefined
+                              }
+                              onMouseEnter={() => handleCategoryHover(cat.name)}
+                              onMouseLeave={() => handleCategoryHover(null)}
+                              onClick={() => handleCategoryHover(cat.name)}
                             >
-                              {cat.name}
-                            </Pill>
-                            <div className={cn('flex', 'items-baseline', 'gap-2', 'shrink-0')}>
-                              <span
-                                className={cn(
-                                  uiTypographyRecipes.cardTitle,
-                                  uiTextRecipes.primary,
-                                  'tabular-nums'
-                                )}
-                              >
-                                {fmtUSD(cat.value)}
-                              </span>
-                              <span
-                                className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}
-                              >
-                                {percentage}%
-                              </span>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    });
-                  })()}
-                </div>
-              </div>
-            )}
-          </DashboardChartCard>
-
-          <DashboardChartCard
-            className={cn('min-w-0')}
-            title="Top merchants over time"
-            refreshingLabel="Reading the field..."
-            isRefreshing={!analyticsLoading && analyticsRefreshing}
-            bodyClassName={cn('overflow-hidden')}
-          >
-            <div className={cn('h-full', 'overflow-hidden')}>
-              <TopMerchantsList
-                merchants={analytics.topMerchants}
-                className={cn('h-full', 'overflow-y-auto')}
-              />
-            </div>
-          </DashboardChartCard>
-
-          <DashboardChartCard
-            className={cn('min-w-0')}
-            title="Wealth flow"
-            refreshingLabel="Tracing the flow..."
-            isRefreshing={!cashFlowLoading && cashFlowRefreshing}
-          >
-            {cashFlowLoading ? (
-              <div className={cn('flex-1', 'min-h-0', dashboardLoadingCard)} />
-            ) : cashFlowError ? (
-              <div
-                className={cn(
-                  'flex-1',
-                  'min-h-0',
-                  'min-h-[28px]',
-                  uiTypographyRecipes.body,
-                  uiTextRecipes.danger
+                              <div className={cn(dashboardCategoryCard.metricRow)}>
+                                <Pill
+                                  categoryName={cat.categoryKey}
+                                  accentIndexByName={accentIndexByName}
+                                  className={cn('min-w-0', 'truncate')}
+                                >
+                                  {cat.name}
+                                </Pill>
+                                <div className={cn(dashboardCategoryCard.metricCluster)}>
+                                  <span
+                                    className={cn(
+                                      uiTypographyRecipes.cardTitle,
+                                      uiTextRecipes.primary,
+                                      'tabular-nums'
+                                    )}
+                                  >
+                                    {fmtUSD(cat.value)}
+                                  </span>
+                                  <span
+                                    className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}
+                                  >
+                                    {percentage}%
+                                  </span>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
                 )}
-              >
-                {cashFlowError}
-              </div>
-            ) : cashFlowSeries.length === 0 ? (
-              <div
-                className={cn(
-                  'flex-1',
-                  'min-h-0',
-                  'min-h-[28px]',
-                  'flex',
-                  'items-center',
-                  'justify-center'
-                )}
-              >
-                <EmptyState
-                  icon={TrendingUp}
-                  title="The ledger lies still."
-                  description="No transactions for this period"
-                />
-              </div>
-            ) : (
-              <div ref={netChartRef} className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}>
-                {netChartWidth > 0 && netChartHeight > 0 ? (
-                  <CashFlowChart
-                    data={debouncedCashFlowSeries}
-                    width={netChartWidth}
-                    height={netChartHeight}
-                  />
-                ) : null}
-              </div>
-            )}
-          </DashboardChartCard>
+              </ChartFadePresence>
+            </DashboardChartCard>
 
-          <DashboardChartCard
-            className={cn('min-w-0')}
-            title="Budget vs reality"
-            refreshingLabel="Reviewing allowances..."
-            isRefreshing={budgets.transactionsLoading}
-          >
-            {budgets.isLoading ? (
-              <div className={cn('flex-1', 'min-h-0', dashboardLoadingCard)} />
-            ) : totalBudget === 0 ? (
-              <div className={cn('flex-1', 'min-h-0', 'flex', 'items-center', 'justify-center')}>
-                <EmptyState
-                  icon={TrendingUp}
-                  title="No budgets set"
-                  description="Set your first budget to see your progress."
+            <DashboardChartCard
+              className={cn('min-w-0')}
+              title="Top merchants over time"
+              refreshingLabel="Reading the field..."
+              isRefreshing={!analyticsLoading && analyticsRefreshing}
+              bodyClassName={cn('overflow-hidden')}
+            >
+              <div className={cn('h-full', 'overflow-hidden')}>
+                <TopMerchantsList
+                  merchants={analytics.topMerchants}
+                  className={cn('h-full', 'overflow-y-auto')}
                 />
               </div>
-            ) : debouncedBudgetVsActualData.length === 0 ? (
-              <div className={cn('flex-1', 'min-h-0', 'flex', 'items-center', 'justify-center')}>
-                <EmptyState
-                  icon={TrendingUp}
-                  title="No spending for this period."
-                  description="The picture sharpens with each transaction."
-                />
-              </div>
-            ) : (
-              <div ref={budgetChartRef} className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}>
-                {budgetChartWidth > 0 && budgetChartHeight > 0 ? (
-                  <BudgetVsActualChart
-                    data={debouncedBudgetVsActualData}
-                    totalBudget={totalBudget}
-                    width={budgetChartWidth}
-                    height={budgetChartHeight}
-                  />
-                ) : null}
-              </div>
-            )}
-          </DashboardChartCard>
+            </DashboardChartCard>
+
+            <DashboardChartCard
+              className={cn('min-w-0')}
+              title="Income vs Expenses"
+              refreshingLabel="Tracing the flow..."
+              isRefreshing={!cashFlowLoading && cashFlowRefreshing}
+            >
+              <ChartFadePresence
+                stateKey={
+                  cashFlowLoading
+                    ? 'loading'
+                    : cashFlowError
+                      ? 'error'
+                      : cashFlowSeries.length === 0
+                        ? 'empty'
+                        : 'chart'
+                }
+              >
+                {cashFlowLoading ? (
+                  <div className={cn('flex-1', 'min-h-0', dashboardLoadingCard)} />
+                ) : cashFlowError ? (
+                  <div
+                    className={cn(
+                      'flex-1',
+                      'min-h-0',
+                      'min-h-[28px]',
+                      uiTypographyRecipes.body,
+                      uiTextRecipes.danger
+                    )}
+                  >
+                    {cashFlowError}
+                  </div>
+                ) : cashFlowSeries.length === 0 ? (
+                  <div
+                    className={cn(
+                      'flex-1',
+                      'min-h-0',
+                      'min-h-[28px]',
+                      'flex',
+                      'items-center',
+                      'justify-center'
+                    )}
+                  >
+                    <EmptyState
+                      icon={TrendingUp}
+                      title="The ledger lies still."
+                      description="No transactions for this period"
+                    />
+                  </div>
+                ) : (
+                  <div ref={netChartRef} className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}>
+                    {netChartWidth > 0 && netChartHeight > 0 ? (
+                      <CashFlowChart
+                        data={debouncedCashFlowSeries}
+                        width={netChartWidth}
+                        height={netChartHeight}
+                      />
+                    ) : null}
+                  </div>
+                )}
+              </ChartFadePresence>
+            </DashboardChartCard>
+
+            <DashboardChartCard
+              className={cn('min-w-0')}
+              title="Budget vs reality"
+              refreshingLabel="Reviewing allowances..."
+              isRefreshing={budgets.transactionsLoading}
+            >
+              <ChartFadePresence
+                stateKey={
+                  budgets.isLoading
+                    ? 'loading'
+                    : totalBudget === 0
+                      ? 'no-budget'
+                      : debouncedBudgetVsActualData.length === 0
+                        ? 'empty'
+                        : 'chart'
+                }
+              >
+                {budgets.isLoading ? (
+                  <div className={cn('flex-1', 'min-h-0', dashboardLoadingCard)} />
+                ) : totalBudget === 0 ? (
+                  <div
+                    className={cn('flex-1', 'min-h-0', 'flex', 'items-center', 'justify-center')}
+                  >
+                    <EmptyState
+                      icon={TrendingUp}
+                      title="No budgets set"
+                      description="Set your first budget to see your progress."
+                    />
+                  </div>
+                ) : debouncedBudgetVsActualData.length === 0 ? (
+                  <div
+                    className={cn('flex-1', 'min-h-0', 'flex', 'items-center', 'justify-center')}
+                  >
+                    <EmptyState
+                      icon={TrendingUp}
+                      title="No spending for this period."
+                      description="The picture sharpens with each transaction."
+                    />
+                  </div>
+                ) : (
+                  <div
+                    ref={budgetChartRef}
+                    className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}
+                  >
+                    {budgetChartWidth > 0 && budgetChartHeight > 0 ? (
+                      <BudgetVsActualChart
+                        data={debouncedBudgetVsActualData}
+                        totalBudget={totalBudget}
+                        width={budgetChartWidth}
+                        height={budgetChartHeight}
+                      />
+                    ) : null}
+                  </div>
+                )}
+              </ChartFadePresence>
+            </DashboardChartCard>
+          </div>
         </div>
       </PageLayout>
     </div>

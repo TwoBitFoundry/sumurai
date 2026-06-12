@@ -1,6 +1,7 @@
 use crate::models::analytics::CategorySpending;
+use crate::models::analytics::SankeyNodeKind;
 use crate::models::transaction::Transaction;
-use crate::services::analytics_service::AnalyticsService;
+use crate::services::analytics_service::{AnalyticsService, SpendingTransactionQuery};
 use crate::services::repository_service::MockDatabaseRepository;
 use chrono::{Datelike, NaiveDate};
 use rust_decimal::Decimal;
@@ -200,14 +201,23 @@ async fn given_date_range_when_loading_spending_transactions_then_uses_date_rang
             mockall::predicate::eq(user_id),
             mockall::predicate::eq(start_date),
             mockall::predicate::eq(end_date),
+            mockall::predicate::always(),
         )
-        .returning(move |_, _, _| {
+        .returning(move |_, _, _, _| {
             let transactions = transactions.clone();
             Box::pin(async move { Ok(transactions) })
         });
 
     let result = analytics
-        .load_spending_transactions(&repository, &user_id, Some(start_date), Some(end_date))
+        .load_spending_transactions(
+            &repository,
+            &user_id,
+            SpendingTransactionQuery {
+                start_date: Some(start_date),
+                end_date: Some(end_date),
+                account_ids: None,
+            },
+        )
         .await
         .unwrap();
 
@@ -229,14 +239,21 @@ async fn given_missing_date_range_when_loading_spending_transactions_then_uses_b
 
     repository
         .expect_get_spending_transactions_for_user()
-        .with(mockall::predicate::eq(user_id))
-        .returning(move |_| {
+        .returning(move |_, _| {
             let transactions = transactions.clone();
             Box::pin(async move { Ok(transactions) })
         });
 
     let result = analytics
-        .load_spending_transactions(&repository, &user_id, None, None)
+        .load_spending_transactions(
+            &repository,
+            &user_id,
+            SpendingTransactionQuery {
+                start_date: None,
+                end_date: None,
+                account_ids: None,
+            },
+        )
         .await
         .unwrap();
 
@@ -767,4 +784,190 @@ fn given_no_income_when_calculating_cash_flow_then_handles_zero_income() {
     assert_eq!(jan.income, dec!(0.00));
     assert_eq!(jan.expenses, dec!(600.00));
     assert_eq!(jan.net, dec!(-600.00));
+}
+
+#[test]
+fn given_income_exceeds_expenses_when_building_sankey_then_balances_with_surplus() {
+    let analytics = AnalyticsService::new();
+    let categories = vec![
+        CategorySpending {
+            name: "Housing".to_string(),
+            value: dec!(200.00),
+        },
+        CategorySpending {
+            name: "Food".to_string(),
+            value: dec!(300.00),
+        },
+    ];
+
+    let result = analytics.build_sankey(dec!(1000.00), categories, "USD");
+
+    assert_eq!(result.currency, "USD");
+    assert_eq!(result.summary.income, dec!(1000.00));
+    assert_eq!(result.summary.expenses, dec!(500.00));
+    assert_eq!(result.summary.covered, dec!(500.00));
+    assert_eq!(result.summary.deficit, dec!(0.00));
+    assert_eq!(result.summary.surplus, dec!(500.00));
+    assert_eq!(result.summary.coverage_ratio, Some(dec!(1.00)));
+
+    let node_kinds: Vec<_> = result.nodes.iter().map(|node| &node.kind).collect();
+    assert_eq!(
+        node_kinds,
+        vec![
+            &SankeyNodeKind::Income,
+            &SankeyNodeKind::Expenses,
+            &SankeyNodeKind::Savings,
+            &SankeyNodeKind::FreeSpending,
+            &SankeyNodeKind::Category,
+            &SankeyNodeKind::Category,
+        ]
+    );
+
+    assert_eq!(result.links.len(), 5);
+    assert_eq!(result.links[0].source, "income");
+    assert_eq!(result.links[0].target, "expenses");
+    assert_eq!(result.links[0].value, dec!(500.00));
+    assert_eq!(result.links[1].source, "income");
+    assert_eq!(result.links[1].target, "savings");
+    assert_eq!(result.links[1].value, dec!(500.00));
+    assert_eq!(result.links[2].source, "expenses");
+    assert_eq!(result.links[2].target, "free_spending");
+    assert_eq!(result.links[2].value, dec!(500.00));
+    assert_eq!(result.links[3].source, "free_spending");
+    assert_eq!(result.links[3].target, "category_food");
+    assert_eq!(result.links[3].value, dec!(300.00));
+    assert_eq!(result.links[4].source, "free_spending");
+    assert_eq!(result.links[4].target, "category_housing");
+    assert_eq!(result.links[4].value, dec!(200.00));
+}
+
+#[test]
+fn given_mixed_fixed_and_free_categories_when_building_sankey_then_splits_through_intermediaries() {
+    let analytics = AnalyticsService::new();
+    let categories = vec![
+        CategorySpending {
+            name: "SUBSCRIPTION".to_string(),
+            value: dec!(100.00),
+        },
+        CategorySpending {
+            name: "RENT_AND_UTILITIES".to_string(),
+            value: dec!(200.00),
+        },
+        CategorySpending {
+            name: "FOOD_AND_DRINK".to_string(),
+            value: dec!(300.00),
+        },
+    ];
+
+    let result = analytics.build_sankey(dec!(700.00), categories, "USD");
+
+    assert_eq!(result.summary.expenses, dec!(600.00));
+    assert!(result.nodes.iter().any(|node| node.id == "fixed_expenses"));
+    assert!(result.nodes.iter().any(|node| node.id == "free_spending"));
+    assert_eq!(
+        result
+            .links
+            .iter()
+            .find(|link| link.source == "expenses" && link.target == "fixed_expenses")
+            .map(|link| link.value),
+        Some(dec!(300.00))
+    );
+    assert_eq!(
+        result
+            .links
+            .iter()
+            .find(|link| link.source == "expenses" && link.target == "free_spending")
+            .map(|link| link.value),
+        Some(dec!(300.00))
+    );
+    assert!(result
+        .links
+        .iter()
+        .any(|link| { link.source == "fixed_expenses" && link.target == "category_subscription" }));
+    assert!(result.links.iter().any(|link| {
+        link.source == "fixed_expenses" && link.target == "category_rent_and_utilities"
+    }));
+    assert!(result.links.iter().any(|link| {
+        link.source == "free_spending" && link.target == "category_food_and_drink"
+    }));
+}
+
+#[test]
+fn given_expenses_exceed_income_when_building_sankey_then_balances_with_debt() {
+    let analytics = AnalyticsService::new();
+    let categories = vec![
+        CategorySpending {
+            name: "Travel".to_string(),
+            value: dec!(100.00),
+        },
+        CategorySpending {
+            name: "Groceries".to_string(),
+            value: dec!(150.00),
+        },
+    ];
+
+    let result = analytics.build_sankey(dec!(200.00), categories, "USD");
+
+    assert_eq!(result.summary.income, dec!(200.00));
+    assert_eq!(result.summary.expenses, dec!(250.00));
+    assert_eq!(result.summary.covered, dec!(200.00));
+    assert_eq!(result.summary.deficit, dec!(50.00));
+    assert_eq!(result.summary.surplus, dec!(0.00));
+    assert_eq!(result.summary.coverage_ratio, Some(dec!(0.80)));
+
+    assert!(result.nodes.iter().any(|node| node.id == "debt"));
+    assert!(result.links.iter().any(|link| link.source == "debt"));
+    assert_eq!(
+        result
+            .links
+            .iter()
+            .find(|link| link.source == "debt" && link.target == "expenses")
+            .map(|link| link.value),
+        Some(dec!(50.00))
+    );
+}
+
+#[test]
+fn given_no_spending_and_no_income_when_building_sankey_then_returns_empty_response() {
+    let analytics = AnalyticsService::new();
+
+    let result = analytics.build_sankey(dec!(0.00), Vec::new(), "USD");
+
+    assert_eq!(result.nodes.len(), 0);
+    assert_eq!(result.links.len(), 0);
+    assert_eq!(result.summary.income, dec!(0.00));
+    assert_eq!(result.summary.expenses, dec!(0.00));
+    assert_eq!(result.summary.covered, dec!(0.00));
+    assert_eq!(result.summary.deficit, dec!(0.00));
+    assert_eq!(result.summary.surplus, dec!(0.00));
+    assert_eq!(result.summary.coverage_ratio, None);
+}
+
+#[test]
+fn given_no_income_when_building_sankey_then_routes_inflow_through_debt() {
+    let analytics = AnalyticsService::new();
+    let categories = vec![
+        CategorySpending {
+            name: "Food".to_string(),
+            value: dec!(100.00),
+        },
+        CategorySpending {
+            name: "Rent".to_string(),
+            value: dec!(250.00),
+        },
+    ];
+
+    let result = analytics.build_sankey(dec!(0.00), categories, "USD");
+
+    assert_eq!(result.summary.income, dec!(0.00));
+    assert_eq!(result.summary.expenses, dec!(350.00));
+    assert_eq!(result.summary.covered, dec!(0.00));
+    assert_eq!(result.summary.deficit, dec!(350.00));
+    assert_eq!(result.summary.surplus, dec!(0.00));
+    assert_eq!(result.summary.coverage_ratio, Some(dec!(0.00)));
+    assert!(result.links.iter().any(|link| link.source == "debt"));
+    assert!(!result
+        .links
+        .iter()
+        .any(|link| link.source == "income" && link.target == "expenses"));
 }

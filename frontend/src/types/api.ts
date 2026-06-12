@@ -268,6 +268,43 @@ export interface AnalyticsCashFlowResponse {
   currency: string;
 }
 
+export type SankeyNodeKind =
+  | 'Income'
+  | 'Expenses'
+  | 'Category'
+  | 'Deficit'
+  | 'Savings'
+  | 'FixedExpenses'
+  | 'FreeSpending';
+
+export interface SankeyNode {
+  id: string;
+  label: string;
+  kind: SankeyNodeKind;
+}
+
+export interface SankeyLink {
+  source: string;
+  target: string;
+  value: number | string;
+}
+
+export interface SankeySummary {
+  income: number | string;
+  expenses: number | string;
+  covered: number | string;
+  deficit: number | string;
+  surplus: number | string;
+  coverage_ratio: number | string | null;
+}
+
+export interface SankeyResponse {
+  nodes: SankeyNode[];
+  links: SankeyLink[];
+  currency: string;
+  summary: SankeySummary;
+}
+
 export type AutoCategorizationJobStatus =
   | 'running'
   | 'cancelling'

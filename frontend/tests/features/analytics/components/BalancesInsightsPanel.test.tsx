@@ -38,13 +38,13 @@ describe('BalancesInsightsPanel', () => {
     render(<BalancesInsightsPanel overall={sampleOverall} />);
 
     expect(screen.getByTestId('balances-insights-shell')).toBeInTheDocument();
-    expect(screen.getByText('Balance overview')).toBeInTheDocument();
+    expect(screen.getByText('Balances Now')).toBeInTheDocument();
     expect(screen.getByTestId('balances-insights-shell').className).toContain('border-0');
     expect(
       screen.getByTestId('balances-insights-shell').querySelector('.hero-stat-card__inset-ring')
     ).not.toBeNull();
     expect(screen.getByTestId('overall-net')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /balance overview/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /balances now/i })).toHaveAttribute(
       'aria-expanded',
       'false'
     );
@@ -54,7 +54,7 @@ describe('BalancesInsightsPanel', () => {
   it('toggles sub-categories from the net summary', async () => {
     render(<BalancesInsightsPanel overall={sampleOverall} />);
 
-    const summaryButton = screen.getByRole('button', { name: /balance overview/i });
+    const summaryButton = screen.getByRole('button', { name: /balances now/i });
     expect(screen.queryByText('Cash')).not.toBeInTheDocument();
 
     await userEvent.click(summaryButton);
@@ -75,7 +75,7 @@ describe('BalancesInsightsPanel', () => {
 
     render(<BalancesInsightsPanel overall={sampleOverall} />);
 
-    expect(screen.getByRole('button', { name: /balance overview/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /balances now/i })).toHaveAttribute(
       'aria-expanded',
       'true'
     );
@@ -149,7 +149,7 @@ describe('BalancesInsightsPanel', () => {
   it('renders income and expenses YTD when both props are provided', () => {
     render(<BalancesInsightsPanel overall={sampleOverall} incomeYtd={52300} expensesYtd={18400} />);
 
-    const summaryButton = screen.getByRole('button', { name: /balance overview/i });
+    const summaryButton = screen.getByRole('button', { name: /balances now/i });
     const incomeBlock = screen.getByTestId('balances-ytd-income');
     const expensesBlock = screen.getByTestId('balances-ytd-expenses');
     expect(incomeBlock).toHaveClass('items-baseline');

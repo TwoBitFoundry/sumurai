@@ -5,7 +5,8 @@
       "name": "Frontend (Next.js)",
       "runtimeExecutable": "bun",
       "runtimeArgs": ["--cwd=frontend", "run", "dev"],
-      "port": 3001
+      "port": 3001,
+      "autoPort": false
     },
     {
       "name": "Storybook",

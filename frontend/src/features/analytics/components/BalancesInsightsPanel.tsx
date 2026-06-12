@@ -141,12 +141,12 @@ export function BalancesInsightsPanel({
   return (
     <InsightsPanelShell testId="balances-insights-shell" accent="violet">
       <div className={cn('relative', 'z-10', 'px-3', 'py-2', 'md:px-4', 'md:py-3')}>
-        <InsightsPanelHeader label="Balance overview" />
+        <InsightsPanelHeader label="Balances Now" />
         <button
           type="button"
           aria-expanded={expanded}
           aria-controls="balances-insights-panel-body"
-          aria-label="Balance overview"
+          aria-label="Balances Now"
           onClick={toggleExpanded}
           className={cn('w-full', 'text-left')}
         >

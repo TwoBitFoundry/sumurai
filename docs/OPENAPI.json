@@ -316,6 +316,73 @@
         ]
       }
     },
+    "/api/analytics/sankey": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Produces a cached Sankey money-flow view centered on Expenses for the requested date range and account scope.",
+        "operationId": "get_authenticated_sankey",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "Start date in YYYY-MM-DD format",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "End date in YYYY-MM-DD format",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account_ids",
+            "in": "query",
+            "description": "Filter by account IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sankey money-flow data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SankeyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
     "/api/analytics/spending": {
       "get": {
         "tags": [
@@ -4625,6 +4692,118 @@
         "example": {
           "email": "user@example.com",
           "name": "Alex"
+        }
+      },
+      "SankeyLink": {
+        "type": "object",
+        "required": [
+          "source",
+          "target",
+          "value"
+        ],
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "SankeyNode": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "kind"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SankeyNodeKind"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "SankeyNodeKind": {
+        "type": "string",
+        "enum": [
+          "Income",
+          "Expenses",
+          "Category",
+          "Deficit",
+          "Savings",
+          "FixedExpenses",
+          "FreeSpending"
+        ]
+      },
+      "SankeyResponse": {
+        "type": "object",
+        "required": [
+          "nodes",
+          "links",
+          "currency",
+          "summary"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SankeyLink"
+            }
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SankeyNode"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/SankeySummary"
+          }
+        }
+      },
+      "SankeySummary": {
+        "type": "object",
+        "required": [
+          "income",
+          "expenses",
+          "covered",
+          "deficit",
+          "surplus"
+        ],
+        "properties": {
+          "coverage_ratio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "covered": {
+            "type": "string"
+          },
+          "deficit": {
+            "type": "string"
+          },
+          "expenses": {
+            "type": "string"
+          },
+          "income": {
+            "type": "string"
+          },
+          "surplus": {
+            "type": "string"
+          }
         }
       },
       "SetTransactionCategoryRequest": {

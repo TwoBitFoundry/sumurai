@@ -10,6 +10,7 @@ import type {
   AnalyticsMonthlyTotalsResponse,
   AnalyticsSpendingResponse,
   AnalyticsTopMerchantsResponse,
+  SankeyResponse,
 } from '../types/api';
 import { appendAccountQueryParams } from '../utils/queryParams';
 import { ApiClient } from './ApiClient';
@@ -72,6 +73,21 @@ export class AnalyticsService {
     const qs = params.toString();
     if (qs) endpoint = `/analytics/cash-flow?${qs}`;
     return ApiClient.get<AnalyticsCashFlowResponse>(endpoint);
+  }
+
+  static async getSankey(
+    startDate?: string,
+    endDate?: string,
+    accountIds?: string[]
+  ): Promise<SankeyResponse> {
+    let endpoint = '/analytics/sankey';
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    appendAccountQueryParams(params, accountIds);
+    const qs = params.toString();
+    if (qs) endpoint += `?${qs}`;
+    return ApiClient.get<SankeyResponse>(endpoint);
   }
 
   static async getTopMerchantsByDateRange(

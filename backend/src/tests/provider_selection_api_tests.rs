@@ -571,7 +571,8 @@ async fn given_simplefin_when_selecting_then_returns_ok() {
 }
 
 #[tokio::test]
-async fn given_inactive_provider_account_filter_when_getting_transactions_then_returns_forbidden() {
+async fn given_inactive_provider_account_filter_when_getting_transactions_then_falls_back_to_active_provider(
+) {
     let user = User {
         provider: "teller".to_string(),
         ..crate::test_fixtures::TestFixtures::create_authenticated_user_with_token().0
@@ -647,8 +648,12 @@ async fn given_inactive_provider_account_filter_when_getting_transactions_then_r
         .expect_get_latest_account_balances_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
-    mock_db.expect_get_transactions_paginated().times(0);
-    mock_db.expect_count_transactions().times(0);
+    mock_db
+        .expect_get_transactions_paginated()
+        .returning(|_, _, _, _, _, _, _, _| Box::pin(async { Ok(vec![]) }));
+    mock_db
+        .expect_count_transactions()
+        .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
 
     let app = build_test_app(mock_db, provider_registry(&["plaid", "teller"])).await;
 
@@ -660,14 +665,7 @@ async fn given_inactive_provider_account_filter_when_getting_transactions_then_r
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), 403);
-
-    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    assert_eq!(
-        payload["message"],
-        json!("Account filter references inactive provider")
-    );
+    assert_eq!(response.status(), 200);
 }
 
 #[tokio::test]

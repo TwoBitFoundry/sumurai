@@ -295,6 +295,24 @@ export const categoryAccents: CategoryTheme[] = [
   },
 ];
 
+const categoryLabelHex = {
+  sky: { light: '#0ea5e9', dark: '#7dd3fc' },
+  emerald: { light: '#10b981', dark: '#6ee7b7' },
+  cyan: { light: '#06b6d4', dark: '#67e8f9' },
+  violet: { light: '#8b5cf6', dark: '#c4b5fd' },
+  amber: { light: '#f59e0b', dark: '#fcd34d' },
+  rose: { light: '#f43f5e', dark: '#fda4af' },
+  indigo: { light: '#6366f1', dark: '#a5b4fc' },
+  fuchsia: { light: '#d946ef', dark: '#f0abfc' },
+  teal: { light: '#14b8a6', dark: '#5eead4' },
+  lime: { light: '#84cc16', dark: '#bef264' },
+} as const satisfies Record<string, Record<ThemeMode, string>>;
+
+export function getCategoryLabelHex(theme: CategoryTheme, mode: ThemeMode): string {
+  const colors = categoryLabelHex[theme.key as keyof typeof categoryLabelHex];
+  return colors?.[mode] ?? theme.ringHex;
+}
+
 export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
   slate: {
     border: 'border-slate-300',

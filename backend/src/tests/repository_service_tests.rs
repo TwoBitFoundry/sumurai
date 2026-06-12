@@ -612,7 +612,7 @@ async fn given_spending_only_query_when_fetching_transactions_then_excludes_non_
 
     let all_transactions = repo.get_transactions_for_user(&user.id).await.unwrap();
     let spending_transactions = repo
-        .get_spending_transactions_for_user(&user.id)
+        .get_spending_transactions_for_user(&user.id, None)
         .await
         .unwrap();
 
@@ -622,6 +622,65 @@ async fn given_spending_only_query_when_fetching_transactions_then_excludes_non_
     assert_eq!(
         spending_transactions[0].provider_transaction_id.as_deref(),
         Some("spend_txn_001")
+    );
+}
+
+#[tokio::test]
+async fn given_account_filter_when_fetching_spending_by_date_range_then_scopes_before_limit() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let scoped_account = create_test_account(&repo, user.id).await;
+    let other_account = create_test_account(&repo, user.id).await;
+    let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+    let end_date = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+
+    let mut scoped_food = create_test_transaction(
+        user.id,
+        scoped_account.id,
+        "scoped_spend_001".to_string(),
+        4200,
+        NaiveDate::from_ymd_opt(2024, 1, 5).unwrap(),
+    );
+    scoped_food.category_primary = "FOOD_AND_DRINK".to_string();
+
+    let mut filler_transactions = Vec::with_capacity(1001);
+    for index in 0..1001 {
+        let mut transaction = create_test_transaction(
+            user.id,
+            other_account.id,
+            format!("other_spend_{index:04}"),
+            100 + index,
+            NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
+        );
+        transaction.category_primary = "ENTERTAINMENT".to_string();
+        filler_transactions.push(transaction);
+    }
+
+    let mut batch = vec![scoped_food.clone()];
+    batch.extend(filler_transactions);
+    repo.upsert_transactions_batch(&batch, &user.id)
+        .await
+        .unwrap();
+
+    let scoped = repo
+        .get_spending_transactions_by_date_range_for_user(
+            &user.id,
+            start_date,
+            end_date,
+            Some(&[scoped_account.id]),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(scoped.len(), 1);
+    assert_eq!(scoped[0].account_id, scoped_account.id);
+    assert_eq!(
+        scoped[0].provider_transaction_id.as_deref(),
+        Some("scoped_spend_001")
     );
 }
 

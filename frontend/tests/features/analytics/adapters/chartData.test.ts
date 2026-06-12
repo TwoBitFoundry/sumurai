@@ -20,7 +20,7 @@ describe('categoriesToDonut', () => {
 
     expect(result).toEqual([
       {
-        name: 'Merch',
+        name: 'Merchandise',
         categoryKey: 'GENERAL_MERCHANDISE',
         value: 2368.1,
         color: categoryAccents[0].ringHex,

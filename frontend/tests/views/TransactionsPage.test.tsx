@@ -188,7 +188,7 @@ describe('TransactionsPage', () => {
     expect(panel).toHaveAttribute('data-loading', 'false');
   });
 
-  it('renders the auto-categorize action in the hero actions slot', () => {
+  it('renders the auto-categorize action inline with the transactions title', () => {
     const { getByRole } = render(
       <TransactionsPage
         filterControl={{

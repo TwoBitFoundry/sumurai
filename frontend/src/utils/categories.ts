@@ -9,7 +9,7 @@ const SYSTEM_CATEGORY_LABELS: Record<string, string> = {
   BANK_FEES: 'Bank Fees',
   ENTERTAINMENT: 'Entertainment',
   FOOD_AND_DRINK: 'Food & Drink',
-  GENERAL_MERCHANDISE: 'Merch',
+  GENERAL_MERCHANDISE: 'Merchandise',
   GENERAL_SERVICES: 'Services',
   GOVERNMENT_AND_NON_PROFIT: 'Govt & Non Profit',
   HOME_IMPROVEMENT: 'Home',
