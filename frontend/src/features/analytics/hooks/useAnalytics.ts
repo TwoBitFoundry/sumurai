@@ -44,8 +44,7 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
 
   const { start, end } = useMemo(() => computeDateRange(range), [range]);
   const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
-  const accountsReady =
-    !accountsLoading && (allAccountIds.length === 0 || selectedAccountIds.length > 0);
+  const accountsReady = !accountsLoading;
 
   const query = useQuery<AnalyticsQueryData, Error>({
     queryKey: ['analytics', range, cacheKey],

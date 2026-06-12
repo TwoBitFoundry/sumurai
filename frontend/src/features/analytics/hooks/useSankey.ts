@@ -40,8 +40,7 @@ export function useSankey(range: DateRangeKey): UseSankeyResult {
 
   const { start, end } = useMemo(() => computeDateRange(range), [range]);
   const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
-  const accountsReady =
-    !accountsLoading && (allAccountIds.length === 0 || selectedAccountIds.length > 0);
+  const accountsReady = !accountsLoading;
 
   const query = useQuery<SankeyResponse, Error>({
     queryKey: ['sankey', range, cacheKey],
