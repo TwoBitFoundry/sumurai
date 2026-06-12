@@ -455,8 +455,6 @@ export const sankeyChart = {
 
 export const dashboardStatsCarousel = {
   shell: ['flex', 'min-w-0', 'flex-col', 'gap-4'],
-  mobile: ['lg:hidden'],
-  desktop: ['hidden', 'lg:flex', 'flex-col', 'gap-4'],
   header: ['flex', 'items-center', 'justify-between', 'gap-3'],
   label: [font.captionStrong, text.muted],
   viewport: ['flex', 'min-h-[280px]', 'w-full', 'flex-col', 'overflow-hidden'],

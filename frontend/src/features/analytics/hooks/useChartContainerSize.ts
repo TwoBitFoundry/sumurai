@@ -14,6 +14,10 @@ export const useChartContainerSize = () => {
   const [size, setSize] = useState<ChartContainerSize>({ width: 0, height: 0 });
 
   const applySize = useCallback(() => {
+    if (document.hidden) {
+      return;
+    }
+
     const node = nodeRef.current;
     if (!node) {
       return;
@@ -66,13 +70,22 @@ export const useChartContainerSize = () => {
   );
 
   useLayoutEffect(() => {
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        requestAnimationFrame(applySize);
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
     return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       observerRef.current?.disconnect();
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
     };
-  }, []);
+  }, [applySize]);
 
   return { ref, remeasure: applySize, ...size };
 };

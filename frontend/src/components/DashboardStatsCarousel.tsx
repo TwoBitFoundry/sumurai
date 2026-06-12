@@ -1,8 +1,10 @@
 import { Landmark, type LucideIcon, Waypoints } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { BalancesOverviewChart } from '@/components/BalancesOverview';
 import DashboardChartCard from '@/features/analytics/components/DashboardChartCard';
 import { MoneyFlowSankeyChart } from '@/features/analytics/components/MoneyFlowSankeyChart';
+import { useChartContainerSize } from '@/features/analytics/hooks/useChartContainerSize';
+import { useDebouncedChartRecalc } from '@/features/analytics/hooks/useDebouncedChartRecalc';
 import { Button, cn } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { dashboardStatsCarousel, text as uiTextRecipes } from '@/ui/recipes';
@@ -36,6 +38,19 @@ const financialBreakdownDescription = 'Switch between wealth flow and balances b
 
 export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsCarouselProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const {
+    ref: panelStackRef,
+    width: panelStackWidth,
+    height: panelStackHeight,
+  } = useChartContainerSize();
+  const sankeyContainerSizeRaw = useMemo(
+    () =>
+      panelStackWidth > 0 && panelStackHeight > 0
+        ? { width: panelStackWidth, height: panelStackHeight }
+        : undefined,
+    [panelStackWidth, panelStackHeight]
+  );
+  const sankeyContainerSize = useDebouncedChartRecalc(sankeyContainerSizeRaw);
 
   const scrollToSlide = useCallback((index: number) => {
     setSelectedIndex(index);
@@ -44,6 +59,8 @@ export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsC
   const slideTabs = (
     <div
       className={cn(
+        'hidden',
+        'md:flex',
         ...appTitleBarRecipes.pillContainer,
         ...appTitleBarRecipes.contextPillInset,
         ...appTitleBarRecipes.pillContainerSize,
@@ -99,9 +116,11 @@ export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsC
         headerTrailing={slideTabs}
         bodyClassName={cn('gap-4')}
       >
-        <div className={cn(...dashboardStatsCarousel.panelStack)}>
+        <div ref={panelStackRef} className={cn(...dashboardStatsCarousel.panelStack)}>
           <section
             className={cn(
+              'hidden',
+              'md:flex',
               ...dashboardStatsCarousel.panel,
               selectedIndex === 0
                 ? dashboardStatsCarousel.panelActive
@@ -115,6 +134,7 @@ export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsC
             <MoneyFlowSankeyChart
               dateRange={dateRange}
               className={cn('h-full', 'min-h-0', 'w-full')}
+              containerSize={sankeyContainerSize}
             />
           </section>
           <section
@@ -122,7 +142,7 @@ export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsC
               ...dashboardStatsCarousel.panel,
               selectedIndex === 1
                 ? dashboardStatsCarousel.panelActive
-                : dashboardStatsCarousel.panelHidden
+                : ['md:invisible', 'md:pointer-events-none', 'z-0']
             )}
             aria-label={slides[1].slideLabel}
             id={slides[1].panelId}

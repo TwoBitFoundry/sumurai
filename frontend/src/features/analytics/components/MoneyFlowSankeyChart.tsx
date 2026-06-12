@@ -477,26 +477,28 @@ function MoneyFlowSankeyChartContent({
   error = null,
 }: MoneyFlowSankeyChartContentProps) {
   const { colors, mode } = useTheme();
-  const {
-    ref: chartContainerRef,
-    width: measuredWidth,
-    height: measuredHeight,
-  } = useChartContainerSize();
+  const { ref: chartContainerRef, width: measuredWidth } = useChartContainerSize();
   const chartData = useMemo<SankeyChartData>(() => sankeyResponseToChartData(data), [data]);
   const categoryNodes = chartData.nodes.filter((node) => node.kind === 'Category');
   const chartMargin = sankeyChart.margin;
   const layoutWidth = containerSize?.width ?? measuredWidth;
-  const layoutHeight = containerSize?.height ?? measuredHeight;
+  const externalHeight = containerSize?.height;
   const naturalLayout = useMemo(
     () => resolveSankeyLayoutMetrics(chartData.nodes),
     [chartData.nodes]
   );
   const sankeyLayout = useMemo(
-    () => resolveSankeyLayoutMetrics(chartData.nodes, layoutHeight > 0 ? layoutHeight : undefined),
-    [chartData.nodes, layoutHeight]
+    () =>
+      resolveSankeyLayoutMetrics(
+        chartData.nodes,
+        externalHeight && externalHeight > 0 ? externalHeight : undefined
+      ),
+    [chartData.nodes, externalHeight]
   );
-  const chartHeight = layoutHeight > 0 ? sankeyLayout.height : naturalLayout.height;
-  const chartNodePadding = layoutHeight > 0 ? sankeyLayout.nodePadding : naturalLayout.nodePadding;
+  const chartHeight =
+    externalHeight && externalHeight > 0 ? sankeyLayout.height : naturalLayout.height;
+  const chartNodePadding =
+    externalHeight && externalHeight > 0 ? sankeyLayout.nodePadding : naturalLayout.nodePadding;
 
   if (error) {
     return (
