@@ -135,17 +135,16 @@ async fn given_mixed_account_scope_when_getting_sankey_then_excludes_loan_and_in
         });
     mock_db
         .expect_get_spending_transactions_by_date_range_for_user()
-        .with(
-            eq(user.id),
-            eq(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()),
-            eq(NaiveDate::from_ymd_opt(2024, 1, 31).unwrap()),
+        .withf(
+            move |actual_user_id, actual_start, actual_end, account_ids| {
+                *actual_user_id == user_id
+                    && *actual_start == NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()
+                    && *actual_end == NaiveDate::from_ymd_opt(2024, 1, 31).unwrap()
+                    && account_ids.is_some_and(|ids| ids == [cash_account_id].as_slice())
+            },
         )
-        .returning(move |_, _, _| {
-            let transactions = vec![
-                make_transaction(cash_account_id, dec!(-200.00), "Food"),
-                make_transaction(loan_account_id, dec!(-400.00), "Debt"),
-                make_transaction(investment_account_id, dec!(-300.00), "Investments"),
-            ];
+        .returning(move |_, _, _, _| {
+            let transactions = vec![make_transaction(cash_account_id, dec!(-200.00), "Food")];
             Box::pin(async move { Ok(transactions) })
         });
 

@@ -1,7 +1,7 @@
 use crate::models::analytics::CategorySpending;
 use crate::models::analytics::SankeyNodeKind;
 use crate::models::transaction::Transaction;
-use crate::services::analytics_service::AnalyticsService;
+use crate::services::analytics_service::{AnalyticsService, SpendingTransactionQuery};
 use crate::services::repository_service::MockDatabaseRepository;
 use chrono::{Datelike, NaiveDate};
 use rust_decimal::Decimal;
@@ -201,14 +201,23 @@ async fn given_date_range_when_loading_spending_transactions_then_uses_date_rang
             mockall::predicate::eq(user_id),
             mockall::predicate::eq(start_date),
             mockall::predicate::eq(end_date),
+            mockall::predicate::always(),
         )
-        .returning(move |_, _, _| {
+        .returning(move |_, _, _, _| {
             let transactions = transactions.clone();
             Box::pin(async move { Ok(transactions) })
         });
 
     let result = analytics
-        .load_spending_transactions(&repository, &user_id, Some(start_date), Some(end_date))
+        .load_spending_transactions(
+            &repository,
+            &user_id,
+            SpendingTransactionQuery {
+                start_date: Some(start_date),
+                end_date: Some(end_date),
+                account_ids: None,
+            },
+        )
         .await
         .unwrap();
 
@@ -230,14 +239,21 @@ async fn given_missing_date_range_when_loading_spending_transactions_then_uses_b
 
     repository
         .expect_get_spending_transactions_for_user()
-        .with(mockall::predicate::eq(user_id))
-        .returning(move |_| {
+        .returning(move |_, _| {
             let transactions = transactions.clone();
             Box::pin(async move { Ok(transactions) })
         });
 
     let result = analytics
-        .load_spending_transactions(&repository, &user_id, None, None)
+        .load_spending_transactions(
+            &repository,
+            &user_id,
+            SpendingTransactionQuery {
+                start_date: None,
+                end_date: None,
+                account_ids: None,
+            },
+        )
         .await
         .unwrap();
 

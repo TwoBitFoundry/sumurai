@@ -14,6 +14,12 @@ use chrono::Datelike;
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
+pub struct SpendingTransactionQuery<'a> {
+    pub start_date: Option<chrono::NaiveDate>,
+    pub end_date: Option<chrono::NaiveDate>,
+    pub account_ids: Option<&'a [Uuid]>,
+}
+
 pub struct AnalyticsService;
 
 fn truncate_to_latest_months<T>(result: &mut Vec<T>, months: u32) {
@@ -84,16 +90,24 @@ impl AnalyticsService {
         &self,
         repository: &dyn DatabaseRepository,
         user_id: &Uuid,
-        start_date: Option<chrono::NaiveDate>,
-        end_date: Option<chrono::NaiveDate>,
+        query: SpendingTransactionQuery<'_>,
     ) -> Result<Vec<Transaction>> {
-        match (start_date, end_date) {
+        match (query.start_date, query.end_date) {
             (Some(start_date), Some(end_date)) => {
                 repository
-                    .get_spending_transactions_by_date_range_for_user(user_id, start_date, end_date)
+                    .get_spending_transactions_by_date_range_for_user(
+                        user_id,
+                        start_date,
+                        end_date,
+                        query.account_ids,
+                    )
                     .await
             }
-            _ => repository.get_spending_transactions_for_user(user_id).await,
+            _ => {
+                repository
+                    .get_spending_transactions_for_user(user_id, query.account_ids)
+                    .await
+            }
         }
     }
 

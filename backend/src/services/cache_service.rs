@@ -220,7 +220,7 @@ impl RedisCache {
         let mut conn = self.connection_manager.clone();
         let key = synced_transactions_key(jwt_id);
         conn.del::<_, ()>(key).await?;
-        Ok(())
+        self.invalidate_pattern(&format!("{jwt_id}_sankey_*")).await
     }
 
     pub async fn invalidate_pattern(&self, pattern: &str) -> Result<()> {

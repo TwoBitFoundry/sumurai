@@ -390,7 +390,7 @@ async fn given_override_when_fetching_spending_transactions_then_uses_effective_
 
     let repo = open_repository(pool);
     let spending = repo
-        .get_spending_transactions_for_user(&user_id)
+        .get_spending_transactions_for_user(&user_id, None)
         .await
         .unwrap();
 
