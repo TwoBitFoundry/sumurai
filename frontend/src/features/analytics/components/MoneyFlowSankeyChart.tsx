@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import type { SankeyLinkProps, SankeyNodeProps, TooltipContentProps } from 'recharts';
 import { Sankey, Tooltip } from 'recharts';
 import type { SankeyResponse } from '@/types/api';
-import { Alert, cn, EmptyState } from '@/ui/primitives';
+import { cn, EmptyState } from '@/ui/primitives';
 import { sankeyChart, text as uiTextRecipes } from '@/ui/recipes';
 import { getCategoryLabelHex, type ThemeMode } from '@/ui/tokens';
 import { formatCategoryName, getTagThemeForCategory } from '@/utils/categories';
@@ -502,9 +502,12 @@ function MoneyFlowSankeyChartContent({
 
   if (error) {
     return (
-      <Alert variant="error" title="Money flow unavailable" className={cn('w-full', className)}>
-        {error}
-      </Alert>
+      <EmptyState
+        icon={BarChart3}
+        title="Money flow unavailable"
+        description="Could not load data for this period."
+        className={cn(...sankeyChart.emptyState, className)}
+      />
     );
   }
 
