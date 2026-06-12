@@ -155,10 +155,14 @@ async fn resolve_authorized_account_ids(
         let included = validate_account_ids(state, auth_context, include_account_ids)
             .await?
             .ok_or_else(|| bad_request("Invalid account filter"))?;
-        if included.iter().any(|id| !scoped.contains(id)) {
-            return Err(forbidden("Account filter references inactive provider"));
+        let active_included: HashSet<Uuid> = included
+            .into_iter()
+            .filter(|id| scoped.contains(id))
+            .collect();
+        if active_included.is_empty() {
+            return Ok(Some(scoped));
         }
-        return Ok(Some(included));
+        return Ok(Some(active_included));
     }
 
     if exclude_account_ids.is_empty() {
