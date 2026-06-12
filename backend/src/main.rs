@@ -3765,6 +3765,12 @@ async fn create_authenticated_budget(
                     ApiErrorResponse::new("BAD_REQUEST", "Budget amount must be greater than zero")
                         .into_response(StatusCode::BAD_REQUEST),
                 )
+            } else if e.contains("income or transfer") {
+                Err(ApiErrorResponse::new(
+                    "BAD_REQUEST",
+                    "Budgets cannot be created for income or transfer categories",
+                )
+                .into_response(StatusCode::BAD_REQUEST))
             } else if e.contains("already exists") {
                 Err(
                     ApiErrorResponse::new("CONFLICT", "Budget category already exists")

@@ -109,6 +109,13 @@ export function IconButton({
   ...props
 }: IconButtonProps & { ref?: React.RefObject<HTMLButtonElement | null> }) {
   const resolvedSize = size ?? 'md';
+  const resolvedTitle =
+    props.title ??
+    (typeof props['aria-label'] === 'string'
+      ? props['aria-label']
+      : typeof children === 'string' || typeof children === 'number'
+        ? String(children)
+        : undefined);
   const glyphShellClass =
     resolvedSize === 'bar'
       ? cn(chromeBar.glyphWell, '[&_svg]:block', '[&_svg]:h-full', '[&_svg]:w-full')
@@ -129,6 +136,7 @@ export function IconButton({
       type="button"
       className={cn(iconButtonVariants({ variant, size }), className)}
       {...props}
+      title={resolvedTitle}
     >
       <span className={glyphShellClass}>{children}</span>
     </button>

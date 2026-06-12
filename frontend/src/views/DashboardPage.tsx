@@ -1,7 +1,8 @@
 import { TrendingUp } from 'lucide-react';
-import type React from 'react';
+import type { CSSProperties } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
+import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { cn, EmptyState, Pill } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
@@ -11,9 +12,9 @@ import {
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
+import { heroAccents } from '@/ui/tokens';
 import { BalancesOverviewSummary } from '../components/BalancesOverview';
 import DashboardStatsCarousel from '../components/DashboardStatsCarousel';
-import { useTheme } from '../context/ThemeContext';
 import { DashboardCalculator } from '../domain/DashboardCalculator';
 import { categoriesToDonut } from '../features/analytics/adapters/chartData';
 import { BudgetVsActualChart } from '../features/analytics/components/BudgetVsActualChart';
@@ -42,11 +43,14 @@ const dashboardLoadingCard = [
   ...semanticSurfaces.mutedChip,
 ] as const;
 
+const dashboardCategoryHoverRingStyle = {
+  boxShadow: `inset 0 0 0 2px ${heroAccents.violet.ringHex}`,
+} as CSSProperties;
+
 const DashboardPage: React.FC<{
   dateRange: DateRange;
   setDateRange: (range: DateRange) => void;
 }> = ({ dateRange }) => {
-  const { colors } = useTheme();
   const { accentIndexByName } = useCategories();
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
@@ -188,15 +192,28 @@ const DashboardPage: React.FC<{
                             <button
                               key={`topcard-${cat.name}`}
                               type="button"
-                              className={cn('p-2', dashboardCategoryCard.shell)}
-                              style={
-                                isHovered ? { borderColor: colors.chart.primary[0] } : undefined
-                              }
+                              className={cn(
+                                heroStatCardRecipes.base,
+                                'w-full',
+                                'p-2',
+                                dashboardCategoryCard.shell,
+                                'overflow-hidden'
+                              )}
                               onMouseEnter={() => handleCategoryHover(cat.name)}
                               onMouseLeave={() => handleCategoryHover(null)}
                               onClick={() => handleCategoryHover(cat.name)}
                             >
-                              <div className={cn(dashboardCategoryCard.metricRow)}>
+                              <div
+                                aria-hidden
+                                className={cn(
+                                  ...dashboardCategoryCard.insetRing,
+                                  isHovered && dashboardCategoryCard.insetRingActive
+                                )}
+                                style={dashboardCategoryHoverRingStyle}
+                              />
+                              <div
+                                className={cn('relative', 'z-10', dashboardCategoryCard.metricRow)}
+                              >
                                 <Pill
                                   categoryName={cat.categoryKey}
                                   accentIndexByName={accentIndexByName}

@@ -7,6 +7,7 @@ import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import {
   chromeBar,
   control,
+  floatingChromeGlass,
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
   radius as uiRadiusRecipes,
@@ -188,7 +189,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
           className={cn(
             uiBorderRecipes.default,
             ...uiSurfaceRecipes.mutedChip,
-            'backdrop-blur-sm',
+            ...uiEffectRecipes.glassBackdrop,
             'shadow-none',
             uiTextRecipes.body,
             uiTypographyRecipes.captionStrong
@@ -232,8 +233,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
                 ...uiBorderRecipes.floatingChrome,
                 ...uiSurfaceRecipes.floatingChromePanel,
                 ...uiEffectRecipes.glassShadow,
-                'backdrop-blur-md',
-                'backdrop-saturate-[150%]',
+                ...floatingChromeGlass.backdrop,
                 'z-50'
               )}
             >

@@ -566,7 +566,7 @@ Reusable class strings for consistency:
 | `focusRingClasses` | `focus-visible:outline-none focus-visible:ring-2 ...` | Focus states |
 | `disabledClasses` | `disabled:cursor-not-allowed disabled:opacity-60` | Disabled states |
 | `transitionClasses` | `transition-all duration-200 ease-out` | Smooth transitions |
-| `glassBackdropClasses` | `backdrop-blur-2xl backdrop-saturate-[150%]` | Glass effects |
+| `glassBackdropClasses` | `backdrop-blur-md backdrop-saturate-[150%]` | Glass effects |
 
 **Example:**
 ```tsx

@@ -61,22 +61,6 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
           'cursor-pointer'
         )}
       >
-        <div
-          className={cn(
-            'hero-stat-card__gradient',
-            'pointer-events-none',
-            'absolute',
-            'inset-0',
-            'rounded-[length:inherit]',
-            'opacity-0',
-            'transition-opacity',
-            'duration-300',
-            'group-hover:opacity-100'
-          )}
-          style={{
-            backgroundImage: `linear-gradient(135deg, ${summaryAccent.gradFrom}33, ${summaryAccent.gradVia}1f, transparent 70%)`,
-          }}
-        />
         <div className={cn(heroStatCardRecipes.ring)}>
           <div className={cn(heroStatCardRecipes.ringLine)} style={ringColorStyle} />
         </div>

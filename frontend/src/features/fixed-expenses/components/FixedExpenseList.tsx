@@ -23,12 +23,13 @@ import { cn, EmptyState, Pill } from '@/ui/primitives';
 import {
   control,
   controlIconWell,
+  effect as uiEffectRecipes,
   status as uiStatusRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { getHeroAccentForCategoryKey, getHeroAccentTheme } from '@/ui/tokens';
-import { formatCategoryName, getTagThemeForCategory } from '@/utils/categories';
+import { heroAccents } from '@/ui/tokens';
+import { formatCategoryName } from '@/utils/categories';
 import { fmtUSD } from '@/utils/format';
 
 export interface FixedExpenseListProps {
@@ -66,7 +67,7 @@ const fixedExpenseHoverHintShell = cn(
   uiTextRecipes.body,
   'font-medium',
   'shadow-sm',
-  'backdrop-blur-sm'
+  ...uiEffectRecipes.glassBackdrop
 );
 
 function FixedExpenseHoverHint({
@@ -252,6 +253,10 @@ function CategoryBadge({
   );
 }
 
+const fixedExpenseHeroHoverRingStyle = {
+  boxShadow: `inset 0 0 0 2px ${heroAccents.sky.ringHex}`,
+} as CSSProperties;
+
 function FixedExpenseCard({
   item,
   month,
@@ -262,14 +267,10 @@ function FixedExpenseCard({
   accentIndexByName: ReadonlyMap<string, number>;
 }) {
   const categoryPrimary = getFixedExpenseCategoryPrimary(item.category);
-  const tagTheme = getTagThemeForCategory(categoryPrimary, accentIndexByName);
-  const heroStyles = getHeroAccentTheme(getHeroAccentForCategoryKey(tagTheme.key));
   const referenceToday = new Date();
   const dueDates = listFixedExpenseDueDatesInMonth(item, month, referenceToday);
   const monthState = resolveFixedExpenseMonthState(item, month, referenceToday, dueDates);
-  const hoverInsetRingStyle = {
-    boxShadow: `inset 0 0 0 2px ${tagTheme.ringHex}`,
-  } as CSSProperties;
+  const hoverInsetRingStyle = fixedExpenseHeroHoverRingStyle;
 
   return (
     <li className={cn(heroStatCardRecipes.base, 'min-w-0', 'w-full')}>
@@ -281,19 +282,6 @@ function FixedExpenseCard({
           'flex w-full flex-col gap-1.5 !px-3.5 !py-2 text-left md:!px-4'
         )}
       >
-        <div
-          className={cn(
-            'hero-stat-card__gradient',
-            'pointer-events-none',
-            'absolute',
-            'inset-0',
-            'rounded-[length:inherit]',
-            'opacity-100'
-          )}
-          style={{
-            backgroundImage: `linear-gradient(135deg, ${heroStyles.gradFrom}33, ${heroStyles.gradVia}1f, transparent 70%)`,
-          }}
-        />
         <div
           aria-hidden
           className={cn(

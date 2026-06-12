@@ -82,6 +82,10 @@ describe('ui tokens runtime map', () => {
         loan: finance.light.loan,
         netWorth: finance.light.netWorth,
       },
+      effect: {
+        successGlow: '#10b981',
+        dangerGlow: '#f43f5e',
+      },
     });
     expect(getThemeColors('dark')).toEqual({
       chart: {
@@ -99,6 +103,10 @@ describe('ui tokens runtime map', () => {
         credit: finance.dark.credit,
         loan: finance.dark.loan,
         netWorth: finance.dark.netWorth,
+      },
+      effect: {
+        successGlow: '#34d399',
+        dangerGlow: '#f87171',
       },
     });
     expect(getCategoryAccent('Groceries')).toEqual(getCategoryAccent('Groceries'));

@@ -13,7 +13,7 @@ export const glassCardRecipes = {
     'relative overflow-hidden',
     'border',
     ...semanticEffects.glassShadow,
-    'backdrop-blur-2xl backdrop-saturate-[150%]',
+    ...semanticEffects.glassBackdrop,
     'transition-colors duration-500',
     'dark:shadow-[0_42px_140px_-80px_var(--color-effect-glass-shadow)]',
   ],
@@ -22,8 +22,7 @@ export const glassCardRecipes = {
     ...semanticBorders.glass,
     ...semanticSurfaces.glassPanel,
     'shadow-[0_38px_120px_-60px_var(--color-effect-glass-shadow)]',
-    'backdrop-blur-[26px]',
-    'backdrop-saturate-[140%]',
+    ...semanticEffects.glassBackdrop,
     'dark:shadow-[0_40px_120px_-58px_var(--color-effect-glass-shadow)]',
   ],
   accent: [

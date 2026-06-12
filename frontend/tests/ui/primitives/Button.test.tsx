@@ -11,6 +11,7 @@ describe('Button', () => {
     expect(button.className).toContain(control.height.md);
     expect(button.className).toContain(control.paddingX.md);
     expect(button.className).toContain(font.bodyStrong);
+    expect(button).toHaveAttribute('title', 'Save');
   });
 
   it.each([

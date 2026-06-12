@@ -1,12 +1,13 @@
 import { MapPin } from 'lucide-react';
 import React, { type CSSProperties } from 'react';
+import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { cn, EmptyState } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { useTheme } from '../../../context/ThemeContext';
+import { heroAccents } from '@/ui/tokens';
 import type { AnalyticsTopMerchantsResponse } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
 import { ChartFadePresence } from './ChartFadePresence';
@@ -16,17 +17,28 @@ type Props = {
   className?: string;
 };
 
-const merchantRow = [
-  'grid grid-cols-[minmax(0,1fr)_auto_auto] items-stretch gap-x-3 p-2',
-  ...dashboardCategoryCard.shellInteractive,
+const merchantHoverRingStyle = {
+  boxShadow: `inset 0 0 0 2px ${heroAccents.violet.ringHex}`,
+} as CSSProperties;
+
+const merchantRowShell = [
+  'relative',
+  'overflow-hidden',
+  'p-2',
+  ...dashboardCategoryCard.shell,
+] as const;
+
+const merchantRowGrid = [
+  'relative',
+  'z-10',
+  'grid',
+  'grid-cols-[minmax(0,1fr)_auto_auto]',
+  'items-stretch',
+  'gap-x-3',
 ] as const;
 
 const TopMerchantsListFn: React.FC<Props> = ({ merchants, className = '' }) => {
-  const { colors } = useTheme();
   const merchantsToShow = merchants.slice(0, 8);
-  const hoverBorderStyle = {
-    '--dashboard-category-card-hover-border': colors.chart.primary[0],
-  } as CSSProperties;
 
   return (
     <div className={cn('h-full', 'flex', 'flex-col', className)}>
@@ -44,66 +56,87 @@ const TopMerchantsListFn: React.FC<Props> = ({ merchants, className = '' }) => {
             )}
           >
             {merchantsToShow.map((merchant) => (
-              <div key={merchant.name} className={cn(merchantRow)} style={hoverBorderStyle}>
-                <div className={cn('flex', 'h-full', 'min-h-[2.5rem]', 'min-w-0', 'items-center')}>
-                  <div
-                    className={cn(
-                      uiTypographyRecipes.cardTitle,
-                      uiTextRecipes.primary,
-                      'min-w-0',
-                      'line-clamp-2',
-                      'break-words'
-                    )}
-                  >
-                    {merchant.name}
-                  </div>
-                </div>
+              <div key={merchant.name} className={cn(heroStatCardRecipes.base, merchantRowShell)}>
                 <div
-                  className={cn('flex', 'h-full', 'min-h-[2.5rem]', 'items-center', 'justify-end')}
-                >
+                  aria-hidden
+                  className={cn(...dashboardCategoryCard.insetRing)}
+                  style={merchantHoverRingStyle}
+                />
+                <div className={cn(merchantRowGrid)}>
                   <div
-                    className={cn(
-                      uiTypographyRecipes.cardTitle,
-                      uiTextRecipes.primary,
-                      'min-w-0',
-                      'max-w-[8rem]',
-                      'line-clamp-2',
-                      'break-words',
-                      'text-right',
-                      'tabular-nums'
-                    )}
+                    className={cn('flex', 'h-full', 'min-h-[2.5rem]', 'min-w-0', 'items-center')}
                   >
-                    {fmtUSD(merchant.amount)}
-                  </div>
-                </div>
-                <div
-                  className={cn(
-                    'flex',
-                    'shrink-0',
-                    'flex-col',
-                    'items-end',
-                    'justify-center',
-                    'gap-0.5',
-                    'self-center',
-                    'text-right'
-                  )}
-                >
-                  <div
-                    className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted, 'tabular-nums')}
-                  >
-                    {merchant.percentage}%
+                    <div
+                      className={cn(
+                        uiTypographyRecipes.cardTitle,
+                        uiTextRecipes.primary,
+                        'min-w-0',
+                        'line-clamp-2',
+                        'break-words'
+                      )}
+                    >
+                      {merchant.name}
+                    </div>
                   </div>
                   <div
                     className={cn(
-                      uiTypographyRecipes.captionStrong,
-                      uiTextRecipes.muted,
-                      'tabular-nums'
+                      'flex',
+                      'h-full',
+                      'min-h-[2.5rem]',
+                      'items-center',
+                      'justify-end'
                     )}
                   >
-                    {merchant.count}
-                    <span className={cn(uiTypographyRecipes.caption, uiTextRecipes.body, 'ml-0.5')}>
-                      tx
-                    </span>
+                    <div
+                      className={cn(
+                        uiTypographyRecipes.cardTitle,
+                        uiTextRecipes.primary,
+                        'min-w-0',
+                        'max-w-[8rem]',
+                        'line-clamp-2',
+                        'break-words',
+                        'text-right',
+                        'tabular-nums'
+                      )}
+                    >
+                      {fmtUSD(merchant.amount)}
+                    </div>
+                  </div>
+                  <div
+                    className={cn(
+                      'flex',
+                      'shrink-0',
+                      'flex-col',
+                      'items-end',
+                      'justify-center',
+                      'gap-0.5',
+                      'self-center',
+                      'text-right'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        uiTypographyRecipes.caption,
+                        uiTextRecipes.muted,
+                        'tabular-nums'
+                      )}
+                    >
+                      {merchant.percentage}%
+                    </div>
+                    <div
+                      className={cn(
+                        uiTypographyRecipes.captionStrong,
+                        uiTextRecipes.muted,
+                        'tabular-nums'
+                      )}
+                    >
+                      {merchant.count}
+                      <span
+                        className={cn(uiTypographyRecipes.caption, uiTextRecipes.body, 'ml-0.5')}
+                      >
+                        tx
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -3,9 +3,13 @@ import { Target } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { cn, EmptyState, IconButton, Input, Pill } from '@/ui/primitives';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
-import { getHeroAccentForCategoryKey, getHeroAccentTheme } from '@/ui/tokens';
-import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
+import {
+  effect as uiEffectRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
+import { heroAccents } from '@/ui/tokens';
+import { formatCategoryName } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
 import { useCategories } from '../../transactions/hooks/useCategories';
 import type { BudgetProgressEntry } from '../hooks/useBudgets';
@@ -40,6 +44,10 @@ const budgetBarSlotClass = cn(
   'self-center'
 );
 
+const budgetHeroHoverRingStyle = {
+  boxShadow: `inset 0 0 0 2px ${heroAccents.sky.ringHex}`,
+} as CSSProperties;
+
 export function BudgetList({
   items,
   isEditing,
@@ -72,11 +80,7 @@ export function BudgetList({
       {items.map((b) => {
         const isOver = b.spent > b.amount;
         const displayName = formatCategoryName(b.category);
-        const tagTheme = getTagThemeForCategory(b.category, accentIndexByName);
-        const heroStyles = getHeroAccentTheme(getHeroAccentForCategoryKey(tagTheme.key));
-        const hoverInsetRingStyle = {
-          boxShadow: `inset 0 0 0 2px ${tagTheme.ringHex}`,
-        } as CSSProperties;
+        const hoverInsetRingStyle = budgetHeroHoverRingStyle;
         const draft = drafts[b.id] ?? String(b.amount);
         const parsedDraft = Number(draft);
         const editPlannedAmount =
@@ -90,19 +94,6 @@ export function BudgetList({
                 'flex h-full flex-col p-3.5 pt-4 md:p-3.5 md:pt-4 lg:p-4 lg:pt-5'
               )}
             >
-              <div
-                className={cn(
-                  'hero-stat-card__gradient',
-                  'pointer-events-none',
-                  'absolute',
-                  'inset-0',
-                  'rounded-[length:inherit]',
-                  'opacity-100'
-                )}
-                style={{
-                  backgroundImage: `linear-gradient(135deg, ${heroStyles.gradFrom}33, ${heroStyles.gradVia}1f, transparent 70%)`,
-                }}
-              />
               <div
                 aria-hidden
                 className={cn(
@@ -125,7 +116,9 @@ export function BudgetList({
                   categoryName={b.category}
                   accentIndexByName={accentIndexByName}
                   className={cn(
-                    'transition-all duration-300 backdrop-blur-sm dark:ring-1 dark:ring-white/10'
+                    'transition-all duration-300',
+                    ...uiEffectRecipes.glassBackdrop,
+                    'dark:ring-1 dark:ring-white/10'
                   )}
                 >
                   {displayName}

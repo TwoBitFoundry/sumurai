@@ -13,6 +13,10 @@ const defaultProps = {
 describe('InsightCard', () => {
   it('renders the metric title and value on the front', () => {
     render(<InsightCard {...defaultProps} />);
+    expect(screen.getByRole('button', { name: 'Daily Pacing' })).toHaveAttribute(
+      'title',
+      'Daily Pacing'
+    );
     expect(screen.getByText('Daily Pacing')).toBeInTheDocument();
     expect(screen.getByText('$15.00')).toBeInTheDocument();
     expect(screen.queryByText('How much can I spend every day?')).not.toBeInTheDocument();
@@ -30,6 +34,17 @@ describe('InsightCard', () => {
     render(<InsightCard {...defaultProps} onToggle={onToggle} />);
     await userEvent.click(screen.getByRole('button'));
     expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('supports keyboard activation for the card button', async () => {
+    const user = userEvent.setup();
+    const onToggle = jest.fn();
+    render(<InsightCard {...defaultProps} onToggle={onToggle} />);
+    const button = screen.getByRole('button', { name: 'Daily Pacing' });
+    button.focus();
+    await user.keyboard('{Enter}');
+    await user.keyboard('{Enter}');
+    expect(onToggle).toHaveBeenCalledTimes(2);
   });
 
   it('exposes aria-expanded on the button reflecting flipped state', () => {

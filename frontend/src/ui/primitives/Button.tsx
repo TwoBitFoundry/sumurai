@@ -93,7 +93,7 @@ export const buttonRecipes = {
     'dark:hover:border-[var(--color-border-default)] dark:hover:text-white',
   ],
   filterChip: [
-    'backdrop-blur-sm',
+    ...semanticEffects.glassBackdrop,
     'hover:-translate-y-[2px]',
     'hover:shadow-lg',
     'disabled:hover:translate-y-0',
@@ -116,7 +116,6 @@ export const buttonRecipes = {
     'bg-[var(--color-brand-sky)]',
     'text-white',
     ...buttonCta.shadow,
-    'backdrop-blur-sm',
     'dark:border-[var(--color-border-glass)]',
   ],
   danger: [
@@ -248,6 +247,13 @@ export const Button = ({
   const isSquare = shape === 'square';
   const glyphSize =
     resolvedSize === 'sm' || resolvedSize === 'md' || resolvedSize === 'lg' ? resolvedSize : 'md';
+  const resolvedTitle =
+    props.title ??
+    (typeof props['aria-label'] === 'string'
+      ? props['aria-label']
+      : typeof children === 'string' || typeof children === 'number'
+        ? String(children)
+        : undefined);
 
   return (
     <button
@@ -255,6 +261,7 @@ export const Button = ({
       disabled={disabled || loading}
       className={cn(buttonVariants({ variant, size, shape }), className)}
       {...props}
+      title={resolvedTitle}
     >
       {isSquare ? (
         <span

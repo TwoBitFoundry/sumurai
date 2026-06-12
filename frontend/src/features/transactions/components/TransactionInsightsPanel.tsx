@@ -1,7 +1,10 @@
-import { Activity, BarChart3, Layers } from 'lucide-react';
+import { Activity, BarChart3, ChevronDown, Layers } from 'lucide-react';
 import { useState } from 'react';
 import { InsightCard } from '@/components/widgets/InsightCard';
-import { InsightsPanel } from '@/components/widgets/InsightsPanel';
+import { InsightsExpandablePanel } from '@/components/widgets/InsightsExpandablePanel';
+import { InsightsPanelHeader } from '@/components/widgets/InsightsPanel';
+import { InsightsPanelShell } from '@/components/widgets/InsightsPanelShell';
+import { useSessionCollapsible } from '@/hooks/useSessionCollapsible';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import type { ContextualInsightsResponse, InsightMetric, InsightState } from '@/types/api';
 import { cn } from '@/ui/primitives';
@@ -210,6 +213,7 @@ export function TransactionInsightsPanel({
 }: TransactionInsightsPanelProps) {
   const [lastResetKey, setLastResetKey] = useState(resetKey);
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
+  const { expanded, toggleExpanded } = useSessionCollapsible('transactions-insights', true);
   const { isMobile } = useViewportBreakpoint();
 
   if (lastResetKey !== resetKey) {
@@ -241,6 +245,9 @@ export function TransactionInsightsPanel({
     label: null,
   };
   const card3 = insights?.card3 ?? null;
+  const insightsToggleLabel = expanded
+    ? 'Collapse transaction insights'
+    : 'Expand transaction insights';
 
   const card1ShareSuffix =
     card1.share != null ? (
@@ -250,53 +257,81 @@ export function TransactionInsightsPanel({
     ) : undefined;
 
   return (
-    <InsightsPanel
-      testId="transaction-insights-shell"
-      accent="emerald"
-      headerLabel={stateLabel}
-      isLoading={isLoading}
-    >
-      <InsightCard
-        title={copy.card1.title}
-        icon={<BarChart3 />}
-        value={<Card1Value metric={card1} />}
-        suffix={card1ShareSuffix}
-        question={copy.card1.question}
-        accent={cardAccent}
-        flipped={!!flipped.card1}
-        onToggle={() => toggle('card1')}
-        outlined={false}
-        tileLayout={!isMobile}
-        subgridRow={isMobile}
-      />
-      <InsightCard
-        title={copy.card2.title}
-        icon={<Activity />}
-        value={<Card2Value metric={card2} />}
-        question={copy.card2.question}
-        accent={cardAccent}
-        flipped={!!flipped.card2}
-        onToggle={() => toggle('card2')}
-        outlined={false}
-        tileLayout={!isMobile}
-        tileAlign="center"
-        subgridRow={isMobile}
-      />
-      {card3 != null ? (
+    <InsightsPanelShell testId="transaction-insights-shell" accent="emerald">
+      <InsightsExpandablePanel
+        testId="transaction-insights-panel"
+        bodyId="transaction-insights-panel-body"
+        bodyTestId="transaction-insights-panel-body"
+        summaryLabel={insightsToggleLabel}
+        expanded={expanded}
+        onToggle={toggleExpanded}
+        summary={
+          <>
+            <InsightsPanelHeader label={stateLabel} isLoading={isLoading} />
+            <div className={cn('flex', 'justify-center', 'pt-0.5')}>
+              <ChevronDown
+                className={cn(
+                  'h-4',
+                  'w-4',
+                  'shrink-0',
+                  'transition-transform',
+                  'duration-200',
+                  expanded && 'rotate-180',
+                  'text-slate-500',
+                  'dark:text-slate-400'
+                )}
+              />
+            </div>
+          </>
+        }
+        bodyClassName={cn(
+          isMobile
+            ? 'grid grid-cols-[auto_1fr_auto_auto_auto] items-baseline gap-x-2 gap-y-1.5'
+            : 'flex w-full flex-row items-start gap-3'
+        )}
+      >
         <InsightCard
-          title={copy.card3.title}
-          icon={<Layers />}
-          value={<Card3Value metric={card3} />}
-          question={copy.card3.question}
+          title={copy.card1.title}
+          icon={<BarChart3 />}
+          value={<Card1Value metric={card1} />}
+          suffix={card1ShareSuffix}
+          question={copy.card1.question}
           accent={cardAccent}
-          flipped={!!flipped.card3}
-          onToggle={() => toggle('card3')}
+          flipped={!!flipped.card1}
+          onToggle={() => toggle('card1')}
           outlined={false}
           tileLayout={!isMobile}
-          tileAlign="end"
           subgridRow={isMobile}
         />
-      ) : null}
-    </InsightsPanel>
+        <InsightCard
+          title={copy.card2.title}
+          icon={<Activity />}
+          value={<Card2Value metric={card2} />}
+          question={copy.card2.question}
+          accent={cardAccent}
+          flipped={!!flipped.card2}
+          onToggle={() => toggle('card2')}
+          outlined={false}
+          tileLayout={!isMobile}
+          tileAlign="center"
+          subgridRow={isMobile}
+        />
+        {card3 != null ? (
+          <InsightCard
+            title={copy.card3.title}
+            icon={<Layers />}
+            value={<Card3Value metric={card3} />}
+            question={copy.card3.question}
+            accent={cardAccent}
+            flipped={!!flipped.card3}
+            onToggle={() => toggle('card3')}
+            outlined={false}
+            tileLayout={!isMobile}
+            tileAlign="end"
+            subgridRow={isMobile}
+          />
+        ) : null}
+      </InsightsExpandablePanel>
+    </InsightsPanelShell>
   );
 }

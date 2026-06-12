@@ -63,6 +63,24 @@ async fn given_invalid_budget_amount_when_creating_budget_then_fails() {
 }
 
 #[tokio::test]
+async fn given_income_or_transfer_category_when_creating_budget_then_fails() {
+    let user_id = Uuid::new_v4();
+    let repository = MockDatabaseRepository::new();
+    let service = BudgetService::new();
+
+    for category in ["INCOME", "TRANSFER_IN", "TRANSFER_OUT", "Transfer In"] {
+        let result = service
+            .create_budget_for_user(&repository, user_id, category.to_string(), dec!(100.00))
+            .await;
+
+        assert!(result.is_err(), "expected error for {category}");
+        assert!(result
+            .unwrap_err()
+            .contains("income or transfer categories"));
+    }
+}
+
+#[tokio::test]
 async fn given_budgets_and_user_isolation_when_updating_then_respects_access_control() {
     let user1_id = Uuid::new_v4();
     let user2_id = Uuid::new_v4();

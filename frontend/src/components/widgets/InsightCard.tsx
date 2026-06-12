@@ -122,6 +122,7 @@ export function InsightCard({
       onClick={onToggle}
       aria-expanded={flipped}
       aria-label={title}
+      title={title}
       className={cn(
         heroStatCardRecipes.base,
         tileAlignStyles?.text ?? 'text-left',

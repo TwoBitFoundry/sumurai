@@ -4,11 +4,14 @@ import {
   border,
   budgetProgress,
   buttonCta,
+  chartFloatingGlass,
+  chartTooltip,
   chrome,
   chromeBar,
   control,
   controlIconWell,
   effect,
+  floatingChromeGlass,
   floatingChromeSearch,
   focus,
   font,
@@ -158,7 +161,8 @@ describe('shared UI recipes', () => {
 
   it('exposes alert shell recipes with borderless dark mode', () => {
     expect(alert.shell.join(' ')).toContain('dark:border-0');
-    expect(alert.tone.solid).toContain('backdrop-blur-sm');
+    expect(alert.tone.solid).toContain('backdrop-blur-md');
+    expect(alert.tone.solid).toContain('backdrop-saturate-[150%]');
   });
 
   it('exposes auth layout recipes for mobile, tablet, and desktop tiers', () => {
@@ -172,18 +176,19 @@ describe('shared UI recipes', () => {
     expect(authLayout.footerLink).toEqual(expect.arrayContaining([font.body, text.body]));
   });
 
-  it('exposes settings security layout recipes for mobile, tablet, and desktop tiers', () => {
-    expect(settingsSecurityLayout.passkeyRow).toEqual(
-      expect.arrayContaining(['flex-col', 'md:flex-row', 'lg:gap-4'])
+  it('composes chart floating glass from glass design tokens', () => {
+    expect(chartFloatingGlass.shell).toEqual(
+      expect.arrayContaining([
+        'border',
+        'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_58%,transparent)]',
+        'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
+        ...border.glass,
+        ...effect.glassShadow,
+      ])
     );
-    expect(settingsSecurityLayout.sectionHeader).toEqual(
-      expect.arrayContaining(['flex-col', 'md:flex-row', 'md:justify-between'])
+    expect(chartTooltip.shell).toEqual(
+      expect.arrayContaining([...chartFloatingGlass.backdrop, ...chartFloatingGlass.shell])
     );
-    expect(settingsSecurityLayout.addTrigger).toEqual(
-      expect.arrayContaining(['w-full', 'shrink-0', 'md:w-auto'])
-    );
-    expect(settingsSecurityLayout.modalActions).toEqual(
-      expect.arrayContaining(['flex-col', 'md:flex-row'])
-    );
+    expect(chartFloatingGlass.backdrop).toEqual(effect.glassBackdrop);
   });
 });

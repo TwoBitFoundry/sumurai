@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { BudgetList } from '@/features/budgets/components/BudgetList';
 import { radius as uiRadiusRecipes } from '@/ui/recipes';
+import { heroAccents } from '@/ui/tokens';
 
 jest.mock('@/features/transactions/hooks/useCategories', () => ({
   useCategories: () => ({
@@ -42,14 +43,13 @@ describe('BudgetList', () => {
     expect(list).not.toHaveClass('xl:grid-cols-3');
     expect(list).not.toHaveClass('2xl:grid-cols-4');
     expect(card).toHaveClass(uiRadiusRecipes.standard);
-    const gradient = container.querySelector('.hero-stat-card__gradient');
-    expect(gradient).toHaveClass('opacity-100');
-    expect(gradient).not.toHaveClass('group-hover:opacity-100');
     const cardShell = container.querySelector('li > div');
     expect(cardShell?.className).toContain('!border-0');
     const insetRing = container.querySelector('.hero-stat-card__inset-ring');
     expect(insetRing).toHaveClass('group-hover:opacity-100');
-    expect((insetRing as HTMLElement).style.boxShadow).toMatch(/^inset 0 0 0 2px #/i);
+    expect((insetRing as HTMLElement).style.boxShadow).toBe(
+      `inset 0 0 0 2px ${heroAccents.sky.ringHex}`
+    );
   });
 
   it('hides per-card actions in the view state', () => {

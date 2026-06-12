@@ -280,7 +280,7 @@ Use uppercase only when the UI needs tight chrome or badge-like hierarchy. If a 
 Keep page framing consistent with the spacing tokens. Favor calm horizontal rhythm, compact control gaps, and comfortable section gaps.
 
 ## Elevation & Depth
-Use blur, inset highlights, soft shadows, and subtle gradients for depth. Reserve the strongest depth for shells, auth flows, and hero surfaces. Use `effect-accent-outline-glow` for CTA drop-shadow glow and inset hover outlines on clipped surfaces.
+Use blur, inset highlights, soft shadows, and subtle gradients for depth. Reserve the strongest depth for shells, auth flows, and hero surfaces. Use `effect-accent-outline-glow` for CTA drop-shadow glow and inset hover outlines on clipped surfaces. Use the shared glass backdrop recipe (`effect.glassBackdrop` in `@/ui/recipes`) for all glass surfaces: medium backdrop blur with elevated saturation.
 
 ## Shapes
 Use larger radii for shells, medium radii for cards and inputs, and pills for chips and status markers. Keep the shape language smooth and modern.

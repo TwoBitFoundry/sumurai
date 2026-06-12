@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { useTheme } from '@/context/ThemeContext';
 import { TopMerchantsList } from '@/features/analytics/components/TopMerchantsList';
 import { sampleTopMerchants } from '@/storybook/fixtures/analytics';
-import { getThemeColors } from '@/ui/tokens';
+import { getThemeColors, heroAccents } from '@/ui/tokens';
 
 jest.mock('@/context/ThemeContext', () => ({
   useTheme: jest.fn(),
@@ -28,6 +28,10 @@ describe('TopMerchantsList', () => {
     expect(grid).toHaveClass('grid-cols-1');
     expect(grid).toHaveClass('md:grid-cols-2');
     expect(screen.getByText('Corner Market')).toBeInTheDocument();
+    const merchantRow = screen.getByText('Corner Market').closest('.hero-stat-card');
+    expect(merchantRow?.querySelector('.hero-stat-card__inset-ring')).toHaveStyle({
+      boxShadow: `inset 0 0 0 2px ${heroAccents.violet.ringHex}`,
+    });
     expect(
       screen.getByText('Corner Market').closest('div[class*="grid-cols-[minmax"]')
     ).toHaveTextContent('14tx');

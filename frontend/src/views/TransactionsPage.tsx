@@ -71,7 +71,18 @@ const TransactionsPage: React.FC<{
 
   const insightsResetKey = `${insights?.state ?? 'a'}-${search}-${selectedCategory ?? ''}-${accountKey}-${dateRange ?? ''}`;
   const categorizeActions = (
-    <div className={cn('flex', 'shrink-0', 'flex-wrap', 'items-center', 'gap-3')}>
+    <div
+      className={cn(
+        'flex',
+        'w-full',
+        'shrink-0',
+        'items-center',
+        'justify-between',
+        'gap-3',
+        'md:w-auto',
+        'md:justify-start'
+      )}
+    >
       <IconButton
         ref={addCategoryButtonRef}
         type="button"
@@ -144,8 +155,10 @@ const TransactionsPage: React.FC<{
               className={cn(
                 'flex',
                 'min-w-0',
+                'w-full',
                 'items-center',
                 'gap-2',
+                'md:w-auto',
                 uiTypographyRecipes.sectionTitle,
                 uiTextRecipes.primary
               )}

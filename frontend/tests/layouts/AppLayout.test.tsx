@@ -42,6 +42,7 @@ describe('AppLayout', () => {
     expect(main).toHaveClass('flex-1');
     expect(main).toHaveClass(...appLayout.mainSafeArea);
     expect(main).toHaveClass('md:pt-6');
+    expect(main).not.toHaveClass('overflow-hidden');
     expect(main).not.toHaveClass('md:pl-[calc(3rem_+_env(safe-area-inset-left))]');
 
     const contentShell = main?.firstElementChild;

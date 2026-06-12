@@ -1,7 +1,6 @@
 import { Upload } from 'lucide-react';
 import type React from 'react';
-import type { CSSProperties } from 'react';
-import { useState } from 'react';
+import { type CSSProperties, useState } from 'react';
 import { ImportModal } from '@/features/import/components/ImportModal';
 import { cn, GlassCard, IconButton } from '@/ui/primitives';
 import {
@@ -10,7 +9,7 @@ import {
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { useTheme } from '../context/ThemeContext';
+import { heroAccents } from '@/ui/tokens';
 
 interface Account {
   id: string;
@@ -27,12 +26,11 @@ interface AccountRowProps {
   onImportSuccess?: (count: number, mask: string) => void;
 }
 
-const cardContainerClasses = cn(
-  'group',
-  'relative',
-  'overflow-hidden',
-  ...dashboardCategoryCard.chartHoverBorder
-);
+const cardContainerClasses = cn('group', 'relative', 'overflow-hidden');
+
+const accountHeroHoverRingStyle = {
+  boxShadow: `inset 0 0 0 2px ${heroAccents.violet.ringHex}`,
+} as CSSProperties;
 
 const accountMaskClasses = cn(
   uiTypographyRecipes.body,
@@ -59,10 +57,6 @@ const formatMoney = (amount?: number) => {
 
 export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImportSuccess }) => {
   const [isImportOpen, setIsImportOpen] = useState(false);
-  const { colors } = useTheme();
-  const hoverBorderStyle = {
-    '--dashboard-category-card-hover-border': colors.chart.primary[0],
-  } as CSSProperties;
   const isDebtAccount = account.type === 'credit' || account.type === 'loan';
   const isOtherAccount = account.type === 'other';
 
@@ -93,7 +87,13 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
         padding="none"
         withInnerEffects={false}
         containerClassName={cardContainerClasses}
-        style={hoverBorderStyle}
+        beforeContent={
+          <div
+            aria-hidden
+            className={cn(...dashboardCategoryCard.insetRing)}
+            style={accountHeroHoverRingStyle}
+          />
+        }
       >
         <div className={cn('relative', 'flex', 'min-h-[6rem]', 'items-start', 'p-6')}>
           <div className={cn('relative', 'z-10', 'w-full', 'space-y-3')}>

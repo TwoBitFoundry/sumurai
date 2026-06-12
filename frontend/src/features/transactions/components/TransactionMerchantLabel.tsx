@@ -35,8 +35,7 @@ function RawMerchantPopoverContent({ rawMerchant }: { rawMerchant: string }) {
         ...uiSurfaceRecipes.glassPanel,
         ...uiEffectRecipes.glassShadow,
         'p-3',
-        'backdrop-blur-2xl',
-        'backdrop-saturate-[150%]'
+        ...uiEffectRecipes.glassBackdrop
       )}
     >
       <div className={cn('space-y-1.5')}>

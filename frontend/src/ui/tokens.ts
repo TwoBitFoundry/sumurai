@@ -1,4 +1,7 @@
 import generatedTokens from './generated/tokens';
+import { effect as uiEffectRecipes } from './recipes';
+
+const glassBackdropClasses = uiEffectRecipes.glassBackdrop.join(' ');
 
 export type ThemeMode = 'light' | 'dark';
 export type ThemePreference = 'system' | ThemeMode;
@@ -21,6 +24,10 @@ export type ThemeColors = {
     credit: string;
     loan: string;
     netWorth: string;
+  };
+  effect: {
+    successGlow: string;
+    dangerGlow: string;
   };
 };
 
@@ -323,8 +330,7 @@ export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
     gradFrom: '#64748b',
     gradVia: '#475569',
     icon: 'text-slate-500 dark:text-slate-300',
-    defaultPill:
-      'border border-slate-200/70 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 bg-[linear-gradient(135deg,_rgba(226,232,240,0.95),_rgba(248,250,252,0.65))] dark:bg-[linear-gradient(135deg,_rgba(30,41,59,0.75),_rgba(15,23,42,0.6))] shadow-[0_16px_44px_-30px_rgba(15,23,42,0.55)] backdrop-blur-sm ring-1 ring-white/65 dark:ring-white/12',
+    defaultPill: `border border-slate-200/70 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 bg-[linear-gradient(135deg,_rgba(226,232,240,0.95),_rgba(248,250,252,0.65))] dark:bg-[linear-gradient(135deg,_rgba(30,41,59,0.75),_rgba(15,23,42,0.6))] shadow-[0_16px_44px_-30px_rgba(15,23,42,0.55)] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
     defaultDot: 'bg-slate-400/85 dark:bg-slate-200/80',
     glowRgb: '100,116,139',
   },
@@ -337,8 +343,7 @@ export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
     gradFrom: '#34d399',
     gradVia: '#10b981',
     icon: 'text-emerald-500 dark:text-emerald-400',
-    defaultPill:
-      'border border-emerald-200/70 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-200 bg-[linear-gradient(135deg,_rgba(16,185,129,0.22),_rgba(16,185,129,0.08))] dark:bg-[linear-gradient(135deg,_rgba(34,197,94,0.22),_rgba(34,197,94,0.08))] shadow-[0_18px_46px_-32px_rgba(16,185,129,0.55)] backdrop-blur-sm ring-1 ring-white/65 dark:ring-white/12',
+    defaultPill: `border border-emerald-200/70 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-200 bg-[linear-gradient(135deg,_rgba(16,185,129,0.22),_rgba(16,185,129,0.08))] dark:bg-[linear-gradient(135deg,_rgba(34,197,94,0.22),_rgba(34,197,94,0.08))] shadow-[0_18px_46px_-32px_rgba(16,185,129,0.55)] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
     defaultDot: 'bg-emerald-500/90 dark:bg-emerald-300/80',
     glowRgb: '16,185,129',
   },
@@ -351,8 +356,7 @@ export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
     gradFrom: '#38bdf8',
     gradVia: '#0ea5e9',
     icon: 'text-sky-500 dark:text-sky-400',
-    defaultPill:
-      'border border-sky-200/70 dark:border-sky-500/40 text-sky-700 dark:text-sky-200 bg-[linear-gradient(135deg,_rgba(14,165,233,0.2),_rgba(14,165,233,0.08))] dark:bg-[linear-gradient(135deg,_rgba(56,189,248,0.2),_rgba(56,189,248,0.08))] shadow-[0_18px_46px_-32px_rgba(14,165,233,0.55)] backdrop-blur-sm ring-1 ring-white/65 dark:ring-white/12',
+    defaultPill: `border border-sky-200/70 dark:border-sky-500/40 text-sky-700 dark:text-sky-200 bg-[linear-gradient(135deg,_rgba(14,165,233,0.2),_rgba(14,165,233,0.08))] dark:bg-[linear-gradient(135deg,_rgba(56,189,248,0.2),_rgba(56,189,248,0.08))] shadow-[0_18px_46px_-32px_rgba(14,165,233,0.55)] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
     defaultDot: 'bg-sky-500/90 dark:bg-sky-300/80',
     glowRgb: '14,165,233',
   },
@@ -365,8 +369,7 @@ export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
     gradFrom: '#a78bfa',
     gradVia: '#7c3aed',
     icon: 'text-violet-500 dark:text-violet-400',
-    defaultPill:
-      'border border-violet-200/70 dark:border-violet-500/40 text-violet-700 dark:text-violet-200 bg-[linear-gradient(135deg,_rgba(139,92,246,0.22),_rgba(139,92,246,0.08))] dark:bg-[linear-gradient(135deg,_rgba(167,139,250,0.22),_rgba(167,139,250,0.08))] shadow-[0_18px_46px_-32px_rgba(139,92,246,0.55)] backdrop-blur-sm ring-1 ring-white/65 dark:ring-white/12',
+    defaultPill: `border border-violet-200/70 dark:border-violet-500/40 text-violet-700 dark:text-violet-200 bg-[linear-gradient(135deg,_rgba(139,92,246,0.22),_rgba(139,92,246,0.08))] dark:bg-[linear-gradient(135deg,_rgba(167,139,250,0.22),_rgba(167,139,250,0.08))] shadow-[0_18px_46px_-32px_rgba(139,92,246,0.55)] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
     defaultDot: 'bg-violet-500/90 dark:bg-violet-300/80',
     glowRgb: '167,139,250',
   },
@@ -379,8 +382,7 @@ export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
     gradFrom: '#fbbf24',
     gradVia: '#f59e0b',
     icon: 'text-amber-500 dark:text-amber-400',
-    defaultPill:
-      'border border-amber-200/70 dark:border-amber-500/40 text-amber-700 dark:text-amber-200 bg-[linear-gradient(135deg,_rgba(245,158,11,0.22),_rgba(245,158,11,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,191,36,0.22),_rgba(251,191,36,0.08))] shadow-[0_18px_46px_-32px_rgba(245,158,11,0.52)] backdrop-blur-sm ring-1 ring-white/65 dark:ring-white/12',
+    defaultPill: `border border-amber-200/70 dark:border-amber-500/40 text-amber-700 dark:text-amber-200 bg-[linear-gradient(135deg,_rgba(245,158,11,0.22),_rgba(245,158,11,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,191,36,0.22),_rgba(251,191,36,0.08))] shadow-[0_18px_46px_-32px_rgba(245,158,11,0.52)] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
     defaultDot: 'bg-amber-500/90 dark:bg-amber-300/85',
     glowRgb: '251,191,36',
   },
@@ -393,8 +395,7 @@ export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
     gradFrom: '#fb7185',
     gradVia: '#f43f5e',
     icon: 'text-rose-500 dark:text-rose-400',
-    defaultPill:
-      'border border-rose-200/70 dark:border-rose-500/40 text-rose-700 dark:text-rose-200 bg-[linear-gradient(135deg,_rgba(244,63,94,0.22),_rgba(244,63,94,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,113,133,0.22),_rgba(251,113,133,0.08))] shadow-[0_18px_46px_-32px_rgba(244,63,94,0.5)] backdrop-blur-sm ring-1 ring-white/65 dark:ring-white/12',
+    defaultPill: `border border-rose-200/70 dark:border-rose-500/40 text-rose-700 dark:text-rose-200 bg-[linear-gradient(135deg,_rgba(244,63,94,0.22),_rgba(244,63,94,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,113,133,0.22),_rgba(251,113,133,0.08))] shadow-[0_18px_46px_-32px_rgba(244,63,94,0.5)] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
     defaultDot: 'bg-rose-500/90 dark:bg-rose-300/80',
     glowRgb: '244,63,94',
   },
@@ -483,9 +484,19 @@ export const featurePalettes = {
   },
 } as const;
 
+const effectLight = {
+  successGlow: generatedTokens.color['effect-success-glow'].$value.hex,
+  dangerGlow: generatedTokens.color['effect-danger-glow'].$value.hex,
+};
+
+const effectDark = {
+  successGlow: generatedTokens.color['effect-success-glow-dark'].$value.hex,
+  dangerGlow: generatedTokens.color['effect-danger-glow-dark'].$value.hex,
+};
+
 const themeColors = {
-  light: { chart: chartThemeLight, semantic: semanticLight },
-  dark: { chart: chartThemeDark, semantic: semanticDark },
+  light: { chart: chartThemeLight, semantic: semanticLight, effect: effectLight },
+  dark: { chart: chartThemeDark, semantic: semanticDark, effect: effectDark },
 } as const;
 
 const hashString = (value: string): number => {

@@ -37,18 +37,36 @@ describe('BalancesInsightsPanel', () => {
   it('renders net in the shell collapsed by default', () => {
     render(<BalancesInsightsPanel overall={sampleOverall} />);
 
-    expect(screen.getByTestId('balances-insights-shell')).toBeInTheDocument();
+    const shell = screen.getByTestId('balances-insights-shell');
+    expect(shell).toBeInTheDocument();
     expect(screen.getByText('Balances Now')).toBeInTheDocument();
-    expect(screen.getByTestId('balances-insights-shell').className).toContain('border-0');
-    expect(
-      screen.getByTestId('balances-insights-shell').querySelector('.hero-stat-card__inset-ring')
-    ).not.toBeNull();
+    expect(shell).toHaveClass('sticky');
+    expect(shell).toHaveClass('z-30');
+    expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
+    expect(shell.firstElementChild?.className).toContain('--color-surface-glass-panel');
+    expect(shell.querySelector('.hero-stat-card__inset-ring')).not.toBeNull();
     expect(screen.getByTestId('overall-net')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /balances now/i })).toHaveAttribute(
       'aria-expanded',
       'false'
     );
     expect(screen.queryByText('Cash')).not.toBeInTheDocument();
+  });
+
+  it('keeps the mobile net label and amount on one wrapping row', () => {
+    setViewportWidth(390);
+
+    render(<BalancesInsightsPanel overall={sampleOverall} />);
+
+    const netValue = screen.getByTestId('overall-net');
+    const netRow = netValue.parentElement;
+
+    expect(netRow).toHaveClass('grid');
+    expect(netRow).toHaveClass('grid-cols-[auto_minmax(0,1fr)]');
+    expect(netRow).toHaveClass('items-baseline');
+    expect(netValue).toHaveClass('justify-self-end');
+    expect(netValue).toHaveClass('text-right');
+    expect(within(netRow as HTMLElement).getByText('Net')).toBeInTheDocument();
   });
 
   it('toggles sub-categories from the net summary', async () => {
@@ -68,6 +86,20 @@ describe('BalancesInsightsPanel', () => {
 
     expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
     expect(getSessionCollapsibleExpanded('balances-insights')).toBe(false);
+  });
+
+  it('supports keyboard activation from the summary button', async () => {
+    const user = userEvent.setup();
+
+    render(<BalancesInsightsPanel overall={sampleOverall} />);
+
+    const summaryButton = screen.getByRole('button', { name: /balances now/i });
+    summaryButton.focus();
+
+    await user.keyboard('{Enter}');
+    expect(
+      screen.getByRole('button', { name: /balances now/i }).getAttribute('aria-expanded')
+    ).toBe('true');
   });
 
   it('restores expanded state from session storage', () => {

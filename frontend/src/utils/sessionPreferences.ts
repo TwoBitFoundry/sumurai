@@ -30,6 +30,14 @@ function readCollapsibleExpandedMap(): Record<string, boolean> {
   return { ...legacy, ...current };
 }
 
+export function hasSessionCollapsibleExpanded(sectionId: string): boolean {
+  const map = readCollapsibleExpandedMap();
+  if (sectionId === 'fixed-expenses' && map[sectionId] !== true && map.subscriptions === true) {
+    return true;
+  }
+  return Object.hasOwn(map, sectionId);
+}
+
 function writeCollapsibleExpandedMap(map: Record<string, boolean>): void {
   if (Object.keys(map).length === 0) {
     removeItem(SESSION_KEYS.collapsibleExpanded);

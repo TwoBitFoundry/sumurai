@@ -280,8 +280,7 @@ export function CategoryCatalogPicker({
           className={cn(
             'w-full max-w-none rounded-b-none rounded-t-[2rem]',
             ...floatingChromeGlass.shell,
-            'backdrop-blur-2xl',
-            'backdrop-saturate-[150%]',
+            ...floatingChromeGlass.backdrop,
             'max-h-[min(50dvh,32rem)]',
             'overflow-hidden'
           )}
@@ -342,8 +341,7 @@ export function CategoryCatalogPicker({
               'lg:w-[min(24rem,28vw)]',
               'rounded-[2rem]',
               ...floatingChromeGlass.shell,
-              'backdrop-blur-2xl',
-              'backdrop-saturate-[150%]',
+              ...floatingChromeGlass.backdrop,
               'p-4',
               'max-h-[min(50dvh,32rem)]',
               'overflow-hidden'

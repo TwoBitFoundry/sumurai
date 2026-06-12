@@ -1,11 +1,16 @@
 //! Budget persistence and summary logic.
 
 use crate::models::budget::Budget;
-use crate::services::repository_service::DatabaseRepository;
+use crate::services::repository_service::{is_transfer_category, DatabaseRepository};
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
 pub struct BudgetService;
+
+fn is_budget_ineligible_category(category: &str) -> bool {
+    let normalized = category.trim().to_uppercase().replace(' ', "_");
+    normalized == "INCOME" || is_transfer_category(&normalized)
+}
 
 impl BudgetService {
     pub fn new() -> Self {
@@ -21,6 +26,9 @@ impl BudgetService {
     ) -> Result<Budget, String> {
         if amount <= Decimal::ZERO {
             return Err("Budget amount must be greater than zero".to_string());
+        }
+        if is_budget_ineligible_category(&category) {
+            return Err("Budgets cannot be created for income or transfer categories".to_string());
         }
         // Prevent duplicate categories for the same user
         let existing = repository

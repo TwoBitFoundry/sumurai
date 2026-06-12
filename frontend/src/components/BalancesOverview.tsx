@@ -446,7 +446,47 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
 }
 
 export function BalancesOverviewSummary() {
-  return <BalancesOverview variant="summary" />;
+  const { loading, error, data, refresh } = useBalancesOverview();
+  const { incomeYtd, expensesYtd, loading: ytdLoading } = useYtdIncomeExpenses();
+  const overall = data?.overall;
+
+  if (loading) {
+    return (
+      <div
+        data-testid="balances-loading"
+        className={cn(dashboardSummaryShellLoading, 'h-16', 'w-full')}
+      />
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert
+        data-testid="balances-error"
+        variant="error"
+        title="Balances unavailable"
+        className={cn('flex', 'items-center', 'justify-between', 'gap-3')}
+      >
+        <span>Failed to load balances. {error}</span>
+        <Button variant="danger" size="sm" onClick={refresh}>
+          Retry
+        </Button>
+      </Alert>
+    );
+  }
+
+  if (!overall) {
+    return null;
+  }
+
+  return (
+    <BalancesInsightsPanel
+      overall={overall}
+      resetKey={data?.asOf ?? 'default'}
+      incomeYtd={ytdLoading ? undefined : incomeYtd}
+      expensesYtd={ytdLoading ? undefined : expensesYtd}
+    />
+  );
 }
 
 export function BalancesOverviewChart() {

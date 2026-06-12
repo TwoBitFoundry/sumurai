@@ -1,6 +1,7 @@
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import type { CustomCategory } from '@/types/api';
 import { Button, cn, Modal, ModalDrawerHeader } from '@/ui/primitives';
+import { effect as uiEffectRecipes } from '@/ui/recipes';
 import { useDeleteCustomCategory } from '../hooks/useDeleteCustomCategory';
 
 interface Props {
@@ -48,7 +49,7 @@ export function DeleteCustomCategoryConfirm({ open, category, onRequestClose, on
         'border-white/65',
         'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_92%,white)]',
         'shadow-[0_24px_60px_-36px_rgba(15,23,42,0.42)]',
-        'backdrop-blur-2xl',
+        ...uiEffectRecipes.glassBackdrop,
         'dark:border-white/10',
         'dark:bg-[#0f172a]/95'
       )}

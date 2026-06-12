@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/ui/primitives/utils';
 import {
   border as semanticBorders,
@@ -11,22 +12,21 @@ import {
 } from '@/ui/recipes';
 
 export const pageLayoutRecipes = {
-  shell: [
-    'relative',
-    'overflow-hidden',
+  shell: ['relative', 'p-4', 'md:p-8', 'lg:p-8'],
+  shellSurface: [
+    'pointer-events-none',
+    'absolute',
+    'inset-0',
     uiRadiusRecipes.standard,
     'border',
     ...semanticBorders.glass,
     ...semanticSurfaces.glassPanel,
-    'p-4',
     ...semanticEffects.glassShadow,
-    'backdrop-blur-[28px]',
-    'backdrop-saturate-[150%]',
+    ...semanticEffects.glassBackdrop,
+    'overflow-hidden',
     'transition-colors',
     'duration-500',
     'ease-out',
-    'md:p-8',
-    'lg:p-8',
   ],
   innerRing: [
     'absolute',
@@ -63,6 +63,16 @@ export const pageLayoutRecipes = {
   ].join(' '),
   errorText: `${uiTypographyRecipes.captionStrong} ${semanticTextRecipes.danger}`,
   settingsShell: ['mx-auto', 'w-full', 'max-w-3xl'],
+  stickyScope: ['flex', 'min-w-0', 'flex-col'],
+  stickyStatsOverlap: [
+    '-mt-[calc(var(--page-layout-stats-height,0px)+2.5rem)]',
+    'md:-mt-[calc(var(--page-layout-stats-height,0px)+4rem)]',
+  ],
+  stickyStatsInset: [
+    '[&_[data-page-layout-stats-host]>*]:mx-4',
+    'md:[&_[data-page-layout-stats-host]>*]:mx-8',
+  ],
+  stickyContentGap: ['mt-10', 'md:mt-16'],
 } as const;
 
 interface PageLayoutProps {
@@ -86,10 +96,41 @@ export function PageLayout({
   children,
   className,
 }: PageLayoutProps) {
+  const statsHostRef = useRef<HTMLDivElement>(null);
+  const [statsHeight, setStatsHeight] = useState(0);
+  const layoutStyle = {
+    '--page-layout-stats-height': statsHeight > 0 ? `${statsHeight}px` : undefined,
+  } as CSSProperties;
+
+  useEffect(() => {
+    if (!stats) {
+      setStatsHeight(0);
+      return;
+    }
+
+    const statsElement = statsHostRef.current?.firstElementChild;
+    if (!statsElement) return;
+
+    const updateStatsHeight = () => {
+      setStatsHeight(statsElement.getBoundingClientRect().height);
+    };
+
+    updateStatsHeight();
+
+    if (typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const observer = new ResizeObserver(updateStatsHeight);
+    observer.observe(statsElement);
+
+    return () => observer.disconnect();
+  }, [stats]);
+
   return (
-    <div className={cn('space-y-6', 'md:space-y-8', className)}>
+    <div className={cn('flex', 'flex-col', 'gap-6', 'md:gap-8', className)} style={layoutStyle}>
       <section className={cn(...pageLayoutRecipes.shell)}>
-        <div className={cn('pointer-events-none', 'absolute', 'inset-0')}>
+        <div className={cn(pageLayoutRecipes.shellSurface)}>
           <div className={cn(pageLayoutRecipes.innerRing)} />
           <div className={cn(pageLayoutRecipes.innerGradient)} />
         </div>
@@ -126,11 +167,45 @@ export function PageLayout({
             </div>
           )}
 
-          {stats && stats}
+          {stats ? (
+            <div
+              aria-hidden
+              data-testid="page-layout-stats-placeholder"
+              className={cn('pointer-events-none', 'invisible')}
+              style={{ height: 'var(--page-layout-stats-height, 0px)' }}
+            />
+          ) : null}
         </div>
       </section>
 
-      {children ? <div className={cn('w-full', 'min-w-0', 'max-w-full')}>{children}</div> : null}
+      {stats || children ? (
+        <div
+          className={cn(
+            ...pageLayoutRecipes.stickyScope,
+            stats && pageLayoutRecipes.stickyStatsOverlap,
+            stats && pageLayoutRecipes.stickyStatsInset
+          )}
+          data-testid="page-layout-sticky-scope"
+        >
+          {stats ? (
+            <div ref={statsHostRef} className={cn('contents')} data-page-layout-stats-host>
+              {stats}
+            </div>
+          ) : null}
+          {children ? (
+            <div
+              className={cn(
+                'w-full',
+                'min-w-0',
+                'max-w-full',
+                stats && pageLayoutRecipes.stickyContentGap
+              )}
+            >
+              {children}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

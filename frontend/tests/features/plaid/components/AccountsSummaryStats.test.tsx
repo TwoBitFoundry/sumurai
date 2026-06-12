@@ -14,7 +14,10 @@ describe('AccountsSummaryStats', () => {
     render(<AccountsSummaryStats summary={defaultSummary} lastSyncValue="12m ago" />);
 
     const shell = screen.getByTestId('accounts-summary-shell');
-    expect(shell.className).toContain('border-0');
+    expect(shell).toHaveClass('sticky');
+    expect(shell).toHaveClass('z-30');
+    expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
+    expect(shell.firstElementChild?.className).toContain('--color-surface-glass-panel');
     expect(shell.querySelector('.hero-stat-card__inset-ring')).not.toBeNull();
     expect(screen.getByText('Account summary')).toBeInTheDocument();
   });
@@ -34,6 +37,20 @@ describe('AccountsSummaryStats', () => {
 
     const lastSyncCard = screen.getByTestId('insight-card-last-sync');
     expect(within(lastSyncCard).getByText('12m ago')).toBeInTheDocument();
+  });
+
+  it('shows a header toggle that collapses the account insights', async () => {
+    const user = userEvent.setup();
+
+    render(<AccountsSummaryStats summary={defaultSummary} lastSyncValue="12m ago" />);
+
+    const toggle = screen.getByRole('button', { name: 'Collapse account insights' });
+    expect(toggle).toHaveAttribute('aria-label', 'Collapse account insights');
+    expect(screen.getByTestId('accounts-summary-panel-body')).toBeInTheDocument();
+
+    await user.click(toggle);
+
+    expect(screen.getByRole('button', { name: 'Expand account insights' })).toBeInTheDocument();
   });
 
   it('flips insight cards to show their questions', async () => {

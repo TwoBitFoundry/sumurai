@@ -49,7 +49,6 @@ const footerActionInteraction = [
 const footerSkyCtaLink = [
   uiTextRecipes.inverse,
   ...buttonCta.gradient,
-  'backdrop-blur-sm',
   'border',
   'border-sky-400/30',
   'dark:border-sky-500/30',
@@ -59,7 +58,6 @@ const footerSkyCtaLink = [
 const footerCoffeeCtaLink = [
   uiTextRecipes.inverse,
   'bg-[var(--color-brand-amber)]',
-  'backdrop-blur-sm',
   'border',
   'border-amber-400/30',
   'dark:border-amber-500/30',
@@ -78,7 +76,7 @@ export function Footer() {
         'to-sky-50/30',
         'dark:from-slate-900/60',
         'dark:to-slate-900/80',
-        'backdrop-blur-md',
+        ...uiEffectRecipes.glassBackdrop,
         'pb-[env(safe-area-inset-bottom)]'
       )}
     >

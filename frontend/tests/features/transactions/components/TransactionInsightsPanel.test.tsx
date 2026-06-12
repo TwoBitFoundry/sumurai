@@ -41,18 +41,32 @@ describe('TransactionInsightsPanel', () => {
 
   it('renders the shell with the correct state label for state A', () => {
     render(<TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="k1" />);
-    expect(screen.getByTestId('transaction-insights-shell')).toBeInTheDocument();
+    const shell = screen.getByTestId('transaction-insights-shell');
+    expect(shell).toBeInTheDocument();
     expect(screen.getByText('All transactions')).toBeInTheDocument();
-    expect(screen.getByTestId('transaction-insights-shell').className).toContain('border-0');
-    const gradient = screen
-      .getByTestId('transaction-insights-shell')
-      .querySelector('.hero-stat-card__gradient');
+    expect(shell).toHaveClass('sticky');
+    expect(shell).toHaveClass('z-30');
+    expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
+    expect(shell.firstElementChild?.className).toContain('--color-surface-glass-panel');
+    const gradient = shell.querySelector('.hero-stat-card__gradient');
     expect(gradient).toHaveClass('opacity-100');
     expect(gradient).not.toHaveClass('group-hover:opacity-100');
-    const insetRing = screen
-      .getByTestId('transaction-insights-shell')
-      .querySelector('.hero-stat-card__inset-ring');
+    const insetRing = shell.querySelector('.hero-stat-card__inset-ring');
     expect(insetRing).toHaveClass('opacity-0', 'group-hover:opacity-100');
+  });
+
+  it('shows a header toggle that collapses the transaction insights', async () => {
+    const user = userEvent.setup();
+
+    render(<TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="k1" />);
+
+    const toggle = screen.getByRole('button', { name: 'Collapse transaction insights' });
+    expect(toggle).toHaveAttribute('aria-label', 'Collapse transaction insights');
+    expect(screen.getByTestId('transaction-insights-panel-body')).toBeInTheDocument();
+
+    await user.click(toggle);
+
+    expect(screen.getByRole('button', { name: 'Expand transaction insights' })).toBeInTheDocument();
   });
 
   it('shows Loading… indicator when isLoading is true', () => {
@@ -135,7 +149,9 @@ describe('TransactionInsightsPanel', () => {
     );
     expect(screen.getByText('Category Total')).toBeInTheDocument();
     expect(screen.getByText('Category filter')).toBeInTheDocument();
-    expect(screen.getByTestId('transaction-insights-shell').className).toContain('border-0');
+    expect(screen.getByTestId('transaction-insights-shell').firstElementChild?.className).toContain(
+      'backdrop-blur-md'
+    );
     expect(
       screen.getByTestId('insight-card-category-total').querySelector('svg')?.parentElement
     ).toHaveClass('text-emerald-500');
@@ -184,6 +200,15 @@ describe('TransactionInsightsPanel', () => {
     const volumeBtn = screen.getByRole('button', { name: /volume/i });
     expect(volumeBtn).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(volumeBtn);
+    expect(volumeBtn).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('supports keyboard activation on the volume card', async () => {
+    const user = userEvent.setup();
+    render(<TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="k1" />);
+    const volumeBtn = screen.getByRole('button', { name: /volume/i });
+    volumeBtn.focus();
+    await user.keyboard('{Enter}');
     expect(volumeBtn).toHaveAttribute('aria-expanded', 'true');
   });
 

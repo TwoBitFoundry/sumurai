@@ -114,6 +114,7 @@ const SpendingByCategoryChartFn: React.FC<Props> = ({
               })}
             </Pie>
             <Tooltip
+              cursor={false}
               content={(tooltipProps) => (
                 <ChartGlassTooltip {...tooltipProps} formatter={tooltipFormatter} />
               )}

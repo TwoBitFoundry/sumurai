@@ -1965,3 +1965,120 @@ async fn given_two_accounts_with_category_filter_when_getting_state_e_then_share
         share1 + share2
     );
 }
+
+#[tokio::test]
+async fn given_fixed_expense_merchant_when_summary_then_ignores_positive_transactions() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+    let merchant = format!("Netflix Fixed Expense {}", Uuid::new_v4());
+    let normalized = merchant.to_lowercase();
+
+    for (index, (year, month)) in [(2026, 1), (2026, 2), (2026, 3)].iter().enumerate() {
+        let mut expense = create_test_transaction(
+            user.id,
+            account.id,
+            format!("fixed_expense_debit_{index}"),
+            -1599,
+            NaiveDate::from_ymd_opt(*year, *month, 1).unwrap(),
+        );
+        expense.category_primary = "SUBSCRIPTION".to_string();
+        expense.merchant_name = Some(merchant.clone());
+        expense.normalized_merchant = Some(normalized.clone());
+        repo.upsert_transaction(&expense).await.unwrap();
+    }
+
+    let mut credit = create_test_transaction(
+        user.id,
+        account.id,
+        "fixed_expense_credit".to_string(),
+        1599,
+        NaiveDate::from_ymd_opt(2026, 2, 15).unwrap(),
+    );
+    credit.category_primary = "SUBSCRIPTION".to_string();
+    credit.merchant_name = Some(merchant.clone());
+    credit.normalized_merchant = Some(normalized.clone());
+    repo.upsert_transaction(&credit).await.unwrap();
+
+    let summaries = repo.get_fixed_expense_summary(&user.id).await.unwrap();
+
+    let summary = summaries
+        .iter()
+        .find(|item| item.normalized_merchant == normalized)
+        .expect("expected fixed expense summary for merchant");
+
+    assert_eq!(summary.occurrence_count, 3);
+    assert!((summary.monthly_cost - dec!(15.99)).abs() < dec!(0.01));
+}
+
+#[tokio::test]
+async fn given_transfer_transactions_when_get_monthly_cash_flow_aggregates_then_excludes_transfers()
+{
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+    let month_date = NaiveDate::from_ymd_opt(2024, 6, 15).unwrap();
+    let start_date = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+    let end_date = NaiveDate::from_ymd_opt(2024, 6, 30).unwrap();
+
+    let mut income = create_test_transaction(
+        user.id,
+        account.id,
+        "cash-flow-income".to_string(),
+        500000,
+        month_date,
+    );
+    income.category_primary = "INCOME".to_string();
+
+    let mut food = create_test_transaction(
+        user.id,
+        account.id,
+        "cash-flow-food".to_string(),
+        -35000,
+        month_date,
+    );
+    food.category_primary = "FOOD_AND_DRINK".to_string();
+
+    let mut transfer_in = create_test_transaction(
+        user.id,
+        account.id,
+        "cash-flow-transfer-in".to_string(),
+        50000,
+        month_date,
+    );
+    transfer_in.category_primary = "TRANSFER_IN".to_string();
+
+    let mut transfer_out = create_test_transaction(
+        user.id,
+        account.id,
+        "cash-flow-transfer-out".to_string(),
+        -100000,
+        month_date,
+    );
+    transfer_out.category_primary = "TRANSFER_OUT".to_string();
+
+    repo.upsert_transactions_batch(&[income, food, transfer_in, transfer_out], &user.id)
+        .await
+        .unwrap();
+
+    let aggregates = repo
+        .get_monthly_cash_flow_aggregates_for_user(&user.id, start_date, end_date, None)
+        .await
+        .unwrap();
+
+    let june = aggregates
+        .iter()
+        .find(|row| row.month == "2024-06")
+        .expect("expected June aggregate");
+
+    assert_eq!(june.income, dec!(5000.00));
+    assert_eq!(june.expenses, dec!(350.00));
+}

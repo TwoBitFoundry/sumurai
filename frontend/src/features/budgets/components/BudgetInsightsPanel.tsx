@@ -1,7 +1,7 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, Flame, Repeat2, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { InsightCard } from '@/components/widgets/InsightCard';
+import { InsightsExpandablePanel } from '@/components/widgets/InsightsExpandablePanel';
 import { InsightsPanelHeader } from '@/components/widgets/InsightsPanel';
 import { InsightsPanelShell } from '@/components/widgets/InsightsPanelShell';
 import type { BudgetInsights } from '@/domain/BudgetInsightsCalculator';
@@ -9,11 +9,7 @@ import { FixedExpenseCalculator } from '@/domain/FixedExpenseCalculator';
 import { useSessionCollapsible } from '@/hooks/useSessionCollapsible';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import { cn } from '@/ui/primitives';
-import {
-  text as semanticTextRecipes,
-  insightsPanel as uiInsightsPanelRecipes,
-  font as uiTypographyRecipes,
-} from '@/ui/recipes';
+import { text as semanticTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import type { FixedExpenseSummary } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
 import { BudgetProgress } from './BudgetProgress';
@@ -200,119 +196,96 @@ export function BudgetInsightsPanel({
 
   return (
     <InsightsPanelShell testId="budget-insights-shell" accent="sky">
-      <div className={cn('relative', 'z-10', 'px-3', 'py-2', 'md:px-4', 'md:py-3')}>
-        <InsightsPanelHeader label="Budget summary" />
-        <button
-          type="button"
-          aria-expanded={expanded}
-          aria-controls="budget-insights-panel-body"
-          aria-label="Budget summary"
-          onClick={toggleExpanded}
-          className={cn('w-full', 'text-left')}
-        >
-          <div
-            className={cn(
-              'grid',
-              'grid-cols-[auto_1fr_auto]',
-              'grid-rows-[auto_auto]',
-              'items-baseline',
-              'gap-x-2',
-              'gap-y-2',
-              'md:gap-x-3',
-              'md:gap-y-2.5'
-            )}
-          >
-            <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.subtle)}>
-              Total Spent
-            </div>
-            <div aria-hidden />
+      <InsightsExpandablePanel
+        testId="budget-insights-panel"
+        bodyId="budget-insights-panel-body"
+        bodyTestId="budget-insights-panel-body"
+        summaryLabel="Budget summary"
+        expanded={expanded}
+        onToggle={toggleExpanded}
+        bodyClassName={cn(
+          isMobile
+            ? insights.hasActivity
+              ? 'grid grid-cols-[auto_1fr_auto_auto_auto] items-baseline gap-x-2 gap-y-1.5'
+              : 'flex flex-col gap-1.5'
+            : 'flex flex-row items-start gap-3'
+        )}
+        summary={
+          <>
+            <InsightsPanelHeader label="Budget summary" />
             <div
-              className={cn(uiTypographyRecipes.label, semanticTextRecipes.subtle, 'text-right')}
+              className={cn(
+                'grid',
+                'grid-cols-[auto_1fr_auto]',
+                'grid-rows-[auto_auto]',
+                'items-baseline',
+                'gap-x-2',
+                'gap-y-2',
+                'md:gap-x-3',
+                'md:gap-y-2.5'
+              )}
             >
-              Total Planned
-            </div>
+              <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.subtle)}>
+                Total Spent
+              </div>
+              <div aria-hidden />
+              <div
+                className={cn(uiTypographyRecipes.label, semanticTextRecipes.subtle, 'text-right')}
+              >
+                Total Planned
+              </div>
 
-            <div
-              className={cn(
-                'shrink-0',
-                'text-[1.45rem]',
-                'font-semibold',
-                'leading-none',
-                'tracking-[-0.02em]',
-                'md:text-[1.65rem]',
-                'lg:text-2xl',
-                overBudget ? semanticTextRecipes.danger : semanticTextRecipes.body
-              )}
-            >
-              {fmtUSD(totalSpent)}
-            </div>
-            <div className={cn('min-w-0', 'w-full', 'self-center')}>
-              <BudgetProgress amount={totalBudgeted} spent={totalSpent} showCaptions={false} />
-            </div>
-            <div
-              className={cn(
-                'shrink-0',
-                'text-[1.45rem]',
-                'font-semibold',
-                'leading-none',
-                'tracking-[-0.02em]',
-                'md:text-[1.65rem]',
-                'lg:text-2xl',
-                'text-right',
-                semanticTextRecipes.primary
-              )}
-            >
-              {fmtUSD(totalBudgeted)}
-            </div>
-            <div className={cn('col-span-3', 'flex', 'justify-center')}>
-              <ChevronDown
+              <div
                 className={cn(
-                  'h-4',
-                  'w-4',
                   'shrink-0',
-                  'transition-transform',
-                  'duration-200',
-                  expanded && 'rotate-180',
-                  semanticTextRecipes.subtle
+                  'text-[1.45rem]',
+                  'font-semibold',
+                  'leading-none',
+                  'tracking-[-0.02em]',
+                  'md:text-[1.65rem]',
+                  'lg:text-2xl',
+                  overBudget ? semanticTextRecipes.danger : semanticTextRecipes.body
                 )}
-              />
+              >
+                {fmtUSD(totalSpent)}
+              </div>
+              <div className={cn('min-w-0', 'w-full', 'self-center')}>
+                <BudgetProgress amount={totalBudgeted} spent={totalSpent} showCaptions={false} />
+              </div>
+              <div
+                className={cn(
+                  'shrink-0',
+                  'text-[1.45rem]',
+                  'font-semibold',
+                  'leading-none',
+                  'tracking-[-0.02em]',
+                  'md:text-[1.65rem]',
+                  'lg:text-2xl',
+                  'text-right',
+                  semanticTextRecipes.primary
+                )}
+              >
+                {fmtUSD(totalBudgeted)}
+              </div>
+              <div className={cn('col-span-3', 'flex', 'justify-center')}>
+                <ChevronDown
+                  className={cn(
+                    'h-4',
+                    'w-4',
+                    'shrink-0',
+                    'transition-transform',
+                    'duration-200',
+                    expanded && 'rotate-180',
+                    semanticTextRecipes.subtle
+                  )}
+                />
+              </div>
             </div>
-          </div>
-        </button>
-      </div>
-
-      <AnimatePresence initial={false}>
-        {expanded ? (
-          <motion.div
-            id="budget-insights-panel-body"
-            data-testid="budget-insights-panel-body"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.24, ease: [0.22, 0.61, 0.36, 1] }}
-            className={cn('relative', 'z-10')}
-          >
-            <div className={cn('px-3', 'md:px-4')}>
-              <div className={cn('border-t', ...uiInsightsPanelRecipes.labelDivider)} />
-            </div>
-            <div
-              className={cn(
-                'px-3',
-                'py-2',
-                'md:px-4',
-                'md:py-3',
-                isMobile
-                  ? insights.hasActivity
-                    ? 'grid grid-cols-[auto_1fr_auto_auto_auto] items-baseline gap-x-2 gap-y-1.5'
-                    : 'flex flex-col gap-1.5'
-                  : 'flex flex-row items-start gap-3'
-              )}
-            >
-              {bodyContent}
-            </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+          </>
+        }
+      >
+        {bodyContent}
+      </InsightsExpandablePanel>
     </InsightsPanelShell>
   );
 }

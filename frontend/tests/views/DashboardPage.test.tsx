@@ -8,7 +8,7 @@ import { useAnalytics } from '@/features/analytics/hooks/useAnalytics';
 import { useCashFlow } from '@/features/analytics/hooks/useCashFlow';
 import { useNetWorthSeries } from '@/features/analytics/hooks/useNetWorthSeries';
 import { useBudgets } from '@/features/budgets/hooks/useBudgets';
-import { getThemeColors } from '@/ui/tokens';
+import { getThemeColors, heroAccents } from '@/ui/tokens';
 import DashboardPage from '@/views/DashboardPage';
 
 jest.mock('@/context/ThemeContext', () => ({
@@ -158,10 +158,15 @@ describe('DashboardPage', () => {
 
     const topCard = screen.getByText('Food').closest('button');
     expect(topCard).toBeTruthy();
-    expect((topCard as HTMLButtonElement).style.borderColor).toBe('');
+    const insetRing = topCard?.querySelector('.hero-stat-card__inset-ring');
+    expect(insetRing).toHaveClass('opacity-0');
+    expect(insetRing).not.toHaveClass('opacity-100');
 
     await user.click(topCard as HTMLElement);
 
-    expect((topCard as HTMLButtonElement).style.borderColor).toBe('#0ea5e9');
+    expect(insetRing).toHaveClass('opacity-100');
+    expect((insetRing as HTMLElement).style.boxShadow).toBe(
+      `inset 0 0 0 2px ${heroAccents.violet.ringHex}`
+    );
   });
 });

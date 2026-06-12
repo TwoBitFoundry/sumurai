@@ -31,7 +31,8 @@ import { cn } from './utils';
 
 export const appTitleBarRecipes = {
   base: [
-    'sticky top-0 z-50 border-b backdrop-blur-md backdrop-saturate-[150%]',
+    'sticky top-0 z-50 border-b',
+    ...semanticEffects.glassBackdrop,
     'pt-[env(safe-area-inset-top)]',
   ],
   shell: [...semanticSurfaces.card, ...semanticBorders.divider, ...semanticEffects.glassShadow],

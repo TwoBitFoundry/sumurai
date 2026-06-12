@@ -6,6 +6,7 @@ import {
   chromeBar,
   controlIconWell,
   border as uiBorderRecipes,
+  effect as uiEffectRecipes,
   status as uiStatusRecipes,
   surface as uiSurfaceRecipes,
   text as uiTextRecipes,
@@ -123,7 +124,7 @@ export const ProviderSelectionSection = ({ section, isMobile }: ProviderSelectio
                   ...uiBorderRecipes.glass,
                   ...uiSurfaceRecipes.glassPanel,
                   'shadow-[0_24px_70px_-36px_rgba(15,23,42,0.55)]',
-                  'backdrop-blur-2xl'
+                  ...uiEffectRecipes.glassBackdrop
                 )}
               >
                 <div id={privacyDescriptionId} className={cn('space-y-4', 'p-5')}>
@@ -172,7 +173,7 @@ export const ProviderSelectionSection = ({ section, isMobile }: ProviderSelectio
                     ...uiSurfaceRecipes.glassPanel,
                     'p-3.5',
                     'shadow-[0_24px_70px_-36px_rgba(15,23,42,0.55)]',
-                    'backdrop-blur-2xl',
+                    ...uiEffectRecipes.glassBackdrop,
                     'text-left'
                   )}
                 >

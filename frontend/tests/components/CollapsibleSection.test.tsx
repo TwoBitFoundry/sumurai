@@ -41,6 +41,10 @@ describe('CollapsibleSection', () => {
 
     expect(screen.getByText('Budgets')).toBeInTheDocument();
     expect(screen.queryByTestId('budgets-content')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show budgets' })).toHaveAttribute(
+      'title',
+      'Show budgets'
+    );
 
     await user.click(screen.getByRole('button', { name: 'Show budgets' }));
 
@@ -98,5 +102,56 @@ describe('CollapsibleSection', () => {
 
     expect(onEdit).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId('budgets-content')).not.toBeInTheDocument();
+  });
+
+  it('places split header actions inline with the title from the md breakpoint', () => {
+    const { container } = render(
+      <CollapsibleSection
+        sectionId="budgets"
+        title="Budgets"
+        testId="budgets-section"
+        expandLabel="Show budgets"
+        collapseLabel="Hide budgets"
+        actionsStart={<button type="button">Edit budgets</button>}
+        actionsEnd={<button type="button">Add budget</button>}
+      >
+        <div>Budget content</div>
+      </CollapsibleSection>
+    );
+
+    const inlineActions = container.querySelector('.md\\:ml-auto');
+    expect(inlineActions).toHaveTextContent('Edit budgets');
+    expect(inlineActions).toHaveTextContent('Add budget');
+  });
+
+  it('supports keyboard activation on the title area', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CollapsibleSection
+        sectionId="keyboard-toggle"
+        title="Budgets"
+        testId="budgets-section"
+        expandLabel="Show budgets"
+        collapseLabel="Hide budgets"
+      >
+        <div data-testid="budgets-content">Budget content</div>
+      </CollapsibleSection>
+    );
+
+    const toggle = screen.getByRole('button', { name: 'Show budgets' });
+    toggle.focus();
+
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('button', { name: 'Hide budgets' })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    );
+
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('button', { name: 'Show budgets' })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    );
   });
 });
