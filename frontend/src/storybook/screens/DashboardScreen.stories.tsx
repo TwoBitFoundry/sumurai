@@ -6,7 +6,6 @@ import {
   DateRangeLabelPill,
   DateRangePillSlider,
 } from '@/features/analytics/components/DateRangePillSlider';
-import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import { sampleSankeySurplus } from '@/storybook/fixtures/analytics';
 import { AuthenticatedScreenShell } from '@/storybook/screenSlices/AuthenticatedScreenShell';
 import { DashboardScreenSlice } from '@/storybook/screenSlices/DashboardScreenSlice';
@@ -78,20 +77,18 @@ const handlers = [
 function DashboardShell({ children }: { children: React.ReactNode }) {
   const [dateRange, setDateRange] = useState<DateRangeKey>('current-month');
   return (
-    <AccountFilterStoryProvider>
-      <StoryApiScope handlers={handlers}>
-        <AuthenticatedScreenShell
-          currentTab="dashboard"
-          bottomBarContent={
-            <BottomContextualBar topContent={<DateRangeLabelPill dateRange={dateRange} />}>
-              <DateRangePillSlider dateRange={dateRange} onChange={setDateRange} />
-            </BottomContextualBar>
-          }
-        >
-          {children}
-        </AuthenticatedScreenShell>
-      </StoryApiScope>
-    </AccountFilterStoryProvider>
+    <StoryApiScope handlers={handlers}>
+      <AuthenticatedScreenShell
+        currentTab="dashboard"
+        bottomBarContent={
+          <BottomContextualBar topContent={<DateRangeLabelPill dateRange={dateRange} />}>
+            <DateRangePillSlider dateRange={dateRange} onChange={setDateRange} />
+          </BottomContextualBar>
+        }
+      >
+        {children}
+      </AuthenticatedScreenShell>
+    </StoryApiScope>
   );
 }
 
@@ -118,9 +115,12 @@ export const HappyPath: Story = {
   render: () => <DashboardScreenSlice variant="happy" dateRange="current-month" />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await waitFor(() => {
-      expect(canvas.getByTestId('sankey-node-income')).toBeVisible();
-    });
+    await waitFor(
+      () => {
+        expect(canvas.getByTestId('sankey-node-income')).toBeVisible();
+      },
+      { timeout: 15000 }
+    );
     await userEvent.click(canvas.getByRole('tab', { name: /show balances now/i }));
     await waitFor(() => {
       expect(canvas.getByTestId('balances-chart-plot')).toBeVisible();

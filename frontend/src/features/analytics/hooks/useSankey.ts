@@ -41,10 +41,12 @@ export function useSankey(range: DateRangeKey): UseSankeyResult {
   const { start, end } = useMemo(() => computeDateRange(range), [range]);
   const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
   const accountsReady = !accountsLoading;
+  const accountsSelectionReady = allAccountIds.length === 0 || selectedAccountIds.length > 0;
+  const awaitingAccountSelection = accountsReady && !accountsSelectionReady;
 
   const query = useQuery<SankeyResponse, Error>({
     queryKey: ['sankey', range, cacheKey],
-    enabled: accountsReady && !!start && !!end,
+    enabled: accountsReady && accountsSelectionReady && !!start && !!end,
     placeholderData: keepPreviousData,
     queryFn: async () => {
       if (!start || !end) {
@@ -64,7 +66,11 @@ export function useSankey(range: DateRangeKey): UseSankeyResult {
 
   const loading =
     (!accountsReady && query.data === undefined) ||
-    (accountsReady && query.fetchStatus === 'fetching' && query.data === undefined);
+    awaitingAccountSelection ||
+    (accountsReady &&
+      accountsSelectionReady &&
+      query.fetchStatus === 'fetching' &&
+      query.data === undefined);
 
   return {
     data: query.data ?? null,

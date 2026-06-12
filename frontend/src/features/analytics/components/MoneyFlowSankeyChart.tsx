@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Waypoints } from 'lucide-react';
-import { useMemo } from 'react';
+import { useLayoutEffect, useMemo } from 'react';
 import type { SankeyLinkProps, SankeyNodeProps, TooltipContentProps } from 'recharts';
 import { Sankey, Tooltip } from 'recharts';
 import type { SankeyResponse } from '@/types/api';
@@ -478,7 +478,7 @@ function MoneyFlowSankeyChartContent({
   error = null,
 }: MoneyFlowSankeyChartContentProps) {
   const { colors, mode } = useTheme();
-  const { ref: chartContainerRef, width: measuredWidth } = useChartContainerSize();
+  const { ref: chartContainerRef, width: measuredWidth, remeasure } = useChartContainerSize();
   const chartData = useMemo<SankeyChartData>(() => sankeyResponseToChartData(data), [data]);
   const categoryNodes = chartData.nodes.filter((node) => node.kind === 'Category');
   const chartMargin = sankeyChart.margin;
@@ -504,6 +504,16 @@ function MoneyFlowSankeyChartContent({
   const isChart =
     !error && !(loading && !data) && categoryNodes.length > 0 && chartData.links.length > 0;
   const stateKey = error ? 'error' : loading && !data ? 'loading' : !isChart ? 'empty' : 'chart';
+
+  useLayoutEffect(() => {
+    if (stateKey !== 'chart') {
+      return;
+    }
+
+    remeasure({ ignoreHidden: true });
+    const frame = requestAnimationFrame(() => remeasure({ ignoreHidden: true }));
+    return () => cancelAnimationFrame(frame);
+  }, [stateKey, remeasure]);
 
   return (
     <AnimatePresence mode="wait" initial={false}>

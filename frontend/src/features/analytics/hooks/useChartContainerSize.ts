@@ -1,10 +1,15 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 const RESIZE_DEBOUNCE_MS = 100;
+const SIZE_RETRY_FRAMES = 12;
 
 type ChartContainerSize = {
   width: number;
   height: number;
+};
+
+type ApplySizeOptions = {
+  ignoreHidden?: boolean;
 };
 
 export const useChartContainerSize = () => {
@@ -13,8 +18,8 @@ export const useChartContainerSize = () => {
   const nodeRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<ChartContainerSize>({ width: 0, height: 0 });
 
-  const applySize = useCallback(() => {
-    if (document.hidden) {
+  const applySize = useCallback((options?: ApplySizeOptions) => {
+    if (!options?.ignoreHidden && document.hidden) {
       return;
     }
 
@@ -39,6 +44,23 @@ export const useChartContainerSize = () => {
     });
   }, []);
 
+  const scheduleSizeRetries = useCallback(() => {
+    let attempts = 0;
+    let frame = 0;
+
+    const retry = () => {
+      applySize({ ignoreHidden: true });
+      attempts += 1;
+      const width = Math.floor(nodeRef.current?.getBoundingClientRect().width ?? 0);
+      if (width <= 0 && attempts < SIZE_RETRY_FRAMES) {
+        frame = requestAnimationFrame(retry);
+      }
+    };
+
+    frame = requestAnimationFrame(retry);
+    return () => cancelAnimationFrame(frame);
+  }, [applySize]);
+
   const ref = useCallback(
     (node: HTMLDivElement | null) => {
       nodeRef.current = node;
@@ -61,18 +83,19 @@ export const useChartContainerSize = () => {
         timerRef.current = setTimeout(applySize, RESIZE_DEBOUNCE_MS);
       };
 
-      applySize();
+      applySize({ ignoreHidden: true });
+      scheduleSizeRetries();
       const observer = new ResizeObserver(debouncedUpdate);
       observer.observe(node);
       observerRef.current = observer;
     },
-    [applySize]
+    [applySize, scheduleSizeRetries]
   );
 
   useLayoutEffect(() => {
     const onVisibilityChange = () => {
       if (!document.hidden) {
-        requestAnimationFrame(applySize);
+        requestAnimationFrame(() => applySize({ ignoreHidden: true }));
       }
     };
 
