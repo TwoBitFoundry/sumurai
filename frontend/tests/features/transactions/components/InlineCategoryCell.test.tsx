@@ -42,7 +42,7 @@ describe('InlineCategoryCell', () => {
     const slot = container.firstElementChild as HTMLElement;
     expect(slot.style.width).toBe(expectedWidth);
 
-    const button = screen.getByRole('button', { name: /Edit category: Merch/i });
+    const button = screen.getByRole('button', { name: /Edit category: Merchandise/i });
     expect(button.className).toContain('!justify-end');
     expect(button.className).toContain('text-amber-500');
     expect(button.className).not.toContain('rounded-full');

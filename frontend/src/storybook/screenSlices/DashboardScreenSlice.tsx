@@ -166,14 +166,14 @@ export function DashboardScreenSlice(props: {
                             onMouseLeave={() => setHoveredCategory(null)}
                             onClick={() => setHoveredCategory(cat.name)}
                           >
-                            <div className={cn('flex', 'items-center', 'justify-between', 'gap-2')}>
+                            <div className={cn(dashboardCategoryCard.metricRow)}>
                               <Pill
                                 categoryName={cat.categoryKey}
                                 className={cn('min-w-0', 'truncate')}
                               >
                                 {cat.name}
                               </Pill>
-                              <div className={cn('flex', 'items-baseline', 'gap-2', 'shrink-0')}>
+                              <div className={cn(dashboardCategoryCard.metricCluster)}>
                                 <span
                                   className={cn(
                                     uiTypographyRecipes.cardTitle,

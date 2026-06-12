@@ -1,5 +1,6 @@
+import { motion } from 'framer-motion';
 import { Landmark, type LucideIcon, Waypoints } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import { BalancesOverviewChart } from '@/components/BalancesOverview';
 import DashboardChartCard from '@/features/analytics/components/DashboardChartCard';
 import { MoneyFlowSankeyChart } from '@/features/analytics/components/MoneyFlowSankeyChart';
@@ -35,8 +36,24 @@ const slides: Array<{
   },
 ];
 const financialBreakdownDescription = 'Switch between wealth flow and balances by account.';
+const panelFadeTransition = { duration: 0.15 } as const;
+
+function subscribeMdViewport(onStoreChange: () => void) {
+  const mediaQuery = window.matchMedia('(min-width: 768px)');
+  mediaQuery.addEventListener('change', onStoreChange);
+  return () => mediaQuery.removeEventListener('change', onStoreChange);
+}
+
+function getMdViewportSnapshot() {
+  return window.matchMedia('(min-width: 768px)').matches;
+}
+
+function useMdViewport() {
+  return useSyncExternalStore(subscribeMdViewport, getMdViewportSnapshot, () => true);
+}
 
 export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsCarouselProps) {
+  const isMdUp = useMdViewport();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const {
     ref: panelStackRef,
@@ -55,6 +72,9 @@ export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsC
   const scrollToSlide = useCallback((index: number) => {
     setSelectedIndex(index);
   }, []);
+
+  const moneyFlowOpacity = isMdUp && selectedIndex === 0 ? 1 : 0;
+  const balancesOpacity = isMdUp ? (selectedIndex === 1 ? 1 : 0) : 1;
 
   const slideTabs = (
     <div
@@ -117,40 +137,44 @@ export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsC
         bodyClassName={cn('gap-4')}
       >
         <div ref={panelStackRef} className={cn(...dashboardStatsCarousel.panelStack)}>
-          <section
+          <motion.section
             className={cn(
               'hidden',
               'md:flex',
               ...dashboardStatsCarousel.panel,
-              selectedIndex === 0
-                ? dashboardStatsCarousel.panelActive
-                : dashboardStatsCarousel.panelHidden
+              selectedIndex === 0 ? dashboardStatsCarousel.panelActive : 'z-0'
             )}
             aria-label={slides[0].slideLabel}
             id={slides[0].panelId}
             role="tabpanel"
             aria-hidden={selectedIndex !== 0}
+            initial={false}
+            animate={{ opacity: moneyFlowOpacity }}
+            transition={panelFadeTransition}
+            style={{ pointerEvents: selectedIndex === 0 ? 'auto' : 'none' }}
           >
             <MoneyFlowSankeyChart
               dateRange={dateRange}
               className={cn('h-full', 'min-h-0', 'w-full')}
               containerSize={sankeyContainerSize}
             />
-          </section>
-          <section
+          </motion.section>
+          <motion.section
             className={cn(
               ...dashboardStatsCarousel.panel,
-              selectedIndex === 1
-                ? dashboardStatsCarousel.panelActive
-                : ['md:invisible', 'md:pointer-events-none', 'z-0']
+              selectedIndex === 1 ? dashboardStatsCarousel.panelActive : 'z-0'
             )}
             aria-label={slides[1].slideLabel}
             id={slides[1].panelId}
             role="tabpanel"
             aria-hidden={selectedIndex !== 1}
+            initial={false}
+            animate={{ opacity: balancesOpacity }}
+            transition={panelFadeTransition}
+            style={{ pointerEvents: selectedIndex === 1 || !isMdUp ? 'auto' : 'none' }}
           >
             <BalancesOverviewChart />
-          </section>
+          </motion.section>
         </div>
       </DashboardChartCard>
     </div>

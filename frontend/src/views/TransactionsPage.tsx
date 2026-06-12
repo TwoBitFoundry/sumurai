@@ -70,18 +70,8 @@ const TransactionsPage: React.FC<{
   const [isCategoryCatalogOpen, setIsCategoryCatalogOpen] = useState(false);
 
   const insightsResetKey = `${insights?.state ?? 'a'}-${search}-${selectedCategory ?? ''}-${accountKey}-${dateRange ?? ''}`;
-  const actions = (
-    <div
-      className={cn(
-        'flex',
-        'w-full',
-        'flex-wrap',
-        'items-center',
-        'justify-between',
-        'gap-3',
-        'lg:w-auto'
-      )}
-    >
+  const categorizeActions = (
+    <div className={cn('flex', 'shrink-0', 'flex-wrap', 'items-center', 'gap-3')}>
       <IconButton
         ref={addCategoryButtonRef}
         type="button"
@@ -122,7 +112,6 @@ const TransactionsPage: React.FC<{
       <PageLayout
         title="Tally the ledgers across financial allies"
         subtitle="Review, categorize, and track transactions from all your connected bank accounts."
-        actions={actions}
         error={error}
         stats={
           <TransactionInsightsPanel
@@ -139,7 +128,18 @@ const TransactionsPage: React.FC<{
           withInnerEffects={false}
           className={cn('relative', 'z-10')}
         >
-          <div className={cn('space-y-1', 'px-3', 'pt-6', 'md:px-6')}>
+          <div
+            className={cn(
+              'flex',
+              'flex-wrap',
+              'items-center',
+              'justify-between',
+              'gap-3',
+              'px-3',
+              'pt-6',
+              'md:px-6'
+            )}
+          >
             <h2
               className={cn(
                 'flex',
@@ -158,6 +158,7 @@ const TransactionsPage: React.FC<{
               </span>
               Transactions
             </h2>
+            {categorizeActions}
           </div>
           <CategoryCatalogPicker
             open={isCategoryCatalogOpen}

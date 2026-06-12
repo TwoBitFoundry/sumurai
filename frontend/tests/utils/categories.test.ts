@@ -96,7 +96,7 @@ describe('mobileCategoryChipWidthRem', () => {
 describe('formatCategoryName', () => {
   it.each([
     ['FOOD_AND_DRINK', 'Food & Drink'],
-    ['GENERAL_MERCHANDISE', 'Merch'],
+    ['GENERAL_MERCHANDISE', 'Merchandise'],
     ['GENERAL_SERVICES', 'Services'],
     ['GOVERNMENT_AND_NON_PROFIT', 'Govt & Non Profit'],
     ['HOME_IMPROVEMENT', 'Home'],
@@ -230,7 +230,7 @@ describe('validateCustomCategoryName', () => {
   });
 
   it('rejects plural collision with a system category display alias', () => {
-    const result = validateCustomCategoryName('Merchs', {
+    const result = validateCustomCategoryName('Merchandises', {
       system: ['GENERAL_MERCHANDISE'],
       custom: [],
     });

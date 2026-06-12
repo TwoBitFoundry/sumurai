@@ -92,7 +92,7 @@ export const Journey: Story = {
       expect(canvas.getByRole('heading', { name: /appraise the treasury/i })).toBeVisible();
     });
     await waitFor(() => {
-      expect(canvas.getByText('Food & Drink')).toBeVisible();
+      expect(canvas.getByRole('button', { name: /food & drink/i })).toBeVisible();
     });
     await waitFor(
       () => {

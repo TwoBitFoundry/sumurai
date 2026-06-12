@@ -196,9 +196,7 @@ const DashboardPage: React.FC<{
                               onMouseLeave={() => handleCategoryHover(null)}
                               onClick={() => handleCategoryHover(cat.name)}
                             >
-                              <div
-                                className={cn('flex', 'items-center', 'justify-between', 'gap-2')}
-                              >
+                              <div className={cn(dashboardCategoryCard.metricRow)}>
                                 <Pill
                                   categoryName={cat.categoryKey}
                                   accentIndexByName={accentIndexByName}
@@ -206,7 +204,7 @@ const DashboardPage: React.FC<{
                                 >
                                   {cat.name}
                                 </Pill>
-                                <div className={cn('flex', 'items-baseline', 'gap-2', 'shrink-0')}>
+                                <div className={cn(dashboardCategoryCard.metricCluster)}>
                                   <span
                                     className={cn(
                                       uiTypographyRecipes.cardTitle,

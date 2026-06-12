@@ -1,11 +1,6 @@
-import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { cn } from '@/ui/primitives';
-import {
-  APP_TITLE_BAR_ACTIVE_PILL_LAYOUT_ID,
-  appTitleBarRecipes,
-  TABS,
-} from '@/ui/primitives/AppTitleBar';
+import { appTitleBarRecipes, TABS } from '@/ui/primitives/AppTitleBar';
 import { Button } from '@/ui/primitives/Button';
 import { useFloatingChromeFooterVisibility } from '../hooks/useFloatingChromeFooterVisibility';
 import { useScrollDetection } from '../hooks/useScrollDetection';
@@ -147,15 +142,6 @@ export function AppLayout({
                       : ['!px-0', 'aspect-square', '!gap-0', semanticTextRecipes.muted]
                   )}
                 >
-                  {currentTab === key ? (
-                    <motion.div
-                      layout
-                      layoutId={`${APP_TITLE_BAR_ACTIVE_PILL_LAYOUT_ID}-mobile`}
-                      data-slot="active-pill"
-                      className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
-                      transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-                    />
-                  ) : null}
                   <span
                     className={cn(
                       'relative',

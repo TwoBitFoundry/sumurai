@@ -127,10 +127,7 @@ function resolveNodeFill(
   if (node.kind === 'Savings') {
     return colors.semantic.investments;
   }
-  if (node.kind === 'FixedExpenses') {
-    return colors.semantic.credit;
-  }
-  if (node.kind === 'FreeSpending') {
+  if (node.kind === 'FixedExpenses' || node.kind === 'FreeSpending') {
     return colors.semantic.loan;
   }
   return getTagThemeForCategory(resolveSankeyCategoryKey(node), accentIndexByName).ringHex;
@@ -219,10 +216,7 @@ function resolveLinkStroke(
   if (link.target.kind === 'Savings') {
     return colors.semantic.investments;
   }
-  if (link.target.kind === 'FixedExpenses') {
-    return colors.semantic.credit;
-  }
-  if (link.target.kind === 'FreeSpending') {
+  if (link.target.kind === 'FixedExpenses' || link.target.kind === 'FreeSpending') {
     return colors.semantic.loan;
   }
   if (link.source.kind === 'Income') {

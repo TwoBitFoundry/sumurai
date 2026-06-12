@@ -355,6 +355,8 @@ export const dashboardCategoryCard = {
     'transition-all duration-300',
     'hover:!border-[var(--dashboard-category-card-hover-border)]',
   ],
+  metricRow: ['flex min-w-0 items-center justify-between gap-x-2 gap-y-1'],
+  metricCluster: ['flex min-w-0 flex-wrap items-baseline justify-end gap-x-2 gap-y-0.5'],
 } as const;
 
 export const modalBackdrop = {

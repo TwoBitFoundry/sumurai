@@ -8,20 +8,49 @@ export const pillRecipes = {
   base: `inline-flex w-fit max-w-full flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 ${uiTypographyRecipes.badge}`,
   dot: 'h-2 w-2 rounded-full shadow-[0_0_0_1px_var(--color-border-glass)] dark:shadow-[0_0_0_1px_var(--color-effect-glass-shadow)]',
   fadeLeft:
-    'pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card)]',
+    'pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card)]',
   fadeRight:
-    'pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card)]',
+    'pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card)]',
 } as const;
 
+export type PillScrollFadeSurface = 'card' | 'glassAccent';
+
+export function buildPillScrollMask(showLeft: boolean, showRight: boolean): string | undefined {
+  if (showLeft && showRight) {
+    return 'linear-gradient(to right, transparent, black 2rem, black calc(100% - 2rem), transparent)';
+  }
+  if (showLeft) {
+    return 'linear-gradient(to right, transparent, black 2rem, black 100%)';
+  }
+  if (showRight) {
+    return 'linear-gradient(to right, black 0%, black calc(100% - 2rem), transparent)';
+  }
+  return undefined;
+}
+
 export const pillScrollFadeRecipes = {
-  card: {
-    left: pillRecipes.fadeLeft,
-    right: pillRecipes.fadeRight,
-  },
-  glass: {
-    left: 'pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)] to-transparent transition-opacity duration-200 dark:from-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
-    right:
-      'pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)] to-transparent transition-opacity duration-200 dark:from-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
+  container: ['relative', 'min-w-0', 'w-full', 'md:flex-1'],
+  scroll: [
+    'scrollbar-hide',
+    'flex',
+    'items-center',
+    'gap-1',
+    'overflow-x-auto',
+    'px-1',
+    'pb-1',
+    'pt-1',
+    '[mask-size:100%_100%]',
+    '[mask-repeat:no-repeat]',
+  ],
+  surfaces: {
+    card: {
+      left: pillRecipes.fadeLeft,
+      right: pillRecipes.fadeRight,
+    },
+    glassAccent: {
+      left: pillRecipes.fadeLeft,
+      right: pillRecipes.fadeRight,
+    },
   },
 } as const;
 

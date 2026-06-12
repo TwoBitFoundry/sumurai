@@ -399,7 +399,7 @@ describe('MoneyFlowSankeyChart', () => {
       />
     );
 
-    expect(screen.getByText('Merch')).toBeVisible();
+    expect(screen.getByText('Merchandise')).toBeVisible();
     expect(screen.queryByText(/free spending/i)).toBeNull();
   });
 
@@ -422,7 +422,7 @@ describe('MoneyFlowSankeyChart', () => {
       />
     );
 
-    expect(screen.getByText('Merch')).toBeVisible();
+    expect(screen.getByText('Merchandise')).toBeVisible();
   });
 
   it('shows the percentage line in the tooltip', () => {

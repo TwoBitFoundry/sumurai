@@ -4,16 +4,6 @@ import React from 'react';
 import { AppTitleBar } from '@/ui/primitives/AppTitleBar';
 import { chromeBar, control } from '@/ui/recipes';
 
-jest.mock('framer-motion', () => {
-  const R = require('react');
-  return {
-    motion: {
-      div: ({ layoutId, transition, children, 'data-testid': testId, ...props }: any) =>
-        R.createElement('div', { 'data-testid': testId, ...props }, children),
-    },
-  };
-});
-
 jest.mock('next/image', () => ({
   __esModule: true,
   default: ({ alt, width, height, ...props }: { alt: string; width: number; height: number }) =>
