@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, type LucideIcon } from 'lucide-react';
 import type React from 'react';
+import { useLayoutEffect } from 'react';
 import { useSessionCollapsible } from '@/hooks/useSessionCollapsible';
 import { cn } from '@/ui/primitives';
 import {
@@ -24,6 +25,7 @@ export interface CollapsibleSectionProps {
   testId?: string;
   expandLabel: string;
   collapseLabel: string;
+  expandSectionRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 export function CollapsibleSection({
@@ -39,8 +41,23 @@ export function CollapsibleSection({
   testId,
   expandLabel,
   collapseLabel,
+  expandSectionRef,
 }: CollapsibleSectionProps) {
-  const { expanded, toggleExpanded } = useSessionCollapsible(sectionId);
+  const { expanded, toggleExpanded, setExpanded } = useSessionCollapsible(sectionId);
+
+  useLayoutEffect(() => {
+    if (!expandSectionRef) {
+      return;
+    }
+
+    expandSectionRef.current = () => {
+      setExpanded(true);
+    };
+
+    return () => {
+      expandSectionRef.current = null;
+    };
+  }, [expandSectionRef, setExpanded]);
 
   const hasSplitActions = actionsStart != null || actionsEnd != null;
 
@@ -85,22 +102,62 @@ export function CollapsibleSection({
             type="button"
             onClick={toggleExpanded}
             aria-label={expanded ? collapseLabel : expandLabel}
+            title={expanded ? collapseLabel : expandLabel}
             aria-expanded={expanded}
             className={cn('absolute', 'inset-0', 'z-0', 'cursor-pointer')}
           />
           <div className={cn('relative', 'z-10', 'pointer-events-none')}>
             <div className={cn('min-w-0')}>
-              {titleRow}
-              {description ? (
-                <p className={cn('mt-1', 'min-w-0', uiTypographyRecipes.body, uiTextRecipes.muted)}>
-                  {description}
-                </p>
-              ) : null}
+              <div
+                className={cn(
+                  'flex',
+                  'min-w-0',
+                  'flex-wrap',
+                  'items-center',
+                  'gap-x-2',
+                  'gap-y-2',
+                  'md:flex-nowrap'
+                )}
+              >
+                <div className={cn('flex', 'min-w-0', 'w-full', 'flex-1', 'flex-col', 'md:w-auto')}>
+                  {titleRow}
+                  {description ? (
+                    <p
+                      className={cn(
+                        'mt-1',
+                        'min-w-0',
+                        uiTypographyRecipes.body,
+                        uiTextRecipes.muted
+                      )}
+                    >
+                      {description}
+                    </p>
+                  ) : null}
+                </div>
+                {actionsStart != null || actionsEnd != null ? (
+                  <div
+                    className={cn(
+                      'pointer-events-auto',
+                      'flex',
+                      'w-full',
+                      'items-center',
+                      'gap-2',
+                      'md:ml-auto',
+                      'md:w-auto',
+                      'md:justify-end'
+                    )}
+                  >
+                    {actionsStart}
+                    <div className={cn('flex', 'flex-1', 'justify-center', 'md:hidden')}>
+                      {chevron}
+                    </div>
+                    {actionsEnd}
+                  </div>
+                ) : null}
+              </div>
             </div>
-            <div className={cn('mt-2', 'grid', 'grid-cols-3', 'items-center', 'pb-1')}>
-              <div className={cn('justify-self-start', 'pointer-events-auto')}>{actionsStart}</div>
-              <div className={cn('flex', 'justify-center')}>{chevron}</div>
-              <div className={cn('justify-self-end', 'pointer-events-auto')}>{actionsEnd}</div>
+            <div className={cn('mt-2', 'hidden', 'justify-center', 'pb-1', 'md:flex')}>
+              {chevron}
             </div>
           </div>
         </div>
@@ -110,6 +167,7 @@ export function CollapsibleSection({
             type="button"
             onClick={toggleExpanded}
             aria-label={expanded ? collapseLabel : expandLabel}
+            title={expanded ? collapseLabel : expandLabel}
             aria-expanded={expanded}
             className={cn('w-full', 'text-left')}
           >

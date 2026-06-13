@@ -9,6 +9,7 @@ import type { FinancialProvider } from '@/types/api';
 import { cn, GlassCard, IconButton, Modal } from '@/ui/primitives';
 import {
   border as uiBorderRecipes,
+  effect as uiEffectRecipes,
   status as uiStatusRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
@@ -165,7 +166,7 @@ function OnboardingProviderConnectModalContent({
                 'border',
                 'bg-white',
                 'p-3',
-                'shadow-sm',
+                ...uiEffectRecipes.glassDropShadow,
                 ...uiBorderRecipes.default
               )}
             >
@@ -188,7 +189,7 @@ function OnboardingProviderConnectModalContent({
                 'border-2',
                 'bg-white',
                 'p-4',
-                'shadow-md',
+                ...uiEffectRecipes.glassDropShadow,
                 ...uiBorderRecipes.subtle
               )}
             >
@@ -222,7 +223,7 @@ function OnboardingProviderConnectModalContent({
                 'border',
                 'bg-white',
                 'p-3',
-                'shadow-sm',
+                ...uiEffectRecipes.glassDropShadow,
                 ...uiBorderRecipes.default
               )}
             >

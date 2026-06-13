@@ -69,15 +69,61 @@ const stateTriple: ContextualInsightsResponse = {
   card3: metric(14, 'days'),
 };
 
+const collapsibleSessionKey = 'sumurai.ui.collapsibleExpanded';
+const transactionInsightsSectionId = 'transactions-insights';
+
+function clearTransactionInsightsSession() {
+  const raw = window.sessionStorage.getItem(collapsibleSessionKey);
+  if (!raw) {
+    return;
+  }
+  try {
+    const map = JSON.parse(raw) as Record<string, boolean>;
+    delete map[transactionInsightsSectionId];
+    if (Object.keys(map).length === 0) {
+      window.sessionStorage.removeItem(collapsibleSessionKey);
+      return;
+    }
+    window.sessionStorage.setItem(collapsibleSessionKey, JSON.stringify(map));
+  } catch {
+    window.sessionStorage.removeItem(collapsibleSessionKey);
+  }
+}
+
+async function expandTransactionInsights(canvas: ReturnType<typeof within>) {
+  const summaryButton = canvas.getByRole('button', {
+    name: /expand transaction insights|collapse transaction insights/i,
+  });
+  if (summaryButton.getAttribute('aria-expanded') !== 'true') {
+    await userEvent.click(summaryButton);
+  }
+  await waitFor(() => {
+    expect(canvas.getByTestId('transaction-insights-panel-body')).toBeVisible();
+  });
+}
+
 const meta = {
   title: 'Features/Transactions/TransactionInsightsPanel',
   component: TransactionInsightsPanel,
   tags: ['autodocs', 'test'],
+  decorators: [
+    (Story) => {
+      clearTransactionInsightsSession();
+      return <Story />;
+    },
+  ],
   args: {
     insights: stateA,
+    displayState: 'a',
     isLoading: false,
     resetKey: 'story',
   },
+  render: (args) => (
+    <TransactionInsightsPanel
+      {...args}
+      displayState={args.displayState ?? args.insights?.state ?? 'a'}
+    />
+  ),
 } satisfies Meta<typeof TransactionInsightsPanel>;
 
 export default meta;
@@ -87,7 +133,8 @@ type Story = StoryObj<typeof meta>;
 export const StateA: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('All transactions')).toBeVisible();
+    await expect(canvas.getByText('All insights')).toBeVisible();
+    await expandTransactionInsights(canvas);
     await expect(canvas.getByText('Volume')).toBeVisible();
     await expect(canvas.getByText('Typical')).toBeVisible();
     await expect(canvas.getByText('Breakdown')).toBeVisible();
@@ -95,68 +142,75 @@ export const StateA: Story = {
 };
 
 export const StateB: Story = {
-  args: { insights: stateB, resetKey: 'b' },
+  args: { insights: stateB, displayState: 'b', resetKey: 'b' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('Category filter')).toBeVisible();
+    await expect(canvas.getByText('Category insights')).toBeVisible();
+    await expandTransactionInsights(canvas);
     await expect(canvas.getByText('Category Total')).toBeVisible();
     await expect(canvas.getByText('vs All Categories')).toBeVisible();
   },
 };
 
 export const StateC: Story = {
-  args: { insights: stateC, resetKey: 'c' },
+  args: { insights: stateC, displayState: 'c', resetKey: 'c' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('Merchant view')).toBeVisible();
+    await expect(canvas.getByText('Merchant insights')).toBeVisible();
+    await expandTransactionInsights(canvas);
     await expect(canvas.getByText('Lifetime Spend')).toBeVisible();
     await expect(canvas.getByText('vs Category')).toBeVisible();
   },
 };
 
 export const StateD: Story = {
-  args: { insights: stateD, resetKey: 'd' },
+  args: { insights: stateD, displayState: 'd', resetKey: 'd' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('This account')).toBeVisible();
+    await expect(canvas.getByText('Account insights')).toBeVisible();
+    await expandTransactionInsights(canvas);
     await expect(canvas.getByText('Account Total')).toBeVisible();
   },
 };
 
 export const StateE: Story = {
-  args: { insights: stateE, resetKey: 'e' },
+  args: { insights: stateE, displayState: 'e', resetKey: 'e' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('Account + Category')).toBeVisible();
+    await expect(canvas.getByText('Category + account insights')).toBeVisible();
+    await expandTransactionInsights(canvas);
     await expect(canvas.getByText('Share of Wallet')).toBeVisible();
     await expect(canvas.getByText('50.0%')).toBeVisible();
   },
 };
 
 export const StateF: Story = {
-  args: { insights: stateF, resetKey: 'f' },
+  args: { insights: stateF, displayState: 'f', resetKey: 'f' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('Account + Merchant')).toBeVisible();
+    await expect(canvas.getByText('Merchant + account insights')).toBeVisible();
+    await expandTransactionInsights(canvas);
     await expect(canvas.getByText('Swipe Preference')).toBeVisible();
     await expect(canvas.getByText('60.0%')).toBeVisible();
   },
 };
 
 export const StateG: Story = {
-  args: { insights: stateG, resetKey: 'g' },
+  args: { insights: stateG, displayState: 'g', resetKey: 'g' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('Category + Merchant')).toBeVisible();
+    await expect(canvas.getByText('Category + merchant insights')).toBeVisible();
+    await expandTransactionInsights(canvas);
     await expect(canvas.getByText('Merchant Total')).toBeVisible();
   },
 };
 
 export const StateTriple: Story = {
-  args: { insights: stateTriple, resetKey: 'triple' },
+  args: { insights: stateTriple, displayState: 'triple', resetKey: 'triple' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('Full filter')).toBeVisible();
+    await expect(canvas.getByText('Category + merchant + account insights')).toBeVisible();
+    await expandTransactionInsights(canvas);
     await expect(canvas.getByText('Last Visit')).toBeVisible();
     await expect(canvas.getByText('14 days')).toBeVisible();
   },
@@ -165,11 +219,13 @@ export const StateTriple: Story = {
 export const FlipAndReset: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    await expandTransactionInsights(canvas);
     const btn = canvas.getByRole('button', { name: /volume/i });
     await userEvent.click(btn);
     await expect(btn).toHaveAttribute('aria-expanded', 'true');
     await waitFor(() => {
       expect(canvas.getByTestId('insight-question')).toBeVisible();
+      expect(canvas.getByText(/how much, across how many transactions/i)).toBeVisible();
     });
   },
 };
@@ -189,6 +245,7 @@ export const NoCard3: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    await expandTransactionInsights(canvas);
     await expect(canvas.queryByText('Breakdown')).not.toBeInTheDocument();
     await expect(canvas.getByText('Volume')).toBeVisible();
     await expect(canvas.getByText('Typical')).toBeVisible();

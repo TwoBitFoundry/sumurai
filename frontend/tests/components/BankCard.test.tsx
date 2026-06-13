@@ -3,7 +3,7 @@ import { render, screen, waitFor, waitForElementToBeRemoved, within } from '@tes
 import userEvent from '@testing-library/user-event';
 import type React from 'react';
 import { BankCard } from '@/components/BankCard';
-import { control } from '@/ui/recipes';
+import { control, effect } from '@/ui/recipes';
 import { ThemeTestProvider } from '../utils/ThemeTestProvider';
 
 jest.mock('@/utils/sessionPreferences', () => {
@@ -151,6 +151,44 @@ describe('BankCard', () => {
       await screen.findByText('Cash', { exact: true })
     ).parentElement?.querySelector('svg');
     expect(groupIcon?.parentElement?.className).toContain(control.glyph.lg);
+  });
+
+  it('applies box elevation shadow to the institution shell but not nested account rows', async () => {
+    const user = userEvent.setup();
+
+    const { container } = renderWithTheme(
+      <BankCard
+        bank={{
+          id: 'bank-1',
+          name: 'Chase',
+          short: 'CH',
+          status: 'connected',
+          accounts: [
+            {
+              id: 'acc-1',
+              name: 'Checking',
+              mask: '1234',
+              type: 'checking',
+              transactions: 7,
+            },
+          ],
+        }}
+        onSync={jest.fn()}
+        onDisconnect={jest.fn()}
+        isOnline
+      />
+    );
+
+    const institutionShell = container.firstElementChild;
+    expect(institutionShell?.className).toContain(effect.glassElevationShadow[0]);
+    expect(institutionShell?.className).not.toContain('drop-shadow-[');
+
+    await user.click(screen.getByRole('button', { name: 'Show accounts' }));
+    await screen.findByText('Checking');
+
+    const accountShell = screen.getByText('Checking').closest('div.border');
+    expect(accountShell?.className ?? '').not.toContain('drop-shadow-[');
+    expect(accountShell?.className ?? '').not.toMatch(/shadow-\[0_8px_32px/);
   });
 
   it('renders bank name, status, expand toggle, and action buttons in the header', () => {

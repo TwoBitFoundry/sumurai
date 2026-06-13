@@ -53,16 +53,17 @@ jest.mock('@/layouts/PageLayout', () => ({
 jest.mock('@/features/transactions/components/TransactionInsightsPanel', () => ({
   TransactionInsightsPanel: ({
     isLoading,
-    insights,
+    displayState,
   }: {
     isLoading: boolean;
+    displayState: string;
     insights: { state: string } | null;
     resetKey: string;
   }) => (
     <div
       data-testid="transaction-insights-panel"
       data-loading={String(isLoading)}
-      data-state={insights?.state ?? ''}
+      data-state={displayState}
     />
   ),
 }));
@@ -165,6 +166,7 @@ describe('TransactionsPage', () => {
         card3: null,
       },
       isLoading: false,
+      displayState: 'a',
       error: null,
       accountKey: '',
     } as any);
@@ -206,6 +208,7 @@ describe('TransactionsPage', () => {
   it('passes loading state to the insights panel independently from the table', () => {
     jest.mocked(useTransactionsContextualInsights).mockReturnValue({
       insights: null,
+      displayState: 'a',
       isLoading: true,
       error: null,
       accountKey: '',

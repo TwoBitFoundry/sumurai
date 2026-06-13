@@ -32,6 +32,15 @@ describe('Footer', () => {
     expect(getByRole('link', { name: /buy us a coffee/i }).className).toContain(
       '--color-brand-amber'
     );
+    expect(getByRole('link', { name: /contribute/i }).className).toContain(
+      'drop-shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]'
+    );
+    expect(getByRole('link', { name: /buy us a coffee/i }).className).toContain(
+      'drop-shadow-[0_0_12px_var(--color-effect-warning-glow)]'
+    );
+    expect(getByRole('link', { name: /^github$/i }).className).not.toContain(
+      'drop-shadow-[0_0_12px'
+    );
     expect(getByRole('link', { name: /^github$/i }).className).toContain('--color-border-control');
     for (const name of [/contribute/i, /buy us a coffee/i, /^github$/i]) {
       expect(getByRole('link', { name }).className).toContain('hover:-translate-y-0.5');

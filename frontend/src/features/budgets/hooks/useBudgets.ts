@@ -16,7 +16,10 @@ import type {
   Transaction,
 } from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
-import { sortCategoryNamesAlphabetically } from '../../../utils/categories';
+import {
+  isBudgetEligibleCategory,
+  sortCategoryNamesAlphabetically,
+} from '../../../utils/categories';
 import { invalidateBudgetQueries } from '../../../utils/queryInvalidation';
 import { useCategories } from '../../transactions/hooks/useCategories';
 import { type BudgetMonthControl, useBudgetMonth } from './useBudgetMonth';
@@ -249,7 +252,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
       const primary = txn.category?.primary || 'OTHER';
       unique.add(primary);
     }
-    return sortCategoryNamesAlphabetically(Array.from(unique));
+    return sortCategoryNamesAlphabetically(Array.from(unique).filter(isBudgetEligibleCategory));
   }, [rosterCategories, transactions]);
 
   const availableCategoryOptions = useMemo(() => {
@@ -280,6 +283,11 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
       );
       if (exists) {
         const msg = `A budget for "${category}" already exists.`;
+        setValidationError(msg);
+        return Promise.reject(new Error(msg));
+      }
+      if (!isBudgetEligibleCategory(category)) {
+        const msg = 'Budgets cannot be created for income or transfer categories.';
         setValidationError(msg);
         return Promise.reject(new Error(msg));
       }

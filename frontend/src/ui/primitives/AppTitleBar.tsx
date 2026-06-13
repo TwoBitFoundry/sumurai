@@ -31,10 +31,11 @@ import { cn } from './utils';
 
 export const appTitleBarRecipes = {
   base: [
-    'sticky top-0 z-50 border-b backdrop-blur-md backdrop-saturate-[150%]',
+    'sticky top-0 z-50 border-b',
+    ...semanticEffects.glassBackdrop,
     'pt-[env(safe-area-inset-top)]',
   ],
-  shell: [...semanticSurfaces.card, ...semanticBorders.divider, ...semanticEffects.glassShadow],
+  shell: [...semanticSurfaces.card, ...semanticBorders.divider, ...semanticEffects.glassDropShadow],
   logo: {
     container: ['flex', 'h-full', 'min-h-0', 'items-center', 'gap-2', semanticTextRecipes.primary],
     image: [
@@ -69,6 +70,13 @@ export const appTitleBarRecipes = {
     ...floatingChromeGlass.backdrop,
     ...floatingChromeGlass.shell,
   ],
+  settingsPillContainer: [
+    `flex items-center gap-1 ${uiRadiusRecipes.standard} border`,
+    ...floatingChromeGlass.backdrop,
+    'border',
+    ...semanticSurfaces.floatingChromePanel,
+    ...semanticBorders.floatingChrome,
+  ],
   pillInset: ['p-2', 'md:p-3'],
   floatingChromeGutter: [...appLayout.contentShellWithGutter],
   pillContainerSize: [chromeBar.height],
@@ -77,6 +85,8 @@ export const appTitleBarRecipes = {
   ],
   pillTabSize: ['px-3.5', 'lg:px-3'],
   contextPillInset: ['py-1.5', 'px-2', 'md:py-2', 'md:px-2.5'],
+  tabBarShadow: [...semanticEffects.tabBarDropShadow],
+  bottomBarShadow: [...semanticEffects.bottomBarDropShadow],
   contextPillTab: [
     'relative',
     'flex',
@@ -198,6 +208,7 @@ export const AppTitleBar = ({
           ...appTitleBarRecipes.pillContainer,
           ...appTitleBarRecipes.contextPillInset,
           ...appTitleBarRecipes.pillContainerSize,
+          ...appTitleBarRecipes.tabBarShadow,
           'max-w-full',
           'min-w-0'
         )}

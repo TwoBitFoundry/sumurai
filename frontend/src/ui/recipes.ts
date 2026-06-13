@@ -89,63 +89,46 @@ export const border = {
   danger: ['border-[var(--color-border-danger)]', 'dark:border-[var(--color-border-danger)]'],
 } as const;
 
-export const insightsPanel = {
-  labelDivider: [
-    'border-[var(--color-border-strong)]',
-    'dark:border-[var(--color-border-divider)]',
-  ],
-} as const;
-
 export const effect = {
-  glassShadow: [
-    'shadow-[0_32px_110px_-60px_var(--color-effect-glass-shadow)]',
-    'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow)]',
+  glassDropShadow: [
+    'drop-shadow-[0_8px_32px_color-mix(in_srgb,var(--color-effect-glass-shadow)_22%,transparent)]',
+  ],
+  glassElevationShadow: [
+    'shadow-[0_8px_32px_color-mix(in_srgb,var(--color-effect-glass-shadow)_22%,transparent)]',
+  ],
+  tabBarDropShadow: [
+    'drop-shadow-[0_8px_28px_color-mix(in_srgb,var(--color-effect-glass-shadow)_20%,transparent)]',
+    'md:drop-shadow-[0_10px_36px_color-mix(in_srgb,var(--color-effect-glass-shadow)_20%,transparent)]',
+  ],
+  bottomBarDropShadow: [
+    'drop-shadow-[0_-6px_28px_color-mix(in_srgb,var(--color-effect-glass-shadow)_20%,transparent)]',
+    'md:drop-shadow-[0_-8px_36px_color-mix(in_srgb,var(--color-effect-glass-shadow)_20%,transparent)]',
   ],
   accentHover: [
-    'hover:shadow-[0_18px_44px_-30px_var(--color-effect-accent-hover)]',
-    'dark:hover:shadow-[0_20px_52px_-34px_var(--color-effect-accent-hover)]',
+    'hover:drop-shadow-[0_10px_36px_color-mix(in_srgb,var(--color-effect-accent-hover)_32%,transparent)]',
   ],
-  successGlow: [
-    'shadow-[0_0_12px_var(--color-effect-success-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-success-glow)]',
-  ],
-  dangerGlow: [
-    'shadow-[0_0_12px_var(--color-effect-danger-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-danger-glow)]',
-  ],
-  warningGlow: [
-    'shadow-[0_0_12px_var(--color-effect-warning-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-warning-glow)]',
-  ],
+  successGlow: ['drop-shadow-[0_0_12px_var(--color-effect-success-glow)]'],
+  dangerGlow: ['drop-shadow-[0_0_12px_var(--color-effect-danger-glow)]'],
+  warningGlow: ['drop-shadow-[0_0_12px_var(--color-effect-warning-glow)]'],
   accentOutlineGlow: [
-    'shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
-    'dark:shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_50%,transparent)]',
+    'ring-2 ring-inset ring-[color:color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
   ],
-  accentOutlineGlowCta: [
-    'shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
-  ],
+  accentOutlineGlowCta: ['drop-shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]'],
   accentOutlineGlowHover: [
-    'hover:shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
-    'dark:hover:shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_50%,transparent)]',
+    'hover:ring-2 hover:ring-inset hover:ring-[color:color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
   ],
-  pageShellInsetRing: [
-    'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]',
-    'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.48)]',
-  ],
+  glassBackdrop: ['backdrop-blur-md', 'backdrop-saturate-[150%]'],
 } as const;
 
 export const buttonCta = {
   gradient: ['bg-[var(--color-brand-sky)]'],
-  shadow: [
-    'shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
-  ],
+  glow: [...effect.accentOutlineGlowCta],
   hover: ['hover:-translate-y-0.5', 'disabled:hover:translate-y-0'],
 } as const;
 
 export const successCta = {
   gradient: ['bg-[var(--color-brand-emerald)]'],
+  glow: [...effect.successGlow],
   hover: ['hover:-translate-y-[2px]', 'active:scale-[0.98]', 'disabled:active:scale-100'],
   focus: [
     'focus-visible:outline-none',
@@ -267,11 +250,12 @@ export const font = {
 } as const;
 
 export const budgetProgress = {
+  shell: ['overflow-visible', 'py-2', '-my-2'],
   track: [
     'relative',
     'h-2.5',
     'w-full',
-    'overflow-hidden',
+    'overflow-visible',
     'rounded-full',
     'border',
     'border-[var(--color-border-subtle)]',
@@ -288,18 +272,13 @@ export const budgetProgress = {
     'duration-500',
     'ease-out',
   ],
-  fillWithin: [
-    'bg-[var(--color-brand-sky)]',
-    'shadow-[0_0_12px_var(--color-effect-success-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-success-glow)]',
-  ],
+  fillWithin: ['bg-[var(--color-brand-sky)]', ...effect.successGlow],
   fillOver: [
     'bg-gradient-to-r',
     'from-[var(--color-brand-rose)]',
     'via-[var(--color-brand-rose)]',
     'to-[var(--color-text-danger)]',
-    'shadow-[0_0_12px_var(--color-effect-danger-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-danger-glow)]',
+    ...effect.dangerGlow,
   ],
   captionRow: [
     'flex',
@@ -320,14 +299,62 @@ export const radius = {
   standard: 'rounded-[length:var(--radius-standard)]',
 } as const;
 
+export const insightsPanel = {
+  stickyShell: [
+    'sticky',
+    'z-30',
+    'top-[calc(env(safe-area-inset-top)+3.5rem+0.75rem)]',
+    'md:top-[calc(env(safe-area-inset-top)+3.5rem+1.5rem)]',
+    'lg:top-[calc(env(safe-area-inset-top)+3.5rem+2rem)]',
+  ],
+  glassShell: [
+    'relative',
+    'overflow-visible',
+    'rounded-[length:var(--radius-standard)]',
+    'border',
+    ...border.glass,
+    ...surface.glassPanel,
+    ...effect.glassElevationShadow,
+    ...effect.glassBackdrop,
+    'transition-colors',
+    'duration-200',
+  ],
+  glassInnerRing: [
+    'absolute',
+    'inset-[1px]',
+    radius.standard,
+    'ring-1',
+    'ring-white/45',
+    'dark:ring-white/12',
+  ],
+  glassInnerGradient: [
+    'absolute',
+    'inset-0',
+    radius.standard,
+    'bg-gradient-to-b',
+    'from-white/72',
+    'via-white/28',
+    'to-transparent',
+    'transition-colors',
+    'duration-500',
+    'dark:from-slate-900/68',
+    'dark:via-slate-900/34',
+    'dark:to-transparent',
+  ],
+  labelDivider: [
+    'border-[var(--color-border-strong)]',
+    'dark:border-[var(--color-border-divider)]',
+  ],
+} as const;
+
 export const alert = {
   shell: [
-    `relative ${radius.standard} border dark:border-0 px-4 py-3 shadow-sm`,
+    `relative ${radius.standard} border dark:border-0 px-4 py-3`,
     'transition-colors duration-300',
   ],
   tone: {
-    solid: 'backdrop-blur-sm backdrop-saturate-[140%]',
-    subtle: 'backdrop-blur-xs backdrop-saturate-[120%]',
+    solid: [...effect.glassBackdrop].join(' '),
+    subtle: [...effect.glassBackdrop].join(' '),
   },
 } as const;
 
@@ -336,27 +363,40 @@ export const dashboardCategoryCard = {
     `${radius.standard} border transition-all duration-300 text-left`,
     ...border.subtle,
     ...surface.card,
-    ...effect.glassShadow,
   ],
   shellActive: [
     `${radius.standard} border transition-all duration-300`,
     ...surface.card,
-    ...effect.glassShadow,
-    '!border-[var(--dashboard-category-card-hover-border)]',
+    '!border-[var(--color-border-hover-accent)]',
+    'dark:!border-[var(--color-border-hover-accent)]',
   ],
   shellInteractive: [
     `${radius.standard} border transition-all duration-300`,
     ...border.subtle,
     ...surface.card,
-    ...effect.glassShadow,
-    'hover:border-[var(--dashboard-category-card-hover-border)]',
+    'hover:!border-[var(--color-border-hover-accent)]',
+    'dark:hover:!border-[var(--color-border-hover-accent)]',
   ],
   chartHoverBorder: [
     'transition-all duration-300',
-    'hover:!border-[var(--dashboard-category-card-hover-border)]',
+    'hover:!border-[var(--color-border-hover-accent)]',
+    'dark:hover:!border-[var(--color-border-hover-accent)]',
   ],
   metricRow: ['flex min-w-0 items-center justify-between gap-x-2 gap-y-1'],
   metricCluster: ['flex min-w-0 flex-wrap items-baseline justify-end gap-x-2 gap-y-0.5'],
+  insetRing: [
+    'hero-stat-card__inset-ring',
+    'pointer-events-none',
+    'absolute',
+    'inset-0',
+    'z-[1]',
+    'rounded-[length:inherit]',
+    'opacity-0',
+    'transition-opacity',
+    'duration-200',
+    'group-hover:opacity-100',
+  ],
+  insetRingActive: 'opacity-100',
 } as const;
 
 export const modalBackdrop = {
@@ -369,12 +409,12 @@ export const modalBackdrop = {
 } as const;
 
 export const floatingChromeGlass = {
-  backdrop: ['backdrop-blur-md', 'backdrop-saturate-[150%]'],
+  backdrop: [...effect.glassBackdrop],
   shell: [
     'border',
     ...surface.floatingChromePanel,
     ...border.floatingChrome,
-    ...effect.glassShadow,
+    ...effect.glassDropShadow,
   ],
 } as const;
 
@@ -402,22 +442,38 @@ export const modalDrawer = {
   submitButton: ['shrink-0'],
 } as const;
 
+export const chartFloatingGlass = {
+  backdrop: [...floatingChromeGlass.backdrop],
+  shell: [
+    'border',
+    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_58%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
+    ...border.glass,
+    ...effect.glassDropShadow,
+  ],
+} as const;
+
 export const chartTooltip = {
   shell: [
     radius.standard,
-    'border',
     'px-3',
     'py-2',
     'isolate',
-    'backdrop-blur-2xl backdrop-saturate-[150%]',
-    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_58%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
-    ...border.floatingChrome,
-    ...effect.glassShadow,
+    ...chartFloatingGlass.backdrop,
+    ...chartFloatingGlass.shell,
   ],
   fade: ['transition-opacity', 'ease-out', 'duration-200'],
   label: [font.caption, text.muted],
   row: [font.captionStrong, text.body],
+} as const;
+
+export const budgetRealityChart = {
+  curveGlow: {
+    blurStdDeviation: 4,
+    strokeWidth: 8,
+    opacity: 0.55,
+  },
+  animationDurationMs: 800,
 } as const;
 
 export const sankeyChart = {
@@ -455,6 +511,15 @@ export const sankeyChart = {
   animationDurationMs: 800,
 } as const;
 
+export const netWorthLineChart = {
+  curveGlow: {
+    blurStdDeviation: 4,
+    strokeWidth: 6,
+    opacity: 0.42,
+  },
+  lineStrokeWidth: 2,
+} as const;
+
 export const dashboardStatsCarousel = {
   shell: ['flex', 'min-w-0', 'flex-col', 'gap-4'],
   header: ['flex', 'items-center', 'justify-between', 'gap-3'],
@@ -477,13 +542,13 @@ export const dashboardStatsCarousel = {
 } as const;
 
 export const transactionsTable = {
-  chromeBar: [...surface.glassPanel, 'backdrop-blur-md backdrop-saturate-[150%]'],
+  chromeBar: [...surface.glassPanel, ...effect.glassBackdrop],
   footer: [
     'border-t px-4 py-4 transition-colors duration-500',
     ...border.subtle,
     'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_12%,transparent)]',
     'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
-    'backdrop-blur-md backdrop-saturate-[150%]',
+    ...effect.glassBackdrop,
   ],
 } as const;
 

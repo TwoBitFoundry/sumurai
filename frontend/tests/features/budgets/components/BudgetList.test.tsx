@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { BudgetList } from '@/features/budgets/components/BudgetList';
 import { radius as uiRadiusRecipes } from '@/ui/recipes';
+import { heroAccents } from '@/ui/tokens';
 
 jest.mock('@/features/transactions/hooks/useCategories', () => ({
   useCategories: () => ({
@@ -42,14 +43,17 @@ describe('BudgetList', () => {
     expect(list).not.toHaveClass('xl:grid-cols-3');
     expect(list).not.toHaveClass('2xl:grid-cols-4');
     expect(card).toHaveClass(uiRadiusRecipes.standard);
-    const gradient = container.querySelector('.hero-stat-card__gradient');
-    expect(gradient).toHaveClass('opacity-100');
-    expect(gradient).not.toHaveClass('group-hover:opacity-100');
     const cardShell = container.querySelector('li > div');
-    expect(cardShell?.className).toContain('!border-0');
+    expect(cardShell?.className).toContain(
+      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]'
+    );
+    expect(cardShell?.className).not.toMatch(/drop-shadow-\[/);
+    expect(cardShell?.className).toContain('border-[var(--color-border-subtle)]');
     const insetRing = container.querySelector('.hero-stat-card__inset-ring');
     expect(insetRing).toHaveClass('group-hover:opacity-100');
-    expect((insetRing as HTMLElement).style.boxShadow).toMatch(/^inset 0 0 0 2px #/i);
+    expect((insetRing as HTMLElement).style.boxShadow).toBe(
+      `inset 0 0 0 2px ${heroAccents.sky.ringHex}`
+    );
   });
 
   it('hides per-card actions in the view state', () => {
@@ -102,7 +106,9 @@ describe('BudgetList', () => {
 
     expect(card?.querySelector('[aria-label="Delete budget"]')).toBeTruthy();
     expect(card?.querySelector('[aria-label="Edit budget"]')).toBeNull();
-    expect(container.querySelector('[data-testid="budget-amount-input"]')).toBeTruthy();
+    const amountInput = container.querySelector('[data-testid="budget-amount-input"]');
+    expect(amountInput).toBeTruthy();
+    expect(amountInput?.className).not.toContain('drop-shadow-');
   });
 
   it('shows spent before planned around the progress bar', () => {

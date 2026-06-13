@@ -1,4 +1,5 @@
 import { type ClassValue, clsx } from 'clsx';
+import { effect as semanticEffects } from '@/ui/recipes';
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
@@ -11,4 +12,4 @@ export const disabledClasses = 'disabled:cursor-not-allowed disabled:opacity-60'
 
 export const transitionClasses = 'transition-all duration-200 ease-out';
 
-export const glassBackdropClasses = 'backdrop-blur-2xl backdrop-saturate-[150%]';
+export const glassBackdropClasses = cn(...semanticEffects.glassBackdrop);

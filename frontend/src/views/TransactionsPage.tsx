@@ -53,6 +53,7 @@ const TransactionsPage: React.FC<{
   } = transactionsControl ?? ownedTransactions;
   const {
     insights,
+    displayState,
     isLoading: insightsLoading,
     accountKey,
   } = useTransactionsContextualInsights({
@@ -69,9 +70,20 @@ const TransactionsPage: React.FC<{
   const addCategoryButtonRef = useRef<HTMLButtonElement>(null);
   const [isCategoryCatalogOpen, setIsCategoryCatalogOpen] = useState(false);
 
-  const insightsResetKey = `${insights?.state ?? 'a'}-${search}-${selectedCategory ?? ''}-${accountKey}-${dateRange ?? ''}`;
+  const insightsResetKey = `${displayState}-${search}-${selectedCategory ?? ''}-${accountKey}-${dateRange ?? ''}`;
   const categorizeActions = (
-    <div className={cn('flex', 'shrink-0', 'flex-wrap', 'items-center', 'gap-3')}>
+    <div
+      className={cn(
+        'flex',
+        'w-full',
+        'shrink-0',
+        'items-center',
+        'justify-between',
+        'gap-3',
+        'md:w-auto',
+        'md:justify-start'
+      )}
+    >
       <IconButton
         ref={addCategoryButtonRef}
         type="button"
@@ -116,6 +128,7 @@ const TransactionsPage: React.FC<{
         stats={
           <TransactionInsightsPanel
             insights={insights}
+            displayState={displayState}
             isLoading={insightsLoading}
             resetKey={insightsResetKey}
           />
@@ -144,8 +157,10 @@ const TransactionsPage: React.FC<{
               className={cn(
                 'flex',
                 'min-w-0',
+                'w-full',
                 'items-center',
                 'gap-2',
+                'md:w-auto',
                 uiTypographyRecipes.sectionTitle,
                 uiTextRecipes.primary
               )}

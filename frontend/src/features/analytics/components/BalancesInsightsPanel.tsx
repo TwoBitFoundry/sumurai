@@ -1,10 +1,10 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDownLeft, ArrowUpRight, ChevronDown, CircleDollarSign } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { AccountGroupIcon } from '@/components/AccountGroupIcon';
 import { Amount } from '@/components/Amount';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { InsightCard, type InsightTileAlign } from '@/components/widgets/InsightCard';
+import { InsightsExpandablePanel } from '@/components/widgets/InsightsExpandablePanel';
 import { InsightsPanelHeader } from '@/components/widgets/InsightsPanel';
 import { InsightsPanelShell } from '@/components/widgets/InsightsPanelShell';
 import { ACCOUNT_GROUP_ACCENT, ACCOUNT_GROUP_LABELS } from '@/domain/accountCategories';
@@ -59,9 +59,13 @@ export function BalancesInsightsPanel({
   );
 
   const netAmount = (
-    <div
+    <span
       data-testid="overall-net"
       className={cn(
+        'inline-flex',
+        'min-w-0',
+        'justify-self-end',
+        'text-right',
         'text-[1.45rem]',
         'font-semibold',
         'leading-none',
@@ -72,7 +76,7 @@ export function BalancesInsightsPanel({
       )}
     >
       <Amount value={overall.net} className={cn('text-violet-500', 'dark:text-violet-300')} />
-    </div>
+    </span>
   );
 
   const subCategories: Array<{
@@ -140,201 +144,82 @@ export function BalancesInsightsPanel({
 
   return (
     <InsightsPanelShell testId="balances-insights-shell" accent="violet">
-      <div className={cn('relative', 'z-10', 'px-3', 'py-2', 'md:px-4', 'md:py-3')}>
-        <InsightsPanelHeader label="Balances Now" />
-        <button
-          type="button"
-          aria-expanded={expanded}
-          aria-controls="balances-insights-panel-body"
-          aria-label="Balances Now"
-          onClick={toggleExpanded}
-          className={cn('w-full', 'text-left')}
-        >
-          <div className={cn('flex', 'flex-col', 'gap-y-1.5', 'w-full')}>
-            {showYtdInHeader ? (
-              <div
-                data-testid="balances-ytd-row"
-                className={cn('flex', 'w-full', 'items-start', 'justify-between', 'gap-x-4')}
-              >
-                <div className={cn('flex', 'shrink-0', 'flex-col', 'items-start', 'gap-y-1.5')}>
-                  {netLabel}
-                  {netAmount}
-                </div>
-                <div className={cn('flex', 'shrink-0', 'items-start', 'gap-x-4', 'md:gap-x-6')}>
-                  <div
-                    className={cn(
-                      'inline-grid',
-                      'shrink-0',
-                      'grid-cols-[1fr_auto]',
-                      'gap-x-1',
-                      'gap-y-1.5'
-                    )}
-                  >
+      <InsightsExpandablePanel
+        testId="balances-insights-panel"
+        bodyId="balances-insights-panel-body"
+        bodyTestId="balances-insights-panel-body"
+        summaryLabel="Balance insights"
+        expanded={expanded}
+        onToggle={toggleExpanded}
+        bodyClassName={cn(
+          isMobile
+            ? showYtd
+              ? 'grid grid-cols-[auto_1fr_auto_auto_auto] items-baseline gap-x-2 gap-y-1.5'
+              : 'flex flex-col gap-1.5'
+            : 'flex w-full flex-row items-start gap-3'
+        )}
+        summary={
+          <>
+            <InsightsPanelHeader label="Balance insights" />
+            <div className={cn('flex', 'flex-col', 'gap-y-1.5', 'w-full')}>
+              {showYtdInHeader ? (
+                <div
+                  data-testid="balances-ytd-row"
+                  className={cn('flex', 'w-full', 'items-start', 'justify-between', 'gap-x-4')}
+                >
+                  <div className={cn('flex', 'shrink-0', 'flex-col', 'items-start', 'gap-y-1.5')}>
+                    {netLabel}
+                    {netAmount}
+                  </div>
+                  <div className={cn('flex', 'shrink-0', 'items-start', 'gap-x-4', 'md:gap-x-6')}>
                     <div
                       className={cn(
-                        'col-start-1',
-                        'flex',
-                        'items-center',
-                        'justify-end',
-                        'gap-x-1.5'
-                      )}
-                    >
-                      <span
-                        className={cn(...heroStatCardRecipes.iconWell, heroAccents.emerald.icon)}
-                        aria-hidden
-                      >
-                        <ArrowUpRight />
-                      </span>
-                      <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.label)}>
-                        income
-                      </div>
-                    </div>
-                    <div
-                      data-testid="balances-ytd-income"
-                      className={cn(
-                        'col-start-1',
-                        'col-end-3',
-                        'row-start-2',
-                        'grid',
+                        'inline-grid',
+                        'shrink-0',
                         'grid-cols-[1fr_auto]',
-                        'items-baseline',
-                        'gap-x-1'
+                        'gap-x-1',
+                        'gap-y-1.5'
                       )}
                     >
-                      <span
-                        data-testid="balances-ytd-income-value"
+                      <div
                         className={cn(
-                          'justify-self-end',
-                          uiTypographyRecipes.cardTitle,
-                          uiStatusRecipes.success.text,
-                          'tabular-nums'
+                          'col-start-1',
+                          'flex',
+                          'items-center',
+                          'justify-end',
+                          'gap-x-1.5'
                         )}
                       >
-                        {fmtUSD(incomeYtd)}
-                      </span>
-                      <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}>
-                        ytd
-                      </span>
-                    </div>
-                  </div>
-                  <div
-                    className={cn(
-                      'inline-grid',
-                      'shrink-0',
-                      'grid-cols-[1fr_auto]',
-                      'gap-x-1',
-                      'gap-y-1.5'
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        'col-start-1',
-                        'flex',
-                        'items-center',
-                        'justify-end',
-                        'gap-x-1.5'
-                      )}
-                    >
-                      <span
-                        className={cn(...heroStatCardRecipes.iconWell, heroAccents.rose.icon)}
-                        aria-hidden
-                      >
-                        <ArrowDownLeft />
-                      </span>
-                      <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.label)}>
-                        expenses
+                        <span
+                          className={cn(...heroStatCardRecipes.iconWell, heroAccents.emerald.icon)}
+                          aria-hidden
+                        >
+                          <ArrowUpRight />
+                        </span>
+                        <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.label)}>
+                          income
+                        </div>
                       </div>
-                    </div>
-                    <div
-                      data-testid="balances-ytd-expenses"
-                      className={cn(
-                        'col-start-1',
-                        'col-end-3',
-                        'row-start-2',
-                        'grid',
-                        'grid-cols-[1fr_auto]',
-                        'items-baseline',
-                        'gap-x-1'
-                      )}
-                    >
-                      <span
-                        data-testid="balances-ytd-expenses-value"
-                        className={cn(
-                          'justify-self-end',
-                          uiTypographyRecipes.cardTitle,
-                          uiStatusRecipes.danger.text,
-                          'tabular-nums'
-                        )}
-                      >
-                        {fmtUSD(expensesYtd)}
-                      </span>
-                      <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}>
-                        ytd
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className={cn('flex', 'flex-col', 'items-start', 'gap-y-1.5', 'w-full')}>
-                {netLabel}
-                {netAmount}
-              </div>
-            )}
-            <ChevronDown
-              className={cn(
-                'mx-auto',
-                'h-4',
-                'w-4',
-                'shrink-0',
-                'transition-transform',
-                'duration-200',
-                expanded && 'rotate-180',
-                semanticTextRecipes.subtle
-              )}
-            />
-          </div>
-        </button>
-      </div>
-
-      <AnimatePresence initial={false}>
-        {expanded ? (
-          <motion.div
-            id="balances-insights-panel-body"
-            data-testid="balances-insights-panel-body"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.24, ease: [0.22, 0.61, 0.36, 1] }}
-            className={cn('relative', 'z-10')}
-          >
-            <div className={cn('px-3', 'md:px-4')}>
-              <div className={cn('border-t', ...uiInsightsPanelRecipes.labelDivider)} />
-            </div>
-            <div
-              className={cn(
-                'px-3',
-                'py-2',
-                'md:px-4',
-                'md:py-3',
-                isMobile
-                  ? 'grid grid-cols-[auto_1fr_auto_auto_auto] items-baseline gap-x-2 gap-y-1.5'
-                  : 'flex w-full flex-row items-start gap-3'
-              )}
-            >
-              {showYtd && isMobile ? (
-                <>
-                  <InsightCard
-                    title="income"
-                    icon={<ArrowUpRight />}
-                    value={
-                      <span
+                      <div
                         data-testid="balances-ytd-income"
-                        className="justify-self-start col-span-3 inline-flex items-baseline gap-x-1"
+                        className={cn(
+                          'col-start-1',
+                          'col-end-3',
+                          'row-start-2',
+                          'grid',
+                          'grid-cols-[1fr_auto]',
+                          'items-baseline',
+                          'gap-x-1'
+                        )}
                       >
                         <span
                           data-testid="balances-ytd-income-value"
-                          className={cn(uiStatusRecipes.success.text, 'tabular-nums')}
+                          className={cn(
+                            'justify-self-end',
+                            uiTypographyRecipes.cardTitle,
+                            uiStatusRecipes.success.text,
+                            'tabular-nums'
+                          )}
                         >
                           {fmtUSD(incomeYtd)}
                         </span>
@@ -343,27 +228,56 @@ export function BalancesInsightsPanel({
                         >
                           ytd
                         </span>
-                      </span>
-                    }
-                    question="How much income have you received year to date?"
-                    accent="emerald"
-                    flipped={!!flipped['income-ytd']}
-                    onToggle={() => toggle('income-ytd')}
-                    outlined={false}
-                    tileLayout={false}
-                    subgridRow
-                  />
-                  <InsightCard
-                    title="expenses"
-                    icon={<ArrowDownLeft />}
-                    value={
-                      <span
+                      </div>
+                    </div>
+                    <div
+                      className={cn(
+                        'inline-grid',
+                        'shrink-0',
+                        'grid-cols-[1fr_auto]',
+                        'gap-x-1',
+                        'gap-y-1.5'
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          'col-start-1',
+                          'flex',
+                          'items-center',
+                          'justify-end',
+                          'gap-x-1.5'
+                        )}
+                      >
+                        <span
+                          className={cn(...heroStatCardRecipes.iconWell, heroAccents.rose.icon)}
+                          aria-hidden
+                        >
+                          <ArrowDownLeft />
+                        </span>
+                        <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.label)}>
+                          expenses
+                        </div>
+                      </div>
+                      <div
                         data-testid="balances-ytd-expenses"
-                        className="justify-self-start col-span-3 inline-flex items-baseline gap-x-1"
+                        className={cn(
+                          'col-start-1',
+                          'col-end-3',
+                          'row-start-2',
+                          'grid',
+                          'grid-cols-[1fr_auto]',
+                          'items-baseline',
+                          'gap-x-1'
+                        )}
                       >
                         <span
                           data-testid="balances-ytd-expenses-value"
-                          className={cn(uiStatusRecipes.danger.text, 'tabular-nums')}
+                          className={cn(
+                            'justify-self-end',
+                            uiTypographyRecipes.cardTitle,
+                            uiStatusRecipes.danger.text,
+                            'tabular-nums'
+                          )}
                         >
                           {fmtUSD(expensesYtd)}
                         </span>
@@ -372,47 +286,122 @@ export function BalancesInsightsPanel({
                         >
                           ytd
                         </span>
-                      </span>
-                    }
-                    question="How much have you spent year to date?"
-                    accent="rose"
-                    flipped={!!flipped['expenses-ytd']}
-                    onToggle={() => toggle('expenses-ytd')}
-                    outlined={false}
-                    tileLayout={false}
-                    subgridRow
-                  />
-                  <div
-                    data-testid="balances-ytd-divider"
-                    className={cn(
-                      'col-span-full',
-                      'border-t',
-                      ...uiInsightsPanelRecipes.labelDivider
-                    )}
-                    aria-hidden
-                  />
-                </>
-              ) : null}
-              {subCategories.map((category) => (
-                <InsightCard
-                  key={category.key}
-                  title={category.title}
-                  icon={category.icon}
-                  value={category.value}
-                  question={category.question}
-                  accent={category.accent}
-                  flipped={!!flipped[category.key]}
-                  onToggle={() => toggle(category.key)}
-                  outlined={false}
-                  tileLayout={!isMobile}
-                  tileAlign={category.tileAlign}
-                  subgridRow={isMobile}
-                />
-              ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className={cn(
+                    'grid',
+                    'w-full',
+                    'min-w-0',
+                    'grid-cols-[auto_minmax(0,1fr)]',
+                    'items-baseline',
+                    'gap-x-2',
+                    'gap-y-1.5'
+                  )}
+                >
+                  {netLabel}
+                  {netAmount}
+                </div>
+              )}
+              <ChevronDown
+                className={cn(
+                  'mx-auto',
+                  'h-4',
+                  'w-4',
+                  'shrink-0',
+                  'transition-transform',
+                  'duration-200',
+                  expanded && 'rotate-180',
+                  semanticTextRecipes.subtle
+                )}
+              />
             </div>
-          </motion.div>
+          </>
+        }
+      >
+        {showYtd && isMobile ? (
+          <>
+            <InsightCard
+              title="income"
+              icon={<ArrowUpRight />}
+              value={
+                <span
+                  data-testid="balances-ytd-income"
+                  className="justify-self-start col-span-3 inline-flex items-baseline gap-x-1"
+                >
+                  <span
+                    data-testid="balances-ytd-income-value"
+                    className={cn(uiStatusRecipes.success.text, 'tabular-nums')}
+                  >
+                    {fmtUSD(incomeYtd)}
+                  </span>
+                  <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}>
+                    ytd
+                  </span>
+                </span>
+              }
+              question="How much income have you received year to date?"
+              accent="emerald"
+              flipped={!!flipped['income-ytd']}
+              onToggle={() => toggle('income-ytd')}
+              outlined={false}
+              tileLayout={false}
+              subgridRow
+            />
+            <InsightCard
+              title="expenses"
+              icon={<ArrowDownLeft />}
+              value={
+                <span
+                  data-testid="balances-ytd-expenses"
+                  className="justify-self-start col-span-3 inline-flex items-baseline gap-x-1"
+                >
+                  <span
+                    data-testid="balances-ytd-expenses-value"
+                    className={cn(uiStatusRecipes.danger.text, 'tabular-nums')}
+                  >
+                    {fmtUSD(expensesYtd)}
+                  </span>
+                  <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.subtle)}>
+                    ytd
+                  </span>
+                </span>
+              }
+              question="How much have you spent year to date?"
+              accent="rose"
+              flipped={!!flipped['expenses-ytd']}
+              onToggle={() => toggle('expenses-ytd')}
+              outlined={false}
+              tileLayout={false}
+              subgridRow
+            />
+            <div
+              data-testid="balances-ytd-divider"
+              className={cn('col-span-full', 'border-t', ...uiInsightsPanelRecipes.labelDivider)}
+              aria-hidden
+            />
+          </>
         ) : null}
-      </AnimatePresence>
+        {subCategories.map((category) => (
+          <InsightCard
+            key={category.key}
+            title={category.title}
+            icon={category.icon}
+            value={category.value}
+            question={category.question}
+            accent={category.accent}
+            flipped={!!flipped[category.key]}
+            onToggle={() => toggle(category.key)}
+            outlined={false}
+            tileLayout={!isMobile}
+            tileAlign={category.tileAlign}
+            subgridRow={isMobile}
+          />
+        ))}
+      </InsightsExpandablePanel>
     </InsightsPanelShell>
   );
 }

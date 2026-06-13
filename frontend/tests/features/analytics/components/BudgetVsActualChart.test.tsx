@@ -156,6 +156,24 @@ describe('BudgetVsActualChart', () => {
     expect(visibleVarianceDotCount(container)).toBe(3);
   });
 
+  it('renders a glow filter for the reality curve', () => {
+    const data = [
+      { month: '2026-04', expenses: 1500 },
+      { month: '2026-05', expenses: 2500 },
+    ];
+    const { container } = render(
+      <BudgetVsActualChart data={data} totalBudget={4240} width={400} height={300} />
+    );
+
+    const blurFilters = container.querySelectorAll('filter feGaussianBlur');
+    expect(blurFilters).toHaveLength(1);
+    expect(blurFilters[0]?.getAttribute('stdDeviation')).toBe('4');
+
+    const curves = container.querySelectorAll('path.recharts-curve');
+    expect(curves.length).toBeGreaterThanOrEqual(2);
+    expect(curves[0]?.getAttribute('filter')).toContain('url(#');
+  });
+
   it('formats currency values on tooltips', () => {
     const data = [{ month: '2026-05', expenses: 1234.56 }];
     const { container } = render(

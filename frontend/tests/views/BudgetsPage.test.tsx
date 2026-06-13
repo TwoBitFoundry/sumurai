@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type React from 'react';
 import { useBudgets } from '@/features/budgets/hooks/useBudgets';
 import {
@@ -106,7 +107,7 @@ describe('BudgetsPage', () => {
     render(<BudgetsPage monthControl={monthControl} />);
 
     expect(screen.getByTestId('budget-insights-shell')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /budget summary/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /budget insights/i })).toHaveAttribute(
       'aria-expanded',
       'true'
     );
@@ -137,12 +138,80 @@ describe('BudgetsPage', () => {
 
     expect(budgetsCardIndex).toBeGreaterThanOrEqual(0);
     expect(fixedExpensesCardIndex).toBeGreaterThan(budgetsCardIndex);
+
+    for (const card of cards) {
+      expect(card.className).toContain('shadow-[0_8px_32px');
+      expect(card.className).not.toContain('drop-shadow-[');
+    }
   });
 
   it('keeps the insight shell visible in the page stats area', () => {
     render(<BudgetsPage monthControl={monthControl} />);
 
     expect(screen.getByTestId('budget-insights-shell')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /budget summary/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /budget insights/i })).toBeInTheDocument();
+  });
+
+  it('moves save to the add button slot and hides edit while editing', async () => {
+    const user = userEvent.setup();
+    render(<BudgetsPage monthControl={monthControl} />);
+
+    expect(screen.getByRole('button', { name: 'Edit budgets' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Budget' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save budgets' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Edit budgets' }));
+
+    expect(screen.queryByRole('button', { name: 'Edit budgets' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Budget' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save budgets' })).toBeInTheDocument();
+  });
+
+  it('opens the add budget picker while the budgets section stays collapsed', async () => {
+    setSessionCollapsibleExpanded('budgets', false);
+    jest.mocked(useBudgets).mockReturnValue({
+      ...baseUseBudgetsMock,
+      availableCategoryOptions: ['ENTERTAINMENT', 'FOOD_AND_DRINK'],
+    } as any);
+
+    const user = userEvent.setup();
+    render(<BudgetsPage monthControl={monthControl} />);
+
+    expect(screen.getByRole('button', { name: 'Show budgets' })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    );
+    expect(screen.queryByText('Spent')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Budget' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('add-budget-picker-content')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: 'Show budgets' })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    );
+  });
+
+  it('expands the budgets section when edit is selected while collapsed', async () => {
+    setSessionCollapsibleExpanded('budgets', false);
+    const user = userEvent.setup();
+    render(<BudgetsPage monthControl={monthControl} />);
+
+    expect(screen.getByRole('button', { name: 'Show budgets' })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Edit budgets' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Hide budgets' })).toHaveAttribute(
+        'aria-expanded',
+        'true'
+      );
+    });
+    expect(screen.getByTestId('budget-amount-input')).toBeInTheDocument();
   });
 });

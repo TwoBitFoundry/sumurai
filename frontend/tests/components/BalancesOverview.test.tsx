@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react';
-import { BalancesOverview } from '@/components/BalancesOverview';
+import { BalancesOverview, BalancesOverviewSummary } from '@/components/BalancesOverview';
 import { useTheme } from '@/context/ThemeContext';
 import { useYtdIncomeExpenses } from '@/features/analytics/hooks/useYtdIncomeExpenses';
 import { useBalancesOverview } from '@/hooks/useBalancesOverview';
+import { PageLayout } from '@/layouts/PageLayout';
 import { getThemeColors } from '@/ui/tokens';
 
 jest.mock('@/context/ThemeContext', () => ({
@@ -87,5 +88,45 @@ describe('BalancesOverview', () => {
 
     expect(screen.queryByTestId('balances-ytd-income')).not.toBeInTheDocument();
     expect(screen.queryByTestId('balances-ytd-expenses')).not.toBeInTheDocument();
+  });
+});
+
+describe('BalancesOverviewSummary', () => {
+  beforeEach(() => {
+    jest.mocked(useBalancesOverview).mockReturnValue({
+      loading: false,
+      refreshing: false,
+      error: null,
+      data: {
+        asOf: 'latest',
+        overall: sampleOverall,
+        banks: [],
+        mixedCurrency: false,
+      },
+      refresh: jest.fn(),
+    });
+
+    jest.mocked(useYtdIncomeExpenses).mockReturnValue({
+      incomeYtd: 5500,
+      expensesYtd: 1400,
+      loading: false,
+      error: null,
+    });
+  });
+
+  it('renders BalancesInsightsPanel directly for sticky hero placement', () => {
+    render(
+      <PageLayout title="Dashboard" stats={<BalancesOverviewSummary />}>
+        <div data-testid="page-content">Charts</div>
+      </PageLayout>
+    );
+
+    const stickyScope = screen.getByTestId('page-layout-sticky-scope');
+    const statsHost = stickyScope.querySelector('[data-page-layout-stats-host]');
+    const shell = screen.getByTestId('balances-insights-shell');
+
+    expect(statsHost).toContainElement(shell);
+    expect(stickyScope.contains(shell)).toBe(true);
+    expect(shell).toHaveClass('sticky');
   });
 });

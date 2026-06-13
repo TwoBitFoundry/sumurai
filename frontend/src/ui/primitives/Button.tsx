@@ -6,7 +6,6 @@ import {
   chrome,
   control,
   border as semanticBorders,
-  effect as semanticEffects,
   status as semanticStatus,
   surface as semanticSurfaces,
   text as semanticTextRecipes,
@@ -31,13 +30,12 @@ export const connectButtonRecipes = {
     'transition-all duration-200',
     'focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
     'dark:focus-visible:ring-offset-slate-900',
-    'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none',
+    'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0',
   ],
   secondary: [
     ...buttonChrome.secondary,
     ...semanticSurfaces.mutedChip,
     semanticTextRecipes.muted,
-    ...semanticEffects.glassShadow,
     'hover:border-[var(--color-border-default)] hover:bg-[var(--color-surface-hover-row)] hover:text-[var(--color-text-primary)]',
     'dark:text-[#cbd5e1]',
     'dark:hover:border-[var(--color-border-default)] dark:hover:bg-[var(--color-surface-hover-row)] dark:hover:text-white',
@@ -58,7 +56,7 @@ export const buttonRecipes = {
   primary: [
     ...buttonCta.gradient,
     semanticTextRecipes.inverse,
-    ...buttonCta.shadow,
+    ...buttonCta.glow,
     ...buttonCta.hover,
   ],
   secondary: [
@@ -67,7 +65,6 @@ export const buttonRecipes = {
     semanticTextRecipes.muted,
     'hover:-translate-y-0.5',
     'hover:border-[var(--color-border-default)] hover:bg-[var(--color-surface-hover-row)] hover:text-slate-900',
-    'hover:shadow-[0_14px_32px_-18px_var(--color-effect-accent-hover)]',
     'disabled:hover:translate-y-0',
     'dark:text-slate-300',
     'dark:hover:border-[var(--color-border-default)] dark:hover:bg-[var(--color-surface-hover-row)] dark:hover:text-white',
@@ -79,33 +76,24 @@ export const buttonRecipes = {
     'hover:-translate-y-0.5',
     'hover:border-[var(--color-border-control)]',
     'dark:hover:border-[color:color-mix(in_srgb,var(--color-border-glass)_20%,transparent)]',
-    ...semanticEffects.glassShadow,
     'dark:text-slate-200',
   ],
   icon: [
     ...buttonChrome.muted,
     ...semanticSurfaces.mutedChip,
     semanticTextRecipes.muted,
-    ...semanticEffects.glassShadow,
     'hover:-translate-y-[1px] hover:border-[var(--color-border-default)]',
     'hover:text-slate-900',
     'dark:text-slate-400',
     'dark:hover:border-[var(--color-border-default)] dark:hover:text-white',
   ],
-  filterChip: [
-    'backdrop-blur-sm',
-    'hover:-translate-y-[2px]',
-    'hover:shadow-lg',
-    'disabled:hover:translate-y-0',
-    'disabled:hover:shadow-none',
-  ],
+  filterChip: ['hover:-translate-y-[2px]', 'disabled:hover:translate-y-0'],
   tab: [
     'group',
     'relative',
     'overflow-hidden',
     'border-transparent',
     'bg-transparent',
-    'shadow-none',
     'hover:-translate-y-0.5',
     'disabled:hover:translate-y-0',
   ],
@@ -115,16 +103,14 @@ export const buttonRecipes = {
     ...semanticBorders.glass,
     'bg-[var(--color-brand-sky)]',
     'text-white',
-    ...buttonCta.shadow,
-    'backdrop-blur-sm',
     'dark:border-[var(--color-border-glass)]',
+    ...buttonCta.glow,
   ],
   danger: [
     'border dark:border-0',
     ...semanticStatus.danger.alertBorder,
     ...semanticStatus.danger.surface,
     ...semanticStatus.danger.text,
-    ...semanticEffects.glassShadow,
     'hover:-translate-y-0.5',
     'hover:bg-[var(--color-status-danger-strong-surface)]',
     'disabled:hover:translate-y-0',
@@ -133,14 +119,14 @@ export const buttonRecipes = {
   success: [
     ...successCta.gradient,
     semanticTextRecipes.inverse,
-    ...semanticEffects.successGlow,
+    ...successCta.glow,
     ...successCta.hover,
     'disabled:hover:translate-y-0',
   ],
   connect: [
     ...buttonCta.gradient,
     semanticTextRecipes.inverse,
-    ...buttonCta.shadow,
+    ...buttonCta.glow,
     ...buttonCta.hover,
   ],
 } as const;
@@ -248,6 +234,13 @@ export const Button = ({
   const isSquare = shape === 'square';
   const glyphSize =
     resolvedSize === 'sm' || resolvedSize === 'md' || resolvedSize === 'lg' ? resolvedSize : 'md';
+  const resolvedTitle =
+    props.title ??
+    (typeof props['aria-label'] === 'string'
+      ? props['aria-label']
+      : typeof children === 'string' || typeof children === 'number'
+        ? String(children)
+        : undefined);
 
   return (
     <button
@@ -255,6 +248,7 @@ export const Button = ({
       disabled={disabled || loading}
       className={cn(buttonVariants({ variant, size, shape }), className)}
       {...props}
+      title={resolvedTitle}
     >
       {isSquare ? (
         <span

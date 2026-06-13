@@ -28,21 +28,23 @@ export function BudgetProgress({
 
   return (
     <div className={cn('w-full', showCaptions && 'space-y-2.5')}>
-      <div
-        className={cn(...budgetProgressRecipes.track)}
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(clampedPercent)}
-        aria-label="Budget usage"
-      >
+      <div className={cn(...budgetProgressRecipes.shell)}>
         <div
-          className={cn(
-            ...budgetProgressRecipes.fillBase,
-            ...(isOver ? budgetProgressRecipes.fillOver : budgetProgressRecipes.fillWithin)
-          )}
-          style={{ width: `${fillWidthPercent}%` }}
-        />
+          className={cn(...budgetProgressRecipes.track)}
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(clampedPercent)}
+          aria-label="Budget usage"
+        >
+          <div
+            className={cn(
+              ...budgetProgressRecipes.fillBase,
+              ...(isOver ? budgetProgressRecipes.fillOver : budgetProgressRecipes.fillWithin)
+            )}
+            style={{ width: `${fillWidthPercent}%` }}
+          />
+        </div>
       </div>
       {showCaptions ? (
         <div className={cn(...budgetProgressRecipes.captionRow, text.muted)}>

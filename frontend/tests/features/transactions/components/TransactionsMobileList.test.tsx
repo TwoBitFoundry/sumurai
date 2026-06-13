@@ -106,8 +106,8 @@ describe('TransactionsMobileList', () => {
     const { container } = render(<TransactionsMobileList {...listProps} />);
 
     const row = container.querySelector('li:not([aria-hidden="true"])');
-    expect(row?.className).toContain('hover:shadow-[inset_0_0_0_2px_rgba(52,211,153,0.6)]');
-    expect(row?.className).not.toContain('hover:ring-emerald-400/60');
+    expect(row?.className).toContain('hover:ring-emerald-400/60');
+    expect(row?.className).not.toContain('hover:shadow-');
   });
 
   it('includes the year on the meta line for every transaction', () => {

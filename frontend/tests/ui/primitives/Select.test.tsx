@@ -36,4 +36,18 @@ describe('Select', () => {
     expect(screen.getByRole('button', { name: 'Save' }).className).toContain(control.height.md);
     expect(screen.getByRole('combobox', { name: 'Status' }).className).toContain(control.height.md);
   });
+
+  it.each([
+    'default',
+    'invalid',
+    'glass',
+  ] as const)('renders the %s variant without elevation drop shadow', (variant) => {
+    render(
+      <Select aria-label="Field" variant={variant}>
+        <option value="one">One</option>
+      </Select>
+    );
+
+    expect(screen.getByRole('combobox', { name: 'Field' }).className).not.toContain('drop-shadow-');
+  });
 });

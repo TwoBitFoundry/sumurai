@@ -23,12 +23,14 @@ import { cn, EmptyState, Pill } from '@/ui/primitives';
 import {
   control,
   controlIconWell,
+  dashboardCategoryCard,
+  effect as uiEffectRecipes,
   status as uiStatusRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { getHeroAccentForCategoryKey, getHeroAccentTheme } from '@/ui/tokens';
-import { formatCategoryName, getTagThemeForCategory } from '@/utils/categories';
+import { heroAccents } from '@/ui/tokens';
+import { formatCategoryName } from '@/utils/categories';
 import { fmtUSD } from '@/utils/format';
 
 export interface FixedExpenseListProps {
@@ -65,8 +67,8 @@ const fixedExpenseHoverHintShell = cn(
   uiTypographyRecipes.caption,
   uiTextRecipes.body,
   'font-medium',
-  'shadow-sm',
-  'backdrop-blur-sm'
+  ...uiEffectRecipes.glassDropShadow,
+  ...uiEffectRecipes.glassBackdrop
 );
 
 function FixedExpenseHoverHint({
@@ -252,6 +254,17 @@ function CategoryBadge({
   );
 }
 
+const fixedExpenseHeroHoverRingStyle = {
+  boxShadow: `inset 0 0 0 2px ${heroAccents.sky.ringHex}`,
+} as CSSProperties;
+
+const fixedExpenseRowShell = [
+  'relative',
+  'w-full',
+  'overflow-hidden',
+  ...dashboardCategoryCard.shell,
+] as const;
+
 function FixedExpenseCard({
   item,
   month,
@@ -262,52 +275,23 @@ function FixedExpenseCard({
   accentIndexByName: ReadonlyMap<string, number>;
 }) {
   const categoryPrimary = getFixedExpenseCategoryPrimary(item.category);
-  const tagTheme = getTagThemeForCategory(categoryPrimary, accentIndexByName);
-  const heroStyles = getHeroAccentTheme(getHeroAccentForCategoryKey(tagTheme.key));
   const referenceToday = new Date();
   const dueDates = listFixedExpenseDueDatesInMonth(item, month, referenceToday);
   const monthState = resolveFixedExpenseMonthState(item, month, referenceToday, dueDates);
-  const hoverInsetRingStyle = {
-    boxShadow: `inset 0 0 0 2px ${tagTheme.ringHex}`,
-  } as CSSProperties;
+  const hoverInsetRingStyle = fixedExpenseHeroHoverRingStyle;
 
   return (
     <li className={cn(heroStatCardRecipes.base, 'min-w-0', 'w-full')}>
       <div
         data-testid={`fixed-expense-card-${item.normalized_merchant}`}
         className={cn(
-          heroStatCardRecipes.shell,
-          '!border-0',
+          fixedExpenseRowShell,
           'flex w-full flex-col gap-1.5 !px-3.5 !py-2 text-left md:!px-4'
         )}
       >
         <div
-          className={cn(
-            'hero-stat-card__gradient',
-            'pointer-events-none',
-            'absolute',
-            'inset-0',
-            'rounded-[length:inherit]',
-            'opacity-100'
-          )}
-          style={{
-            backgroundImage: `linear-gradient(135deg, ${heroStyles.gradFrom}33, ${heroStyles.gradVia}1f, transparent 70%)`,
-          }}
-        />
-        <div
           aria-hidden
-          className={cn(
-            'hero-stat-card__inset-ring',
-            'pointer-events-none',
-            'absolute',
-            'inset-0',
-            'z-[1]',
-            'rounded-[length:inherit]',
-            'opacity-0',
-            'transition-opacity',
-            'duration-200',
-            'group-hover:opacity-100'
-          )}
+          className={cn(...dashboardCategoryCard.insetRing)}
           style={hoverInsetRingStyle}
         />
         <div className={cn('relative', 'z-10', 'flex', 'flex-col', 'gap-1.5')}>

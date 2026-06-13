@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { cn } from '@/ui/primitives';
-import { radius as uiRadiusRecipes, text as uiTextRecipes } from '@/ui/recipes';
+import {
+  effect as uiEffectRecipes,
+  radius as uiRadiusRecipes,
+  text as uiTextRecipes,
+} from '@/ui/recipes';
 import { GradientShell } from './GradientShell';
 
 const meta = {
@@ -17,7 +21,7 @@ const meta = {
           'bg-white/60',
           'px-4',
           'py-3',
-          'shadow-sm',
+          ...uiEffectRecipes.glassDropShadow,
           'dark:bg-slate-900/60',
           uiTextRecipes.body
         )}

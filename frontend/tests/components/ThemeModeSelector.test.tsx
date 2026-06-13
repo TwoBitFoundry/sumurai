@@ -16,6 +16,7 @@ describe('ThemeModeSelector', () => {
     render(<ThemeModeSelector value="system" onChange={jest.fn()} />);
 
     const group = screen.getByRole('radiogroup', { name: 'Theme' });
+    expect(group.className).not.toContain('drop-shadow-[');
     expect(group.className).toContain('h-12');
     expect(group.className).toContain('md:h-9');
     expect(group.className).toContain('lg:h-8');

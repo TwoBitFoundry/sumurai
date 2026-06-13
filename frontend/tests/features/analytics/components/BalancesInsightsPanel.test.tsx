@@ -37,24 +37,42 @@ describe('BalancesInsightsPanel', () => {
   it('renders net in the shell collapsed by default', () => {
     render(<BalancesInsightsPanel overall={sampleOverall} />);
 
-    expect(screen.getByTestId('balances-insights-shell')).toBeInTheDocument();
-    expect(screen.getByText('Balances Now')).toBeInTheDocument();
-    expect(screen.getByTestId('balances-insights-shell').className).toContain('border-0');
-    expect(
-      screen.getByTestId('balances-insights-shell').querySelector('.hero-stat-card__inset-ring')
-    ).not.toBeNull();
+    const shell = screen.getByTestId('balances-insights-shell');
+    expect(shell).toBeInTheDocument();
+    expect(screen.getByText('Balance insights')).toBeInTheDocument();
+    expect(shell).toHaveClass('sticky');
+    expect(shell).toHaveClass('z-30');
+    expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
+    expect(shell.firstElementChild?.className).toContain('--color-surface-glass-panel');
+    expect(shell.querySelector('.hero-stat-card__inset-ring')).not.toBeNull();
     expect(screen.getByTestId('overall-net')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /balances now/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /balance insights/i })).toHaveAttribute(
       'aria-expanded',
       'false'
     );
     expect(screen.queryByText('Cash')).not.toBeInTheDocument();
   });
 
+  it('keeps the mobile net label and amount on one wrapping row', () => {
+    setViewportWidth(390);
+
+    render(<BalancesInsightsPanel overall={sampleOverall} />);
+
+    const netValue = screen.getByTestId('overall-net');
+    const netRow = netValue.parentElement;
+
+    expect(netRow).toHaveClass('grid');
+    expect(netRow).toHaveClass('grid-cols-[auto_minmax(0,1fr)]');
+    expect(netRow).toHaveClass('items-baseline');
+    expect(netValue).toHaveClass('justify-self-end');
+    expect(netValue).toHaveClass('text-right');
+    expect(within(netRow as HTMLElement).getByText('Net')).toBeInTheDocument();
+  });
+
   it('toggles sub-categories from the net summary', async () => {
     render(<BalancesInsightsPanel overall={sampleOverall} />);
 
-    const summaryButton = screen.getByRole('button', { name: /balances now/i });
+    const summaryButton = screen.getByRole('button', { name: /balance insights/i });
     expect(screen.queryByText('Cash')).not.toBeInTheDocument();
 
     await userEvent.click(summaryButton);
@@ -70,12 +88,26 @@ describe('BalancesInsightsPanel', () => {
     expect(getSessionCollapsibleExpanded('balances-insights')).toBe(false);
   });
 
+  it('supports keyboard activation from the summary button', async () => {
+    const user = userEvent.setup();
+
+    render(<BalancesInsightsPanel overall={sampleOverall} />);
+
+    const summaryButton = screen.getByRole('button', { name: /balance insights/i });
+    summaryButton.focus();
+
+    await user.keyboard('{Enter}');
+    expect(
+      screen.getByRole('button', { name: /balance insights/i }).getAttribute('aria-expanded')
+    ).toBe('true');
+  });
+
   it('restores expanded state from session storage', () => {
     setSessionCollapsibleExpanded('balances-insights', true);
 
     render(<BalancesInsightsPanel overall={sampleOverall} />);
 
-    expect(screen.getByRole('button', { name: /balances now/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /balance insights/i })).toHaveAttribute(
       'aria-expanded',
       'true'
     );
@@ -149,7 +181,7 @@ describe('BalancesInsightsPanel', () => {
   it('renders income and expenses YTD when both props are provided', () => {
     render(<BalancesInsightsPanel overall={sampleOverall} incomeYtd={52300} expensesYtd={18400} />);
 
-    const summaryButton = screen.getByRole('button', { name: /balances now/i });
+    const summaryButton = screen.getByRole('button', { name: /balance insights/i });
     const incomeBlock = screen.getByTestId('balances-ytd-income');
     const expensesBlock = screen.getByTestId('balances-ytd-expenses');
     expect(incomeBlock).toHaveClass('items-baseline');

@@ -40,6 +40,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
   } = useBudgets(monthControl);
   const { accentIndexByName } = useCategories();
   const addButtonRef = useRef<HTMLButtonElement>(null);
+  const expandBudgetsSectionRef = useRef<(() => void) | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -71,6 +72,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
     }
   };
   const onStartEdit = () => {
+    expandBudgetsSectionRef.current?.();
     setIsAdding(false);
     setForm({ category: '', amount: '' });
     setDrafts(Object.fromEntries(computedBudgets.map((b) => [b.id, String(b.amount)])));
@@ -156,25 +158,13 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
               testId="budgets-section"
               expandLabel="Show budgets"
               collapseLabel="Hide budgets"
+              expandSectionRef={expandBudgetsSectionRef}
               actionsStart={
                 <div className={cn('flex', 'items-center', 'gap-2')}>
                   {budgetsLoading && (
                     <Loader2 className={cn('h-3.5', 'w-3.5', 'animate-spin')} aria-hidden="true" />
                   )}
-                  {isEditing ? (
-                    <Button
-                      type="button"
-                      onClick={onSaveEdit}
-                      variant="success"
-                      size="md"
-                      shape="square"
-                      aria-label="Save budgets"
-                      title="Save budgets"
-                      className={cn('shrink-0')}
-                    >
-                      <Check />
-                    </Button>
-                  ) : hasBudgets ? (
+                  {!isEditing && hasBudgets ? (
                     <Button
                       type="button"
                       onClick={onStartEdit}
@@ -191,7 +181,20 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
                 </div>
               }
               actionsEnd={
-                !isEditing ? (
+                isEditing ? (
+                  <Button
+                    type="button"
+                    onClick={onSaveEdit}
+                    variant="success"
+                    size="md"
+                    shape="square"
+                    aria-label="Save budgets"
+                    title="Save budgets"
+                    className={cn('shrink-0')}
+                  >
+                    <Check />
+                  </Button>
+                ) : (
                   <Button
                     ref={addButtonRef}
                     type="button"
@@ -206,19 +209,9 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
                   >
                     <Plus />
                   </Button>
-                ) : null
+                )
               }
             >
-              <AddBudgetPicker
-                open={isAdding}
-                anchorRef={addButtonRef}
-                categories={availableCategoryOptions}
-                accentIndexByName={accentIndexByName}
-                value={form}
-                onChange={setForm}
-                onSave={onSaveAdd}
-                onRequestClose={cancel}
-              />
               {hasBudgets ? (
                 <BudgetList
                   items={computedBudgets}
@@ -236,6 +229,16 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
                 />
               )}
             </CollapsibleSection>
+            <AddBudgetPicker
+              open={isAdding}
+              anchorRef={addButtonRef}
+              categories={availableCategoryOptions}
+              accentIndexByName={accentIndexByName}
+              value={form}
+              onChange={setForm}
+              onSave={onSaveAdd}
+              onRequestClose={cancel}
+            />
           </GlassCard>
           <GlassCard
             variant="accent"

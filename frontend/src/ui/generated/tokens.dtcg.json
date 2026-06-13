@@ -1118,11 +1118,11 @@
       "$value": {
         "colorSpace": "srgb",
         "components": [
-          0.008,
-          0.024,
-          0.09
+          0.58,
+          0.639,
+          0.722
         ],
-        "hex": "#020617"
+        "hex": "#94a3b8"
       }
     },
     "effect-danger-glow": {

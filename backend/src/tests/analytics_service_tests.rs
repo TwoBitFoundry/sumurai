@@ -678,6 +678,16 @@ fn given_transfer_transactions_when_calculating_cash_flow_then_excludes_transfer
             NaiveDate::from_ymd_opt(2024, 1, 28).unwrap(),
             "TRANSFER_IN",
         ),
+        create_test_transaction(
+            dec!(750.00),
+            NaiveDate::from_ymd_opt(2024, 1, 29).unwrap(),
+            "TRANSFER_OUT",
+        ),
+        create_test_transaction(
+            dec!(-250.00),
+            NaiveDate::from_ymd_opt(2024, 1, 30).unwrap(),
+            "TRANSFER_IN_INVESTMENT_AND_RETIREMENT_FUNDS",
+        ),
     ];
 
     let result = analytics.calculate_cash_flow(&txns, 3);

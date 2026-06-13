@@ -2,6 +2,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Search } from 'lucide-react';
 import { Button, cn, Input } from '@/ui/primitives';
 import {
+  floatingChromeGlass,
   floatingChromeSearch,
   border as semanticBorders,
   surface as semanticSurfaces,
@@ -12,8 +13,7 @@ import {
 const floatingChromePaginationButton = cn(
   ...semanticSurfaces.floatingChromePanel,
   ...semanticBorders.floatingChrome,
-  'backdrop-blur-md backdrop-saturate-[150%]',
-  'shadow-none',
+  ...floatingChromeGlass.backdrop,
   uiTextRecipes.muted,
   floatingChromeSearch.height,
   'w-[52px] md:w-12 lg:w-12',
@@ -68,7 +68,7 @@ export function TransactionsSearchBar({
           variant="floatingChrome"
           inputSize="chromeBar"
           className={cn(
-            'backdrop-blur-md backdrop-saturate-[150%]',
+            ...floatingChromeGlass.backdrop,
             'w-full',
             'min-w-0',
             '!pl-11',

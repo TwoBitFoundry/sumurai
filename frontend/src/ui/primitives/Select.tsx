@@ -8,7 +8,6 @@ export const selectControl = {
     'w-full',
     'border',
     'font-medium',
-    'shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)]',
     'transition-all duration-200 ease-out',
     'focus:outline-none',
     'disabled:cursor-not-allowed disabled:opacity-60',
@@ -36,7 +35,6 @@ export const selectControl = {
   glass: [
     'bg-white/80 text-slate-700 dark:text-slate-300',
     'border-white/60',
-    'shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)]',
     'focus:ring-2 focus:ring-sky-400/80',
     'focus:ring-offset-2 focus:ring-offset-white',
     'dark:bg-[#111a2f]/80 dark:text-slate-100',

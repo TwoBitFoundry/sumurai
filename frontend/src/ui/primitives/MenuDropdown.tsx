@@ -29,8 +29,6 @@ export const menuDropdownRecipes = {
     ...floatingChromeGlass.backdrop,
     ...floatingChromeGlass.shell,
     'p-2',
-    'backdrop-blur-md',
-    'backdrop-saturate-[150%]',
   ],
   item: [
     'flex w-full items-center gap-2',

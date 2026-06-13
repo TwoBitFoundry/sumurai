@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { FixedExpenseList } from '@/features/fixed-expenses/components/FixedExpenseList';
 import type { FixedExpenseSummary } from '@/types/api';
+import { heroAccents } from '@/ui/tokens';
 
 const makeFixed = (
   merchant: string,
@@ -46,17 +47,22 @@ describe('FixedExpenseList', () => {
     );
 
     expect(screen.getByText('Spotify')).toBeInTheDocument();
-    const gradient = screen
-      .getByTestId('fixed-expense-card-spotify')
-      .querySelector('.hero-stat-card__gradient');
-    expect(gradient).toHaveClass('opacity-100');
-    expect(gradient).not.toHaveClass('group-hover:opacity-100');
-    expect(screen.getByTestId('fixed-expense-card-spotify').className).toContain('!border-0');
+    expect(screen.getByTestId('fixed-expense-card-spotify').className).not.toContain(
+      'drop-shadow-'
+    );
+    expect(screen.getByTestId('fixed-expense-card-spotify').className).toContain(
+      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]'
+    );
+    expect(screen.getByTestId('fixed-expense-card-spotify').className).toContain(
+      'border-[var(--color-border-subtle)]'
+    );
     const insetRing = screen
       .getByTestId('fixed-expense-card-spotify')
       .querySelector('.hero-stat-card__inset-ring');
     expect(insetRing).toHaveClass('group-hover:opacity-100');
-    expect((insetRing as HTMLElement).style.boxShadow).toMatch(/^inset 0 0 0 2px #/i);
+    expect((insetRing as HTMLElement).style.boxShadow).toBe(
+      `inset 0 0 0 2px ${heroAccents.sky.ringHex}`
+    );
     expect(
       screen.getByTestId('fixed-expense-card-spotify').querySelector('.tabular-nums')
     ).toHaveTextContent('3tx');

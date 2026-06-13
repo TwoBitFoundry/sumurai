@@ -245,22 +245,6 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
           minHeightClassName
         )}
       >
-        <div
-          className={cn(
-            'hero-stat-card__gradient',
-            'pointer-events-none',
-            'absolute',
-            'inset-0',
-            uiRadiusRecipes.standard,
-            'opacity-0',
-            'transition-opacity',
-            'duration-300',
-            'group-hover:opacity-100'
-          )}
-          style={{
-            backgroundImage: `linear-gradient(135deg, ${styles.gradFrom}33, ${styles.gradVia}1f, transparent 70%)`,
-          }}
-        />
         <div className={cn(heroStatCardRecipes.ring)}>
           <div className={cn(heroStatCardRecipes.ringLine)} style={ringColorStyle} />
         </div>

@@ -1,6 +1,10 @@
 import { Button, cn, Pill } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import {
+  border as uiBorderRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { type DateRangeKey as DateRange, formatDateRangeLabel } from '@/utils/dateRanges';
 
 const options: Array<{ key: DateRange; label: string }> = [
@@ -40,6 +44,7 @@ export function DateRangePillSlider({
         ...appTitleBarRecipes.pillContainer,
         ...appTitleBarRecipes.contextPillInset,
         ...appTitleBarRecipes.pillContainerSize,
+        ...appTitleBarRecipes.bottomBarShadow,
         'min-w-0',
         'w-full',
         'max-w-full',
@@ -62,7 +67,12 @@ export function DateRangePillSlider({
               'shrink-0',
               isActive
                 ? [...appTitleBarRecipes.contextPillTabSize, uiTextRecipes.inverse]
-                : ['!px-0', 'aspect-square', uiTextRecipes.primary]
+                : [
+                    ...uiBorderRecipes.floatingChrome,
+                    '!px-0',
+                    'aspect-square',
+                    uiTextRecipes.primary,
+                  ]
             )}
             aria-pressed={isActive}
           >

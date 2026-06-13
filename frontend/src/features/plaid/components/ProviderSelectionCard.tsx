@@ -4,6 +4,7 @@ import type { ProviderCatalogue } from '@/types/providerCatalog';
 import { Button, cn, GlassCard } from '@/ui/primitives';
 import {
   border as uiBorderRecipes,
+  effect as uiEffectRecipes,
   status as uiStatusRecipes,
   surface as uiSurfaceRecipes,
   text as uiTextRecipes,
@@ -75,9 +76,8 @@ export const ProviderSelectionCard = ({
         'duration-200',
         ...uiBorderRecipes.glass,
         ...uiSurfaceRecipes.card,
-        'hover:shadow-[0_24px_80px_-50px_rgba(15,23,42,0.55)]',
-        'dark:hover:border-[var(--color-border-hover-accent)]',
-        'dark:hover:shadow-[0_28px_90px_-60px_rgba(2,6,23,0.7)]'
+        ...uiEffectRecipes.accentHover,
+        'dark:hover:border-[var(--color-border-hover-accent)]'
       )}
     >
       <div className={cn('flex', 'h-full', 'flex-col', 'gap-5')}>

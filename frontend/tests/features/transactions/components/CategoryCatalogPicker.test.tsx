@@ -74,6 +74,7 @@ describe('CategoryCatalogPicker', () => {
     expect(screen.getByText('Manage Categories')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Food & Drink' })).not.toBeInTheDocument();
     expect(screen.getByText('Food & Drink')).toBeInTheDocument();
+    expect(screen.getByLabelText('Make Your Own').className).not.toContain('drop-shadow-');
 
     await user.type(screen.getByLabelText('Make Your Own'), 'Weekend Brunch');
     await user.click(screen.getByRole('button', { name: 'Confirm category' }));

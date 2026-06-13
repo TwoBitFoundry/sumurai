@@ -43,13 +43,15 @@ describe('BudgetInsightsPanel', () => {
   it('renders the combined shell collapsed by default', () => {
     render(<BudgetInsightsPanel {...defaultProps} />);
 
-    expect(screen.getByTestId('budget-insights-shell')).toBeInTheDocument();
-    expect(screen.getByText('Budget summary')).toBeInTheDocument();
-    expect(screen.getByTestId('budget-insights-shell').className).toContain('border-0');
-    expect(
-      screen.getByTestId('budget-insights-shell').querySelector('.hero-stat-card__inset-ring')
-    ).not.toBeNull();
-    expect(screen.getByRole('button', { name: /budget summary/i })).toHaveAttribute(
+    const shell = screen.getByTestId('budget-insights-shell');
+    expect(shell).toBeInTheDocument();
+    expect(screen.getByText('Budget insights')).toBeInTheDocument();
+    expect(shell).toHaveClass('sticky');
+    expect(shell).toHaveClass('z-30');
+    expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
+    expect(shell.firstElementChild?.className).toContain('--color-surface-glass-panel');
+    expect(shell.querySelector('.hero-stat-card__inset-ring')).not.toBeNull();
+    expect(screen.getByRole('button', { name: /budget insights/i })).toHaveAttribute(
       'aria-expanded',
       'false'
     );
@@ -63,7 +65,7 @@ describe('BudgetInsightsPanel', () => {
 
     render(<BudgetInsightsPanel {...defaultProps} />);
 
-    expect(screen.getByRole('button', { name: /budget summary/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /budget insights/i })).toHaveAttribute(
       'aria-expanded',
       'true'
     );
@@ -74,7 +76,7 @@ describe('BudgetInsightsPanel', () => {
   it('toggles the shell open and closed from the summary', async () => {
     render(<BudgetInsightsPanel {...defaultProps} />);
 
-    const summaryButton = screen.getByRole('button', { name: /budget summary/i });
+    const summaryButton = screen.getByRole('button', { name: /budget insights/i });
     expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByText('Runway')).not.toBeInTheDocument();
 
@@ -88,6 +90,20 @@ describe('BudgetInsightsPanel', () => {
 
     expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
     expect(getSessionCollapsibleExpanded('budget-insights')).toBe(false);
+  });
+
+  it('supports keyboard activation from the summary button', async () => {
+    const user = userEvent.setup();
+
+    render(<BudgetInsightsPanel {...defaultProps} />);
+
+    const summaryButton = screen.getByRole('button', { name: /budget insights/i });
+    summaryButton.focus();
+
+    await user.keyboard('{Enter}');
+    expect(summaryButton).toHaveAttribute('aria-expanded', 'true');
+    await user.keyboard('{Enter}');
+    expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('lays out the detail cards as three content-fit tiles on tablet and desktop', () => {

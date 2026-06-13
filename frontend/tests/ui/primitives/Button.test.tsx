@@ -11,6 +11,7 @@ describe('Button', () => {
     expect(button.className).toContain(control.height.md);
     expect(button.className).toContain(control.paddingX.md);
     expect(button.className).toContain(font.bodyStrong);
+    expect(button).toHaveAttribute('title', 'Save');
   });
 
   it.each([
@@ -38,6 +39,47 @@ describe('Button', () => {
     expect(button.className).toContain('cursor-pointer');
     expect(button.className).toContain('focus-visible:ring-2');
     expect(button.className).toContain('active:scale-[0.98]');
+    expect(button.className).not.toContain('drop-shadow-');
+  });
+
+  it.each([
+    ['secondary', 'secondary' as const],
+    ['ghost', 'ghost' as const],
+    ['danger', 'danger' as const],
+    ['icon', 'icon' as const],
+    ['tab', 'tab' as const],
+    ['tabActive', 'tabActive' as const],
+  ])('keeps %s buttons free of elevation drop shadow', (_, variant) => {
+    render(
+      <Button variant={variant} size="md">
+        Action
+      </Button>
+    );
+
+    const button = screen.getByRole('button', { name: 'Action' });
+    expect(button.className).not.toMatch(/drop-shadow-\[0_(8|10|12|14|-6|-8|-10)/);
+    expect(button.className).not.toContain('hover:drop-shadow-[0_10px');
+    expect(button.className).not.toContain(
+      'drop-shadow-[0_8px_32px_color-mix(in_srgb,var(--color-effect-glass-shadow)_22%,transparent)]'
+    );
+  });
+
+  it.each([
+    ['primary', 'primary' as const, '--color-effect-accent-outline-glow'],
+    ['success', 'success' as const, '--color-effect-success-glow'],
+    ['connect', 'connect' as const, '--color-effect-accent-outline-glow'],
+    ['tabActive', 'tabActive' as const, '--color-effect-accent-outline-glow'],
+  ])('uses CTA glow on %s buttons', (_, variant, glowToken) => {
+    render(
+      <Button variant={variant} size="md">
+        Action
+      </Button>
+    );
+
+    const button = screen.getByRole('button', { name: 'Action' });
+    expect(button.className).toContain(glowToken);
+    expect(button.className).toMatch(/drop-shadow-\[0_0_12px/);
+    expect(button.className).not.toMatch(/drop-shadow-\[0_(8|10|12|14|-6|-8|-10)/);
   });
 
   it('uses flat brand sky for the primary variant', () => {

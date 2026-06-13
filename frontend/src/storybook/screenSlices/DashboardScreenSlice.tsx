@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { type CSSProperties, useState } from 'react';
 import { BalancesOverviewSummary } from '@/components/BalancesOverview';
 import DashboardStatsCarousel from '@/components/DashboardStatsCarousel';
-import { useTheme } from '@/context/ThemeContext';
+import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { BudgetVsActualChart } from '@/features/analytics/components/BudgetVsActualChart';
 import { CashFlowChart } from '@/features/analytics/components/CashFlowChart';
 import DashboardChartCard from '@/features/analytics/components/DashboardChartCard';
@@ -18,14 +18,18 @@ import { cn, Pill } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
   border as semanticBorders,
-  effect as semanticEffects,
   surface as semanticSurfaces,
   radius as uiRadiusRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
+import { heroAccents } from '@/ui/tokens';
 import type { DateRangeKey } from '@/utils/dateRanges';
 import { fmtUSD } from '@/utils/format';
+
+const dashboardCategoryHoverRingStyle = {
+  boxShadow: `inset 0 0 0 2px ${heroAccents.violet.ringHex}`,
+} as CSSProperties;
 
 const dashboardLoadingCard = [
   `min-h-[220px] ${uiRadiusRecipes.standard} border animate-pulse`,
@@ -52,7 +56,6 @@ export function DashboardScreenSlice(props: {
   variant: DashboardScreenSliceVariant;
   dateRange: DateRangeKey;
 }) {
-  const { colors } = useTheme();
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const byCat = sampleDonutByCategory;
   const monthSpend = sampleDonutTotal;
@@ -160,13 +163,29 @@ export function DashboardScreenSlice(props: {
                           <button
                             key={`topcard-${cat.name}`}
                             type="button"
-                            className={cn('p-2', dashboardCategoryCard.shell)}
-                            style={isHovered ? { borderColor: colors.chart.primary[0] } : undefined}
+                            title={`Show ${cat.name}`}
+                            className={cn(
+                              heroStatCardRecipes.base,
+                              'w-full',
+                              'p-2',
+                              dashboardCategoryCard.shell,
+                              'overflow-hidden'
+                            )}
                             onMouseEnter={() => setHoveredCategory(cat.name)}
                             onMouseLeave={() => setHoveredCategory(null)}
                             onClick={() => setHoveredCategory(cat.name)}
                           >
-                            <div className={cn(dashboardCategoryCard.metricRow)}>
+                            <div
+                              aria-hidden
+                              className={cn(
+                                ...dashboardCategoryCard.insetRing,
+                                isHovered && dashboardCategoryCard.insetRingActive
+                              )}
+                              style={dashboardCategoryHoverRingStyle}
+                            />
+                            <div
+                              className={cn('relative', 'z-10', dashboardCategoryCard.metricRow)}
+                            >
                               <Pill
                                 categoryName={cat.categoryKey}
                                 className={cn('min-w-0', 'truncate')}

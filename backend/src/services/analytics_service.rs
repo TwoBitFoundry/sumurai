@@ -7,7 +7,8 @@ use crate::models::analytics::{
 };
 use crate::models::transaction::Transaction;
 use crate::services::repository_service::{
-    DatabaseRepository, EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES,
+    is_excluded_analytics_category, is_transfer_category, DatabaseRepository,
+    EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES,
 };
 use anyhow::Result;
 use chrono::Datelike;
@@ -540,11 +541,12 @@ impl AnalyticsService {
                 .entry(month_key)
                 .or_insert(MonthlyCashFlow::default());
 
-            if transaction.amount > Decimal::ZERO && transaction.category_primary != "TRANSFER_IN" {
+            if transaction.amount > Decimal::ZERO
+                && !is_transfer_category(&transaction.category_primary)
+            {
                 flow.income += transaction.amount;
             } else if transaction.amount < Decimal::ZERO
-                && !EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES
-                    .contains(&transaction.category_primary.as_str())
+                && !is_excluded_analytics_category(&transaction.category_primary)
             {
                 flow.expenses += -transaction.amount;
             }

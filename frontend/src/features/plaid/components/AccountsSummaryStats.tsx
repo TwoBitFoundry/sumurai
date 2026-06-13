@@ -1,7 +1,10 @@
-import { Building2, Clock, CreditCard } from 'lucide-react';
+import { Building2, ChevronDown, Clock, CreditCard } from 'lucide-react';
 import { useState } from 'react';
 import { InsightCard } from '@/components/widgets/InsightCard';
-import { InsightsPanel } from '@/components/widgets/InsightsPanel';
+import { InsightsExpandablePanel } from '@/components/widgets/InsightsExpandablePanel';
+import { InsightsPanelHeader } from '@/components/widgets/InsightsPanel';
+import { InsightsPanelShell } from '@/components/widgets/InsightsPanelShell';
+import { useSessionCollapsible } from '@/hooks/useSessionCollapsible';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import { cn } from '@/ui/primitives';
 import { text as semanticTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
@@ -18,12 +21,14 @@ interface AccountsSummaryStatsProps {
 
 export const AccountsSummaryStats = ({ summary, lastSyncValue }: AccountsSummaryStatsProps) => {
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
+  const { expanded, toggleExpanded } = useSessionCollapsible('accounts-summary-stats');
   const { isMobile } = useViewportBreakpoint();
   const toggle = (id: string) => setFlipped((prev) => ({ ...prev, [id]: !prev[id] }));
   const hasConnections = summary.institutions > 0;
   const cardAccent = 'violet' as const;
+  const insightsToggleLabel = expanded ? 'Collapse account insights' : 'Expand account insights';
 
-  const summaryCards = (
+  const summaryCards = expanded ? (
     <>
       <InsightCard
         title="Institutions"
@@ -88,12 +93,45 @@ export const AccountsSummaryStats = ({ summary, lastSyncValue }: AccountsSummary
         subgridRow={isMobile}
       />
     </>
-  );
+  ) : null;
 
   return (
-    <InsightsPanel testId="accounts-summary-shell" accent="violet" headerLabel="Account summary">
-      {summaryCards}
-    </InsightsPanel>
+    <InsightsPanelShell testId="accounts-summary-shell" accent="violet">
+      <InsightsExpandablePanel
+        testId="accounts-summary-panel"
+        bodyId="accounts-summary-panel-body"
+        bodyTestId="accounts-summary-panel-body"
+        summaryLabel={insightsToggleLabel}
+        expanded={expanded}
+        onToggle={toggleExpanded}
+        bodyClassName={cn(
+          isMobile
+            ? 'grid grid-cols-[auto_1fr_auto_auto_auto] items-baseline gap-x-2 gap-y-1.5'
+            : 'flex flex-row items-start gap-3'
+        )}
+        summary={
+          <>
+            <InsightsPanelHeader label="Account insights" />
+            <div className={cn('flex', 'justify-center', 'pt-0.5')}>
+              <ChevronDown
+                className={cn(
+                  'h-4',
+                  'w-4',
+                  'shrink-0',
+                  'transition-transform',
+                  'duration-200',
+                  expanded && 'rotate-180',
+                  'text-slate-500',
+                  'dark:text-slate-400'
+                )}
+              />
+            </div>
+          </>
+        }
+      >
+        {summaryCards}
+      </InsightsExpandablePanel>
+    </InsightsPanelShell>
   );
 };
 

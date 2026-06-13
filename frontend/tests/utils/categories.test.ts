@@ -6,6 +6,8 @@ import {
   formatCustomCategoryDisplay,
   getTagThemeForCategory,
   getTagThemeForCategoryAtIndex,
+  isBudgetEligibleCategory,
+  isBudgetIneligibleCategory,
   longestFormattedCategoryLabel,
   mergeTransactionFilterCategories,
   mobileCategoryChipWidthRem,
@@ -252,5 +254,23 @@ describe('validateCustomCategoryName', () => {
     const result = validateCustomCategoryName('coffee RUNS', existing);
     expect(result.ok).toBe(true);
     expect(result.display).toBe('Coffee Runs');
+  });
+});
+
+describe('budget category eligibility', () => {
+  it('marks income and transfer categories as ineligible', () => {
+    expect(isBudgetIneligibleCategory('INCOME')).toBe(true);
+    expect(isBudgetIneligibleCategory('Income')).toBe(true);
+    expect(isBudgetIneligibleCategory('TRANSFER_IN')).toBe(true);
+    expect(isBudgetIneligibleCategory('Transfer In')).toBe(true);
+    expect(isBudgetIneligibleCategory('TRANSFER_OUT')).toBe(true);
+    expect(isBudgetIneligibleCategory('Transfer Out')).toBe(true);
+    expect(isBudgetIneligibleCategory('TRANSFER_IN_INVESTMENT_AND_RETIREMENT_FUNDS')).toBe(true);
+  });
+
+  it('allows expense categories for budgets', () => {
+    expect(isBudgetEligibleCategory('ENTERTAINMENT')).toBe(true);
+    expect(isBudgetEligibleCategory('FOOD_AND_DRINK')).toBe(true);
+    expect(isBudgetEligibleCategory('Coffee')).toBe(true);
   });
 });

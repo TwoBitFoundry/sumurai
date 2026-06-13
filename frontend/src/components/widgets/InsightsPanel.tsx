@@ -21,7 +21,7 @@ export interface InsightsPanelHeaderProps {
 
 export function InsightsPanelHeader({ label, isLoading = false }: InsightsPanelHeaderProps) {
   return (
-    <div className={cn('mb-3', 'flex', 'items-center', 'justify-between', 'gap-2')}>
+    <div className={cn('flex', 'items-center', 'justify-between', 'gap-2')}>
       <h3 className={cn(uiTypographyRecipes.cardTitle, semanticTextRecipes.primary)}>{label}</h3>
       {isLoading ? (
         <span className={cn(uiTypographyRecipes.caption, semanticTextRecipes.muted)}>Loading…</span>
@@ -44,7 +44,9 @@ export function InsightsPanel({
     <InsightsPanelShell testId={testId} accent={accent}>
       <div className={cn('relative', 'z-10', 'px-3', 'py-2', 'md:px-4', 'md:py-3')}>
         {headerLabel != null ? (
-          <InsightsPanelHeader label={headerLabel} isLoading={isLoading} />
+          <div className="mb-3">
+            <InsightsPanelHeader label={headerLabel} isLoading={isLoading} />
+          </div>
         ) : null}
         <div
           className={cn(

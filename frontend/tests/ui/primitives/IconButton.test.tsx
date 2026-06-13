@@ -14,6 +14,7 @@ describe('IconButton', () => {
     const button = screen.getByRole('button', { name: 'Settings' });
     expect(button.className).toContain(control.square.md);
     expect(button.querySelector('span')).not.toBeNull();
+    expect(button).toHaveAttribute('title', 'Settings');
   });
 
   it.each([

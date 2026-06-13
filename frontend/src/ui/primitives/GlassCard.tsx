@@ -12,19 +12,15 @@ export const glassCardRecipes = {
   base: [
     'relative overflow-hidden',
     'border',
-    ...semanticEffects.glassShadow,
-    'backdrop-blur-2xl backdrop-saturate-[150%]',
+    ...semanticEffects.glassBackdrop,
     'transition-colors duration-500',
-    'dark:shadow-[0_42px_140px_-80px_var(--color-effect-glass-shadow)]',
   ],
+  elevated: [...semanticEffects.glassElevationShadow],
   default: [...semanticBorders.glass, ...semanticSurfaces.glassPanel],
   auth: [
     ...semanticBorders.glass,
     ...semanticSurfaces.glassPanel,
-    'shadow-[0_38px_120px_-60px_var(--color-effect-glass-shadow)]',
-    'backdrop-blur-[26px]',
-    'backdrop-saturate-[140%]',
-    'dark:shadow-[0_40px_120px_-58px_var(--color-effect-glass-shadow)]',
+    ...semanticEffects.glassBackdrop,
   ],
   accent: [
     ...semanticBorders.elevatedGlass,
@@ -45,13 +41,12 @@ export const glassCardRecipes = {
   },
 } as const;
 
-const glassInsetLight =
-  'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]';
-const glassInsetDark =
-  'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.5)]';
-
 const glassCardVariants = cva([...glassCardRecipes.base], {
   variants: {
+    elevated: {
+      true: [...glassCardRecipes.elevated],
+      false: [],
+    },
     variant: {
       default: [...glassCardRecipes.default],
       auth: [...glassCardRecipes.auth],
@@ -71,6 +66,7 @@ const glassCardVariants = cva([...glassCardRecipes.base], {
     },
   },
   defaultVariants: {
+    elevated: true,
     variant: 'default',
     rounded: 'default',
     padding: 'md',
@@ -108,6 +104,7 @@ export function GlassCard({
   variant,
   rounded,
   padding,
+  elevated,
   withInnerEffects = true,
   className,
   containerClassName,
@@ -118,7 +115,7 @@ export function GlassCard({
 
   return (
     <div
-      className={cn(glassCardVariants({ variant, rounded, padding }), containerClassName)}
+      className={cn(glassCardVariants({ elevated, variant, rounded, padding }), containerClassName)}
       {...props}
     >
       {withInnerEffects && (
@@ -129,9 +126,7 @@ export function GlassCard({
               roundedClass,
               'ring-inset ring-1',
               'ring-white/40',
-              glassInsetLight,
-              'dark:ring-white/10',
-              glassInsetDark
+              'dark:ring-white/10'
             )}
           />
           <div

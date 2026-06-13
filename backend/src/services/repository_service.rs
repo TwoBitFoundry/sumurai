@@ -103,6 +103,27 @@ pub const EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES: [&str; 5] = [
     "BANK_FEES",
 ];
 
+pub fn is_transfer_category(category: &str) -> bool {
+    category == "TRANSFER_IN"
+        || category == "TRANSFER_OUT"
+        || category.starts_with("TRANSFER_IN_")
+        || category.starts_with("TRANSFER_OUT_")
+}
+
+pub fn is_excluded_analytics_category(category: &str) -> bool {
+    EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES.contains(&category) || is_transfer_category(category)
+}
+
+fn sql_effective_category_expr() -> &'static str {
+    "COALESCE(o.category_name, t.category_primary)"
+}
+
+fn sql_not_transfer_category_condition(category_expr: &str) -> String {
+    format!(
+        "{category_expr} <> 'TRANSFER_IN' AND {category_expr} <> 'TRANSFER_OUT' AND {category_expr} NOT LIKE 'TRANSFER_IN_%' AND {category_expr} NOT LIKE 'TRANSFER_OUT_%'"
+    )
+}
+
 #[async_trait]
 #[cfg_attr(test, mockall::automock)]
 #[allow(dead_code)]
@@ -823,18 +844,21 @@ impl PostgresRepository {
             .map(|category| format!("'{}'", category))
             .collect::<Vec<_>>()
             .join(", ");
+        let category_expr = sql_effective_category_expr();
+        let not_transfer = sql_not_transfer_category_condition(category_expr);
         let mut sql = format!(
             r#"
             SELECT
                 to_char(t.date, 'YYYY-MM') AS month,
                 COALESCE(SUM(CASE
                     WHEN t.amount > 0
-                        AND COALESCE(o.category_name, t.category_primary) <> 'TRANSFER_IN' THEN t.amount
+                        AND {not_transfer} THEN t.amount
                     ELSE 0
                 END), 0) AS income,
                 COALESCE(SUM(CASE
                     WHEN t.amount < 0
-                        AND COALESCE(o.category_name, t.category_primary) NOT IN ({excluded}) THEN -t.amount
+                        AND {category_expr} NOT IN ({excluded})
+                        AND {not_transfer} THEN -t.amount
                     ELSE 0
                 END), 0) AS expenses
             FROM transactions t
@@ -3300,6 +3324,7 @@ impl DatabaseRepository for PostgresRepository {
                             transactions::Relation::TransactionCategoryOverrides.def(),
                         )
                         .filter(transactions::Column::UserId.eq(user_id))
+                        .filter(transactions::Column::Amount.lt(0))
                         .filter(
                             Condition::any()
                                 .add(Self::effective_category_expr().eq("SUBSCRIPTION"))
@@ -3319,6 +3344,9 @@ impl DatabaseRepository for PostgresRepository {
 
         let mut groups: HashMap<String, Vec<EffectiveCategoryTransactionRow>> = HashMap::new();
         for row in rows {
+            if row.amount >= Decimal::ZERO {
+                continue;
+            }
             let key = row
                 .normalized_merchant
                 .clone()

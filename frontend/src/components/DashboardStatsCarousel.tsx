@@ -21,21 +21,23 @@ const slides: Array<{
   icon: LucideIcon;
   panelId: string;
   slideLabel: string;
+  description: string;
 }> = [
   {
     label: 'Money flow',
     icon: Waypoints,
     panelId: 'money-flow-panel',
     slideLabel: 'Money flow insight',
+    description: 'Follow income and spending across your accounts.',
   },
   {
-    label: 'Balances now',
+    label: 'Balance insights',
     icon: Landmark,
     panelId: 'balance-overview-panel',
-    slideLabel: 'Balances Now',
+    slideLabel: 'Balance insights',
+    description: 'Review cash, credit, and loan balances across connected accounts.',
   },
 ];
-const financialBreakdownDescription = 'Switch between wealth flow and balances by account.';
 const panelFadeTransition = { duration: 0.15 } as const;
 
 function subscribeMdViewport(onStoreChange: () => void) {
@@ -75,6 +77,8 @@ export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsC
 
   const moneyFlowOpacity = isMdUp && selectedIndex === 0 ? 1 : 0;
   const balancesOpacity = isMdUp ? (selectedIndex === 1 ? 1 : 0) : 1;
+  const activeSlideIndex = isMdUp ? selectedIndex : 1;
+  const activeDescription = slides[activeSlideIndex]?.description;
 
   const slideTabs = (
     <div
@@ -84,6 +88,7 @@ export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsC
         ...appTitleBarRecipes.pillContainer,
         ...appTitleBarRecipes.contextPillInset,
         ...appTitleBarRecipes.pillContainerSize,
+        ...appTitleBarRecipes.tabBarShadow,
         'shrink-0'
       )}
       role="tablist"
@@ -130,7 +135,7 @@ export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsC
     >
       <DashboardChartCard
         title="Financial breakdown over time"
-        description={financialBreakdownDescription}
+        description={activeDescription}
         refreshingLabel="Refreshing financial breakdown over time"
         isRefreshing={false}
         headerTrailing={slideTabs}

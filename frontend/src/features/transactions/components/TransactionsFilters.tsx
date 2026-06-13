@@ -183,8 +183,7 @@ export const TransactionsFilters: React.FC<Props> = ({
                       className={cn(
                         'whitespace-nowrap',
                         transactionsRowRecipes.categoryFilterPill,
-                        isCustom &&
-                          'pr-10 hover:translate-y-0 hover:shadow-none group-hover:shadow-lg',
+                        isCustom && 'pr-10 hover:translate-y-0',
                         theme.inlineLabel,
                         isSelected ? theme.chipSurfaceSelected : theme.chipSurface,
                         isSelected && ['ring-2', theme.ring]
@@ -215,7 +214,6 @@ export const TransactionsFilters: React.FC<Props> = ({
                           'text-slate-500',
                           'text-sm',
                           'leading-none',
-                          'shadow-none',
                           'transition-colors',
                           'duration-200',
                           'hover:bg-transparent',

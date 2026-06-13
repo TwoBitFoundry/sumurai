@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Target } from 'lucide-react';
 import { AccountRow } from '@/components/AccountRow';
 import { BankCard } from '@/components/BankCard';
@@ -30,6 +31,8 @@ describe('shared responsive layout surfaces', () => {
     const header = container.querySelector('div.mb-3');
     const content = container.querySelector('div.h-full.flex.flex-col');
 
+    expect(root?.className).toContain('shadow-[0_8px_32px');
+    expect(root?.className).not.toContain('drop-shadow-[');
     expect(root).toHaveClass('p-4');
     expect(root).toHaveClass('pt-5');
     expect(root).toHaveClass('md:p-8');
@@ -79,7 +82,8 @@ describe('shared responsive layout surfaces', () => {
     expect(searchWrapper).not.toHaveClass('sm:w-64');
   });
 
-  it('lays out account summary stats in the insights panel format on desktop', () => {
+  it('lays out account summary stats in the insights panel format on desktop', async () => {
+    const user = userEvent.setup();
     const { container } = render(
       <AccountsSummaryStats
         summary={{
@@ -94,6 +98,7 @@ describe('shared responsive layout surfaces', () => {
 
     const shell = screen.getByTestId('accounts-summary-shell');
     expect(shell).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /expand account insights/i }));
     expect(container.querySelector('.flex.flex-row')).toBeTruthy();
   });
 

@@ -1,11 +1,24 @@
 import { useCallback, useState } from 'react';
 import {
   getSessionCollapsibleExpanded,
+  hasSessionCollapsibleExpanded,
   setSessionCollapsibleExpanded,
 } from '@/utils/sessionPreferences';
 
-export function useSessionCollapsible(sectionId: string) {
-  const [expanded, setExpanded] = useState(() => getSessionCollapsibleExpanded(sectionId));
+export function useSessionCollapsible(sectionId: string, defaultExpanded = false) {
+  const [expanded, setExpanded] = useState(() =>
+    hasSessionCollapsibleExpanded(sectionId)
+      ? getSessionCollapsibleExpanded(sectionId)
+      : defaultExpanded
+  );
+
+  const setExpandedValue = useCallback(
+    (next: boolean) => {
+      setExpanded(next);
+      setSessionCollapsibleExpanded(sectionId, next);
+    },
+    [sectionId]
+  );
 
   const toggleExpanded = useCallback(() => {
     setExpanded((value) => {
@@ -15,5 +28,5 @@ export function useSessionCollapsible(sectionId: string) {
     });
   }, [sectionId]);
 
-  return { expanded, toggleExpanded };
+  return { expanded, toggleExpanded, setExpanded: setExpandedValue };
 }

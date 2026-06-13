@@ -95,32 +95,13 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
               }
             >
               {props.state === 'loaded' || props.state === 'adding' ? (
-                <>
-                  {props.state === 'adding' ? (
-                    <AddBudgetPicker
-                      open
-                      anchorRef={{ current: null }}
-                      categories={['food_and_drink', 'transportation']}
-                      accentIndexByName={
-                        new Map([
-                          ['food_and_drink', 0],
-                          ['transportation', 1],
-                        ])
-                      }
-                      value={{ category: '', amount: '' }}
-                      onChange={() => {}}
-                      onSave={() => {}}
-                      onRequestClose={() => {}}
-                    />
-                  ) : null}
-                  <BudgetList
-                    items={sampleBudgetProgressEntries}
-                    isEditing={false}
-                    drafts={{}}
-                    onDraftChange={() => {}}
-                    onDelete={() => {}}
-                  />
-                </>
+                <BudgetList
+                  items={sampleBudgetProgressEntries}
+                  isEditing={false}
+                  drafts={{}}
+                  onDraftChange={() => {}}
+                  onDelete={() => {}}
+                />
               ) : null}
               {props.state === 'empty' ? (
                 <EmptyState
@@ -137,6 +118,23 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
                 />
               ) : null}
             </CollapsibleSection>
+            {props.state === 'adding' ? (
+              <AddBudgetPicker
+                open
+                anchorRef={{ current: null }}
+                categories={['food_and_drink', 'transportation']}
+                accentIndexByName={
+                  new Map([
+                    ['food_and_drink', 0],
+                    ['transportation', 1],
+                  ])
+                }
+                value={{ category: '', amount: '' }}
+                onChange={() => {}}
+                onSave={() => {}}
+                onRequestClose={() => {}}
+              />
+            ) : null}
           </GlassCard>
           <GlassCard
             variant="accent"

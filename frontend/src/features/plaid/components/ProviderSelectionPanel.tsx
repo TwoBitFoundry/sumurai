@@ -37,8 +37,8 @@ const panelClasses = cn(
   'md:p-8',
   'lg:py-10',
   'lg:px-6',
-  ...uiEffectRecipes.glassShadow,
-  'backdrop-blur-[28px]'
+  ...uiEffectRecipes.glassDropShadow,
+  ...uiEffectRecipes.glassBackdrop
 );
 
 export const ProviderSelectionPanel = ({
@@ -78,7 +78,7 @@ export const ProviderSelectionPanel = ({
           'p-12',
           'text-center',
           ...uiEffectRecipes.dangerGlow,
-          'backdrop-blur-[28px]'
+          ...uiEffectRecipes.glassBackdrop
         )}
         data-testid="provider-error-panel"
       >

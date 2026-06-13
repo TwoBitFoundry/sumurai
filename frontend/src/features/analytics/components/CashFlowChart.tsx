@@ -2,8 +2,8 @@
  * Cash flow chart showing monthly income, expenses, and net savings.
  */
 
-import React, { useMemo } from 'react';
-import type { TooltipContentProps } from 'recharts';
+import React, { useId, useMemo } from 'react';
+import type { CurveProps, TooltipContentProps } from 'recharts';
 import {
   Area,
   AreaChart,
@@ -21,6 +21,11 @@ import type { AnalyticsCashFlowPoint } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
 import { formatChartMonthLabel } from '../utils/chartMonth';
 import { ChartGlassTooltip, chartTooltipRechartsProps } from './ChartGlassTooltip';
+import {
+  NetWorthGlowLineCurve,
+  NetWorthLineGlowFilter,
+  netWorthLineGlowFilterId,
+} from './NetWorthGlowLineCurve';
 
 export interface CashFlowChartProps {
   data: AnalyticsCashFlowPoint[];
@@ -57,6 +62,8 @@ const cashFlowTooltipValueClassName = (
 
 const CashFlowChartFn: React.FC<CashFlowChartProps> = ({ data, width, height }) => {
   const { colors, mode } = useTheme();
+  const glowFilterId = netWorthLineGlowFilterId(useId().replace(/[^a-zA-Z0-9_-]/g, ''));
+  const netWorthStroke = colors.semantic.netWorth || colors.chart.axis;
   const incomeColor = statusColors[mode].successIcon;
   const expenseColor = statusColors[mode].dangerIcon;
   const chartData = useMemo<CashFlowChartDatum[]>(
@@ -79,6 +86,7 @@ const CashFlowChartFn: React.FC<CashFlowChartProps> = ({ data, width, height }) 
       accessibilityLayer={false}
     >
       <defs>
+        <NetWorthLineGlowFilter filterId={glowFilterId} />
         <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
           <stop offset="5%" stopColor={incomeColor} stopOpacity={0.6} />
           <stop offset="95%" stopColor={incomeColor} stopOpacity={0.1} />
@@ -151,10 +159,17 @@ const CashFlowChartFn: React.FC<CashFlowChartProps> = ({ data, width, height }) 
       <Line
         type="monotone"
         dataKey="net"
-        stroke={colors.semantic.netWorth || colors.chart.axis}
+        stroke={netWorthStroke}
         strokeWidth={2}
         dot={false}
         name="Net"
+        shape={(curveProps: CurveProps) => (
+          <NetWorthGlowLineCurve
+            curveProps={curveProps}
+            stroke={netWorthStroke}
+            filterId={glowFilterId}
+          />
+        )}
         isAnimationActive={true}
         animationBegin={0}
         animationDuration={800}

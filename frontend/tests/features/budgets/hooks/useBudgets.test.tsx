@@ -154,6 +154,55 @@ describe('useBudgets', () => {
     });
   });
 
+  it('excludes income and transfer categories from categoryOptions', async () => {
+    useCategoriesMock.mockReturnValue({
+      ...defaultCategoriesMock,
+      all: [...defaultCategoriesMock.all, 'INCOME', 'TRANSFER_IN', 'TRANSFER_OUT'],
+    });
+
+    fetchMock = installFetchRoutes({
+      'GET /api/budgets/overview': asOverview([]),
+      'GET /api/transactions': [],
+      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/status': createConnectedStatus(),
+    });
+
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper });
+
+    await waitFor(() => {
+      expect(result.current.categoryOptions).toEqual([
+        'Coffee',
+        'ENTERTAINMENT',
+        'FOOD_AND_DRINK',
+        'TRANSPORTATION',
+      ]);
+    });
+  });
+
+  it('rejects creating budgets for income and transfer categories', async () => {
+    fetchMock = installFetchRoutes({
+      'GET /api/budgets/overview': asOverview([]),
+      'GET /api/transactions': [],
+      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/status': createConnectedStatus(),
+    });
+
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    await expect(result.current.add('INCOME', 100)).rejects.toThrow(
+      'Budgets cannot be created for income or transfer categories.'
+    );
+    await waitFor(() => {
+      expect(result.current.validationError).toBe(
+        'Budgets cannot be created for income or transfer categories.'
+      );
+    });
+  });
+
   it('excludes categories that already have budgets from availableCategoryOptions', async () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': asOverview([asBudget('1', 'FOOD_AND_DRINK', 100)]),

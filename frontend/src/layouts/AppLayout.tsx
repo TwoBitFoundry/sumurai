@@ -56,7 +56,7 @@ export function AppLayout({
         <main
           className={cn(
             'flex-1',
-            'overflow-hidden',
+            'overflow-visible',
             ...appLayout.mainSafeArea,
             'pt-3 md:pt-6 lg:pt-8',
             mainBottomPadding
@@ -117,6 +117,7 @@ export function AppLayout({
                 ...appTitleBarRecipes.pillContainer,
                 ...appTitleBarRecipes.contextPillInset,
                 ...appTitleBarRecipes.pillContainerSize,
+                ...appTitleBarRecipes.bottomBarShadow,
                 floatingVisible && 'pointer-events-auto'
               )}
               aria-label="Primary"

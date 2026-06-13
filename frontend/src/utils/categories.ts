@@ -100,6 +100,23 @@ function toCategorySlug(value: string): string {
   return value.trim().replace(/\s+/g, '_').toUpperCase();
 }
 
+const BUDGET_INELIGIBLE_CATEGORY_SLUGS = new Set(['INCOME', 'TRANSFER_IN', 'TRANSFER_OUT']);
+
+export function isBudgetIneligibleCategory(category: string | undefined | null): boolean {
+  if (!category) {
+    return false;
+  }
+  const slug = toCategorySlug(category);
+  if (BUDGET_INELIGIBLE_CATEGORY_SLUGS.has(slug)) {
+    return true;
+  }
+  return slug.startsWith('TRANSFER_IN_') || slug.startsWith('TRANSFER_OUT_');
+}
+
+export function isBudgetEligibleCategory(category: string | undefined | null): boolean {
+  return !isBudgetIneligibleCategory(category);
+}
+
 function findCategoryAccentIndex(
   name: string,
   accentIndex: ReadonlyMap<string, number>

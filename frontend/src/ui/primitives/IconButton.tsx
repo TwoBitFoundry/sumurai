@@ -5,7 +5,6 @@ import {
   buttonCta,
   chromeBar,
   control,
-  effect as semanticEffects,
   status as semanticStatus,
   surface as semanticSurfaces,
   successCta,
@@ -20,20 +19,19 @@ export const iconButtonRecipes = {
     ...buttonChrome.muted,
     ...semanticSurfaces.card,
     'text-slate-600 dark:text-slate-200',
-    ...semanticEffects.glassShadow,
     'transition-all duration-200 ease-out hover:-translate-y-[2px] hover:bg-[var(--color-surface-hover-row)] active:scale-[0.98] disabled:active:scale-100 dark:hover:bg-[var(--color-surface-hover-row)]',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]',
   ],
   primary: [
     `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} bg-[var(--color-brand-sky)] text-white disabled:cursor-not-allowed`,
-    ...buttonCta.shadow,
+    ...buttonCta.glow,
     'transition-all duration-200 ease-out hover:-translate-y-[2px] active:scale-[0.98] disabled:active:scale-100 disabled:hover:translate-y-0',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-[#0f172a]',
   ],
   success: [
     `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} text-white disabled:cursor-not-allowed`,
     ...successCta.gradient,
-    ...semanticEffects.successGlow,
+    ...successCta.glow,
     'transition-all duration-200 ease-out',
     ...successCta.hover,
     ...successCta.focus,
@@ -44,7 +42,6 @@ export const iconButtonRecipes = {
     ...semanticStatus.danger.alertBorder,
     ...semanticStatus.danger.surface,
     ...semanticStatus.danger.text,
-    ...semanticEffects.glassShadow,
     'transition-all duration-200 ease-out hover:-translate-y-0.5 active:scale-[0.98] disabled:active:scale-100 disabled:hover:translate-y-0',
     'hover:bg-[var(--color-status-danger-strong-surface)]',
     'dark:hover:bg-[color:color-mix(in_srgb,var(--color-status-danger-strong-surface)_46%,transparent)]',
@@ -54,7 +51,6 @@ export const iconButtonRecipes = {
     `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} disabled:cursor-not-allowed`,
     'border border-transparent',
     'bg-transparent',
-    'shadow-none',
     'text-slate-600 dark:text-slate-200',
     'transition-all duration-200 ease-out hover:-translate-y-[2px] active:scale-[0.98] disabled:active:scale-100 disabled:hover:translate-y-0',
     'hover:border-[var(--color-border-control)]',
@@ -109,6 +105,13 @@ export function IconButton({
   ...props
 }: IconButtonProps & { ref?: React.RefObject<HTMLButtonElement | null> }) {
   const resolvedSize = size ?? 'md';
+  const resolvedTitle =
+    props.title ??
+    (typeof props['aria-label'] === 'string'
+      ? props['aria-label']
+      : typeof children === 'string' || typeof children === 'number'
+        ? String(children)
+        : undefined);
   const glyphShellClass =
     resolvedSize === 'bar'
       ? cn(chromeBar.glyphWell, '[&_svg]:block', '[&_svg]:h-full', '[&_svg]:w-full')
@@ -129,6 +132,7 @@ export function IconButton({
       type="button"
       className={cn(iconButtonVariants({ variant, size }), className)}
       {...props}
+      title={resolvedTitle}
     >
       <span className={glyphShellClass}>{children}</span>
     </button>

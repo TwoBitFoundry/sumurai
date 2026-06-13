@@ -3,9 +3,14 @@ import { Target } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { cn, EmptyState, IconButton, Input, Pill } from '@/ui/primitives';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
-import { getHeroAccentForCategoryKey, getHeroAccentTheme } from '@/ui/tokens';
-import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
+import {
+  dashboardCategoryCard,
+  effect as uiEffectRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
+import { heroAccents } from '@/ui/tokens';
+import { formatCategoryName } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
 import { useCategories } from '../../transactions/hooks/useCategories';
 import type { BudgetProgressEntry } from '../hooks/useBudgets';
@@ -37,8 +42,21 @@ const budgetBarSlotClass = cn(
   'w-full',
   'min-h-8',
   'items-center',
-  'self-center'
+  'self-center',
+  'overflow-visible'
 );
+
+const budgetHeroHoverRingStyle = {
+  boxShadow: `inset 0 0 0 2px ${heroAccents.sky.ringHex}`,
+} as CSSProperties;
+
+const budgetRowShell = [
+  'relative',
+  'h-full',
+  'w-full',
+  'overflow-visible',
+  ...dashboardCategoryCard.shell,
+] as const;
 
 export function BudgetList({
   items,
@@ -72,11 +90,7 @@ export function BudgetList({
       {items.map((b) => {
         const isOver = b.spent > b.amount;
         const displayName = formatCategoryName(b.category);
-        const tagTheme = getTagThemeForCategory(b.category, accentIndexByName);
-        const heroStyles = getHeroAccentTheme(getHeroAccentForCategoryKey(tagTheme.key));
-        const hoverInsetRingStyle = {
-          boxShadow: `inset 0 0 0 2px ${tagTheme.ringHex}`,
-        } as CSSProperties;
+        const hoverInsetRingStyle = budgetHeroHoverRingStyle;
         const draft = drafts[b.id] ?? String(b.amount);
         const parsedDraft = Number(draft);
         const editPlannedAmount =
@@ -85,38 +99,13 @@ export function BudgetList({
           <li key={b.id} className={cn(heroStatCardRecipes.base, 'h-full')}>
             <div
               className={cn(
-                heroStatCardRecipes.shell,
-                '!border-0',
+                budgetRowShell,
                 'flex h-full flex-col p-3.5 pt-4 md:p-3.5 md:pt-4 lg:p-4 lg:pt-5'
               )}
             >
               <div
-                className={cn(
-                  'hero-stat-card__gradient',
-                  'pointer-events-none',
-                  'absolute',
-                  'inset-0',
-                  'rounded-[length:inherit]',
-                  'opacity-100'
-                )}
-                style={{
-                  backgroundImage: `linear-gradient(135deg, ${heroStyles.gradFrom}33, ${heroStyles.gradVia}1f, transparent 70%)`,
-                }}
-              />
-              <div
                 aria-hidden
-                className={cn(
-                  'hero-stat-card__inset-ring',
-                  'pointer-events-none',
-                  'absolute',
-                  'inset-0',
-                  'z-[1]',
-                  'rounded-[length:inherit]',
-                  'opacity-0',
-                  'transition-opacity',
-                  'duration-200',
-                  'group-hover:opacity-100'
-                )}
+                className={cn(...dashboardCategoryCard.insetRing)}
                 style={hoverInsetRingStyle}
               />
               <div className={cn('relative z-10 flex items-start justify-between gap-3')}>
@@ -125,7 +114,9 @@ export function BudgetList({
                   categoryName={b.category}
                   accentIndexByName={accentIndexByName}
                   className={cn(
-                    'transition-all duration-300 backdrop-blur-sm dark:ring-1 dark:ring-white/10'
+                    'transition-all duration-300',
+                    ...uiEffectRecipes.glassBackdrop,
+                    'dark:ring-1 dark:ring-white/10'
                   )}
                 >
                   {displayName}
@@ -196,8 +187,7 @@ export function BudgetList({
                             uiTextRecipes.primary,
                             'placeholder:font-normal',
                             'placeholder:text-slate-500',
-                            'dark:placeholder:text-slate-400',
-                            'shadow-none'
+                            'dark:placeholder:text-slate-400'
                           )}
                         />
                       </>

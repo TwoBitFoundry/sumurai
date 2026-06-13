@@ -26,7 +26,7 @@ describe('storybook screen slices responsive contract', () => {
     ) as HTMLElement | null;
 
     expect(statsShell).toBeTruthy();
-    expect(statsShell).toHaveClass('border-0');
+    expect(statsShell?.firstElementChild?.className).toContain('backdrop-blur-md');
     expect(statsShell?.querySelector('.hero-stat-card__inset-ring')).toBeTruthy();
   });
 
