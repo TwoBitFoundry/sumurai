@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { deriveInsightStateFromFilters } from '@/features/transactions/domain/deriveInsightStateFromFilters';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { TransactionService } from '@/services/TransactionService';
-import type { ContextualInsightsResponse } from '@/types/api';
+import type { ContextualInsightsResponse, InsightState } from '@/types/api';
 import { accountIdsCacheKey } from '@/utils/cacheKeys';
 import { computeDateRange, type DateRangeKey } from '@/utils/dateRanges';
 
@@ -14,6 +16,7 @@ export interface UseTransactionsContextualInsightsOptions {
 
 export interface UseTransactionsContextualInsightsResult {
   insights: ContextualInsightsResponse | null;
+  displayState: InsightState;
   isLoading: boolean;
   error: string | null;
   accountKey: string;
@@ -33,6 +36,9 @@ export function useTransactionsContextualInsights(
   const normalizedSearch = debouncedSearch.trim().toLowerCase();
   const dateRangeBounds = computeDateRange(dateRange as DateRangeKey | undefined);
   const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
+  const singleAccountSelected =
+    allAccountIds.length > 0 && !isAllAccountsSelected && selectedAccountIds.length === 1;
+  const categoryActive = selectedCategory != null && selectedCategory !== '';
 
   const query = useQuery({
     queryKey: [
@@ -84,8 +90,21 @@ export function useTransactionsContextualInsights(
     gcTime: 60 * 1000,
   });
 
+  const displayState = useMemo((): InsightState => {
+    if (query.data !== undefined) {
+      return query.data.state;
+    }
+
+    return deriveInsightStateFromFilters({
+      singleAccountSelected,
+      categoryActive,
+      merchantActive: false,
+    });
+  }, [categoryActive, query.data, singleAccountSelected]);
+
   return {
     insights: query.data ?? null,
+    displayState,
     isLoading: !accountsLoading && query.fetchStatus === 'fetching' && query.data === undefined,
     error: query.error ? 'Failed to load insights.' : null,
     accountKey: cacheKey,

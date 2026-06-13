@@ -33,7 +33,7 @@ function RawMerchantPopoverContent({ rawMerchant }: { rawMerchant: string }) {
         'border',
         ...uiBorderRecipes.glass,
         ...uiSurfaceRecipes.glassPanel,
-        ...uiEffectRecipes.glassShadow,
+        ...uiEffectRecipes.glassDropShadow,
         'p-3',
         ...uiEffectRecipes.glassBackdrop
       )}

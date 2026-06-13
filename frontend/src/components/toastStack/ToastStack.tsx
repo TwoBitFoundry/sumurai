@@ -45,18 +45,20 @@ function ToastProgressBar({ processed, total }: ToastProgressBarProps) {
 
   return (
     <div className={cn('space-y-1.5')}>
-      <div
-        className={cn(...budgetProgressRecipes.track)}
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(percent)}
-        aria-label="Categorization progress"
-      >
+      <div className={cn(...budgetProgressRecipes.shell)}>
         <div
-          className={cn(...budgetProgressRecipes.fillBase, ...budgetProgressRecipes.fillWithin)}
-          style={{ width: `${fillWidthPercent}%` }}
-        />
+          className={cn(...budgetProgressRecipes.track)}
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(percent)}
+          aria-label="Categorization progress"
+        >
+          <div
+            className={cn(...budgetProgressRecipes.fillBase, ...budgetProgressRecipes.fillWithin)}
+            style={{ width: `${fillWidthPercent}%` }}
+          />
+        </div>
       </div>
       <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted, 'tabular-nums')}>
         {formatAutoCategorizationProgressCaption(processed, total)}

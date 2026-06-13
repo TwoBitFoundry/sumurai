@@ -123,7 +123,7 @@ export const ProviderSelectionSection = ({ section, isMobile }: ProviderSelectio
                   'border',
                   ...uiBorderRecipes.glass,
                   ...uiSurfaceRecipes.glassPanel,
-                  'shadow-[0_24px_70px_-36px_rgba(15,23,42,0.55)]',
+                  ...uiEffectRecipes.glassDropShadow,
                   ...uiEffectRecipes.glassBackdrop
                 )}
               >
@@ -172,7 +172,7 @@ export const ProviderSelectionSection = ({ section, isMobile }: ProviderSelectio
                     ...uiBorderRecipes.glass,
                     ...uiSurfaceRecipes.glassPanel,
                     'p-3.5',
-                    'shadow-[0_24px_70px_-36px_rgba(15,23,42,0.55)]',
+                    ...uiEffectRecipes.glassDropShadow,
                     ...uiEffectRecipes.glassBackdrop,
                     'text-left'
                   )}

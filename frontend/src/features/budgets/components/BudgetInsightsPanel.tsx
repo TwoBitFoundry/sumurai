@@ -200,7 +200,7 @@ export function BudgetInsightsPanel({
         testId="budget-insights-panel"
         bodyId="budget-insights-panel-body"
         bodyTestId="budget-insights-panel-body"
-        summaryLabel="Budget summary"
+        summaryLabel="Budget insights"
         expanded={expanded}
         onToggle={toggleExpanded}
         bodyClassName={cn(
@@ -212,7 +212,7 @@ export function BudgetInsightsPanel({
         )}
         summary={
           <>
-            <InsightsPanelHeader label="Budget summary" />
+            <InsightsPanelHeader label="Budget insights" />
             <div
               className={cn(
                 'grid',
@@ -249,7 +249,7 @@ export function BudgetInsightsPanel({
               >
                 {fmtUSD(totalSpent)}
               </div>
-              <div className={cn('min-w-0', 'w-full', 'self-center')}>
+              <div className={cn('min-w-0', 'w-full', 'self-center', 'overflow-visible')}>
                 <BudgetProgress amount={totalBudgeted} spent={totalSpent} showCaptions={false} />
               </div>
               <div

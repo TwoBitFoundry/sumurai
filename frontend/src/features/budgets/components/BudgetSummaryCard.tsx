@@ -132,7 +132,7 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
                 >
                   {fmtUSD(totalSpent)}
                 </div>
-                <div className={cn('min-w-0', 'w-full', 'self-end')}>
+                <div className={cn('min-w-0', 'w-full', 'self-end', 'overflow-visible')}>
                   <BudgetProgress amount={totalBudgeted} spent={totalSpent} showCaptions={false} />
                 </div>
                 <div className={cn(amountValueClass, 'text-right', uiTextRecipes.primary)}>

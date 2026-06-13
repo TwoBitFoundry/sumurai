@@ -148,7 +148,7 @@ export function BalancesInsightsPanel({
         testId="balances-insights-panel"
         bodyId="balances-insights-panel-body"
         bodyTestId="balances-insights-panel-body"
-        summaryLabel="Balances Now"
+        summaryLabel="Balance insights"
         expanded={expanded}
         onToggle={toggleExpanded}
         bodyClassName={cn(
@@ -160,7 +160,7 @@ export function BalancesInsightsPanel({
         )}
         summary={
           <>
-            <InsightsPanelHeader label="Balances Now" />
+            <InsightsPanelHeader label="Balance insights" />
             <div className={cn('flex', 'flex-col', 'gap-y-1.5', 'w-full')}>
               {showYtdInHeader ? (
                 <div

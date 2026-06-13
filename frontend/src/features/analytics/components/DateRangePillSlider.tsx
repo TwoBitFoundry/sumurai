@@ -2,7 +2,6 @@ import { Button, cn, Pill } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import {
   border as uiBorderRecipes,
-  effect as uiEffectRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
@@ -70,7 +69,6 @@ export function DateRangePillSlider({
                 ? [...appTitleBarRecipes.contextPillTabSize, uiTextRecipes.inverse]
                 : [
                     ...uiBorderRecipes.floatingChrome,
-                    ...uiEffectRecipes.glassShadow,
                     '!px-0',
                     'aspect-square',
                     uiTextRecipes.primary,

@@ -182,10 +182,10 @@ const pillTypography = 'text-[0.6rem] font-bold uppercase tracking-[0.18em]';
 export const categoryAccents: CategoryTheme[] = [
   {
     key: 'sky',
-    tag: `${pillTypography} text-sky-500 dark:text-sky-300 border border-sky-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(14,165,233,0.55)] bg-sky-500/20 dark:bg-sky-400/14`,
+    tag: `${pillTypography} text-sky-500 dark:text-sky-300 border border-sky-200/70 dark:border-transparent bg-sky-500/20 dark:bg-sky-400/14`,
     inlineLabel: `${pillTypography} text-sky-500 dark:text-sky-300`,
     chipSurface:
-      '!border !border-sky-200/60 dark:!border-transparent !bg-sky-500/20 dark:!bg-sky-400/14 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.35)]',
+      '!border !border-sky-200/60 dark:!border-transparent !bg-sky-500/20 dark:!bg-sky-400/14',
     chipSurfaceSelected:
       '!border !border-sky-500 dark:!border-transparent !bg-sky-500/20 dark:!bg-sky-400/14',
     dot: 'bg-sky-500/90 dark:bg-sky-300/85',
@@ -194,10 +194,10 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'emerald',
-    tag: `${pillTypography} text-emerald-500 dark:text-emerald-300 border border-emerald-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(16,185,129,0.55)] bg-emerald-500/20 dark:bg-emerald-400/14`,
+    tag: `${pillTypography} text-emerald-500 dark:text-emerald-300 border border-emerald-200/70 dark:border-transparent bg-emerald-500/20 dark:bg-emerald-400/14`,
     inlineLabel: `${pillTypography} text-emerald-500 dark:text-emerald-300`,
     chipSurface:
-      '!border !border-emerald-200/60 dark:!border-transparent !bg-emerald-500/20 dark:!bg-emerald-400/14 shadow-[0_10px_28px_-18px_rgba(16,185,129,0.35)]',
+      '!border !border-emerald-200/60 dark:!border-transparent !bg-emerald-500/20 dark:!bg-emerald-400/14',
     chipSurfaceSelected:
       '!border !border-emerald-500 dark:!border-transparent !bg-emerald-500/20 dark:!bg-emerald-400/14',
     dot: 'bg-emerald-500/90 dark:bg-emerald-300/80',
@@ -206,10 +206,10 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'cyan',
-    tag: `${pillTypography} text-cyan-500 dark:text-cyan-300 border border-cyan-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(6,182,212,0.52)] bg-cyan-500/20 dark:bg-cyan-400/14`,
+    tag: `${pillTypography} text-cyan-500 dark:text-cyan-300 border border-cyan-200/70 dark:border-transparent bg-cyan-500/20 dark:bg-cyan-400/14`,
     inlineLabel: `${pillTypography} text-cyan-500 dark:text-cyan-300`,
     chipSurface:
-      '!border !border-cyan-200/60 dark:!border-transparent !bg-cyan-500/20 dark:!bg-cyan-400/14 shadow-[0_10px_28px_-18px_rgba(6,182,212,0.35)]',
+      '!border !border-cyan-200/60 dark:!border-transparent !bg-cyan-500/20 dark:!bg-cyan-400/14',
     chipSurfaceSelected:
       '!border !border-cyan-500 dark:!border-transparent !bg-cyan-500/20 dark:!bg-cyan-400/14',
     dot: 'bg-cyan-500/90 dark:bg-cyan-300/80',
@@ -218,10 +218,10 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'violet',
-    tag: `${pillTypography} text-violet-500 dark:text-violet-300 border border-violet-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(139,92,246,0.54)] bg-violet-500/20 dark:bg-violet-400/14`,
+    tag: `${pillTypography} text-violet-500 dark:text-violet-300 border border-violet-200/70 dark:border-transparent bg-violet-500/20 dark:bg-violet-400/14`,
     inlineLabel: `${pillTypography} text-violet-500 dark:text-violet-300`,
     chipSurface:
-      '!border !border-violet-200/60 dark:!border-transparent !bg-violet-500/20 dark:!bg-violet-400/14 shadow-[0_10px_28px_-18px_rgba(139,92,246,0.35)]',
+      '!border !border-violet-200/60 dark:!border-transparent !bg-violet-500/20 dark:!bg-violet-400/14',
     chipSurfaceSelected:
       '!border !border-violet-500 dark:!border-transparent !bg-violet-500/20 dark:!bg-violet-400/14',
     dot: 'bg-violet-500/90 dark:bg-violet-300/80',
@@ -230,10 +230,10 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'amber',
-    tag: `${pillTypography} text-amber-500 dark:text-amber-300 border border-amber-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(245,158,11,0.5)] bg-amber-500/20 dark:bg-amber-400/14`,
+    tag: `${pillTypography} text-amber-500 dark:text-amber-300 border border-amber-200/70 dark:border-transparent bg-amber-500/20 dark:bg-amber-400/14`,
     inlineLabel: `${pillTypography} text-amber-500 dark:text-amber-300`,
     chipSurface:
-      '!border !border-amber-200/60 dark:!border-transparent !bg-amber-500/20 dark:!bg-amber-400/14 shadow-[0_10px_28px_-18px_rgba(245,158,11,0.35)]',
+      '!border !border-amber-200/60 dark:!border-transparent !bg-amber-500/20 dark:!bg-amber-400/14',
     chipSurfaceSelected:
       '!border !border-amber-500 dark:!border-transparent !bg-amber-500/20 dark:!bg-amber-400/14',
     dot: 'bg-amber-500/90 dark:bg-amber-300/85',
@@ -242,10 +242,10 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'rose',
-    tag: `${pillTypography} text-rose-500 dark:text-rose-300 border border-rose-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(244,63,94,0.5)] bg-rose-500/20 dark:bg-rose-400/14`,
+    tag: `${pillTypography} text-rose-500 dark:text-rose-300 border border-rose-200/70 dark:border-transparent bg-rose-500/20 dark:bg-rose-400/14`,
     inlineLabel: `${pillTypography} text-rose-500 dark:text-rose-300`,
     chipSurface:
-      '!border !border-rose-200/60 dark:!border-transparent !bg-rose-500/20 dark:!bg-rose-400/14 shadow-[0_10px_28px_-18px_rgba(244,63,94,0.35)]',
+      '!border !border-rose-200/60 dark:!border-transparent !bg-rose-500/20 dark:!bg-rose-400/14',
     chipSurfaceSelected:
       '!border !border-rose-500 dark:!border-transparent !bg-rose-500/20 dark:!bg-rose-400/14',
     dot: 'bg-rose-500/90 dark:bg-rose-300/80',
@@ -254,10 +254,10 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'indigo',
-    tag: `${pillTypography} text-indigo-500 dark:text-indigo-300 border border-indigo-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(99,102,241,0.5)] bg-indigo-500/20 dark:bg-indigo-400/14`,
+    tag: `${pillTypography} text-indigo-500 dark:text-indigo-300 border border-indigo-200/70 dark:border-transparent bg-indigo-500/20 dark:bg-indigo-400/14`,
     inlineLabel: `${pillTypography} text-indigo-500 dark:text-indigo-300`,
     chipSurface:
-      '!border !border-indigo-200/60 dark:!border-transparent !bg-indigo-500/20 dark:!bg-indigo-400/14 shadow-[0_10px_28px_-18px_rgba(99,102,241,0.35)]',
+      '!border !border-indigo-200/60 dark:!border-transparent !bg-indigo-500/20 dark:!bg-indigo-400/14',
     chipSurfaceSelected:
       '!border !border-indigo-500 dark:!border-transparent !bg-indigo-500/20 dark:!bg-indigo-400/14',
     dot: 'bg-indigo-500/90 dark:bg-indigo-300/80',
@@ -266,10 +266,10 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'fuchsia',
-    tag: `${pillTypography} text-fuchsia-500 dark:text-fuchsia-300 border border-fuchsia-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(232,121,249,0.5)] bg-fuchsia-500/20 dark:bg-fuchsia-400/14`,
+    tag: `${pillTypography} text-fuchsia-500 dark:text-fuchsia-300 border border-fuchsia-200/70 dark:border-transparent bg-fuchsia-500/20 dark:bg-fuchsia-400/14`,
     inlineLabel: `${pillTypography} text-fuchsia-500 dark:text-fuchsia-300`,
     chipSurface:
-      '!border !border-fuchsia-200/60 dark:!border-transparent !bg-fuchsia-500/20 dark:!bg-fuchsia-400/14 shadow-[0_10px_28px_-18px_rgba(232,121,249,0.35)]',
+      '!border !border-fuchsia-200/60 dark:!border-transparent !bg-fuchsia-500/20 dark:!bg-fuchsia-400/14',
     chipSurfaceSelected:
       '!border !border-fuchsia-500 dark:!border-transparent !bg-fuchsia-500/20 dark:!bg-fuchsia-400/14',
     dot: 'bg-fuchsia-500/90 dark:bg-fuchsia-300/80',
@@ -278,10 +278,10 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'teal',
-    tag: `${pillTypography} text-teal-500 dark:text-teal-300 border border-teal-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(20,184,166,0.5)] bg-teal-500/20 dark:bg-teal-400/14`,
+    tag: `${pillTypography} text-teal-500 dark:text-teal-300 border border-teal-200/70 dark:border-transparent bg-teal-500/20 dark:bg-teal-400/14`,
     inlineLabel: `${pillTypography} text-teal-500 dark:text-teal-300`,
     chipSurface:
-      '!border !border-teal-200/60 dark:!border-transparent !bg-teal-500/20 dark:!bg-teal-400/14 shadow-[0_10px_28px_-18px_rgba(20,184,166,0.35)]',
+      '!border !border-teal-200/60 dark:!border-transparent !bg-teal-500/20 dark:!bg-teal-400/14',
     chipSurfaceSelected:
       '!border !border-teal-500 dark:!border-transparent !bg-teal-500/20 dark:!bg-teal-400/14',
     dot: 'bg-teal-500/90 dark:bg-teal-300/80',
@@ -290,10 +290,10 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'lime',
-    tag: `${pillTypography} text-lime-500 dark:text-lime-300 border border-lime-200/70 dark:border-transparent shadow-[0_18px_52px_-34px_rgba(132,204,22,0.48)] bg-lime-500/20 dark:bg-lime-400/14`,
+    tag: `${pillTypography} text-lime-500 dark:text-lime-300 border border-lime-200/70 dark:border-transparent bg-lime-500/20 dark:bg-lime-400/14`,
     inlineLabel: `${pillTypography} text-lime-500 dark:text-lime-300`,
     chipSurface:
-      '!border !border-lime-200/60 dark:!border-transparent !bg-lime-500/20 dark:!bg-lime-400/14 shadow-[0_10px_28px_-18px_rgba(132,204,22,0.35)]',
+      '!border !border-lime-200/60 dark:!border-transparent !bg-lime-500/20 dark:!bg-lime-400/14',
     chipSurfaceSelected:
       '!border !border-lime-500 dark:!border-transparent !bg-lime-500/20 dark:!bg-lime-400/14',
     dot: 'bg-lime-500/90 dark:bg-lime-300/80',
@@ -330,7 +330,7 @@ export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
     gradFrom: '#64748b',
     gradVia: '#475569',
     icon: 'text-slate-500 dark:text-slate-300',
-    defaultPill: `border border-slate-200/70 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 bg-[linear-gradient(135deg,_rgba(226,232,240,0.95),_rgba(248,250,252,0.65))] dark:bg-[linear-gradient(135deg,_rgba(30,41,59,0.75),_rgba(15,23,42,0.6))] shadow-[0_16px_44px_-30px_rgba(15,23,42,0.55)] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
+    defaultPill: `border border-slate-200/70 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 bg-[linear-gradient(135deg,_rgba(226,232,240,0.95),_rgba(248,250,252,0.65))] dark:bg-[linear-gradient(135deg,_rgba(30,41,59,0.75),_rgba(15,23,42,0.6))] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
     defaultDot: 'bg-slate-400/85 dark:bg-slate-200/80',
     glowRgb: '100,116,139',
   },
@@ -343,7 +343,7 @@ export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
     gradFrom: '#34d399',
     gradVia: '#10b981',
     icon: 'text-emerald-500 dark:text-emerald-400',
-    defaultPill: `border border-emerald-200/70 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-200 bg-[linear-gradient(135deg,_rgba(16,185,129,0.22),_rgba(16,185,129,0.08))] dark:bg-[linear-gradient(135deg,_rgba(34,197,94,0.22),_rgba(34,197,94,0.08))] shadow-[0_18px_46px_-32px_rgba(16,185,129,0.55)] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
+    defaultPill: `border border-emerald-200/70 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-200 bg-[linear-gradient(135deg,_rgba(16,185,129,0.22),_rgba(16,185,129,0.08))] dark:bg-[linear-gradient(135deg,_rgba(34,197,94,0.22),_rgba(34,197,94,0.08))] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
     defaultDot: 'bg-emerald-500/90 dark:bg-emerald-300/80',
     glowRgb: '16,185,129',
   },
@@ -356,7 +356,7 @@ export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
     gradFrom: '#38bdf8',
     gradVia: '#0ea5e9',
     icon: 'text-sky-500 dark:text-sky-400',
-    defaultPill: `border border-sky-200/70 dark:border-sky-500/40 text-sky-700 dark:text-sky-200 bg-[linear-gradient(135deg,_rgba(14,165,233,0.2),_rgba(14,165,233,0.08))] dark:bg-[linear-gradient(135deg,_rgba(56,189,248,0.2),_rgba(56,189,248,0.08))] shadow-[0_18px_46px_-32px_rgba(14,165,233,0.55)] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
+    defaultPill: `border border-sky-200/70 dark:border-sky-500/40 text-sky-700 dark:text-sky-200 bg-[linear-gradient(135deg,_rgba(14,165,233,0.2),_rgba(14,165,233,0.08))] dark:bg-[linear-gradient(135deg,_rgba(56,189,248,0.2),_rgba(56,189,248,0.08))] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
     defaultDot: 'bg-sky-500/90 dark:bg-sky-300/80',
     glowRgb: '14,165,233',
   },
@@ -369,7 +369,7 @@ export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
     gradFrom: '#a78bfa',
     gradVia: '#7c3aed',
     icon: 'text-violet-500 dark:text-violet-400',
-    defaultPill: `border border-violet-200/70 dark:border-violet-500/40 text-violet-700 dark:text-violet-200 bg-[linear-gradient(135deg,_rgba(139,92,246,0.22),_rgba(139,92,246,0.08))] dark:bg-[linear-gradient(135deg,_rgba(167,139,250,0.22),_rgba(167,139,250,0.08))] shadow-[0_18px_46px_-32px_rgba(139,92,246,0.55)] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
+    defaultPill: `border border-violet-200/70 dark:border-violet-500/40 text-violet-700 dark:text-violet-200 bg-[linear-gradient(135deg,_rgba(139,92,246,0.22),_rgba(139,92,246,0.08))] dark:bg-[linear-gradient(135deg,_rgba(167,139,250,0.22),_rgba(167,139,250,0.08))] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
     defaultDot: 'bg-violet-500/90 dark:bg-violet-300/80',
     glowRgb: '167,139,250',
   },
@@ -382,7 +382,7 @@ export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
     gradFrom: '#fbbf24',
     gradVia: '#f59e0b',
     icon: 'text-amber-500 dark:text-amber-400',
-    defaultPill: `border border-amber-200/70 dark:border-amber-500/40 text-amber-700 dark:text-amber-200 bg-[linear-gradient(135deg,_rgba(245,158,11,0.22),_rgba(245,158,11,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,191,36,0.22),_rgba(251,191,36,0.08))] shadow-[0_18px_46px_-32px_rgba(245,158,11,0.52)] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
+    defaultPill: `border border-amber-200/70 dark:border-amber-500/40 text-amber-700 dark:text-amber-200 bg-[linear-gradient(135deg,_rgba(245,158,11,0.22),_rgba(245,158,11,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,191,36,0.22),_rgba(251,191,36,0.08))] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
     defaultDot: 'bg-amber-500/90 dark:bg-amber-300/85',
     glowRgb: '251,191,36',
   },
@@ -395,7 +395,7 @@ export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
     gradFrom: '#fb7185',
     gradVia: '#f43f5e',
     icon: 'text-rose-500 dark:text-rose-400',
-    defaultPill: `border border-rose-200/70 dark:border-rose-500/40 text-rose-700 dark:text-rose-200 bg-[linear-gradient(135deg,_rgba(244,63,94,0.22),_rgba(244,63,94,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,113,133,0.22),_rgba(251,113,133,0.08))] shadow-[0_18px_46px_-32px_rgba(244,63,94,0.5)] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
+    defaultPill: `border border-rose-200/70 dark:border-rose-500/40 text-rose-700 dark:text-rose-200 bg-[linear-gradient(135deg,_rgba(244,63,94,0.22),_rgba(244,63,94,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,113,133,0.22),_rgba(251,113,133,0.08))] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
     defaultDot: 'bg-rose-500/90 dark:bg-rose-300/80',
     glowRgb: '244,63,94',
   },
@@ -408,21 +408,21 @@ export const featurePalettes = {
       ring: 'ring-sky-300/35',
       iconLight: 'text-sky-700',
       iconDark: 'text-sky-100',
-      glow: 'shadow-[0_16px_42px_-25px_rgba(14,165,233,0.55)]',
+      glow: '${glassDropShadowClasses}',
     },
     amber: {
       gradient: 'from-amber-400/55 via-amber-500/25 to-amber-500/5',
       ring: 'ring-amber-300/35',
       iconLight: 'text-amber-700',
       iconDark: 'text-amber-100',
-      glow: 'shadow-[0_16px_42px_-25px_rgba(245,158,11,0.55)]',
+      glow: '${glassDropShadowClasses}',
     },
     purple: {
       gradient: 'from-purple-400/55 via-purple-500/25 to-purple-500/5',
       ring: 'ring-purple-300/35',
       iconLight: 'text-purple-700',
       iconDark: 'text-purple-100',
-      glow: 'shadow-[0_16px_42px_-25px_rgba(168,85,247,0.55)]',
+      glow: '${glassDropShadowClasses}',
     },
   },
   providerFeature: {
@@ -430,19 +430,19 @@ export const featurePalettes = {
       gradient: 'from-emerald-400/55 via-emerald-500/25 to-emerald-500/5',
       ring: 'ring-emerald-300/35',
       icon: 'text-emerald-700 dark:text-emerald-100',
-      glow: 'shadow-[0_16px_40px_-24px_rgba(16,185,129,0.55)]',
+      glow: '${glassDropShadowClasses}',
     },
     amber: {
       gradient: 'from-amber-400/55 via-amber-500/25 to-amber-500/5',
       ring: 'ring-amber-300/35',
       icon: 'text-amber-700 dark:text-amber-100',
-      glow: 'shadow-[0_16px_40px_-24px_rgba(245,158,11,0.55)]',
+      glow: '${glassDropShadowClasses}',
     },
     purple: {
       gradient: 'from-purple-400/55 via-purple-500/25 to-purple-500/5',
       ring: 'ring-purple-300/35',
       icon: 'text-purple-700 dark:text-purple-100',
-      glow: 'shadow-[0_16px_40px_-24px_rgba(168,85,247,0.55)]',
+      glow: '${glassDropShadowClasses}',
     },
   },
   highlight: {
@@ -451,35 +451,35 @@ export const featurePalettes = {
       ring: 'ring-amber-300/35',
       iconLight: 'text-amber-700',
       iconDark: 'text-amber-200',
-      glow: 'shadow-[0_18px_45px_-25px_rgba(245,158,11,0.65)]',
+      glow: '${glassDropShadowClasses}',
     },
     sky: {
       gradient: 'from-sky-400/55 via-sky-500/25 to-sky-500/5',
       ring: 'ring-sky-300/35',
       iconLight: 'text-sky-700',
       iconDark: 'text-sky-200',
-      glow: 'shadow-[0_18px_45px_-25px_rgba(14,165,233,0.6)]',
+      glow: '${glassDropShadowClasses}',
     },
     violet: {
       gradient: 'from-violet-400/55 via-violet-500/25 to-violet-500/5',
       ring: 'ring-violet-300/35',
       iconLight: 'text-violet-700',
       iconDark: 'text-violet-200',
-      glow: 'shadow-[0_18px_45px_-25px_rgba(139,92,246,0.6)]',
+      glow: '${glassDropShadowClasses}',
     },
     fuchsia: {
       gradient: 'from-fuchsia-400/55 via-fuchsia-500/25 to-fuchsia-500/5',
       ring: 'ring-fuchsia-300/35',
       iconLight: 'text-fuchsia-700',
       iconDark: 'text-fuchsia-200',
-      glow: 'shadow-[0_18px_45px_-25px_rgba(217,70,239,0.62)]',
+      glow: '${glassDropShadowClasses}',
     },
     emerald: {
       gradient: 'from-emerald-400/55 via-emerald-500/25 to-emerald-500/5',
       ring: 'ring-emerald-300/35',
       iconLight: 'text-emerald-700',
       iconDark: 'text-emerald-100',
-      glow: 'shadow-[0_18px_45px_-25px_rgba(16,185,129,0.55)]',
+      glow: '${glassDropShadowClasses}',
     },
   },
 } as const;

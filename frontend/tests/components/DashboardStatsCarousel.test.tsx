@@ -49,7 +49,7 @@ describe('DashboardStatsCarousel', () => {
       'aria-selected',
       'true'
     );
-    expect(screen.getByRole('tab', { name: /show balances now/i })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: /show balance insights/i })).toHaveAttribute(
       'aria-selected',
       'false'
     );
@@ -59,7 +59,7 @@ describe('DashboardStatsCarousel', () => {
       'true'
     );
 
-    await user.click(screen.getByRole('tab', { name: /show balances now/i }));
+    await user.click(screen.getByRole('tab', { name: /show balance insights/i }));
 
     expect(
       screen.getByText('Review cash, credit, and loan balances across connected accounts.')
@@ -67,7 +67,7 @@ describe('DashboardStatsCarousel', () => {
     expect(
       screen.queryByText('Follow income and spending across your accounts.')
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /show balances now/i })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: /show balance insights/i })).toHaveAttribute(
       'aria-selected',
       'true'
     );
@@ -87,7 +87,7 @@ describe('DashboardStatsCarousel', () => {
     const user = userEvent.setup();
     render(<DashboardStatsCarousel dateRange="current-month" />);
 
-    await user.click(screen.getByRole('tab', { name: /show balances now/i }));
+    await user.click(screen.getByRole('tab', { name: /show balance insights/i }));
     expect(screen.getByTestId('money-flow-sankey-chart')).toBeInTheDocument();
     expect(screen.getByTestId('balances-chart')).toBeInTheDocument();
 

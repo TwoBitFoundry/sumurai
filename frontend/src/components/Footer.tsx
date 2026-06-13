@@ -52,7 +52,7 @@ const footerSkyCtaLink = [
   'border',
   'border-sky-400/30',
   'dark:border-sky-500/30',
-  ...buttonCta.shadow,
+  ...buttonCta.glow,
 ] as const;
 
 const footerCoffeeCtaLink = [

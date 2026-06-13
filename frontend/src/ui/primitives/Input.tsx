@@ -4,7 +4,6 @@ import {
   control,
   floatingChromeSearch,
   border as semanticBorders,
-  effect as semanticEffects,
   surface as semanticSurfaces,
   text as semanticTextRecipes,
   radius as uiRadiusRecipes,
@@ -15,8 +14,6 @@ export const inputControl = {
   base: [
     'w-full',
     'border',
-    'font-medium',
-    'shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)]',
     'transition-all duration-200 ease-out',
     'focus:outline-none',
     'disabled:cursor-not-allowed disabled:opacity-60',
@@ -44,7 +41,6 @@ export const inputControl = {
   glass: [
     `bg-white/80 ${semanticTextRecipes.body}`,
     'border-white/60',
-    'shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)]',
     'focus:ring-2 focus:ring-sky-400/80',
     'focus:ring-offset-2 focus:ring-offset-white',
     'dark:bg-[#111a2f]/80 dark:text-slate-100',
@@ -54,8 +50,6 @@ export const inputControl = {
   floatingChrome: [
     ...semanticSurfaces.floatingChromePanel,
     ...semanticBorders.floatingChrome,
-    ...semanticEffects.glassShadow,
-    ...semanticEffects.glassDropShadow,
     semanticTextRecipes.primary,
     'focus-visible:outline-none',
     'focus-visible:ring-2',
@@ -66,8 +60,6 @@ export const inputControl = {
     ...semanticSurfaces.floatingChromePanel,
     'border-[var(--color-status-danger-border)]',
     'dark:border-[var(--color-status-danger-border)]',
-    ...semanticEffects.glassShadow,
-    ...semanticEffects.glassDropShadow,
     semanticTextRecipes.primary,
     'focus-visible:outline-none',
     'focus-visible:ring-2',

@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { cn, EmptyState, IconButton, Input, Pill } from '@/ui/primitives';
 import {
+  dashboardCategoryCard,
   effect as uiEffectRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
@@ -41,12 +42,21 @@ const budgetBarSlotClass = cn(
   'w-full',
   'min-h-8',
   'items-center',
-  'self-center'
+  'self-center',
+  'overflow-visible'
 );
 
 const budgetHeroHoverRingStyle = {
   boxShadow: `inset 0 0 0 2px ${heroAccents.sky.ringHex}`,
 } as CSSProperties;
+
+const budgetRowShell = [
+  'relative',
+  'h-full',
+  'w-full',
+  'overflow-visible',
+  ...dashboardCategoryCard.shell,
+] as const;
 
 export function BudgetList({
   items,
@@ -89,25 +99,13 @@ export function BudgetList({
           <li key={b.id} className={cn(heroStatCardRecipes.base, 'h-full')}>
             <div
               className={cn(
-                heroStatCardRecipes.shell,
-                '!border-0',
+                budgetRowShell,
                 'flex h-full flex-col p-3.5 pt-4 md:p-3.5 md:pt-4 lg:p-4 lg:pt-5'
               )}
             >
               <div
                 aria-hidden
-                className={cn(
-                  'hero-stat-card__inset-ring',
-                  'pointer-events-none',
-                  'absolute',
-                  'inset-0',
-                  'z-[1]',
-                  'rounded-[length:inherit]',
-                  'opacity-0',
-                  'transition-opacity',
-                  'duration-200',
-                  'group-hover:opacity-100'
-                )}
+                className={cn(...dashboardCategoryCard.insetRing)}
                 style={hoverInsetRingStyle}
               />
               <div className={cn('relative z-10 flex items-start justify-between gap-3')}>
@@ -189,8 +187,7 @@ export function BudgetList({
                             uiTextRecipes.primary,
                             'placeholder:font-normal',
                             'placeholder:text-slate-500',
-                            'dark:placeholder:text-slate-400',
-                            'shadow-none'
+                            'dark:placeholder:text-slate-400'
                           )}
                         />
                       </>

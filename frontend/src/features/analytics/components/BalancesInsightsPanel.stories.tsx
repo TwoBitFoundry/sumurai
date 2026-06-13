@@ -25,7 +25,7 @@ function clearBalancesInsightsSession() {
 }
 
 async function expandBalancesInsights(canvas: ReturnType<typeof within>) {
-  const summaryButton = canvas.getByRole('button', { name: /balances now/i });
+  const summaryButton = canvas.getByRole('button', { name: /balance insights/i });
   if (summaryButton.getAttribute('aria-expanded') !== 'true') {
     await userEvent.click(summaryButton);
   }
@@ -68,7 +68,7 @@ type Story = StoryObj<typeof meta>;
 export const CollapsedByDefault: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const summaryButton = canvas.getByRole('button', { name: /balances now/i });
+    const summaryButton = canvas.getByRole('button', { name: /balance insights/i });
     await expect(canvas.getByText('Net')).toBeVisible();
     await expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
     await expect(canvas.queryByText('Cash')).not.toBeInTheDocument();
@@ -78,7 +78,7 @@ export const CollapsedByDefault: Story = {
 export const CollapseAndExpand: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const summaryButton = canvas.getByRole('button', { name: /balances now/i });
+    const summaryButton = canvas.getByRole('button', { name: /balance insights/i });
     await expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(summaryButton);
     await waitFor(() => {

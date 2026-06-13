@@ -11,7 +11,7 @@ describe('InsightsExpandablePanel', () => {
         testId="expandable-insights"
         bodyId="expandable-insights-body"
         bodyTestId="expandable-insights-body"
-        summaryLabel="Balances Now"
+        summaryLabel="Balance insights"
         summary={<div>Summary</div>}
         expanded={false}
         onToggle={onToggle}
@@ -20,10 +20,10 @@ describe('InsightsExpandablePanel', () => {
       </InsightsExpandablePanel>
     );
 
-    const toggle = screen.getByRole('button', { name: 'Balances Now' });
+    const toggle = screen.getByRole('button', { name: 'Balance insights' });
 
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    expect(toggle).toHaveAttribute('title', 'Balances Now');
+    expect(toggle).toHaveAttribute('title', 'Balance insights');
     expect(screen.queryByTestId('expandable-insights-body')).not.toBeInTheDocument();
 
     await userEvent.click(toggle);
@@ -40,7 +40,7 @@ describe('InsightsExpandablePanel', () => {
         testId="expandable-insights"
         bodyId="expandable-insights-body"
         bodyTestId="expandable-insights-body"
-        summaryLabel="Balances Now"
+        summaryLabel="Balance insights"
         summary={<div>Summary</div>}
         expanded={false}
         onToggle={onToggle}
@@ -49,7 +49,7 @@ describe('InsightsExpandablePanel', () => {
       </InsightsExpandablePanel>
     );
 
-    const toggle = screen.getByRole('button', { name: 'Balances Now' });
+    const toggle = screen.getByRole('button', { name: 'Balance insights' });
 
     toggle.focus();
     await user.keyboard('{Enter}');

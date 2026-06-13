@@ -47,7 +47,15 @@ describe('FixedExpenseList', () => {
     );
 
     expect(screen.getByText('Spotify')).toBeInTheDocument();
-    expect(screen.getByTestId('fixed-expense-card-spotify').className).toContain('!border-0');
+    expect(screen.getByTestId('fixed-expense-card-spotify').className).not.toContain(
+      'drop-shadow-'
+    );
+    expect(screen.getByTestId('fixed-expense-card-spotify').className).toContain(
+      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]'
+    );
+    expect(screen.getByTestId('fixed-expense-card-spotify').className).toContain(
+      'border-[var(--color-border-subtle)]'
+    );
     const insetRing = screen
       .getByTestId('fixed-expense-card-spotify')
       .querySelector('.hero-stat-card__inset-ring');

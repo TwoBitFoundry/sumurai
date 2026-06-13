@@ -197,7 +197,6 @@ export function CategoryCatalogPicker({
                         'text-slate-500',
                         'text-sm',
                         'leading-none',
-                        'shadow-none',
                         'transition-colors',
                         'duration-200',
                         'hover:bg-transparent',

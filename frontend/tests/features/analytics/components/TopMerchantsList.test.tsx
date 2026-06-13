@@ -20,6 +20,21 @@ describe('TopMerchantsList', () => {
     } as any);
   });
 
+  it('keeps merchant row shells flat without elevation drop shadow', () => {
+    render(
+      <TopMerchantsList
+        merchants={[{ name: 'Expedia', amount: 842.5, count: 3, percentage: 18 }]}
+      />
+    );
+
+    const merchantRow = screen.getByText('Expedia').closest('.hero-stat-card');
+    expect(merchantRow?.className).toContain(
+      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]'
+    );
+    expect(merchantRow?.className).not.toMatch(/drop-shadow-\[/);
+    expect(merchantRow?.className).toContain('border-[var(--color-border-subtle)]');
+  });
+
   it('uses one column on mobile and two columns on tablet and desktop', () => {
     const { container } = render(<TopMerchantsList merchants={sampleTopMerchants} />);
 

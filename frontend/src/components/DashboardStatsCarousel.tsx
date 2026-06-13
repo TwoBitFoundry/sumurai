@@ -31,10 +31,10 @@ const slides: Array<{
     description: 'Follow income and spending across your accounts.',
   },
   {
-    label: 'Balances now',
+    label: 'Balance insights',
     icon: Landmark,
     panelId: 'balance-overview-panel',
-    slideLabel: 'Balances Now',
+    slideLabel: 'Balance insights',
     description: 'Review cash, credit, and loan balances across connected accounts.',
   },
 ];

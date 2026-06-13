@@ -1,12 +1,7 @@
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Button, cn, Pill } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import {
-  chromeBar,
-  border as uiBorderRecipes,
-  effect as uiEffectRecipes,
-  text as uiTextRecipes,
-} from '@/ui/recipes';
+import { chromeBar, border as uiBorderRecipes, text as uiTextRecipes } from '@/ui/recipes';
 
 interface BudgetMonthPillSliderProps {
   onPreviousMonth: () => void;
@@ -30,7 +25,6 @@ export function BudgetMonthLabelPill({ monthLabel }: { monthLabel: string }) {
 const pillControlClassName = cn(
   ...appTitleBarRecipes.pillTab,
   ...uiBorderRecipes.floatingChrome,
-  ...uiEffectRecipes.glassShadow,
   'h-full',
   'w-9',
   'md:w-8',

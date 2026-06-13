@@ -90,36 +90,45 @@ export const border = {
 } as const;
 
 export const effect = {
-  glassShadow: ['shadow-[0_32px_110px_-60px_var(--color-effect-glass-shadow)]'],
   glassDropShadow: [
-    'drop-shadow-[0_10px_12px_rgba(15,23,42,0.35)]',
-    'dark:drop-shadow-[0_10px_12px_rgba(148,163,184,0.28)]',
+    'drop-shadow-[0_8px_32px_color-mix(in_srgb,var(--color-effect-glass-shadow)_22%,transparent)]',
   ],
-  accentHover: ['hover:shadow-[0_18px_44px_-30px_var(--color-effect-accent-hover)]'],
-  successGlow: ['shadow-[0_0_12px_var(--color-effect-success-glow)]'],
-  dangerGlow: ['shadow-[0_0_12px_var(--color-effect-danger-glow)]'],
-  warningGlow: ['shadow-[0_0_12px_var(--color-effect-warning-glow)]'],
+  glassElevationShadow: [
+    'shadow-[0_8px_32px_color-mix(in_srgb,var(--color-effect-glass-shadow)_22%,transparent)]',
+  ],
+  tabBarDropShadow: [
+    'drop-shadow-[0_8px_28px_color-mix(in_srgb,var(--color-effect-glass-shadow)_20%,transparent)]',
+    'md:drop-shadow-[0_10px_36px_color-mix(in_srgb,var(--color-effect-glass-shadow)_20%,transparent)]',
+  ],
+  bottomBarDropShadow: [
+    'drop-shadow-[0_-6px_28px_color-mix(in_srgb,var(--color-effect-glass-shadow)_20%,transparent)]',
+    'md:drop-shadow-[0_-8px_36px_color-mix(in_srgb,var(--color-effect-glass-shadow)_20%,transparent)]',
+  ],
+  accentHover: [
+    'hover:drop-shadow-[0_10px_36px_color-mix(in_srgb,var(--color-effect-accent-hover)_32%,transparent)]',
+  ],
+  successGlow: ['drop-shadow-[0_0_12px_var(--color-effect-success-glow)]'],
+  dangerGlow: ['drop-shadow-[0_0_12px_var(--color-effect-danger-glow)]'],
+  warningGlow: ['drop-shadow-[0_0_12px_var(--color-effect-warning-glow)]'],
   accentOutlineGlow: [
-    'shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
+    'ring-2 ring-inset ring-[color:color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
   ],
-  accentOutlineGlowCta: ['shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]'],
+  accentOutlineGlowCta: ['drop-shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]'],
   accentOutlineGlowHover: [
-    'hover:shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
-  ],
-  pageShellInsetRing: [
-    'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]',
+    'hover:ring-2 hover:ring-inset hover:ring-[color:color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
   ],
   glassBackdrop: ['backdrop-blur-md', 'backdrop-saturate-[150%]'],
 } as const;
 
 export const buttonCta = {
   gradient: ['bg-[var(--color-brand-sky)]'],
-  shadow: ['shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]'],
+  glow: [...effect.accentOutlineGlowCta],
   hover: ['hover:-translate-y-0.5', 'disabled:hover:translate-y-0'],
 } as const;
 
 export const successCta = {
   gradient: ['bg-[var(--color-brand-emerald)]'],
+  glow: [...effect.successGlow],
   hover: ['hover:-translate-y-[2px]', 'active:scale-[0.98]', 'disabled:active:scale-100'],
   focus: [
     'focus-visible:outline-none',
@@ -241,11 +250,12 @@ export const font = {
 } as const;
 
 export const budgetProgress = {
+  shell: ['overflow-visible', 'py-2', '-my-2'],
   track: [
     'relative',
     'h-2.5',
     'w-full',
-    'overflow-hidden',
+    'overflow-visible',
     'rounded-full',
     'border',
     'border-[var(--color-border-subtle)]',
@@ -262,13 +272,13 @@ export const budgetProgress = {
     'duration-500',
     'ease-out',
   ],
-  fillWithin: ['bg-[var(--color-brand-sky)]', 'shadow-[0_0_12px_var(--color-effect-success-glow)]'],
+  fillWithin: ['bg-[var(--color-brand-sky)]', ...effect.successGlow],
   fillOver: [
     'bg-gradient-to-r',
     'from-[var(--color-brand-rose)]',
     'via-[var(--color-brand-rose)]',
     'to-[var(--color-text-danger)]',
-    'shadow-[0_0_12px_var(--color-effect-danger-glow)]',
+    ...effect.dangerGlow,
   ],
   captionRow: [
     'flex',
@@ -299,13 +309,12 @@ export const insightsPanel = {
   ],
   glassShell: [
     'relative',
-    'overflow-hidden',
-    radius.standard,
+    'overflow-visible',
+    'rounded-[length:var(--radius-standard)]',
     'border',
     ...border.glass,
     ...surface.glassPanel,
-    ...effect.glassShadow,
-    ...effect.glassDropShadow,
+    ...effect.glassElevationShadow,
     ...effect.glassBackdrop,
     'transition-colors',
     'duration-200',
@@ -316,7 +325,6 @@ export const insightsPanel = {
     radius.standard,
     'ring-1',
     'ring-white/45',
-    ...effect.pageShellInsetRing,
     'dark:ring-white/12',
   ],
   glassInnerGradient: [
@@ -341,7 +349,7 @@ export const insightsPanel = {
 
 export const alert = {
   shell: [
-    `relative ${radius.standard} border dark:border-0 px-4 py-3 shadow-sm`,
+    `relative ${radius.standard} border dark:border-0 px-4 py-3`,
     'transition-colors duration-300',
   ],
   tone: {
@@ -355,12 +363,10 @@ export const dashboardCategoryCard = {
     `${radius.standard} border transition-all duration-300 text-left`,
     ...border.subtle,
     ...surface.card,
-    ...effect.glassShadow,
   ],
   shellActive: [
     `${radius.standard} border transition-all duration-300`,
     ...surface.card,
-    ...effect.glassShadow,
     '!border-[var(--color-border-hover-accent)]',
     'dark:!border-[var(--color-border-hover-accent)]',
   ],
@@ -368,7 +374,6 @@ export const dashboardCategoryCard = {
     `${radius.standard} border transition-all duration-300`,
     ...border.subtle,
     ...surface.card,
-    ...effect.glassShadow,
     'hover:!border-[var(--color-border-hover-accent)]',
     'dark:hover:!border-[var(--color-border-hover-accent)]',
   ],
@@ -409,7 +414,7 @@ export const floatingChromeGlass = {
     'border',
     ...surface.floatingChromePanel,
     ...border.floatingChrome,
-    ...effect.glassShadow,
+    ...effect.glassDropShadow,
   ],
 } as const;
 
@@ -444,7 +449,7 @@ export const chartFloatingGlass = {
     'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_58%,transparent)]',
     'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
     ...border.glass,
-    ...effect.glassShadow,
+    ...effect.glassDropShadow,
   ],
 } as const;
 

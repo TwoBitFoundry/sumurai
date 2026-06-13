@@ -10,11 +10,13 @@ import {
   chromeBar,
   control,
   controlIconWell,
+  dashboardCategoryCard,
   effect,
   floatingChromeGlass,
   floatingChromeSearch,
   focus,
   font,
+  insightsPanel,
   modalDrawer,
   placeholder,
   semanticPlaceholderTextRecipes,
@@ -58,16 +60,10 @@ describe('shared UI recipes', () => {
       'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
       'dark:border-[color:color-mix(in_srgb,var(--color-border-glass)_12%,transparent)]',
     ]);
-    expect(effect.glassShadow).toEqual([
-      'shadow-[0_32px_110px_-60px_var(--color-effect-glass-shadow)]',
-    ]);
     expect(effect.glassDropShadow).toEqual([
-      'drop-shadow-[0_10px_12px_rgba(15,23,42,0.35)]',
-      'dark:drop-shadow-[0_10px_12px_rgba(148,163,184,0.28)]',
+      'drop-shadow-[0_8px_32px_color-mix(in_srgb,var(--color-effect-glass-shadow)_22%,transparent)]',
     ]);
-    expect(effect.pageShellInsetRing).toEqual([
-      'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]',
-    ]);
+    expect(effect.tabBarDropShadow[0]).toContain('--color-effect-glass-shadow');
     expect(focus.visible).toContain('focus-visible:ring-sky-400');
     expect(font.badge).toBe(
       'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]'
@@ -97,9 +93,26 @@ describe('shared UI recipes', () => {
 
   it('exposes flat sky CTA and progress fill recipes', () => {
     expect(buttonCta.gradient).toEqual(['bg-[var(--color-brand-sky)]']);
-    expect(buttonCta.shadow).toEqual(['shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]']);
+    expect(buttonCta.glow).toEqual([...effect.accentOutlineGlowCta]);
+    expect(budgetProgress.shell).toEqual(['overflow-visible', 'py-2', '-my-2']);
+    expect(budgetProgress.track.join(' ')).toContain('overflow-visible');
+    expect(budgetProgress.track.join(' ')).not.toContain('overflow-hidden');
     expect(budgetProgress.fillWithin).toContain('bg-[var(--color-brand-sky)]');
     expect(budgetProgress.fillWithin).not.toContain('brand-violet');
+    expect(budgetProgress.fillWithin).toEqual([
+      'bg-[var(--color-brand-sky)]',
+      ...effect.successGlow,
+    ]);
+    expect(budgetProgress.fillOver).toEqual([
+      'bg-gradient-to-r',
+      'from-[var(--color-brand-rose)]',
+      'via-[var(--color-brand-rose)]',
+      'to-[var(--color-text-danger)]',
+      ...effect.dangerGlow,
+    ]);
+    expect(budgetProgress.fillWithin.join(' ')).not.toContain('0_0_20px');
+    expect(budgetProgress.fillOver.join(' ')).not.toContain('0_0_20px');
+    expect(effect.dangerGlow).toEqual(['drop-shadow-[0_0_12px_var(--color-effect-danger-glow)]']);
   });
 
   it('exposes the success and drawer modal recipes', () => {
@@ -160,6 +173,7 @@ describe('shared UI recipes', () => {
 
   it('exposes alert shell recipes with borderless dark mode', () => {
     expect(alert.shell.join(' ')).toContain('dark:border-0');
+    expect(alert.shell.join(' ')).not.toContain('drop-shadow-');
     expect(alert.tone.solid).toContain('backdrop-blur-md');
     expect(alert.tone.solid).toContain('backdrop-saturate-[150%]');
   });
@@ -175,6 +189,19 @@ describe('shared UI recipes', () => {
     expect(authLayout.footerLink).toEqual(expect.arrayContaining([font.body, text.body]));
   });
 
+  it('keeps dashboard category card shells flat without elevation drop shadow', () => {
+    for (const shell of [
+      dashboardCategoryCard.shell,
+      dashboardCategoryCard.shellActive,
+      dashboardCategoryCard.shellInteractive,
+    ]) {
+      expect(shell).not.toEqual(expect.arrayContaining([...effect.glassDropShadow]));
+      expect(shell).toEqual(expect.arrayContaining([...surface.card]));
+      expect(shell.some((token) => token.startsWith('drop-shadow-['))).toBe(false);
+      expect(shell.some((token) => token.startsWith('shadow-['))).toBe(false);
+    }
+  });
+
   it('composes chart floating glass from glass design tokens', () => {
     expect(chartFloatingGlass.shell).toEqual(
       expect.arrayContaining([
@@ -182,12 +209,14 @@ describe('shared UI recipes', () => {
         'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_58%,transparent)]',
         'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
         ...border.glass,
-        ...effect.glassShadow,
+        ...effect.glassDropShadow,
       ])
     );
     expect(chartTooltip.shell).toEqual(
       expect.arrayContaining([...chartFloatingGlass.backdrop, ...chartFloatingGlass.shell])
     );
     expect(chartFloatingGlass.backdrop).toEqual(effect.glassBackdrop);
+    expect(insightsPanel.glassShell.join(' ')).toContain('overflow-visible');
+    expect(insightsPanel.glassShell.join(' ')).not.toContain('overflow-hidden');
   });
 });

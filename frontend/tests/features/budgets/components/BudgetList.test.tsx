@@ -44,7 +44,11 @@ describe('BudgetList', () => {
     expect(list).not.toHaveClass('2xl:grid-cols-4');
     expect(card).toHaveClass(uiRadiusRecipes.standard);
     const cardShell = container.querySelector('li > div');
-    expect(cardShell?.className).toContain('!border-0');
+    expect(cardShell?.className).toContain(
+      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]'
+    );
+    expect(cardShell?.className).not.toMatch(/drop-shadow-\[/);
+    expect(cardShell?.className).toContain('border-[var(--color-border-subtle)]');
     const insetRing = container.querySelector('.hero-stat-card__inset-ring');
     expect(insetRing).toHaveClass('group-hover:opacity-100');
     expect((insetRing as HTMLElement).style.boxShadow).toBe(
@@ -102,7 +106,9 @@ describe('BudgetList', () => {
 
     expect(card?.querySelector('[aria-label="Delete budget"]')).toBeTruthy();
     expect(card?.querySelector('[aria-label="Edit budget"]')).toBeNull();
-    expect(container.querySelector('[data-testid="budget-amount-input"]')).toBeTruthy();
+    const amountInput = container.querySelector('[data-testid="budget-amount-input"]');
+    expect(amountInput).toBeTruthy();
+    expect(amountInput?.className).not.toContain('drop-shadow-');
   });
 
   it('shows spent before planned around the progress bar', () => {

@@ -53,6 +53,7 @@ const TransactionsPage: React.FC<{
   } = transactionsControl ?? ownedTransactions;
   const {
     insights,
+    displayState,
     isLoading: insightsLoading,
     accountKey,
   } = useTransactionsContextualInsights({
@@ -69,7 +70,7 @@ const TransactionsPage: React.FC<{
   const addCategoryButtonRef = useRef<HTMLButtonElement>(null);
   const [isCategoryCatalogOpen, setIsCategoryCatalogOpen] = useState(false);
 
-  const insightsResetKey = `${insights?.state ?? 'a'}-${search}-${selectedCategory ?? ''}-${accountKey}-${dateRange ?? ''}`;
+  const insightsResetKey = `${displayState}-${search}-${selectedCategory ?? ''}-${accountKey}-${dateRange ?? ''}`;
   const categorizeActions = (
     <div
       className={cn(
@@ -127,6 +128,7 @@ const TransactionsPage: React.FC<{
         stats={
           <TransactionInsightsPanel
             insights={insights}
+            displayState={displayState}
             isLoading={insightsLoading}
             resetKey={insightsResetKey}
           />

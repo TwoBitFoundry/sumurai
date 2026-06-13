@@ -35,7 +35,7 @@ export const appTitleBarRecipes = {
     ...semanticEffects.glassBackdrop,
     'pt-[env(safe-area-inset-top)]',
   ],
-  shell: [...semanticSurfaces.card, ...semanticBorders.divider, ...semanticEffects.glassShadow],
+  shell: [...semanticSurfaces.card, ...semanticBorders.divider, ...semanticEffects.glassDropShadow],
   logo: {
     container: ['flex', 'h-full', 'min-h-0', 'items-center', 'gap-2', semanticTextRecipes.primary],
     image: [
@@ -70,6 +70,13 @@ export const appTitleBarRecipes = {
     ...floatingChromeGlass.backdrop,
     ...floatingChromeGlass.shell,
   ],
+  settingsPillContainer: [
+    `flex items-center gap-1 ${uiRadiusRecipes.standard} border`,
+    ...floatingChromeGlass.backdrop,
+    'border',
+    ...semanticSurfaces.floatingChromePanel,
+    ...semanticBorders.floatingChrome,
+  ],
   pillInset: ['p-2', 'md:p-3'],
   floatingChromeGutter: [...appLayout.contentShellWithGutter],
   pillContainerSize: [chromeBar.height],
@@ -78,20 +85,8 @@ export const appTitleBarRecipes = {
   ],
   pillTabSize: ['px-3.5', 'lg:px-3'],
   contextPillInset: ['py-1.5', 'px-2', 'md:py-2', 'md:px-2.5'],
-  tabBarShadow: [
-    'drop-shadow-[0_10px_12px_rgba(15,23,42,0.28)]',
-    'md:drop-shadow-[0_12px_16px_rgba(15,23,42,0.28)]',
-    'dark:drop-shadow-[0_10px_12px_rgba(148,163,184,0.22)]',
-    'dark:md:drop-shadow-[0_12px_16px_rgba(148,163,184,0.22)]',
-    'lg:drop-shadow-none',
-  ],
-  bottomBarShadow: [
-    'drop-shadow-[0_-8px_12px_rgba(15,23,42,0.28)]',
-    'md:drop-shadow-[0_-10px_14px_rgba(15,23,42,0.28)]',
-    'dark:drop-shadow-[0_-8px_12px_rgba(148,163,184,0.22)]',
-    'dark:md:drop-shadow-[0_-10px_14px_rgba(148,163,184,0.22)]',
-    'lg:drop-shadow-none',
-  ],
+  tabBarShadow: [...semanticEffects.tabBarDropShadow],
+  bottomBarShadow: [...semanticEffects.bottomBarDropShadow],
   contextPillTab: [
     'relative',
     'flex',

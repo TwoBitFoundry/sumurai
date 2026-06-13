@@ -27,7 +27,7 @@ export function ThemeModeSelector({ value, onChange }: ThemeModeSelectorProps) {
         'grid-cols-3',
         'items-stretch',
         'gap-1',
-        ...appTitleBarRecipes.pillContainer,
+        ...appTitleBarRecipes.settingsPillContainer,
         ...appTitleBarRecipes.settingsPillInset,
         ...appTitleBarRecipes.settingsPillSize
       )}

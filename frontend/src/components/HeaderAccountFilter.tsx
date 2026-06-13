@@ -191,7 +191,6 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
             uiBorderRecipes.default,
             ...uiSurfaceRecipes.mutedChip,
             ...uiEffectRecipes.glassBackdrop,
-            ...uiEffectRecipes.glassDropShadow,
             uiTextRecipes.body,
             uiTypographyRecipes.captionStrong
           )}
@@ -233,7 +232,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
                 'border',
                 ...uiBorderRecipes.floatingChrome,
                 ...uiSurfaceRecipes.floatingChromePanel,
-                ...uiEffectRecipes.glassShadow,
+                ...uiEffectRecipes.glassDropShadow,
                 ...floatingChromeGlass.backdrop,
                 'z-50'
               )}

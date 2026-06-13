@@ -12,16 +12,14 @@ export const glassCardRecipes = {
   base: [
     'relative overflow-hidden',
     'border',
-    ...semanticEffects.glassShadow,
-    ...semanticEffects.glassDropShadow,
     ...semanticEffects.glassBackdrop,
     'transition-colors duration-500',
   ],
+  elevated: [...semanticEffects.glassElevationShadow],
   default: [...semanticBorders.glass, ...semanticSurfaces.glassPanel],
   auth: [
     ...semanticBorders.glass,
     ...semanticSurfaces.glassPanel,
-    'shadow-[0_38px_120px_-60px_var(--color-effect-glass-shadow)]',
     ...semanticEffects.glassBackdrop,
   ],
   accent: [
@@ -43,11 +41,12 @@ export const glassCardRecipes = {
   },
 } as const;
 
-const glassInsetLight =
-  'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]';
-
 const glassCardVariants = cva([...glassCardRecipes.base], {
   variants: {
+    elevated: {
+      true: [...glassCardRecipes.elevated],
+      false: [],
+    },
     variant: {
       default: [...glassCardRecipes.default],
       auth: [...glassCardRecipes.auth],
@@ -67,6 +66,7 @@ const glassCardVariants = cva([...glassCardRecipes.base], {
     },
   },
   defaultVariants: {
+    elevated: true,
     variant: 'default',
     rounded: 'default',
     padding: 'md',
@@ -104,6 +104,7 @@ export function GlassCard({
   variant,
   rounded,
   padding,
+  elevated,
   withInnerEffects = true,
   className,
   containerClassName,
@@ -114,7 +115,7 @@ export function GlassCard({
 
   return (
     <div
-      className={cn(glassCardVariants({ variant, rounded, padding }), containerClassName)}
+      className={cn(glassCardVariants({ elevated, variant, rounded, padding }), containerClassName)}
       {...props}
     >
       {withInnerEffects && (
@@ -125,7 +126,6 @@ export function GlassCard({
               roundedClass,
               'ring-inset ring-1',
               'ring-white/40',
-              glassInsetLight,
               'dark:ring-white/10'
             )}
           />

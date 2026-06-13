@@ -39,14 +39,14 @@ describe('BalancesInsightsPanel', () => {
 
     const shell = screen.getByTestId('balances-insights-shell');
     expect(shell).toBeInTheDocument();
-    expect(screen.getByText('Balances Now')).toBeInTheDocument();
+    expect(screen.getByText('Balance insights')).toBeInTheDocument();
     expect(shell).toHaveClass('sticky');
     expect(shell).toHaveClass('z-30');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
     expect(shell.firstElementChild?.className).toContain('--color-surface-glass-panel');
     expect(shell.querySelector('.hero-stat-card__inset-ring')).not.toBeNull();
     expect(screen.getByTestId('overall-net')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /balances now/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /balance insights/i })).toHaveAttribute(
       'aria-expanded',
       'false'
     );
@@ -72,7 +72,7 @@ describe('BalancesInsightsPanel', () => {
   it('toggles sub-categories from the net summary', async () => {
     render(<BalancesInsightsPanel overall={sampleOverall} />);
 
-    const summaryButton = screen.getByRole('button', { name: /balances now/i });
+    const summaryButton = screen.getByRole('button', { name: /balance insights/i });
     expect(screen.queryByText('Cash')).not.toBeInTheDocument();
 
     await userEvent.click(summaryButton);
@@ -93,12 +93,12 @@ describe('BalancesInsightsPanel', () => {
 
     render(<BalancesInsightsPanel overall={sampleOverall} />);
 
-    const summaryButton = screen.getByRole('button', { name: /balances now/i });
+    const summaryButton = screen.getByRole('button', { name: /balance insights/i });
     summaryButton.focus();
 
     await user.keyboard('{Enter}');
     expect(
-      screen.getByRole('button', { name: /balances now/i }).getAttribute('aria-expanded')
+      screen.getByRole('button', { name: /balance insights/i }).getAttribute('aria-expanded')
     ).toBe('true');
   });
 
@@ -107,7 +107,7 @@ describe('BalancesInsightsPanel', () => {
 
     render(<BalancesInsightsPanel overall={sampleOverall} />);
 
-    expect(screen.getByRole('button', { name: /balances now/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /balance insights/i })).toHaveAttribute(
       'aria-expanded',
       'true'
     );
@@ -181,7 +181,7 @@ describe('BalancesInsightsPanel', () => {
   it('renders income and expenses YTD when both props are provided', () => {
     render(<BalancesInsightsPanel overall={sampleOverall} incomeYtd={52300} expensesYtd={18400} />);
 
-    const summaryButton = screen.getByRole('button', { name: /balances now/i });
+    const summaryButton = screen.getByRole('button', { name: /balance insights/i });
     const incomeBlock = screen.getByTestId('balances-ytd-income');
     const expensesBlock = screen.getByTestId('balances-ytd-expenses');
     expect(incomeBlock).toHaveClass('items-baseline');

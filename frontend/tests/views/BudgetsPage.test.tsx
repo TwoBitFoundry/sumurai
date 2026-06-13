@@ -107,7 +107,7 @@ describe('BudgetsPage', () => {
     render(<BudgetsPage monthControl={monthControl} />);
 
     expect(screen.getByTestId('budget-insights-shell')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /budget summary/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /budget insights/i })).toHaveAttribute(
       'aria-expanded',
       'true'
     );
@@ -138,13 +138,18 @@ describe('BudgetsPage', () => {
 
     expect(budgetsCardIndex).toBeGreaterThanOrEqual(0);
     expect(fixedExpensesCardIndex).toBeGreaterThan(budgetsCardIndex);
+
+    for (const card of cards) {
+      expect(card.className).toContain('shadow-[0_8px_32px');
+      expect(card.className).not.toContain('drop-shadow-[');
+    }
   });
 
   it('keeps the insight shell visible in the page stats area', () => {
     render(<BudgetsPage monthControl={monthControl} />);
 
     expect(screen.getByTestId('budget-insights-shell')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /budget summary/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /budget insights/i })).toBeInTheDocument();
   });
 
   it('moves save to the add button slot and hides edit while editing', async () => {

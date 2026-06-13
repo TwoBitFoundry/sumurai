@@ -18,7 +18,6 @@ import { cn, Pill } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
   border as semanticBorders,
-  effect as semanticEffects,
   surface as semanticSurfaces,
   radius as uiRadiusRecipes,
   text as uiTextRecipes,

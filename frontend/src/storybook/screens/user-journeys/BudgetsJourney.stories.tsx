@@ -31,7 +31,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 async function expandBudgetInsights(canvas: ReturnType<typeof within>) {
-  const summaryButton = canvas.getByRole('button', { name: /budget summary/i });
+  const summaryButton = canvas.getByRole('button', { name: /budget insights/i });
   if (summaryButton.getAttribute('aria-expanded') !== 'true') {
     await userEvent.click(summaryButton);
   }

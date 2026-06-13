@@ -19,7 +19,7 @@ export const badgeRecipes = {
   default: [
     ...semanticSurfaces.mutedChip,
     semanticTextRecipes.muted,
-    ...semanticEffects.glassShadow,
+    ...semanticEffects.glassDropShadow,
     'dark:text-slate-200',
   ],
   primary: [...semanticStatus.info.surface, ...semanticStatus.info.text],

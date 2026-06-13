@@ -14,19 +14,20 @@ import { INSIGHT_COPY } from '../copy/insightCopy';
 
 export interface TransactionInsightsPanelProps {
   insights: ContextualInsightsResponse | null;
+  displayState: InsightState;
   isLoading: boolean;
   resetKey: string;
 }
 
 const STATE_LABEL: Record<InsightState, string> = {
-  a: 'All transactions',
-  b: 'Category filter',
-  c: 'Merchant view',
-  d: 'This account',
-  e: 'Account + Category',
-  f: 'Account + Merchant',
-  g: 'Category + Merchant',
-  triple: 'Full filter',
+  a: 'All insights',
+  b: 'Category insights',
+  c: 'Merchant insights',
+  d: 'Account insights',
+  e: 'Category + account insights',
+  f: 'Merchant + account insights',
+  g: 'Category + merchant insights',
+  triple: 'Category + merchant + account insights',
 };
 
 function fmtRatio(v: number): string {
@@ -208,6 +209,7 @@ function Card3Value({ metric }: { metric: InsightMetric }) {
 
 export function TransactionInsightsPanel({
   insights,
+  displayState,
   isLoading,
   resetKey,
 }: TransactionInsightsPanelProps) {
@@ -223,7 +225,7 @@ export function TransactionInsightsPanel({
 
   const toggle = (id: string) => setFlipped((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  const state: InsightState = insights?.state ?? 'a';
+  const state: InsightState = displayState;
   const cardAccent = 'emerald' as const;
   const copy = INSIGHT_COPY[state];
   const stateLabel = STATE_LABEL[state];

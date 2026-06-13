@@ -101,7 +101,7 @@ export const Journey: Story = {
       { timeout: 15000 }
     );
 
-    await userEvent.click(canvas.getByRole('tab', { name: /show balances now/i }));
+    await userEvent.click(canvas.getByRole('tab', { name: /show balance insights/i }));
     await waitFor(() => {
       expect(canvas.getByTestId('balances-chart-plot')).toBeVisible();
     });

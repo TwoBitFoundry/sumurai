@@ -27,6 +27,8 @@ describe('InsightsPanelShell', () => {
     expect(shell).not.toHaveClass('overflow-hidden');
 
     expectGlassInsightsSurface(shell.firstElementChild);
+    expect(shell.firstElementChild?.className ?? '').toContain('shadow-[0_8px_32px');
+    expect(shell.firstElementChild?.className ?? '').not.toContain('drop-shadow-[');
     expect(shell.querySelector('.hero-stat-card__gradient')).toBeTruthy();
     expect(shell.querySelector('.hero-stat-card__inset-ring')).toBeTruthy();
     expect(screen.getByTestId('insights-content')).toBeInTheDocument();

@@ -24,10 +24,10 @@ function ExpandableDemo() {
       testId="insights-expandable-story"
       bodyId="insights-expandable-story-body"
       bodyTestId="insights-expandable-story-body"
-      summaryLabel={expanded ? 'Hide balances now' : 'Show balances now'}
+      summaryLabel={expanded ? 'Hide balance insights' : 'Show balance insights'}
       summary={
         <div className={cn('space-y-1.5')}>
-          <InsightsPanelHeader label="Balances Now" />
+          <InsightsPanelHeader label="Balance insights" />
           <div className={cn('text-left', uiTypographyRecipes.body, uiTextRecipes.body)}>
             Net worth overview
           </div>
@@ -58,11 +58,11 @@ export const ToggleInteraction: Story = {
   render: () => <ExpandableDemo />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const toggle = canvas.getByRole('button', { name: 'Show balances now' });
+    const toggle = canvas.getByRole('button', { name: 'Show balance insights' });
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(toggle);
     await waitFor(() => {
-      expect(canvas.getByRole('button', { name: 'Hide balances now' })).toHaveAttribute(
+      expect(canvas.getByRole('button', { name: 'Hide balance insights' })).toHaveAttribute(
         'aria-expanded',
         'true'
       );

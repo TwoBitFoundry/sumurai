@@ -30,7 +30,7 @@ describe('AccountsSummaryStats', () => {
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
     expect(shell.firstElementChild?.className).toContain('--color-surface-glass-panel');
     expect(shell.querySelector('.hero-stat-card__inset-ring')).not.toBeNull();
-    expect(screen.getByText('Account summary')).toBeInTheDocument();
+    expect(screen.getByText('Account insights')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /expand account insights/i })).toHaveAttribute(
       'aria-expanded',
       'false'

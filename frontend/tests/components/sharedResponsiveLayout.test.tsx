@@ -31,6 +31,8 @@ describe('shared responsive layout surfaces', () => {
     const header = container.querySelector('div.mb-3');
     const content = container.querySelector('div.h-full.flex.flex-col');
 
+    expect(root?.className).toContain('shadow-[0_8px_32px');
+    expect(root?.className).not.toContain('drop-shadow-[');
     expect(root).toHaveClass('p-4');
     expect(root).toHaveClass('pt-5');
     expect(root).toHaveClass('md:p-8');

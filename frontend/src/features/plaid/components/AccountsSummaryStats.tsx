@@ -111,7 +111,7 @@ export const AccountsSummaryStats = ({ summary, lastSyncValue }: AccountsSummary
         )}
         summary={
           <>
-            <InsightsPanelHeader label="Account summary" />
+            <InsightsPanelHeader label="Account insights" />
             <div className={cn('flex', 'justify-center', 'pt-0.5')}>
               <ChevronDown
                 className={cn(

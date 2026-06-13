@@ -37,7 +37,7 @@ const panelClasses = cn(
   'md:p-8',
   'lg:py-10',
   'lg:px-6',
-  ...uiEffectRecipes.glassShadow,
+  ...uiEffectRecipes.glassDropShadow,
   ...uiEffectRecipes.glassBackdrop
 );
 

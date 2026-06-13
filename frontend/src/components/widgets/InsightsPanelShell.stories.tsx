@@ -21,7 +21,7 @@ function StickyPanelShellDemo() {
       <div className="h-24" />
       <InsightsPanelShell testId="insights-shell-story" accent="violet">
         <div className={cn('px-3', 'py-2', 'md:px-4', 'md:py-3')}>
-          <InsightsPanelHeader label="Balances Now" />
+          <InsightsPanelHeader label="Balance insights" />
           <div className={cn('space-y-1.5', uiTypographyRecipes.body, uiTextRecipes.body)}>
             <div className="flex items-center justify-between gap-4">
               <span>Net worth</span>
@@ -48,6 +48,6 @@ export const StickyPanelShell: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByTestId('insights-shell-story')).toBeVisible();
-    await expect(canvas.getByText('Balances Now')).toBeVisible();
+    await expect(canvas.getByText('Balance insights')).toBeVisible();
   },
 };

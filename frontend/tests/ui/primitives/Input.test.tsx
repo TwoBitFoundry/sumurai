@@ -41,4 +41,16 @@ describe('Input', () => {
     expect(input.className).toContain('border-[var(--color-status-danger-border)]');
     expect(input.className).toContain('focus-visible:ring-inset');
   });
+
+  it.each([
+    'default',
+    'invalid',
+    'glass',
+    'floatingChrome',
+    'floatingChromeInvalid',
+  ] as const)('renders the %s variant without elevation drop shadow', (variant) => {
+    render(<Input aria-label="Field" variant={variant} />);
+
+    expect(screen.getByRole('textbox', { name: 'Field' }).className).not.toContain('drop-shadow-');
+  });
 });

@@ -85,6 +85,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
         variant="accent"
         rounded="lg"
         padding="none"
+        elevated={false}
         withInnerEffects={false}
         containerClassName={cardContainerClasses}
         beforeContent={
