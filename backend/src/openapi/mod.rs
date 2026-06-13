@@ -57,6 +57,7 @@ use utoipa::OpenApi;
             crate::models::export::ExportFormat,
             crate::models::export::ExportQuery,
             crate::models::transaction::TransactionWithAccount,
+            crate::models::transaction::CursorTransactionsResponse,
             crate::models::transaction::LargestTransaction,
             crate::models::transaction::TransactionsInsightsResponse,
             crate::models::transaction::InsightFormat,

@@ -2082,3 +2082,170 @@ async fn given_transfer_transactions_when_get_monthly_cash_flow_aggregates_then_
     assert_eq!(june.income, dec!(5000.00));
     assert_eq!(june.expenses, dec!(350.00));
 }
+
+#[tokio::test]
+async fn given_transactions_when_keyset_first_page_then_ordered_desc_and_has_more() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+
+    let dates = [
+        NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+        NaiveDate::from_ymd_opt(2024, 1, 14).unwrap(),
+        NaiveDate::from_ymd_opt(2024, 1, 13).unwrap(),
+    ];
+    for (i, date) in dates.iter().enumerate() {
+        let mut t = create_test_transaction(
+            user.id,
+            account.id,
+            format!("keyset_order_{}", i),
+            100,
+            *date,
+        );
+        t.normalized_merchant = Some("TestMerchant".to_string());
+        repo.upsert_transaction(&t).await.unwrap();
+    }
+
+    let result = repo
+        .get_transactions_keyset(&user.id, 2, None, None, None, None, None, None, None)
+        .await
+        .unwrap();
+
+    assert_eq!(result.transactions.len(), 2);
+    assert!(result.has_more);
+    assert!(result.next_cursor.is_some());
+    assert!(result.prev_cursor.is_some());
+    assert!(result.transactions[0].date >= result.transactions[1].date);
+}
+
+#[tokio::test]
+async fn given_first_page_cursor_when_keyset_second_page_then_no_dup_or_skip() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+
+    let dates = [
+        NaiveDate::from_ymd_opt(2024, 2, 10).unwrap(),
+        NaiveDate::from_ymd_opt(2024, 2, 9).unwrap(),
+        NaiveDate::from_ymd_opt(2024, 2, 8).unwrap(),
+        NaiveDate::from_ymd_opt(2024, 2, 7).unwrap(),
+    ];
+    let mut txn_ids = Vec::new();
+    for (i, date) in dates.iter().enumerate() {
+        let t = create_test_transaction(
+            user.id,
+            account.id,
+            format!("keyset_cursor_{}", i),
+            200,
+            *date,
+        );
+        txn_ids.push(t.id);
+        repo.upsert_transaction(&t).await.unwrap();
+    }
+
+    let page1 = repo
+        .get_transactions_keyset(&user.id, 2, None, None, None, None, None, None, None)
+        .await
+        .unwrap();
+    assert_eq!(page1.transactions.len(), 2);
+    assert!(page1.has_more);
+
+    let cursor = page1.next_cursor.as_deref();
+    let page2 = repo
+        .get_transactions_keyset(&user.id, 2, cursor, None, None, None, None, None, None)
+        .await
+        .unwrap();
+
+    assert_eq!(page2.transactions.len(), 2);
+    assert!(!page2.has_more);
+
+    let all_ids: Vec<_> = page1
+        .transactions
+        .iter()
+        .chain(page2.transactions.iter())
+        .map(|t| t.id)
+        .collect();
+    let unique_ids: std::collections::HashSet<_> = all_ids.iter().collect();
+    assert_eq!(all_ids.len(), unique_ids.len(), "no duplicates");
+}
+
+#[tokio::test]
+async fn given_fewer_rows_than_limit_when_keyset_then_has_more_false_and_no_next_cursor() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+
+    let t = create_test_transaction(
+        user.id,
+        account.id,
+        "keyset_single".to_string(),
+        50,
+        NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
+    );
+    repo.upsert_transaction(&t).await.unwrap();
+
+    let result = repo
+        .get_transactions_keyset(&user.id, 10, None, None, None, None, None, None, None)
+        .await
+        .unwrap();
+
+    assert_eq!(result.transactions.len(), 1);
+    assert!(!result.has_more);
+    assert!(result.next_cursor.is_none());
+}
+
+#[tokio::test]
+async fn given_exact_merchant_filter_when_keyset_then_only_matching_merchant_returned() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+
+    for (i, merchant) in ["starbucks", "amazon", "starbucks"].iter().enumerate() {
+        let mut t = create_test_transaction(
+            user.id,
+            account.id,
+            format!("keyset_merchant_{}", i),
+            10,
+            NaiveDate::from_ymd_opt(2024, 4, i as u32 + 1).unwrap(),
+        );
+        t.normalized_merchant = Some(merchant.to_string());
+        repo.upsert_transaction(&t).await.unwrap();
+    }
+
+    let result = repo
+        .get_transactions_keyset(
+            &user.id,
+            10,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some("starbucks"),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(result.transactions.len(), 2);
+    assert!(result
+        .transactions
+        .iter()
+        .all(|t| t.normalized_merchant.as_deref() == Some("starbucks")));
+}

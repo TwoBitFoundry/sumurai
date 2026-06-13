@@ -52,6 +52,13 @@ export interface PaginatedTransactionsResponse {
   page_size: number;
 }
 
+export interface CursorTransactionsResponse {
+  transactions: Transaction[];
+  next_cursor: string | null;
+  prev_cursor: string | null;
+  has_more: boolean;
+}
+
 export interface LargestTransaction {
   amount: number;
   merchant: string;

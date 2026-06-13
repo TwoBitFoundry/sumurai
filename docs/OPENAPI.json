@@ -2198,13 +2198,13 @@
         "tags": [
           "Transactions"
         ],
-        "description": "Returns transactions with optional server-side pagination and filtering.",
+        "description": "Returns cursor-paginated transactions with optional filtering.",
         "operationId": "get_authenticated_transactions",
         "parameters": [
           {
             "name": "search",
             "in": "query",
-            "description": "Search transactions by merchant, category, or account",
+            "description": "Fuzzy search by merchant, category, or account",
             "required": false,
             "schema": {
               "type": "string"
@@ -2223,9 +2223,18 @@
             }
           },
           {
-            "name": "page",
+            "name": "cursor",
             "in": "query",
-            "description": "Page number starting at 1",
+            "description": "Opaque cursor from next_cursor; omit for first page",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size, default 40, clamped 1..=100",
             "required": false,
             "schema": {
               "type": "integer",
@@ -2233,13 +2242,12 @@
             }
           },
           {
-            "name": "page_size",
+            "name": "merchant",
             "in": "query",
-            "description": "Results per page, clamped to 200",
+            "description": "Exact normalized-merchant match",
             "required": false,
             "schema": {
-              "type": "integer",
-              "format": "int64"
+              "type": "string"
             }
           },
           {
@@ -2263,7 +2271,25 @@
           {
             "name": "category_primary",
             "in": "query",
-            "description": "Filter by primary category",
+            "description": "Filter by effective primary category",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Reserved – not implemented; default date",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "description": "Reserved – not implemented; default desc",
             "required": false,
             "schema": {
               "type": "string"
@@ -2272,17 +2298,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Paginated list of transactions",
+            "description": "Cursor-paginated transactions",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaginatedTransactionsResponse"
+                  "$ref": "#/components/schemas/CursorTransactionsResponse"
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid account filter"
+            "description": "Invalid date range or account filter"
           },
           "401": {
             "description": "Unauthorized"
@@ -3461,6 +3487,36 @@
           }
         }
       },
+      "CursorTransactionsResponse": {
+        "type": "object",
+        "required": [
+          "transactions",
+          "has_more"
+        ],
+        "properties": {
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "prev_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionWithAccount"
+            }
+          }
+        }
+      },
       "CustomCategory": {
         "type": "object",
         "required": [
@@ -4222,61 +4278,6 @@
         "example": {
           "message": "Onboarding completed successfully",
           "onboarding_completed": true
-        }
-      },
-      "PaginatedTransactionsResponse": {
-        "type": "object",
-        "required": [
-          "transactions",
-          "total",
-          "page",
-          "page_size"
-        ],
-        "properties": {
-          "page": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "page_size": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "total": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "transactions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TransactionWithAccount"
-            }
-          }
-        },
-        "example": {
-          "page": 1,
-          "page_size": 50,
-          "total": 1,
-          "transactions": [
-            {
-              "account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-              "account_mask": "1234",
-              "account_name": "Demo Checking",
-              "account_type": "depository",
-              "amount": "42.75",
-              "category_confidence": "high",
-              "category_detailed": "Coffee shop",
-              "category_primary": "FOOD_AND_DRINK",
-              "created_at": "2024-01-15T13:45:00Z",
-              "date": "2024-01-15",
-              "id": "44444444-5555-6666-7777-888888888888",
-              "merchant_name": "Coffee Collective",
-              "payment_channel": "in_store",
-              "pending": false,
-              "provider_account_id": "acct-123",
-              "provider_transaction_id": "txn-456",
-              "user_id": "99999999-8888-7777-6666-555555555555"
-            }
-          ]
         }
       },
       "PasskeyItem": {
