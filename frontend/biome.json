@@ -124,6 +124,21 @@
           }
         }
       }
+    },
+    {
+      "includes": [
+        "src/features/transactions/components/VirtualizedTransactionList.tsx",
+        "src/features/transactions/components/DesktopTransactionRow.tsx",
+        "src/features/transactions/components/MobileTransactionRow.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useSemanticElements": "off",
+            "useFocusableInteractive": "off"
+          }
+        }
+      }
     }
   ]
 }

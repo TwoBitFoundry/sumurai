@@ -48,4 +48,11 @@ export const transactionsRowRecipes = {
   categoryFilterPill: ['px-2', 'py-0'],
   categoryLabel: ['min-w-0', 'flex-1', 'truncate', 'text-right'],
   categoryChevron: ['ml-1', 'shrink-0'],
+  desktopGridCols:
+    'grid-cols-[minmax(0,9rem)_minmax(0,1fr)_minmax(0,8rem)_minmax(0,12rem)_minmax(0,10rem)]',
+  desktopGridRow: ['grid', 'items-center'],
+  desktopGridHeader: ['grid', 'items-center', 'sticky', 'top-0', 'z-10'],
 } as const;
+
+export const DESKTOP_ROW_H = 60;
+export const MOBILE_ROW_H = 84;

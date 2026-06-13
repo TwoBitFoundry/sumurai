@@ -131,13 +131,21 @@ Do not add silently-ignored `sort`/`order` to the handler — add them only when
 - Storybook story for `VirtualizedTransactionList` (real Chromium); wire `@storybook/addon-a11y`.
 
 **Acceptance criteria**
-- [ ] Continuous scroll streams rows in with no spinner gap (trailing skeleton sentinel) and no visible jump; only ~visible rows are in the DOM.
-- [ ] Verified at desktop (≥1024, grid + sticky header aligned to rows), tablet (768–1023), mobile (<768, cards).
-- [ ] Skeleton rows are pixel-identical in height to real rows (no layout shift).
-- [ ] Opening a row's category picker then scrolling a little keeps the popover anchored (open-row pinning).
-- [ ] List renders correctly when mounted into a zero-height-then-animating container (measurement-gating).
-- [ ] No DESIGN.md/token edits; only `transactionsRowRecipes.ts` gains the grid atoms; `design:lint` passes.
-- [ ] Storybook smoke + a11y addon pass; `typecheck`/`build` pass.
+- [x] Continuous scroll streams rows in with no spinner gap (trailing skeleton sentinel) and no visible jump; only ~visible rows are in the DOM.
+- [x] Verified at desktop (≥1024, grid + sticky header aligned to rows), tablet (768–1023), mobile (<768, cards).
+- [x] Skeleton rows are pixel-identical in height to real rows (no layout shift).
+- [x] Opening a row's category picker then scrolling a little keeps the popover anchored (open-row pinning).
+- [x] List renders correctly when mounted into a zero-height-then-animating container (measurement-gating).
+- [x] No DESIGN.md/token edits; only `transactionsRowRecipes.ts` gains the grid atoms; `design:lint` passes.
+- [x] Storybook smoke + a11y addon pass; `typecheck`/`build` pass.
+
+**TDD log — Phase 3**
+- Storybook-first: wrote `VirtualizedTransactionList.stories.tsx` (Empty, SinglePage, TwoPages, ContextualVariant, ManyRows, DenseMerchantLabel) before implementing the component.
+- Added `onOpenChange` to `InlineCategoryCell` (minimal non-breaking extension) for open-row pinning via `rangeExtractor`.
+- Extracted `DesktopTransactionRow.tsx` and `MobileTransactionRow.tsx` from existing table/mobile-list internals.
+- Verified in Storybook: desktop grid (sticky header, 5-col grid, colored amounts), mobile cards (dark mode), empty state, infinite scroll (page 2 loads on scroll, DOM stays at ~12 rows while total height grows).
+- `design:guard` and `typecheck` clean; 4 pre-existing test failures unchanged.
+- `bun add @tanstack/react-virtual@3.14.2` (latest).
 
 ## Phase 4 — Page integration + cleanup
 

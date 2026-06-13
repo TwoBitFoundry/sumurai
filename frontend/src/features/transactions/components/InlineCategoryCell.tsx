@@ -17,10 +17,18 @@ import { transactionsRowRecipes } from './transactionsRowRecipes';
 interface Props {
   transaction: Transaction;
   dense?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function InlineCategoryCell({ transaction, dense: _dense = false }: Props) {
+export function InlineCategoryCell({ transaction, dense: _dense = false, onOpenChange }: Props) {
   const [open, setOpen] = useState(false);
+  const setOpenWithCallback = (next: boolean | ((prev: boolean) => boolean)) => {
+    setOpen((prev) => {
+      const value = typeof next === 'function' ? next(prev) : next;
+      onOpenChange?.(value);
+      return value;
+    });
+  };
   const anchorRef = useRef<HTMLButtonElement>(null);
   const { accentIndexByName, all } = useCategories();
   const { updateTransactionCategory } = useUpdateTransactionCategory();
@@ -55,7 +63,7 @@ export function InlineCategoryCell({ transaction, dense: _dense = false }: Props
         size="sm"
         aria-label={`Edit category: ${label}`}
         aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => setOpenWithCallback((value) => !value)}
         className={cn(
           transactionsRowRecipes.categoryPill,
           themeInlineLabelClasses(categoryName, accentIndexByName)
@@ -80,7 +88,7 @@ export function InlineCategoryCell({ transaction, dense: _dense = false }: Props
             isCustom: nextIsCustom,
           });
         }}
-        onRequestClose={() => setOpen(false)}
+        onRequestClose={() => setOpenWithCallback(false)}
       />
     </div>
   );
