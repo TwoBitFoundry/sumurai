@@ -34,9 +34,19 @@ function setViewportWidth(width: number) {
   window.dispatchEvent(new Event('resize'));
 }
 
+async function expandTransactionInsights(
+  user: ReturnType<typeof userEvent.setup> = userEvent.setup()
+) {
+  const toggle = screen.getByRole('button', { name: /expand transaction insights/i });
+  if (toggle.getAttribute('aria-expanded') !== 'true') {
+    await user.click(toggle);
+  }
+}
+
 describe('TransactionInsightsPanel', () => {
   beforeEach(() => {
     setViewportWidth(1280);
+    window.sessionStorage.clear();
   });
 
   it('renders the shell with the correct state label for state A', () => {
@@ -55,18 +65,26 @@ describe('TransactionInsightsPanel', () => {
     expect(insetRing).toHaveClass('opacity-0', 'group-hover:opacity-100');
   });
 
-  it('shows a header toggle that collapses the transaction insights', async () => {
+  it('toggles transaction insights from the summary header', async () => {
     const user = userEvent.setup();
 
     render(<TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="k1" />);
 
-    const toggle = screen.getByRole('button', { name: 'Collapse transaction insights' });
-    expect(toggle).toHaveAttribute('aria-label', 'Collapse transaction insights');
-    expect(screen.getByTestId('transaction-insights-panel-body')).toBeInTheDocument();
+    const toggle = screen.getByRole('button', { name: /expand transaction insights/i });
+    expect(toggle).toHaveAttribute('aria-label', 'Expand transaction insights');
+    expect(screen.queryByTestId('transaction-insights-panel-body')).not.toBeInTheDocument();
 
     await user.click(toggle);
 
-    expect(screen.getByRole('button', { name: 'Expand transaction insights' })).toBeInTheDocument();
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('transaction-insights-panel-body')).toBeInTheDocument();
+    expect(screen.getByText('Volume')).toBeInTheDocument();
+
+    await user.click(toggle);
+
+    expect(
+      screen.getByRole('button', { name: /expand transaction insights/i })
+    ).toBeInTheDocument();
   });
 
   it('shows Loading… indicator when isLoading is true', () => {
@@ -79,21 +97,26 @@ describe('TransactionInsightsPanel', () => {
     expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
   });
 
-  it('renders Card 1 title Volume and Card 2 title Typical for state A', () => {
+  it('renders Card 1 title Volume and Card 2 title Typical for state A', async () => {
+    const user = userEvent.setup();
     render(<TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="k1" />);
+    await expandTransactionInsights(user);
     expect(screen.getByText('Volume')).toBeInTheDocument();
     expect(screen.getByText('Typical')).toBeInTheDocument();
   });
 
-  it('renders insight currency as signed outflows with expense styling', () => {
+  it('renders insight currency as signed outflows with expense styling', async () => {
+    const user = userEvent.setup();
     render(<TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="k1" />);
+    await expandTransactionInsights(user);
     const volumeAmount = screen.getByText('-$1,200.00');
     const typicalAmount = screen.getByText('-$45.50');
     expect(volumeAmount.className).toContain('text-red-600');
     expect(typicalAmount.className).toContain('text-red-600');
   });
 
-  it('renders zero volume as unsigned $0.00 with muted styling', () => {
+  it('renders zero volume as unsigned $0.00 with muted styling', async () => {
+    const user = userEvent.setup();
     const insights = makeInsights({
       card1: {
         value: 0,
@@ -113,6 +136,7 @@ describe('TransactionInsightsPanel', () => {
       },
     });
     render(<TransactionInsightsPanel insights={insights} isLoading={false} resetKey="k1" />);
+    await expandTransactionInsights(user);
     const zeroAmounts = screen.getAllByText('$0.00');
     expect(zeroAmounts).toHaveLength(2);
     for (const amount of zeroAmounts) {
@@ -123,7 +147,8 @@ describe('TransactionInsightsPanel', () => {
     expect(screen.queryByText('-$0.00')).not.toBeInTheDocument();
   });
 
-  it('renders net income insight totals with income styling', () => {
+  it('renders net income insight totals with income styling', async () => {
+    const user = userEvent.setup();
     const insights = makeInsights({
       card1: {
         value: -500,
@@ -135,11 +160,13 @@ describe('TransactionInsightsPanel', () => {
       },
     });
     render(<TransactionInsightsPanel insights={insights} isLoading={false} resetKey="k1" />);
+    await expandTransactionInsights(user);
     const amount = screen.getByText('$500.00');
     expect(amount.className).toContain('text-emerald-600');
   });
 
-  it('renders Card 1 title Category Total for state B', () => {
+  it('renders Card 1 title Category Total for state B', async () => {
+    const user = userEvent.setup();
     render(
       <TransactionInsightsPanel
         insights={makeInsights({ state: 'b' })}
@@ -147,6 +174,7 @@ describe('TransactionInsightsPanel', () => {
         resetKey="k1"
       />
     );
+    await expandTransactionInsights(user);
     expect(screen.getByText('Category Total')).toBeInTheDocument();
     expect(screen.getByText('Category filter')).toBeInTheDocument();
     expect(screen.getByTestId('transaction-insights-shell').firstElementChild?.className).toContain(
@@ -157,7 +185,8 @@ describe('TransactionInsightsPanel', () => {
     ).toHaveClass('text-emerald-500');
   });
 
-  it('renders state C label Merchant view', () => {
+  it('renders state C label Merchant view', async () => {
+    const user = userEvent.setup();
     render(
       <TransactionInsightsPanel
         insights={makeInsights({ state: 'c' })}
@@ -166,10 +195,12 @@ describe('TransactionInsightsPanel', () => {
       />
     );
     expect(screen.getByText('Merchant view')).toBeInTheDocument();
+    await expandTransactionInsights(user);
     expect(screen.getByText('Lifetime Spend')).toBeInTheDocument();
   });
 
-  it('renders Card 3 when provided in the response', () => {
+  it('renders Card 3 when provided in the response', async () => {
+    const user = userEvent.setup();
     const insights = makeInsights({
       card3: {
         value: 3,
@@ -181,10 +212,12 @@ describe('TransactionInsightsPanel', () => {
       },
     });
     render(<TransactionInsightsPanel insights={insights} isLoading={false} resetKey="k1" />);
+    await expandTransactionInsights(user);
     expect(screen.getByText('Breakdown')).toBeInTheDocument();
   });
 
-  it('does not render Card 3 when card3 is null', () => {
+  it('does not render Card 3 when card3 is null', async () => {
+    const user = userEvent.setup();
     render(
       <TransactionInsightsPanel
         insights={makeInsights({ card3: null })}
@@ -192,11 +225,14 @@ describe('TransactionInsightsPanel', () => {
         resetKey="k1"
       />
     );
+    await expandTransactionInsights(user);
     expect(screen.queryByText('Breakdown')).not.toBeInTheDocument();
   });
 
   it('clicking a card flips it to show the question', async () => {
+    const user = userEvent.setup();
     render(<TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="k1" />);
+    await expandTransactionInsights(user);
     const volumeBtn = screen.getByRole('button', { name: /volume/i });
     expect(volumeBtn).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(volumeBtn);
@@ -206,6 +242,7 @@ describe('TransactionInsightsPanel', () => {
   it('supports keyboard activation on the volume card', async () => {
     const user = userEvent.setup();
     render(<TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="k1" />);
+    await expandTransactionInsights(user);
     const volumeBtn = screen.getByRole('button', { name: /volume/i });
     volumeBtn.focus();
     await user.keyboard('{Enter}');
@@ -213,16 +250,20 @@ describe('TransactionInsightsPanel', () => {
   });
 
   it('clicking a flipped card returns it to the data face', async () => {
+    const user = userEvent.setup();
     render(<TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="k1" />);
+    await expandTransactionInsights(user);
     const btn = screen.getByRole('button', { name: /volume/i });
-    await userEvent.click(btn);
-    await userEvent.click(btn);
+    await user.click(btn);
+    await user.click(btn);
     expect(btn).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('flipping one card does not flip the other', async () => {
+    const user = userEvent.setup();
     render(<TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="k1" />);
-    await userEvent.click(screen.getByRole('button', { name: /volume/i }));
+    await expandTransactionInsights(user);
+    await user.click(screen.getByRole('button', { name: /volume/i }));
     expect(screen.getByRole('button', { name: /typical/i })).toHaveAttribute(
       'aria-expanded',
       'false'
@@ -230,10 +271,12 @@ describe('TransactionInsightsPanel', () => {
   });
 
   it('resets all flipped cards when resetKey changes', async () => {
+    const user = userEvent.setup();
     const { rerender } = render(
       <TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="key-a" />
     );
-    await userEvent.click(screen.getByRole('button', { name: /volume/i }));
+    await expandTransactionInsights(user);
+    await user.click(screen.getByRole('button', { name: /volume/i }));
     expect(screen.getByRole('button', { name: /volume/i })).toHaveAttribute(
       'aria-expanded',
       'true'
@@ -248,22 +291,27 @@ describe('TransactionInsightsPanel', () => {
     );
   });
 
-  it('lays out cards as flex-row on desktop', () => {
+  it('lays out cards as flex-row on desktop', async () => {
+    const user = userEvent.setup();
     render(<TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="k1" />);
+    await expandTransactionInsights(user);
     const shell = screen.getByTestId('transaction-insights-shell');
     const cardContainer = shell.querySelector('.flex.flex-row');
     expect(cardContainer).toBeTruthy();
   });
 
-  it('lays out cards as a subgrid on mobile', () => {
+  it('lays out cards as a subgrid on mobile', async () => {
+    const user = userEvent.setup();
     setViewportWidth(390);
     render(<TransactionInsightsPanel insights={makeInsights()} isLoading={false} resetKey="k1" />);
+    await expandTransactionInsights(user);
     const shell = screen.getByTestId('transaction-insights-shell');
     const cardContainer = shell.querySelector('.grid');
     expect(cardContainer?.className).toContain('grid-cols-[auto_1fr_auto_auto_auto]');
   });
 
-  it('renders em-dash for null card2 value', () => {
+  it('renders em-dash for null card2 value', async () => {
+    const user = userEvent.setup();
     const insights = makeInsights({
       card2: {
         value: null,
@@ -275,10 +323,12 @@ describe('TransactionInsightsPanel', () => {
       },
     });
     render(<TransactionInsightsPanel insights={insights} isLoading={false} resetKey="k1" />);
+    await expandTransactionInsights(user);
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 
-  it('renders percent for state E share-of-wallet card3', () => {
+  it('renders percent for state E share-of-wallet card3', async () => {
+    const user = userEvent.setup();
     const insights = makeInsights({
       state: 'e',
       card3: {
@@ -291,11 +341,13 @@ describe('TransactionInsightsPanel', () => {
       },
     });
     render(<TransactionInsightsPanel insights={insights} isLoading={false} resetKey="k1" />);
+    await expandTransactionInsights(user);
     expect(screen.getByText('Share of Wallet')).toBeInTheDocument();
     expect(screen.getByText('42.0%')).toBeInTheDocument();
   });
 
-  it('renders days ago for Triple recency card3', () => {
+  it('renders days ago for Triple recency card3', async () => {
+    const user = userEvent.setup();
     const insights = makeInsights({
       state: 'triple',
       card3: {
@@ -308,12 +360,14 @@ describe('TransactionInsightsPanel', () => {
       },
     });
     render(<TransactionInsightsPanel insights={insights} isLoading={false} resetKey="k1" />);
+    await expandTransactionInsights(user);
     expect(screen.getByText('Last Visit')).toBeInTheDocument();
     expect(screen.getByText('14 days')).toBeInTheDocument();
     expect(screen.getByText('ago')).toBeInTheDocument();
   });
 
-  it('renders ratio with comparison for state B card3', () => {
+  it('renders ratio with comparison for state B card3', async () => {
+    const user = userEvent.setup();
     const insights = makeInsights({
       state: 'b',
       card3: {
@@ -326,6 +380,7 @@ describe('TransactionInsightsPanel', () => {
       },
     });
     render(<TransactionInsightsPanel insights={insights} isLoading={false} resetKey="k1" />);
+    await expandTransactionInsights(user);
     expect(screen.getByText('1.8×')).toBeInTheDocument();
     expect(screen.getByText('vs')).toBeInTheDocument();
     const comparisonAmount = screen.getByText('-$25.00');

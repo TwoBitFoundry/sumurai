@@ -90,51 +90,31 @@ export const border = {
 } as const;
 
 export const effect = {
-  glassShadow: [
-    'shadow-[0_32px_110px_-60px_var(--color-effect-glass-shadow)]',
-    'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow)]',
+  glassShadow: ['shadow-[0_32px_110px_-60px_var(--color-effect-glass-shadow)]'],
+  glassDropShadow: [
+    'drop-shadow-[0_10px_12px_rgba(15,23,42,0.35)]',
+    'dark:drop-shadow-[0_10px_12px_rgba(148,163,184,0.28)]',
   ],
-  accentHover: [
-    'hover:shadow-[0_18px_44px_-30px_var(--color-effect-accent-hover)]',
-    'dark:hover:shadow-[0_20px_52px_-34px_var(--color-effect-accent-hover)]',
-  ],
-  successGlow: [
-    'shadow-[0_0_12px_var(--color-effect-success-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-success-glow)]',
-  ],
-  dangerGlow: [
-    'shadow-[0_0_12px_var(--color-effect-danger-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-danger-glow)]',
-  ],
-  warningGlow: [
-    'shadow-[0_0_12px_var(--color-effect-warning-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-warning-glow)]',
-  ],
+  accentHover: ['hover:shadow-[0_18px_44px_-30px_var(--color-effect-accent-hover)]'],
+  successGlow: ['shadow-[0_0_12px_var(--color-effect-success-glow)]'],
+  dangerGlow: ['shadow-[0_0_12px_var(--color-effect-danger-glow)]'],
+  warningGlow: ['shadow-[0_0_12px_var(--color-effect-warning-glow)]'],
   accentOutlineGlow: [
     'shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
-    'dark:shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_50%,transparent)]',
   ],
-  accentOutlineGlowCta: [
-    'shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
-  ],
+  accentOutlineGlowCta: ['shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]'],
   accentOutlineGlowHover: [
     'hover:shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
-    'dark:hover:shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-effect-accent-outline-glow)_50%,transparent)]',
   ],
   pageShellInsetRing: [
     'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]',
-    'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.48)]',
   ],
   glassBackdrop: ['backdrop-blur-md', 'backdrop-saturate-[150%]'],
 } as const;
 
 export const buttonCta = {
   gradient: ['bg-[var(--color-brand-sky)]'],
-  shadow: [
-    'shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
-  ],
+  shadow: ['shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]'],
   hover: ['hover:-translate-y-0.5', 'disabled:hover:translate-y-0'],
 } as const;
 
@@ -282,18 +262,13 @@ export const budgetProgress = {
     'duration-500',
     'ease-out',
   ],
-  fillWithin: [
-    'bg-[var(--color-brand-sky)]',
-    'shadow-[0_0_12px_var(--color-effect-success-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-success-glow)]',
-  ],
+  fillWithin: ['bg-[var(--color-brand-sky)]', 'shadow-[0_0_12px_var(--color-effect-success-glow)]'],
   fillOver: [
     'bg-gradient-to-r',
     'from-[var(--color-brand-rose)]',
     'via-[var(--color-brand-rose)]',
     'to-[var(--color-text-danger)]',
     'shadow-[0_0_12px_var(--color-effect-danger-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-danger-glow)]',
   ],
   captionRow: [
     'flex',
@@ -330,6 +305,7 @@ export const insightsPanel = {
     ...border.glass,
     ...surface.glassPanel,
     ...effect.glassShadow,
+    ...effect.glassDropShadow,
     ...effect.glassBackdrop,
     'transition-colors',
     'duration-200',

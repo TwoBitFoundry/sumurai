@@ -143,6 +143,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
         <nav
           className={cn(
             ...appTitleBarRecipes.pillContainer,
+            ...appTitleBarRecipes.bottomBarShadow,
             chromeBar.square,
             'flex',
             'shrink-0',
@@ -190,7 +191,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
             uiBorderRecipes.default,
             ...uiSurfaceRecipes.mutedChip,
             ...uiEffectRecipes.glassBackdrop,
-            'shadow-none',
+            ...uiEffectRecipes.glassDropShadow,
             uiTextRecipes.body,
             uiTypographyRecipes.captionStrong
           )}

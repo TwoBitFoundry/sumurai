@@ -88,6 +88,7 @@ export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsC
         ...appTitleBarRecipes.pillContainer,
         ...appTitleBarRecipes.contextPillInset,
         ...appTitleBarRecipes.pillContainerSize,
+        ...appTitleBarRecipes.tabBarShadow,
         'shrink-0'
       )}
       role="tablist"

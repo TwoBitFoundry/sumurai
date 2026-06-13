@@ -165,7 +165,7 @@ export function InsightCard({
             {flipped ? (
               <motion.div
                 key="back"
-                initial={{ opacity: 0 }}
+                initial={false}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={FADE}
@@ -176,7 +176,7 @@ export function InsightCard({
             ) : subgridRow ? (
               <motion.div
                 key="front"
-                initial={{ opacity: 0 }}
+                initial={false}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={FADE}
@@ -195,7 +195,7 @@ export function InsightCard({
             ) : (
               <motion.div
                 key="front"
-                initial={{ opacity: 0 }}
+                initial={false}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={FADE}

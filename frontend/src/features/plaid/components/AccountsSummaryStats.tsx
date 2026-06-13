@@ -21,7 +21,7 @@ interface AccountsSummaryStatsProps {
 
 export const AccountsSummaryStats = ({ summary, lastSyncValue }: AccountsSummaryStatsProps) => {
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
-  const { expanded, toggleExpanded } = useSessionCollapsible('accounts-summary-stats', true);
+  const { expanded, toggleExpanded } = useSessionCollapsible('accounts-summary-stats');
   const { isMobile } = useViewportBreakpoint();
   const toggle = (id: string) => setFlipped((prev) => ({ ...prev, [id]: !prev[id] }));
   const hasConnections = summary.institutions > 0;

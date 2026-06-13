@@ -213,7 +213,7 @@ export function TransactionInsightsPanel({
 }: TransactionInsightsPanelProps) {
   const [lastResetKey, setLastResetKey] = useState(resetKey);
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
-  const { expanded, toggleExpanded } = useSessionCollapsible('transactions-insights', true);
+  const { expanded, toggleExpanded } = useSessionCollapsible('transactions-insights');
   const { isMobile } = useViewportBreakpoint();
 
   if (lastResetKey !== resetKey) {

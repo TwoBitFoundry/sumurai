@@ -117,6 +117,7 @@ export function AppLayout({
                 ...appTitleBarRecipes.pillContainer,
                 ...appTitleBarRecipes.contextPillInset,
                 ...appTitleBarRecipes.pillContainerSize,
+                ...appTitleBarRecipes.bottomBarShadow,
                 floatingVisible && 'pointer-events-auto'
               )}
               aria-label="Primary"

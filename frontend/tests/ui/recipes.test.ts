@@ -60,11 +60,13 @@ describe('shared UI recipes', () => {
     ]);
     expect(effect.glassShadow).toEqual([
       'shadow-[0_32px_110px_-60px_var(--color-effect-glass-shadow)]',
-      'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow)]',
+    ]);
+    expect(effect.glassDropShadow).toEqual([
+      'drop-shadow-[0_10px_12px_rgba(15,23,42,0.35)]',
+      'dark:drop-shadow-[0_10px_12px_rgba(148,163,184,0.28)]',
     ]);
     expect(effect.pageShellInsetRing).toEqual([
       'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]',
-      'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.48)]',
     ]);
     expect(focus.visible).toContain('focus-visible:ring-sky-400');
     expect(font.badge).toBe(
@@ -95,10 +97,7 @@ describe('shared UI recipes', () => {
 
   it('exposes flat sky CTA and progress fill recipes', () => {
     expect(buttonCta.gradient).toEqual(['bg-[var(--color-brand-sky)]']);
-    expect(buttonCta.shadow).toEqual([
-      'shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
-      'dark:shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]',
-    ]);
+    expect(buttonCta.shadow).toEqual(['shadow-[0_0_12px_var(--color-effect-accent-outline-glow)]']);
     expect(budgetProgress.fillWithin).toContain('bg-[var(--color-brand-sky)]');
     expect(budgetProgress.fillWithin).not.toContain('brand-violet');
   });

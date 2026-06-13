@@ -78,6 +78,20 @@ export const appTitleBarRecipes = {
   ],
   pillTabSize: ['px-3.5', 'lg:px-3'],
   contextPillInset: ['py-1.5', 'px-2', 'md:py-2', 'md:px-2.5'],
+  tabBarShadow: [
+    'drop-shadow-[0_10px_12px_rgba(15,23,42,0.28)]',
+    'md:drop-shadow-[0_12px_16px_rgba(15,23,42,0.28)]',
+    'dark:drop-shadow-[0_10px_12px_rgba(148,163,184,0.22)]',
+    'dark:md:drop-shadow-[0_12px_16px_rgba(148,163,184,0.22)]',
+    'lg:drop-shadow-none',
+  ],
+  bottomBarShadow: [
+    'drop-shadow-[0_-8px_12px_rgba(15,23,42,0.28)]',
+    'md:drop-shadow-[0_-10px_14px_rgba(15,23,42,0.28)]',
+    'dark:drop-shadow-[0_-8px_12px_rgba(148,163,184,0.22)]',
+    'dark:md:drop-shadow-[0_-10px_14px_rgba(148,163,184,0.22)]',
+    'lg:drop-shadow-none',
+  ],
   contextPillTab: [
     'relative',
     'flex',
@@ -199,6 +213,7 @@ export const AppTitleBar = ({
           ...appTitleBarRecipes.pillContainer,
           ...appTitleBarRecipes.contextPillInset,
           ...appTitleBarRecipes.pillContainerSize,
+          ...appTitleBarRecipes.tabBarShadow,
           'max-w-full',
           'min-w-0'
         )}

@@ -142,7 +142,7 @@ colors:
   status-danger-icon: "{colors.brand-rose}"
   status-danger-icon-dark: "{colors.brand-rose-dark}"
   effect-glass-shadow: "#0f172a"
-  effect-glass-shadow-dark: "#020617"
+  effect-glass-shadow-dark: "#94a3b8"
   effect-success-glow: "{colors.brand-emerald}"
   effect-success-glow-dark: "{colors.brand-emerald-dark}"
   effect-warning-glow: "{colors.brand-amber}"
