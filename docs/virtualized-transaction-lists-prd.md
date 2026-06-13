@@ -102,12 +102,18 @@ Do not add silently-ignored `sort`/`order` to the handler — add them only when
 - Hook test (`frontend/tests/**`, boundary-mock `TransactionService`): `fetchNextPage` sends prior `next_cursor`; pages flatten in order with no dup/skip; paging stops at `has_more=false`; filter change starts a fresh query (new key, cursor reset).
 
 **Acceptance criteria**
-- [ ] `useInfiniteTransactions(filters)` fetches the first page with no cursor and subsequent pages with the prior `next_cursor`.
-- [ ] `rows` is the in-order concatenation of pages with no duplicates or gaps.
-- [ ] `hasNextPage` is `false` once `has_more` is false and no further fetches occur.
-- [ ] Changing any filter resets to a fresh query (cursor cleared).
-- [ ] All transaction HTTP goes through `ApiClient`; `useTransactionFilters` is the single filter-derivation source.
-- [ ] `bun --cwd=frontend test -- <hook test>` passes; `typecheck` passes.
+- [x] `useInfiniteTransactions(filters)` fetches the first page with no cursor and subsequent pages with the prior `next_cursor`.
+- [x] `rows` is the in-order concatenation of pages with no duplicates or gaps.
+- [x] `hasNextPage` is `false` once `has_more` is false and no further fetches occur.
+- [x] Changing any filter resets to a fresh query (cursor cleared).
+- [x] All transaction HTTP goes through `ApiClient`; `useTransactionFilters` is the single filter-derivation source.
+- [x] `bun --cwd=frontend test -- <hook test>` passes; `typecheck` passes.
+
+**TDD log — Phase 2**
+- Red: `useInfiniteTransactions.test.tsx` written with 5 boundary-mock tests; module missing → compile error.
+- Green: `transactionWindow.ts` model, `useTransactionFilters.ts` hook, `useInfiniteTransactions.ts` hook implemented.
+- Refactor: fixed `useMemo`-based debounce → `useEffect` (correct for side effects); updated test to use non-debounced filter for reset test robustness.
+- Final: 5 tests pass; `typecheck` clean; full suite at baseline pass count.
 
 ## Phase 3 — Virtualized list component
 
