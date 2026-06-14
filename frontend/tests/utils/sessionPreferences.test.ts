@@ -5,7 +5,6 @@ import {
   getSessionDashboardDateRange,
   getSessionThemePreference,
   getSessionTransactionsCategory,
-  getSessionTransactionsPage,
   getSessionTransactionsSearch,
   setSessionBankExpanded,
   setSessionBudgetsSectionExpanded,
@@ -13,7 +12,6 @@ import {
   setSessionDashboardDateRange,
   setSessionThemePreference,
   setSessionTransactionsCategory,
-  setSessionTransactionsPage,
   setSessionTransactionsSearch,
 } from '@/utils/sessionPreferences';
 
@@ -49,14 +47,12 @@ describe('sessionPreferences', () => {
     expect(getSessionDashboardDateRange()).toBe('past-3-months');
   });
 
-  it('stores and restores transactions filters and page', () => {
+  it('stores and restores transactions search and category filters', () => {
     setSessionTransactionsSearch('coffee');
     setSessionTransactionsCategory('Food');
-    setSessionTransactionsPage(3);
 
     expect(getSessionTransactionsSearch()).toBe('coffee');
     expect(getSessionTransactionsCategory()).toBe('Food');
-    expect(getSessionTransactionsPage()).toBe(3);
   });
 
   it('defaults institution cards to collapsed and remembers expansion', () => {

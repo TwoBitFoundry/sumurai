@@ -4,7 +4,6 @@ import type { DateRangeKey } from '@/utils/dateRanges';
 const SESSION_KEYS = {
   theme: 'sumurai.ui.theme',
   dashboardDateRange: 'sumurai.ui.dashboardDateRange',
-  transactionsPage: 'sumurai.ui.transactionsPage',
   transactionsCategory: 'sumurai.ui.transactionsCategory',
   transactionsSearch: 'sumurai.ui.transactionsSearch',
   accountsBankExpanded: 'sumurai.ui.accountsBankExpanded',
@@ -126,26 +125,6 @@ export function getSessionDashboardDateRange(): DateRangeKey | null {
 
 export function setSessionDashboardDateRange(dateRange: DateRangeKey): void {
   writeItem(SESSION_KEYS.dashboardDateRange, dateRange);
-}
-
-export function getSessionTransactionsPage(): number | null {
-  const stored = readItem(SESSION_KEYS.transactionsPage);
-  if (!stored) {
-    return null;
-  }
-  const page = Number.parseInt(stored, 10);
-  if (!Number.isFinite(page) || page < 1) {
-    return null;
-  }
-  return page;
-}
-
-export function setSessionTransactionsPage(page: number): void {
-  if (page < 1) {
-    removeItem(SESSION_KEYS.transactionsPage);
-    return;
-  }
-  writeItem(SESSION_KEYS.transactionsPage, String(page));
 }
 
 export function getSessionTransactionsSearch(): string | null {

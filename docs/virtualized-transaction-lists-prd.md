@@ -158,10 +158,10 @@ Do not add silently-ignored `sort`/`order` to the handler — add them only when
 - Delete pagination-specific `useTransactions` tests.
 
 **Acceptance criteria**
-- [ ] Transactions page renders the virtualized list; toolbar/filters still drive it; insights panel unaffected.
-- [ ] Changing search/category/account resets the list to top and restarts paging from a fresh cursor.
-- [ ] No dead references to removed offset symbols (`page`/`totalPages`/page session prefs); `typecheck`/`build` pass.
-- [ ] Validated at `http://localhost:8080` (Nginx proxy), not `:3001`.
+- [x] Transactions page renders the virtualized list; toolbar/filters still drive it; insights panel unaffected.
+- [x] Changing search/category/account resets the list to top and restarts paging from a fresh cursor.
+- [x] No dead references to removed offset symbols (`page`/`totalPages`/page session prefs); `typecheck`/`build` pass.
+- [x] Validated at `http://localhost:8080` (Nginx proxy), not `:3001`.
 
 ## Phase 5 — Contextual popover + launcher provider
 

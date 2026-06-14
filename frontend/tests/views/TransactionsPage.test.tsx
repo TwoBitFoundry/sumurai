@@ -3,14 +3,9 @@ import type React from 'react';
 import { useAccountsToastStack } from '@/features/accounts/hooks/useAccountsToastStack';
 import { useAutoCategorization } from '@/features/auto-categorization/hooks/useAutoCategorization';
 import { useCategories } from '@/features/transactions/hooks/useCategories';
-import { useTransactions } from '@/features/transactions/hooks/useTransactions';
 import { useTransactionsContextualInsights } from '@/features/transactions/hooks/useTransactionsContextualInsights';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import TransactionsPage from '@/views/TransactionsPage';
-
-jest.mock('@/features/transactions/hooks/useTransactions', () => ({
-  useTransactions: jest.fn(),
-}));
 
 jest.mock('@/features/transactions/hooks/useTransactionsContextualInsights', () => ({
   useTransactionsContextualInsights: jest.fn(),
@@ -73,9 +68,9 @@ jest.mock('@/features/transactions/components/TransactionsToolbar', () => ({
   default: () => <div data-testid="transactions-toolbar" />,
 }));
 
-jest.mock('@/features/transactions/components/TransactionsTable', () => ({
+jest.mock('@/features/transactions/components/VirtualizedTransactionList', () => ({
   __esModule: true,
-  default: () => <div data-testid="transactions-table" />,
+  default: () => <div data-testid="virtualized-transaction-list" />,
 }));
 
 jest.mock('@/features/transactions/components/CategoryCatalogPicker', () => ({
@@ -122,27 +117,13 @@ describe('TransactionsPage', () => {
       system: ['FOOD_AND_DRINK'],
       custom: [{ id: 'custom-1', display_name: 'Coffee', lookup_key: 'coffee' }],
       all: ['Coffee', 'FOOD_AND_DRINK'],
+      filterCategories: ['FOOD_AND_DRINK', 'Coffee'],
       accentIndexByName: new Map([
         ['Coffee', 0],
         ['FOOD_AND_DRINK', 1],
       ]),
       isLoading: false,
       error: null,
-    } as any);
-    jest.mocked(useTransactions).mockReturnValue({
-      isLoading: false,
-      error: null,
-      transactions: [],
-      categories: [],
-      search: '',
-      setSearch: jest.fn(),
-      selectedCategory: null,
-      setSelectedCategory: jest.fn(),
-      currentPage: 1,
-      setCurrentPage: jest.fn(),
-      pageItems: [],
-      totalItems: 0,
-      totalPages: 1,
     } as any);
     jest.mocked(useTransactionsContextualInsights).mockReturnValue({
       insights: {
@@ -205,7 +186,7 @@ describe('TransactionsPage', () => {
     expect(getByRole('button', { name: /categorize/i })).toBeEnabled();
   });
 
-  it('passes loading state to the insights panel independently from the table', () => {
+  it('passes loading state to the insights panel independently from the list', () => {
     jest.mocked(useTransactionsContextualInsights).mockReturnValue({
       insights: null,
       displayState: 'a',
@@ -229,7 +210,7 @@ describe('TransactionsPage', () => {
       'data-loading',
       'true'
     );
-    expect(screen.getByTestId('transactions-table')).toBeInTheDocument();
+    expect(screen.getByTestId('virtualized-transaction-list')).toBeInTheDocument();
   });
 
   it('renders the shared toast stack for auto-categorization job state', () => {

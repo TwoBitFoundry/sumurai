@@ -12,7 +12,6 @@ import {
 import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
 import { TransactionsSearchBar } from '@/features/transactions/components/TransactionsSearchBar';
 import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
-import { useTransactions } from '@/features/transactions/hooks/useTransactions';
 import { Alert, cn } from '@/ui/primitives';
 import AccountsPage from '@/views/AccountsPage';
 import BudgetsPage from '@/views/BudgetsPage';
@@ -58,11 +57,6 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   };
   const budgetMonth = useBudgetMonth();
   const transactionFilters = useTransactionFilterState();
-  const transactionsControl = useTransactions({
-    pageSize: 8,
-    filterControl: transactionFilters,
-    enabled: tab === 'transactions',
-  });
 
   const handleTabChange = (next: TabKey) => {
     const currentIndex = TAB_INDEX.get(tab) ?? 0;
@@ -82,16 +76,6 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
         <TransactionsSearchBar
           search={transactionFilters.search}
           onSearch={transactionFilters.setSearch}
-          currentPage={transactionsControl.currentPage}
-          totalPages={transactionsControl.totalPages}
-          onPrev={() =>
-            transactionFilters.setCurrentPage(Math.max(1, transactionsControl.currentPage - 1))
-          }
-          onNext={() =>
-            transactionFilters.setCurrentPage(
-              Math.min(transactionsControl.totalPages, transactionsControl.currentPage + 1)
-            )
-          }
         />
       </BottomContextualBar>
     ) : tab === 'budgets' ? (
@@ -141,12 +125,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
                 {tab === 'dashboard' && (
                   <DashboardPage dateRange={dateRange} setDateRange={setDateRange} />
                 )}
-                {tab === 'transactions' && (
-                  <TransactionsPage
-                    filterControl={transactionFilters}
-                    transactionsControl={transactionsControl}
-                  />
-                )}
+                {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
                 {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}
                 {tab === 'accounts' && <AccountsPage onError={setError} />}
                 {tab === 'settings' && <SettingsPage onLogout={onLogout} />}

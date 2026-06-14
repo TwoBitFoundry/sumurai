@@ -15,62 +15,45 @@ import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToa
 import { useAutoCategorization } from '../features/auto-categorization/hooks/useAutoCategorization';
 import CategoryCatalogPicker from '../features/transactions/components/CategoryCatalogPicker';
 import { TransactionInsightsPanel } from '../features/transactions/components/TransactionInsightsPanel';
-import TransactionsTable from '../features/transactions/components/TransactionsTable';
 import TransactionsToolbar from '../features/transactions/components/TransactionsToolbar';
+import VirtualizedTransactionList from '../features/transactions/components/VirtualizedTransactionList';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import type { TransactionFilterControl } from '../features/transactions/hooks/useTransactionFilterState';
-import {
-  type UseTransactionsResult,
-  useTransactions,
-} from '../features/transactions/hooks/useTransactions';
 import { useTransactionsContextualInsights } from '../features/transactions/hooks/useTransactionsContextualInsights';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { PageLayout } from '../layouts/PageLayout';
 
 const TransactionsPage: React.FC<{
   filterControl: TransactionFilterControl;
-  transactionsControl?: UseTransactionsResult;
-}> = ({ filterControl, transactionsControl }) => {
-  const ownedTransactions = useTransactions({
-    pageSize: 8,
-    filterControl,
-    enabled: !transactionsControl,
-  });
-  const {
-    isLoading,
-    error,
-    search,
-    setSearch,
-    selectedCategory,
-    setSelectedCategory,
-    currentPage,
-    pageItems,
-    totalItems,
-    totalPages,
-    tableAnimationKey,
-    dateRange,
-    categories,
-  } = transactionsControl ?? ownedTransactions;
+}> = ({ filterControl }) => {
+  const { search, setSearch, selectedCategory, setSelectedCategory } = filterControl;
+
   const {
     insights,
     displayState,
     isLoading: insightsLoading,
     accountKey,
+    error,
   } = useTransactionsContextualInsights({
     search,
     selectedCategory,
-    dateRange,
+    dateRange: undefined,
   });
   const isOnline = useOnlineStatus();
   const autoCategorization = useAutoCategorization();
   const { pinnedToast, transients, dismissTransient, dismissPinned, pushToast } =
     useAccountsToastStack(autoCategorization.job);
 
-  const { custom } = useCategories();
+  const { filterCategories: categories, custom } = useCategories();
   const addCategoryButtonRef = useRef<HTMLButtonElement>(null);
   const [isCategoryCatalogOpen, setIsCategoryCatalogOpen] = useState(false);
 
-  const insightsResetKey = `${displayState}-${search}-${selectedCategory ?? ''}-${accountKey}-${dateRange ?? ''}`;
+  const insightsResetKey = `${displayState}-${search}-${selectedCategory ?? ''}-${accountKey}`;
+  const filters = {
+    search: search || undefined,
+    categoryPrimary: selectedCategory ?? undefined,
+  };
+
   const categorizeActions = (
     <div
       className={cn(
@@ -196,15 +179,7 @@ const TransactionsPage: React.FC<{
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
           />
-          <TransactionsTable
-            items={pageItems}
-            total={totalItems}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={8}
-            isLoading={isLoading}
-            bodyAnimationKey={tableAnimationKey}
-          />
+          <VirtualizedTransactionList filters={filters} variant="page" />
         </GlassCard>
         <ToastStack
           transients={transients}

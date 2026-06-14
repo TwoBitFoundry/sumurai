@@ -129,13 +129,10 @@ describe('AuthenticatedApp', () => {
     expect(screen.getByText('Budgets')).toBeInTheDocument();
   });
 
-  it('renders transaction search and pagination in the bottom bar for the transactions tab', () => {
+  it('renders transaction search in the bottom bar for the transactions tab', () => {
     render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="transactions" />);
 
     expect(screen.getByTestId('transactions-search-bar')).toBeInTheDocument();
-    expect(screen.getByTestId('transactions-search-pagination')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Previous page' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next page' })).toBeInTheDocument();
     expect(screen.getByText('Transactions')).toBeInTheDocument();
   });
 

@@ -1,17 +1,9 @@
-/**
- * Loads and pages transaction lists.
- */
-
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { TransactionService } from '../../../services/TransactionService';
 import type { PaginatedTransactionsResponse, Transaction } from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
-import {
-  getSessionTransactionsPage,
-  setSessionTransactionsPage,
-} from '../../../utils/sessionPreferences';
 import { useTransactionCategories } from './useTransactionCategories';
 import type { TransactionFilterControl } from './useTransactionFilterState';
 
@@ -38,13 +30,8 @@ export interface UseTransactionsResult {
   setSelectedCategory: (c: string | null) => void;
   dateRange: DateRangeKey;
   setDateRange: (r: DateRangeKey) => void;
-  currentPage: number;
-  setCurrentPage: (p: number) => void;
-  pageItems: Transaction[];
   totalItems: number;
   total: number;
-  totalPages: number;
-  tableAnimationKey: string;
 }
 
 export function useTransactions(options: UseTransactionsOptions = {}): UseTransactionsResult {
@@ -64,15 +51,6 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
   const search = filterControl?.search ?? internalSearch;
   const selectedCategory = filterControl?.selectedCategory ?? internalSelectedCategory;
   const [dateRange, setDateRangeState] = useState<DateRangeKey>(initialDateRange);
-  const [internalCurrentPage, setInternalCurrentPage] = useState(
-    () => getSessionTransactionsPage() ?? 1
-  );
-  const setInternalCurrentPageWithSession = useCallback((page: number) => {
-    setInternalCurrentPage(page);
-    setSessionTransactionsPage(page);
-  }, []);
-  const currentPage = filterControl?.currentPage ?? internalCurrentPage;
-  const setCurrentPage = filterControl?.setCurrentPage ?? setInternalCurrentPageWithSession;
 
   const {
     selectedAccountIds,
@@ -81,13 +59,10 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     loading: accountsLoading,
   } = useAccountFilter();
 
-  const lastFilterKeyRef = useRef<string | null>(null);
-  const accountsReady =
-    !accountsLoading && (allAccountIds.length === 0 || selectedAccountIds.length > 0);
   const debouncedSearch = useDebounce(search, 300);
-
   const searchKey = debouncedSearch.trim().toLowerCase();
   const accountKey = selectedAccountIds.join(',');
+
   const filterKey = useMemo(() => {
     return [
       searchKey,
@@ -118,16 +93,14 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
       cacheKey,
       searchKey,
       selectedCategory ?? '',
-      currentPage,
       pageSize,
     ],
     queryFn: async (): Promise<PaginatedTransactionsResponse> => {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
         return { transactions: [], total: 0, page: 1, page_size: pageSize };
       }
-
       const result = (await TransactionService.getTransactions({
-        page: currentPage,
+        page: 1,
         page_size: pageSize,
         search: searchKey || undefined,
         categoryPrimary: selectedCategory ?? undefined,
@@ -137,7 +110,6 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
             ? selectedAccountIds
             : undefined,
       })) as unknown as PaginatedTransactionsResponse;
-
       return result;
     },
     enabled: enabled && !accountsLoading,
@@ -147,40 +119,13 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
 
   const { categories } = useTransactionCategories();
 
-  useEffect(() => {
-    if (!accountsReady) {
-      return;
-    }
-
-    if (lastFilterKeyRef.current === null) {
-      lastFilterKeyRef.current = filterKey;
-      return;
-    }
-
-    if (lastFilterKeyRef.current !== filterKey) {
-      lastFilterKeyRef.current = filterKey;
-      if (currentPage !== 1) {
-        setCurrentPage(1);
-      }
-    }
-  }, [accountsReady, currentPage, filterKey, setCurrentPage]);
-
   const paginated = query.data;
   const transactions = paginated?.transactions ?? [];
   const totalItems = paginated?.total ?? 0;
 
-  useEffect(() => {
-    const serverPage = paginated?.page;
-    if (serverPage != null && serverPage !== currentPage) {
-      setCurrentPage(serverPage);
-    }
-  }, [paginated?.page, currentPage, setCurrentPage]);
-
   const errorMessage = useMemo(() => {
     const err = query.error;
-    if (!err) {
-      return null;
-    }
+    if (!err) return null;
     const status = getStatus(err);
     return status === 401
       ? 'You are not authenticated. Please log in again.'
@@ -197,9 +142,8 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
       } else {
         setSearchState(value);
       }
-      setCurrentPage(1);
     },
-    [filterControl, setCurrentPage]
+    [filterControl]
   );
 
   const setSelectedCategory = useCallback(
@@ -209,20 +153,13 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
       } else {
         setSelectedCategoryState(value);
       }
-      setCurrentPage(1);
     },
-    [filterControl, setCurrentPage]
+    [filterControl]
   );
 
-  const setDateRange = useCallback(
-    (value: DateRangeKey) => {
-      setDateRangeState(value);
-      setCurrentPage(1);
-    },
-    [setCurrentPage]
-  );
-
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const setDateRange = useCallback((value: DateRangeKey) => {
+    setDateRangeState(value);
+  }, []);
 
   return {
     isLoading,
@@ -236,13 +173,8 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     setSelectedCategory,
     dateRange,
     setDateRange,
-    currentPage,
-    setCurrentPage,
-    pageItems: transactions,
     totalItems,
     total: totalItems,
-    totalPages,
-    tableAnimationKey: `${currentPage}|${filterKey}`,
   };
 }
 

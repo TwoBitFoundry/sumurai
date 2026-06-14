@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
-import { transactionsRowRecipes } from '@/features/transactions/components/TransactionsTable';
+import { transactionsRowRecipes } from '@/features/transactions/components/transactionsRowRecipes';
 import {
   type CsvColumnMapping,
   type ImportResponse,
