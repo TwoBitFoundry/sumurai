@@ -101,6 +101,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
                   drafts={{}}
                   onDraftChange={() => {}}
                   onDelete={() => {}}
+                  period={{ startDate: '2025-01-01', endDate: '2025-01-31' }}
                 />
               ) : null}
               {props.state === 'empty' ? (

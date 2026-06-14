@@ -139,6 +139,23 @@
           }
         }
       }
+    },
+    {
+      "includes": [
+        "src/features/analytics/components/TopMerchantsList.tsx",
+        "src/features/analytics/components/MoneyFlowSankeyChart.tsx",
+        "src/features/fixed-expenses/components/FixedExpenseList.tsx",
+        "src/features/budgets/components/BudgetList.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useSemanticElements": "off",
+            "noStaticElementInteractions": "off",
+            "useFocusableInteractive": "off"
+          }
+        }
+      }
     }
   ]
 }

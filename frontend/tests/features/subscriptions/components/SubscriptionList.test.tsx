@@ -1,3 +1,10 @@
+jest.mock('@/features/transactions/hooks/useTransactionListLauncher', () => ({
+  useTransactionListLauncher: () => ({
+    openTransactionList: jest.fn(),
+    close: jest.fn(),
+  }),
+}));
+
 import { render, screen } from '@testing-library/react';
 import { FixedExpenseList } from '@/features/fixed-expenses/components/FixedExpenseList';
 import type { FixedExpenseSummary } from '@/types/api';

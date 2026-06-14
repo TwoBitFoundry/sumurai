@@ -15,6 +15,13 @@ jest.mock('@/context/ThemeContext', () => ({
   useTheme: jest.fn(),
 }));
 
+jest.mock('@/features/transactions/hooks/useTransactionListLauncher', () => ({
+  useTransactionListLauncher: () => ({
+    openTransactionList: jest.fn(),
+    close: jest.fn(),
+  }),
+}));
+
 jest.mock('@/features/analytics/hooks/useAnalytics', () => ({
   useAnalytics: jest.fn(),
 }));

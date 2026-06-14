@@ -1,6 +1,7 @@
 import { BarChart3 } from 'lucide-react';
-import React from 'react';
+import React, { useRef } from 'react';
 import { Cell, Pie, PieChart, Tooltip } from 'recharts';
+import { useTransactionListLauncher } from '@/features/transactions/hooks/useTransactionListLauncher';
 import { cn, EmptyState } from '@/ui/primitives';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { chart } from '@/ui/tokens';
@@ -38,6 +39,8 @@ const SpendingByCategoryChartFn: React.FC<Props> = ({
 }) => {
   const { mode } = useTheme();
   const { ref: chartContainerRef, width, height } = useChartContainerSize();
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const { openTransactionList } = useTransactionListLauncher();
   const chartSize = Math.min(width, height);
   if (data.length === 0) {
     return (
@@ -55,7 +58,7 @@ const SpendingByCategoryChartFn: React.FC<Props> = ({
 
   return (
     <div
-      ref={chartContainerRef}
+      ref={anchorRef}
       className={cn(
         'relative',
         'w-full',
@@ -69,6 +72,7 @@ const SpendingByCategoryChartFn: React.FC<Props> = ({
         className
       )}
     >
+      <div ref={chartContainerRef} className={cn('absolute', 'inset-0')} />
       {chartSize > 0 ? (
         <>
           <PieChart
@@ -102,7 +106,10 @@ const SpendingByCategoryChartFn: React.FC<Props> = ({
                     fillOpacity={hoveredCategory === null || isHovered ? 1 : 0.35}
                     onMouseEnter={() => setHoveredCategory(cat.name)}
                     onMouseLeave={() => setHoveredCategory(null)}
-                    onClick={() => setHoveredCategory(cat.name)}
+                    onClick={() => {
+                      setHoveredCategory(cat.name);
+                      openTransactionList({ type: 'category', category: cat.name }, anchorRef);
+                    }}
                     style={{
                       filter: isHovered ? 'brightness(1.08) saturate(1.05)' : 'none',
                       cursor: 'pointer',

@@ -16,6 +16,13 @@ mock.module('@/context/ThemeContext', () => ({
   useTheme: mockUseTheme,
 }));
 
+mock.module('@/features/transactions/hooks/useTransactionListLauncher', () => ({
+  useTransactionListLauncher: mock(() => ({
+    openTransactionList: mock(() => {}),
+    close: mock(() => {}),
+  })),
+}));
+
 import { SpendingByCategoryChart } from '@/features/analytics/components/SpendingByCategoryChart';
 
 describe('SpendingByCategoryChart', () => {
