@@ -11,6 +11,7 @@ import {
   EnrollPasskeyScreen,
   type PendingPasskeyRecoveryEnrollment,
 } from './features/auth/EnrollPasskeyScreen';
+import { TransactionListLauncherProvider } from './features/transactions/components/TransactionListLauncherProvider';
 import { AccountFilterProvider } from './hooks/useAccountFilter';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { TelemetryProvider, TelemetryService } from './observability';
@@ -256,12 +257,14 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
       onLogout={handleLogout}
     >
       <AccountFilterProvider key={`filter-${mainAppKey}`}>
-        <AuthenticatedApp
-          key={`app-${mainAppKey}`}
-          onLogout={handleLogout}
-          initialTab={initialTab}
-          isOnline={isOnline}
-        />
+        <TransactionListLauncherProvider>
+          <AuthenticatedApp
+            key={`app-${mainAppKey}`}
+            onLogout={handleLogout}
+            initialTab={initialTab}
+            isOnline={isOnline}
+          />
+        </TransactionListLauncherProvider>
       </AccountFilterProvider>
       <EnrollPasskeyScreen
         isOpen={showEnrollmentModal}

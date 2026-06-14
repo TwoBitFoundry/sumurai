@@ -174,11 +174,11 @@ Do not add silently-ignored `sort`/`order` to the handler — add them only when
 - Test `TransactionListPopover.test.tsx`: assert mode switch (desktop Popover vs mobile drawer) only, per `CategoryPicker.test.tsx` (do not assert rendered virtual rows in happy-dom).
 
 **Acceptance criteria**
-- [ ] `openTransactionList(context, anchorEl)` opens a desktop popover or mobile drawer with a scrollable, correctly scoped list.
-- [ ] Merchant context returns the exact merchant; budget/category context matches the category; account context matches the accounts.
-- [ ] The popover's virtualized list initializes correctly despite the open/enter animation (measurement-gating).
-- [ ] One shared popover instance is mounted (provider), in the authenticated subtree only.
-- [ ] `TransactionListPopover.test.tsx` passes; `typecheck` passes.
+- [x] `openTransactionList(context, anchorEl)` opens a desktop popover or mobile drawer with a scrollable, correctly scoped list.
+- [x] Merchant context returns the exact merchant; budget/category context matches the category; account context matches the accounts.
+- [x] The popover's virtualized list initializes correctly despite the open/enter animation (measurement-gating).
+- [x] One shared popover instance is mounted (provider), in the authenticated subtree only.
+- [x] `TransactionListPopover.test.tsx` passes; `typecheck` passes.
 
 ## Phase 6 — Wire launcher into nested card surfaces
 
