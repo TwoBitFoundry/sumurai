@@ -136,7 +136,8 @@ describe('useInfiniteTransactions', () => {
   it('resets to fresh query when filters change', async () => {
     jest
       .mocked(TransactionService.getTransactionsPage)
-      .mockResolvedValue(makePage(['tx1'], 'cur1', true));
+      .mockResolvedValueOnce(makePage(['tx-food'], 'cur1', true))
+      .mockResolvedValueOnce(makePage(['tx-travel'], null, false));
 
     const { result, rerender } = renderHook(
       ({ filters }: { filters: Parameters<typeof useInfiniteTransactions>[0] }) =>
@@ -147,17 +148,16 @@ describe('useInfiniteTransactions', () => {
       }
     );
 
-    await waitFor(() => expect(result.current.rows.length).toBe(1));
+    await waitFor(() => expect(result.current.rows.map((row) => row.id)).toEqual(['tx-food']));
 
     const foodCall = jest.mocked(TransactionService.getTransactionsPage).mock.calls[0]?.[0];
     expect(foodCall?.categoryPrimary).toBe('FOOD');
 
     rerender({ filters: { categoryPrimary: 'TRAVEL' } });
 
-    await waitFor(() => {
-      const calls = jest.mocked(TransactionService.getTransactionsPage).mock.calls;
-      return calls.some((c) => c[0]?.categoryPrimary === 'TRAVEL');
-    });
+    expect(result.current.rows.map((row) => row.id)).toEqual(['tx-food']);
+
+    await waitFor(() => expect(result.current.rows.map((row) => row.id)).toEqual(['tx-travel']));
 
     const travelCall = jest
       .mocked(TransactionService.getTransactionsPage)

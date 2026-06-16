@@ -10,7 +10,9 @@ import {
   BudgetMonthPillSlider,
 } from '@/features/budgets/components/BudgetMonthPillSlider';
 import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
+import { TransactionsFilters } from '@/features/transactions/components/TransactionsFilters';
 import { TransactionsSearchBar } from '@/features/transactions/components/TransactionsSearchBar';
+import { useCategories } from '@/features/transactions/hooks/useCategories';
 import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { Alert, cn } from '@/ui/primitives';
@@ -60,6 +62,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   };
   const budgetMonth = useBudgetMonth();
   const transactionFilters = useTransactionFilterState();
+  const { filterCategories, custom: customCategories } = useCategories();
   const { setSelectedAccountIds } = useAccountFilter();
 
   const handleTabChange = (next: TabKey) => {
@@ -93,11 +96,32 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
 
   const bottomBarContent =
     tab === 'dashboard' ? (
-      <BottomContextualBar topContent={<DateRangeLabelPill dateRange={dateRange} />}>
+      <BottomContextualBar
+        topContent={
+          <div className={cn('flex', 'w-full', 'justify-center')}>
+            <DateRangeLabelPill dateRange={dateRange} />
+          </div>
+        }
+      >
         <DateRangePillSlider dateRange={dateRange} onChange={setDateRange} />
       </BottomContextualBar>
     ) : tab === 'transactions' ? (
-      <BottomContextualBar>
+      <BottomContextualBar
+        topContent={
+          <TransactionsFilters
+            search={transactionFilters.search}
+            onSearch={transactionFilters.setSearch}
+            categories={filterCategories}
+            customCategories={customCategories}
+            selectedCategory={transactionFilters.selectedCategory}
+            onSelectCategory={transactionFilters.setSelectedCategory}
+            showSearch={false}
+            showCategories
+            showFilterLabel={false}
+            layout="inline"
+          />
+        }
+      >
         <TransactionsSearchBar
           search={transactionFilters.search}
           onSearch={transactionFilters.setSearch}
@@ -105,7 +129,11 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
       </BottomContextualBar>
     ) : tab === 'budgets' ? (
       <BottomContextualBar
-        topContent={<BudgetMonthLabelPill monthLabel={budgetMonth.monthLabel} />}
+        topContent={
+          <div className={cn('flex', 'w-full', 'justify-center')}>
+            <BudgetMonthLabelPill monthLabel={budgetMonth.monthLabel} />
+          </div>
+        }
       >
         <BudgetMonthPillSlider
           onPreviousMonth={budgetMonth.goToPreviousMonth}

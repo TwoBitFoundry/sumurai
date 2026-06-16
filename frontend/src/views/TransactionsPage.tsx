@@ -15,9 +15,7 @@ import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToa
 import { useAutoCategorization } from '../features/auto-categorization/hooks/useAutoCategorization';
 import CategoryCatalogPicker from '../features/transactions/components/CategoryCatalogPicker';
 import { TransactionInsightsPanel } from '../features/transactions/components/TransactionInsightsPanel';
-import TransactionsToolbar from '../features/transactions/components/TransactionsToolbar';
 import VirtualizedTransactionList from '../features/transactions/components/VirtualizedTransactionList';
-import { useCategories } from '../features/transactions/hooks/useCategories';
 import type { TransactionFilterControl } from '../features/transactions/hooks/useTransactionFilterState';
 import { useTransactionsContextualInsights } from '../features/transactions/hooks/useTransactionsContextualInsights';
 import { resolveAccountFilterToggle } from '../features/transactions/utils/resolveAccountFilterToggle';
@@ -48,7 +46,6 @@ const TransactionsPage: React.FC<{
   const { pinnedToast, transients, dismissTransient, dismissPinned, pushToast } =
     useAccountsToastStack(autoCategorization.job);
 
-  const { filterCategories: categories, custom } = useCategories();
   const addCategoryButtonRef = useRef<HTMLButtonElement>(null);
   const [isCategoryCatalogOpen, setIsCategoryCatalogOpen] = useState(false);
 
@@ -190,14 +187,6 @@ const TransactionsPage: React.FC<{
                 setSelectedCategory(null);
               }
             }}
-          />
-          <TransactionsToolbar
-            search={search}
-            onSearch={setSearch}
-            categories={categories}
-            customCategories={custom}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
           />
           <VirtualizedTransactionList
             filters={filters}

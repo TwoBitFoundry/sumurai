@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { BottomContextualBar } from '@/components/BottomContextualBar';
+import { TransactionsFilters } from '@/features/transactions/components/TransactionsFilters';
 import { TransactionsSearchBar } from '@/features/transactions/components/TransactionsSearchBar';
 import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
@@ -55,11 +56,26 @@ const handlers = [
 
 function TransactionsJourney() {
   const filterControl = useTransactionFilterState();
+  const categories = ['Food & Drink', 'Merchandise', 'Services', 'Bills', 'Subscriptions'];
   return (
     <AccountFilterStoryProvider>
       <StoryApiScope handlers={handlers}>
         <TransactionsPage filterControl={filterControl} />
-        <BottomContextualBar>
+        <BottomContextualBar
+          topContent={
+            <TransactionsFilters
+              search={filterControl.search}
+              onSearch={filterControl.setSearch}
+              categories={categories}
+              selectedCategory={filterControl.selectedCategory}
+              onSelectCategory={filterControl.setSelectedCategory}
+              showSearch={false}
+              showCategories
+              showFilterLabel={false}
+              layout="inline"
+            />
+          }
+        >
           <TransactionsSearchBar search={filterControl.search} onSearch={filterControl.setSearch} />
         </BottomContextualBar>
       </StoryApiScope>
@@ -97,9 +113,9 @@ export const Journey: Story = {
       { timeout: storyInteractionTimeoutMs }
     );
 
-    const toolbar = page.getByTestId('transactions-toolbar');
+    const filters = canvas.getByTestId('transactions-filters');
     const category = await waitFor(
-      () => within(toolbar).getByRole('button', { name: /food & drink/i }),
+      () => within(filters).getByRole('button', { name: /food & drink/i }),
       { timeout: storyInteractionTimeoutMs }
     );
     await userEvent.click(category);

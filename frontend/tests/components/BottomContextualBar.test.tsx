@@ -25,7 +25,7 @@ describe('BottomContextualBar', () => {
     expect(bar).toContainElement(controls);
   });
 
-  it('renders top content centered across the full bar width', () => {
+  it('renders top content edge to edge across the full bar width', () => {
     render(
       <BottomContextualBar topContent={<div data-testid="top-content">Range</div>}>
         <div data-testid="contextual-menu">Menu</div>
@@ -33,7 +33,8 @@ describe('BottomContextualBar', () => {
     );
 
     const topRow = screen.getByTestId('bottom-contextual-bar-top');
-    expect(topRow.className).toContain('justify-center');
+    expect(topRow.className).toContain('w-full');
+    expect(topRow.className).not.toContain('overflow-hidden');
     expect(topRow).toContainElement(screen.getByTestId('top-content'));
   });
 });

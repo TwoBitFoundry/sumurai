@@ -38,7 +38,11 @@ export function AppLayout({
     useFloatingChromeFooterVisibility(showFooter);
 
   const bottomBarRow = (
-    <div className={cn(floatingVisible && 'pointer-events-auto')}>{bottomBarContent}</div>
+    <div
+      className={cn('w-full', 'min-w-0', 'max-w-full', floatingVisible && 'pointer-events-auto')}
+    >
+      {bottomBarContent}
+    </div>
   );
 
   return (
@@ -87,6 +91,8 @@ export function AppLayout({
             <div
               className={cn(
                 'flex',
+                'w-full',
+                'min-w-0',
                 'min-h-[3.25rem]',
                 'justify-center',
                 'pointer-events-none',

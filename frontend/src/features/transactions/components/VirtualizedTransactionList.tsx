@@ -25,7 +25,14 @@ interface Props {
   onAccountFilter?: (accountId: string) => void;
 }
 
-const OVERSCAN = 5;
+const OVERSCAN = 10;
+
+const virtualItemShellStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
+};
 
 export const VirtualizedTransactionList: React.FC<Props> = ({
   filters,
@@ -48,14 +55,16 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
   const [openRowIndex, setOpenRowIndex] = useState<number | null>(null);
 
   useEffect(() => {
+    if (variant !== 'contextual') return;
     const el = scrollRef.current;
     if (!el) return;
     const observer = new ResizeObserver(([entry]) => {
       setContainerHeight(entry?.contentRect.height ?? 0);
     });
     observer.observe(el);
+    setContainerHeight(el.getBoundingClientRect().height);
     return () => observer.disconnect();
-  }, []);
+  }, [variant]);
 
   useEffect(() => {
     if (variant !== 'page') return;
@@ -126,6 +135,7 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
     getScrollElement: () => scrollRef.current,
     estimateSize: () => rowH,
     overscan: OVERSCAN,
+    directDomUpdates: true,
     rangeExtractor,
   });
 
@@ -159,7 +169,11 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
     <div
       role="region"
       aria-label="Transaction list"
-      className={cn('relative flex flex-col', isContextual && 'min-h-0 flex-1', className)}
+      className={cn(
+        'flex flex-col',
+        isContextual ? 'absolute inset-0 min-h-0' : 'relative',
+        className
+      )}
     >
       {showDesktopLayout && (
         <div
@@ -229,25 +243,23 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
             )}
           </div>
         ) : (
-          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+          <div ref={virtualizer.containerRef} style={{ position: 'relative', width: '100%' }}>
             {virtualItems.map((item) => {
               const isSentinel = item.index >= rows.length;
               const row = rows[item.index];
-              const style: React.CSSProperties = {
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
+              const itemStyle: React.CSSProperties = {
+                ...virtualItemShellStyle,
                 height: `${item.size}px`,
-                transform: `translateY(${item.start}px)`,
               };
 
               if (isSentinel) {
                 return (
                   <div
-                    key="sentinel"
+                    key={item.key}
+                    ref={virtualizer.measureElement}
+                    data-index={item.index}
                     aria-hidden="true"
-                    style={style}
+                    style={itemStyle}
                     className={cn(
                       transactionsRowRecipes.placeholder,
                       showDesktopLayout
@@ -261,30 +273,35 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
 
               if (!row) return null;
 
-              return showDesktopLayout ? (
-                <DesktopTransactionRow
-                  key={row.id}
-                  transaction={row}
-                  index={item.index}
-                  style={style}
-                  readOnly={readOnly}
-                  onCategoryOpen={setOpenRowIndex}
-                  onCategoryClose={() => setOpenRowIndex(null)}
-                  onMerchantSearch={merchantSearchHandler}
-                  onAccountFilter={accountFilterHandler}
-                />
-              ) : (
-                <MobileTransactionRow
-                  key={row.id}
-                  transaction={row}
-                  index={item.index}
-                  style={style}
-                  readOnly={readOnly}
-                  onCategoryOpen={setOpenRowIndex}
-                  onCategoryClose={() => setOpenRowIndex(null)}
-                  onMerchantSearch={merchantSearchHandler}
-                  onAccountFilter={accountFilterHandler}
-                />
+              return (
+                <div
+                  key={item.key}
+                  ref={virtualizer.measureElement}
+                  data-index={item.index}
+                  style={itemStyle}
+                >
+                  {showDesktopLayout ? (
+                    <DesktopTransactionRow
+                      transaction={row}
+                      index={item.index}
+                      readOnly={readOnly}
+                      onCategoryOpen={setOpenRowIndex}
+                      onCategoryClose={() => setOpenRowIndex(null)}
+                      onMerchantSearch={merchantSearchHandler}
+                      onAccountFilter={accountFilterHandler}
+                    />
+                  ) : (
+                    <MobileTransactionRow
+                      transaction={row}
+                      index={item.index}
+                      readOnly={readOnly}
+                      onCategoryOpen={setOpenRowIndex}
+                      onCategoryClose={() => setOpenRowIndex(null)}
+                      onMerchantSearch={merchantSearchHandler}
+                      onAccountFilter={accountFilterHandler}
+                    />
+                  )}
+                </div>
               );
             })}
           </div>

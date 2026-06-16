@@ -18,7 +18,10 @@ import type { BackendAccount } from '../domain/AccountNormalizer';
 import { ProviderCatalog } from '../services/ProviderCatalog';
 import { TellerService } from '../services/TellerService';
 import { dispatchAccountsChanged } from '../utils/events';
-import { invalidateStaleCacheQueries } from '../utils/queryInvalidation';
+import {
+  type InvalidateStaleCacheOptions,
+  invalidateStaleCacheQueries,
+} from '../utils/queryInvalidation';
 import type { PlaidConnection } from './usePlaidConnections';
 
 export interface UseTellerLinkFlowOptions {
@@ -250,9 +253,12 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
     }
   }, [enabled, onError]);
 
-  const invalidateTellerCache = useCallback(() => {
-    return invalidateStaleCacheQueries(queryClient, ['teller']);
-  }, [queryClient]);
+  const invalidateTellerCache = useCallback(
+    (options?: InvalidateStaleCacheOptions) => {
+      return invalidateStaleCacheQueries(queryClient, ['teller'], options);
+    },
+    [queryClient]
+  );
 
   const loadConnectionsWithRetry = useCallback(async () => {
     const result = await connectionsQuery.refetch();
@@ -414,7 +420,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       clearError();
       try {
         await TellerService.syncTransactions(connectionId);
-        await invalidateTellerCache();
+        await invalidateTellerCache({ resetTransactions: 'reset' });
         setToast('Sync started for Teller connection');
       } catch (err) {
         console.warn('Failed to sync Teller connection', err);
@@ -442,7 +448,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       }
 
       await Promise.all(ids.map((id) => TellerService.syncTransactions(id)));
-      await invalidateTellerCache();
+      await invalidateTellerCache({ resetTransactions: 'reset' });
       setToast('Sync started for all Teller connections');
     } catch (err) {
       console.warn('Failed to sync Teller connections', err);
@@ -461,7 +467,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       clearError();
       try {
         await TellerService.disconnect(connectionId);
-        await invalidateTellerCache();
+        await invalidateTellerCache({ resetTransactions: 'remove' });
         setToast('Disconnected Teller connection');
       } catch (err) {
         console.warn('Failed to disconnect Teller connection', err);

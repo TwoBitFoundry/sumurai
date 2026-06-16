@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { TransactionService } from '../../../services/TransactionService';
 import type { Transaction } from '../../../types/api';
@@ -43,6 +43,7 @@ export function useInfiniteTransactions(
       });
     },
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
+    placeholderData: keepPreviousData,
     staleTime: 60 * 1000,
     gcTime: 60 * 1000,
     enabled: accountsReady || resolvedFilters.accountIds?.length === 0,

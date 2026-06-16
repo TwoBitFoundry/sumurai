@@ -3,8 +3,16 @@
  */
 
 import type { QueryClient } from '@tanstack/react-query';
+import {
+  resetTransactionQueries,
+  type TransactionQueryResetMode,
+} from '@/features/transactions/utils/transactionQueryCache';
 
 export type SyncProvider = 'plaid' | 'teller' | 'simplefin';
+
+export type InvalidateStaleCacheOptions = {
+  resetTransactions?: TransactionQueryResetMode;
+};
 
 const BASE_QUERY_KEYS = [['accounts'], ['transactions'], ['analytics'], ['budgets']] as const;
 
@@ -16,8 +24,13 @@ const CONNECTION_QUERY_KEYS: Record<SyncProvider, readonly [string, string]> = {
 
 export async function invalidateStaleCacheQueries(
   queryClient: QueryClient,
-  providers: SyncProvider[]
+  providers: SyncProvider[],
+  options?: InvalidateStaleCacheOptions
 ): Promise<void> {
+  if (options?.resetTransactions) {
+    await resetTransactionQueries(queryClient, options.resetTransactions);
+  }
+
   const providerKeys = Array.from(new Set(providers)).map(
     (provider) => CONNECTION_QUERY_KEYS[provider]
   );
@@ -30,9 +43,10 @@ export async function invalidateStaleCacheQueries(
 
 export async function refreshFinancialDataAfterProviderChange(
   queryClient: QueryClient,
-  providers: SyncProvider[]
+  providers: SyncProvider[],
+  options?: InvalidateStaleCacheOptions
 ): Promise<void> {
-  await invalidateStaleCacheQueries(queryClient, providers);
+  await invalidateStaleCacheQueries(queryClient, providers, options);
   await queryClient.refetchQueries({ queryKey: ['accounts'], type: 'active' });
 }
 

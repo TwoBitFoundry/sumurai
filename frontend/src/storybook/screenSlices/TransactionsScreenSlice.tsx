@@ -1,7 +1,6 @@
 import { AlertTriangle, ReceiptText, RefreshCcw, TrendingUp } from 'lucide-react';
 import { useMemo } from 'react';
 import HeroStatCard from '@/components/widgets/HeroStatCard';
-import TransactionsToolbar from '@/features/transactions/components/TransactionsToolbar';
 import VirtualizedTransactionList from '@/features/transactions/components/VirtualizedTransactionList';
 import { PageLayout } from '@/layouts/PageLayout';
 import { transactionsTablePage } from '@/storybook/fixtures/transactions';
@@ -190,13 +189,6 @@ export function TransactionsScreenSlice(props: {
                 Transactions
               </h2>
             </div>
-            <TransactionsToolbar
-              search="coffee"
-              onSearch={() => {}}
-              categories={categories}
-              selectedCategory="Food"
-              onSelectCategory={() => {}}
-            />
             <VirtualizedTransactionList filters={filters} variant="page" />
           </GlassCard>
         </PageLayout>

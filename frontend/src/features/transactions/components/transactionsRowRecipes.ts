@@ -1,3 +1,9 @@
+import {
+  border as semanticBorders,
+  effect as uiEffectRecipes,
+  surface as uiSurfaceRecipes,
+} from '@/ui/recipes';
+
 export const transactionsRowRecipes = {
   shell: [
     'group relative rounded-md border-b border-slate-200/70 transition-[box-shadow,colors] duration-150 ease-out',
@@ -47,6 +53,13 @@ export const transactionsRowRecipes = {
     'hover:!translate-y-0',
   ],
   categoryFilterPill: ['px-2', 'py-0'],
+  contextualFilterChipGlass: [
+    ...uiEffectRecipes.glassBackdrop,
+    'border',
+    ...uiSurfaceRecipes.floatingChromePanel,
+    ...semanticBorders.floatingChrome,
+  ],
+  contextualFilterScroll: ['py-1.5'],
   categoryLabel: ['min-w-0', 'flex-1', 'truncate', 'text-right'],
   categoryLabelReadOnly: ['truncate', 'text-right'],
   categoryChevron: ['ml-1', 'shrink-0'],

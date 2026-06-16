@@ -121,7 +121,9 @@ export function useImportTransactions(accountId: string): UseImportTransactionsR
       try {
         const result = await ImportService.importFile(fileToImport, accountId, mappingToImport);
         setImportResult(result);
-        await invalidateStaleCacheQueries(queryClient, ['plaid', 'teller']);
+        await invalidateStaleCacheQueries(queryClient, ['plaid', 'teller'], {
+          resetTransactions: 'reset',
+        });
         setStatus('success');
         return result;
       } catch (err: unknown) {

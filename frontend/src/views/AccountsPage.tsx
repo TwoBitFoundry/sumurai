@@ -36,6 +36,7 @@ import { dispatchAccountsChanged } from '../utils/events';
 import { formatUserFacingApiError } from '../utils/formatUserFacingApiError';
 import { getProviderCardConfig, getProviderLogoSrc } from '../utils/providerCards';
 import {
+  type InvalidateStaleCacheOptions,
   refreshFinancialDataAfterProviderChange,
   type SyncProvider,
 } from '../utils/queryInvalidation';
@@ -260,8 +261,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const ignoredInstitutions = ignoredInstitutionsQuery.data ?? [];
   const showSimpleFinIgnoredList = simpleFinEmptyStateActive && ignoredInstitutions.length > 0;
   const refreshBankData = useCallback(
-    async (provider: SyncProvider) => {
-      await refreshFinancialDataAfterProviderChange(queryClient, [provider]);
+    async (provider: SyncProvider, options?: InvalidateStaleCacheOptions) => {
+      await refreshFinancialDataAfterProviderChange(queryClient, [provider], options);
     },
     [queryClient]
   );
@@ -481,7 +482,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           const result = await PlaidService.syncTransactions(bank.connectionId);
           count = result.transactions.length;
         }
-        await refreshBankData(bank.provider);
+        await refreshBankData(bank.provider, { resetTransactions: 'reset' });
         setSyncInstitutionRow({
           ...startRow,
           status: 'synced',
@@ -516,7 +517,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         } else {
           await PlaidService.disconnect(bank.connectionId);
         }
-        await refreshBankData(bank.provider);
+        await refreshBankData(bank.provider, { resetTransactions: 'remove' });
         dispatchAccountsChanged();
         if (disconnectingLastBank) {
           queryClient.setQueryData<ProviderCatalogue>(['provider', 'catalog'], (prev) =>
@@ -562,7 +563,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           queryKey: ['simplefin', 'ignored-institutions'],
           type: 'active',
         });
-        await refreshBankData('simplefin');
+        await refreshBankData('simplefin', { resetTransactions: 'remove' });
         dispatchAccountsChanged();
         connectionFlow.setError(null);
         onError?.(null);

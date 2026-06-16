@@ -94,6 +94,18 @@ export function CollapsibleSection({
     </div>
   );
 
+  const chevronToggleButton = (className?: string) => (
+    <button
+      type="button"
+      onClick={toggleExpanded}
+      aria-hidden="true"
+      tabIndex={-1}
+      className={cn('cursor-pointer', 'pointer-events-auto', className)}
+    >
+      {chevron}
+    </button>
+  );
+
   return (
     <section className={cn('space-y-4')} data-testid={testId}>
       {hasSplitActions ? (
@@ -116,10 +128,10 @@ export function CollapsibleSection({
                   'items-center',
                   'gap-x-2',
                   'gap-y-2',
-                  'md:flex-nowrap'
+                  'lg:flex-nowrap'
                 )}
               >
-                <div className={cn('flex', 'min-w-0', 'w-full', 'flex-1', 'flex-col', 'md:w-auto')}>
+                <div className={cn('flex', 'min-w-0', 'w-full', 'flex-1', 'flex-col', 'lg:w-auto')}>
                   {titleRow}
                   {description ? (
                     <p
@@ -137,27 +149,38 @@ export function CollapsibleSection({
                 {actionsStart != null || actionsEnd != null ? (
                   <div
                     className={cn(
-                      'pointer-events-auto',
+                      'relative',
                       'flex',
                       'w-full',
                       'items-center',
+                      'justify-between',
                       'gap-2',
-                      'md:ml-auto',
-                      'md:w-auto',
-                      'md:justify-end'
+                      'lg:ml-auto',
+                      'lg:w-auto',
+                      'lg:justify-end'
                     )}
                   >
-                    {actionsStart}
-                    <div className={cn('flex', 'flex-1', 'justify-center', 'md:hidden')}>
-                      {chevron}
+                    {actionsStart != null ? (
+                      <div className={cn('relative', 'z-10', 'shrink-0', 'pointer-events-auto')}>
+                        {actionsStart}
+                      </div>
+                    ) : null}
+                    <div
+                      className={cn('absolute', 'inset-x-0', 'flex', 'justify-center', 'lg:hidden')}
+                    >
+                      {chevronToggleButton(cn('flex', 'justify-center'))}
                     </div>
-                    {actionsEnd}
+                    {actionsEnd != null ? (
+                      <div className={cn('relative', 'z-10', 'shrink-0', 'pointer-events-auto')}>
+                        {actionsEnd}
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
             </div>
-            <div className={cn('mt-2', 'hidden', 'justify-center', 'pb-1', 'md:flex')}>
-              {chevron}
+            <div className={cn('mt-2', 'hidden', 'justify-center', 'pb-1', 'lg:flex')}>
+              {chevronToggleButton(cn('flex', 'w-full', 'justify-center'))}
             </div>
           </div>
         </div>

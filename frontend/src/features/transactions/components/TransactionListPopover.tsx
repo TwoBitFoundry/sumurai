@@ -110,7 +110,7 @@ export function TransactionListPopover({ open, anchorRef, context, onRequestClos
             </div>
           </ModalDrawerHeader>
         </div>
-        <div className={cn('min-h-0 flex-1 overflow-hidden')}>
+        <div className={cn('relative min-h-0 flex-1 overflow-hidden')}>
           <VirtualizedTransactionList filters={filters} variant="contextual" />
         </div>
       </section>
@@ -186,6 +186,8 @@ export function TransactionListPopover({ open, anchorRef, context, onRequestClos
             ...floatingChromeGlass.shell,
             ...floatingChromeGlass.backdrop,
             'p-4',
+            'flex',
+            'h-[min(50dvh,32rem)]',
             'max-h-[min(50dvh,32rem)]',
             'overflow-hidden'
           )}

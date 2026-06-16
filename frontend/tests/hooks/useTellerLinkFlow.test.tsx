@@ -196,7 +196,11 @@ describe('useTellerLinkFlow', () => {
     });
 
     await waitFor(() => {
-      expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(expect.anything(), ['teller']);
+      expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(
+        expect.anything(),
+        ['teller'],
+        undefined
+      );
     });
   });
 

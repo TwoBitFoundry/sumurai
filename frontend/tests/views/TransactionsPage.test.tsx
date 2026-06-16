@@ -68,11 +68,6 @@ jest.mock('@/features/transactions/components/TransactionInsightsPanel', () => (
   ),
 }));
 
-jest.mock('@/features/transactions/components/TransactionsToolbar', () => ({
-  __esModule: true,
-  default: () => <div data-testid="transactions-toolbar" />,
-}));
-
 jest.mock('@/features/transactions/components/VirtualizedTransactionList', () => ({
   __esModule: true,
   default: () => <div data-testid="virtualized-transaction-list" />,

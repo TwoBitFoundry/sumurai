@@ -100,17 +100,15 @@ jest.mock('@/features/transactions/hooks/useTransactionFilterState', () => ({
   }),
 }));
 
-jest.mock('@/features/transactions/hooks/useTransactions', () => ({
-  useTransactions: () => ({
-    currentPage: 1,
-    totalPages: 3,
-  }),
-}));
-
-jest.mock('@/features/transactions/hooks/useTransactionCategories', () => ({
-  useTransactionCategories: () => ({
-    categories: ['food_and_drink'],
-    loading: false,
+jest.mock('@/features/transactions/hooks/useCategories', () => ({
+  useCategories: () => ({
+    filterCategories: ['FOOD_AND_DRINK', 'BILLS'],
+    custom: [],
+    system: [],
+    all: [],
+    accentIndexByName: new Map(),
+    isLoading: false,
+    error: null,
   }),
 }));
 
@@ -139,10 +137,12 @@ describe('AuthenticatedApp', () => {
     expect(screen.getByText('Budgets')).toBeInTheDocument();
   });
 
-  it('renders transaction search in the bottom bar for the transactions tab', () => {
+  it('renders transaction search and category filters in the bottom bar for the transactions tab', () => {
     render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="transactions" />);
 
     expect(screen.getByTestId('transactions-search-bar')).toBeInTheDocument();
+    expect(screen.getByTestId('transactions-filters')).toBeInTheDocument();
+    expect(screen.getByTestId('bottom-contextual-bar-top')).toBeInTheDocument();
     expect(screen.getByText('Transactions')).toBeInTheDocument();
   });
 
