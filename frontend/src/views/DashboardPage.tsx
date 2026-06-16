@@ -1,6 +1,6 @@
 import { TrendingUp } from 'lucide-react';
 import type { CSSProperties } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { cn, EmptyState, Pill } from '@/ui/primitives';
@@ -33,6 +33,7 @@ import { useChartContainerSize } from '../features/analytics/hooks/useChartConta
 import { useDebouncedChartRecalc } from '../features/analytics/hooks/useDebouncedChartRecalc';
 import { useBudgets } from '../features/budgets/hooks/useBudgets';
 import { useCategories } from '../features/transactions/hooks/useCategories';
+import { useTransactionListLauncher } from '../features/transactions/hooks/useTransactionListLauncher';
 import { PageLayout } from '../layouts/PageLayout';
 import type { DateRangeKey as DateRange } from '../utils/dateRanges';
 import { fmtUSD } from '../utils/format';
@@ -46,6 +47,71 @@ const dashboardLoadingCard = [
 const dashboardCategoryHoverRingStyle = {
   boxShadow: `inset 0 0 0 2px ${heroAccents.violet.ringHex}`,
 } as CSSProperties;
+
+interface CategoryCardProps {
+  cat: { name: string; categoryKey: string; value: number };
+  percentage: string;
+  isHovered: boolean;
+  accentIndexByName: ReadonlyMap<string, number>;
+  onHover: (name: string | null) => void;
+}
+
+const CategoryCard: React.FC<CategoryCardProps> = ({
+  cat,
+  percentage,
+  isHovered,
+  accentIndexByName,
+  onHover,
+}) => {
+  const cardRef = useRef<HTMLButtonElement>(null);
+  const { openTransactionList } = useTransactionListLauncher();
+
+  return (
+    <button
+      ref={cardRef}
+      key={`topcard-${cat.name}`}
+      type="button"
+      className={cn(
+        heroStatCardRecipes.base,
+        'w-full',
+        'p-2',
+        dashboardCategoryCard.shell,
+        'overflow-hidden'
+      )}
+      onMouseEnter={() => onHover(cat.name)}
+      onMouseLeave={() => onHover(null)}
+      onClick={() => openTransactionList({ type: 'category', category: cat.categoryKey }, cardRef)}
+    >
+      <div
+        aria-hidden
+        className={cn(
+          ...dashboardCategoryCard.insetRing,
+          isHovered && dashboardCategoryCard.insetRingActive
+        )}
+        style={dashboardCategoryHoverRingStyle}
+      />
+      <div className={cn('relative', 'z-10', dashboardCategoryCard.metricRow)}>
+        <Pill
+          categoryName={cat.categoryKey}
+          accentIndexByName={accentIndexByName}
+          className={cn('min-w-0', 'truncate')}
+        >
+          {cat.name}
+        </Pill>
+        <div className={cn(dashboardCategoryCard.metricCluster)}>
+          <span
+            className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary, 'tabular-nums')}
+          >
+            {fmtUSD(cat.value)}
+          </span>
+          <span className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+            {percentage}%
+          </span>
+        </div>
+      </div>
+    </button>
+  );
+};
 
 const DashboardPage: React.FC<{
   dateRange: DateRange;
@@ -187,58 +253,15 @@ const DashboardPage: React.FC<{
                         return top.map((cat) => {
                           const percentage =
                             categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
-                          const isHovered = hoveredCategory === cat.name;
                           return (
-                            <button
+                            <CategoryCard
                               key={`topcard-${cat.name}`}
-                              type="button"
-                              className={cn(
-                                heroStatCardRecipes.base,
-                                'w-full',
-                                'p-2',
-                                dashboardCategoryCard.shell,
-                                'overflow-hidden'
-                              )}
-                              onMouseEnter={() => handleCategoryHover(cat.name)}
-                              onMouseLeave={() => handleCategoryHover(null)}
-                              onClick={() => handleCategoryHover(cat.name)}
-                            >
-                              <div
-                                aria-hidden
-                                className={cn(
-                                  ...dashboardCategoryCard.insetRing,
-                                  isHovered && dashboardCategoryCard.insetRingActive
-                                )}
-                                style={dashboardCategoryHoverRingStyle}
-                              />
-                              <div
-                                className={cn('relative', 'z-10', dashboardCategoryCard.metricRow)}
-                              >
-                                <Pill
-                                  categoryName={cat.categoryKey}
-                                  accentIndexByName={accentIndexByName}
-                                  className={cn('min-w-0', 'truncate')}
-                                >
-                                  {cat.name}
-                                </Pill>
-                                <div className={cn(dashboardCategoryCard.metricCluster)}>
-                                  <span
-                                    className={cn(
-                                      uiTypographyRecipes.cardTitle,
-                                      uiTextRecipes.primary,
-                                      'tabular-nums'
-                                    )}
-                                  >
-                                    {fmtUSD(cat.value)}
-                                  </span>
-                                  <span
-                                    className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}
-                                  >
-                                    {percentage}%
-                                  </span>
-                                </div>
-                              </div>
-                            </button>
+                              cat={cat}
+                              percentage={percentage}
+                              isHovered={hoveredCategory === cat.name}
+                              accentIndexByName={accentIndexByName}
+                              onHover={handleCategoryHover}
+                            />
                           );
                         });
                       })()}

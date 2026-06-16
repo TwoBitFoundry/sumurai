@@ -38,6 +38,9 @@ export function useTransactionFilters(filters: TransactionWindowFilters): Transa
   const searchKey = debouncedSearch.trim().toLowerCase();
   const accountKey = selectedAccountIds.join(',');
 
+  const explicitAccountIds =
+    filters.accountIds && filters.accountIds.length > 0 ? filters.accountIds : undefined;
+
   const filterKey = useMemo(() => {
     return [
       searchKey,
@@ -45,9 +48,9 @@ export function useTransactionFilters(filters: TransactionWindowFilters): Transa
       filters.startDate ?? '',
       filters.endDate ?? '',
       filters.merchant ?? '',
-      accountKey,
+      explicitAccountIds?.join(',') ?? accountKey,
       allAccountIds.join(','),
-      isAllAccountsSelected ? 'all' : 'subset',
+      explicitAccountIds ? 'explicit' : isAllAccountsSelected ? 'all' : 'subset',
     ].join('|');
   }, [
     searchKey,
@@ -55,6 +58,7 @@ export function useTransactionFilters(filters: TransactionWindowFilters): Transa
     filters.startDate,
     filters.endDate,
     filters.merchant,
+    explicitAccountIds,
     accountKey,
     allAccountIds,
     isAllAccountsSelected,
@@ -64,10 +68,12 @@ export function useTransactionFilters(filters: TransactionWindowFilters): Transa
   void cacheKey;
 
   const accountsReady =
-    !accountsLoading && (allAccountIds.length === 0 || selectedAccountIds.length > 0);
+    explicitAccountIds != null ||
+    (!accountsLoading && (allAccountIds.length === 0 || selectedAccountIds.length > 0));
 
-  const effectiveAccountIds =
-    allAccountIds.length > 0 && selectedAccountIds.length === 0
+  const effectiveAccountIds = explicitAccountIds
+    ? explicitAccountIds
+    : allAccountIds.length > 0 && selectedAccountIds.length === 0
       ? null
       : isAllAccountsSelected
         ? undefined

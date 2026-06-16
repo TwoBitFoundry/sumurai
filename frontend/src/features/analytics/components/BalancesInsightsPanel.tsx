@@ -2,6 +2,7 @@ import { ArrowDownLeft, ArrowUpRight, ChevronDown, CircleDollarSign } from 'luci
 import { type ReactNode, useState } from 'react';
 import { AccountGroupIcon } from '@/components/AccountGroupIcon';
 import { Amount } from '@/components/Amount';
+import { BalancesOverviewChart } from '@/components/BalancesOverview';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { InsightCard, type InsightTileAlign } from '@/components/widgets/InsightCard';
 import { InsightsExpandablePanel } from '@/components/widgets/InsightsExpandablePanel';
@@ -156,7 +157,7 @@ export function BalancesInsightsPanel({
             ? showYtd
               ? 'grid grid-cols-[auto_1fr_auto_auto_auto] items-baseline gap-x-2 gap-y-1.5'
               : 'flex flex-col gap-1.5'
-            : 'flex w-full flex-row items-start gap-3'
+            : 'flex w-full flex-row flex-wrap items-start gap-3'
         )}
         summary={
           <>
@@ -401,6 +402,12 @@ export function BalancesInsightsPanel({
             subgridRow={isMobile}
           />
         ))}
+        <div
+          className={cn('col-span-full', 'w-full', 'min-w-0', isMobile ? 'pt-1' : 'pt-2')}
+          data-testid="balances-insights-chart"
+        >
+          <BalancesOverviewChart />
+        </div>
       </InsightsExpandablePanel>
     </InsightsPanelShell>
   );

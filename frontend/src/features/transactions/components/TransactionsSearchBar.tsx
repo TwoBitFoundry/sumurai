@@ -1,8 +1,9 @@
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { cn, Input } from '@/ui/primitives';
 import {
   floatingChromeGlass,
   floatingChromeSearch,
+  focus as uiFocusRecipes,
   placeholder as uiPlaceholderRecipes,
   text as uiTextRecipes,
 } from '@/ui/recipes';
@@ -13,6 +14,8 @@ interface TransactionsSearchBarProps {
 }
 
 export function TransactionsSearchBar({ search, onSearch }: TransactionsSearchBarProps) {
+  const hasSearch = search.length > 0;
+
   return (
     <div
       className={cn('flex', 'w-full', 'min-w-0', 'max-w-full', 'items-center', 'gap-2')}
@@ -44,9 +47,34 @@ export function TransactionsSearchBar({ search, onSearch }: TransactionsSearchBa
             'w-full',
             'min-w-0',
             '!pl-11',
+            hasSearch && '!pr-11',
             uiPlaceholderRecipes.muted
           )}
         />
+        {hasSearch ? (
+          <button
+            type="button"
+            aria-label="Clear search"
+            onClick={() => onSearch('')}
+            className={cn(
+              'absolute',
+              'right-2.5',
+              'top-1/2',
+              'z-10',
+              '-translate-y-1/2',
+              'rounded-[length:var(--radius-standard)]',
+              'p-1',
+              uiTextRecipes.subtle,
+              'transition-colors',
+              'duration-200',
+              'hover:text-slate-700',
+              'dark:hover:text-slate-200',
+              uiFocusRecipes.visible
+            )}
+          >
+            <X className={floatingChromeSearch.glyph} aria-hidden />
+          </button>
+        ) : null}
       </div>
     </div>
   );

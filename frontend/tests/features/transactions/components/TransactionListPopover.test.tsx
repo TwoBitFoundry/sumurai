@@ -77,7 +77,7 @@ describe('TransactionListPopover', () => {
     expect(screen.queryByTestId('transaction-list-popover-sheet')).not.toBeInTheDocument();
   });
 
-  it('shows the formatted category title for a category context', () => {
+  it('shows the transactions title for a category context', () => {
     setViewport(1280);
     render(
       <TransactionListPopover
@@ -87,10 +87,10 @@ describe('TransactionListPopover', () => {
         onRequestClose={jest.fn()}
       />
     );
-    expect(screen.getByText('Food & Drink')).toBeInTheDocument();
+    expect(screen.getByText('Transactions')).toBeInTheDocument();
   });
 
-  it('shows the merchant name for a merchant context', () => {
+  it('shows the transactions title for a merchant context', () => {
     setViewport(1280);
     render(
       <TransactionListPopover
@@ -100,6 +100,6 @@ describe('TransactionListPopover', () => {
         onRequestClose={jest.fn()}
       />
     );
-    expect(screen.getByText('Whole Foods')).toBeInTheDocument();
+    expect(screen.getByText('Transactions')).toBeInTheDocument();
   });
 });

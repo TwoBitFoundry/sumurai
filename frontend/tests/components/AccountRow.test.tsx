@@ -1,4 +1,18 @@
+const openTransactionList = jest.fn();
+
+jest.mock('@/features/transactions/hooks/useTransactionListLauncher', () => ({
+  useTransactionListLauncher: () => ({
+    openTransactionList,
+    close: jest.fn(),
+  }),
+}));
+
+jest.mock('@/features/import/components/ImportModal', () => ({
+  ImportModal: () => null,
+}));
+
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { AccountRow } from '@/components/AccountRow';
 import { heroAccents } from '@/ui/tokens';
 import { ThemeTestProvider } from '../utils/ThemeTestProvider';
@@ -22,6 +36,10 @@ function renderAccountRow(transactions?: number) {
 }
 
 describe('AccountRow', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('renders transaction count with tx suffix', () => {
     renderAccountRow(95);
 
@@ -42,5 +60,28 @@ describe('AccountRow', () => {
     expect((insetRing as HTMLElement).style.boxShadow).toBe(
       `inset 0 0 0 2px ${heroAccents.violet.ringHex}`
     );
+  });
+
+  it('opens the transaction list for the account when the card is clicked', async () => {
+    const user = userEvent.setup();
+
+    renderAccountRow(12);
+
+    await user.click(screen.getByText('Everyday Checking'));
+
+    expect(openTransactionList).toHaveBeenCalledWith(
+      { type: 'account', accountId: 'acct-1' },
+      expect.objectContaining({ current: expect.any(HTMLDivElement) })
+    );
+  });
+
+  it('does not open the transaction list when import is clicked', async () => {
+    const user = userEvent.setup();
+
+    renderAccountRow(12);
+
+    await user.click(screen.getByRole('button', { name: 'Import transactions' }));
+
+    expect(openTransactionList).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,6 @@
 import { Loader2, ReceiptText, Tags, WandSparkles } from 'lucide-react';
 import type React from 'react';
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Button, cn, GlassCard, IconButton } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import {
@@ -20,6 +20,9 @@ import VirtualizedTransactionList from '../features/transactions/components/Virt
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import type { TransactionFilterControl } from '../features/transactions/hooks/useTransactionFilterState';
 import { useTransactionsContextualInsights } from '../features/transactions/hooks/useTransactionsContextualInsights';
+import { resolveAccountFilterToggle } from '../features/transactions/utils/resolveAccountFilterToggle';
+import { resolveMerchantSearchToggle } from '../features/transactions/utils/resolveMerchantSearchToggle';
+import { useAccountFilter } from '../hooks/useAccountFilter';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { PageLayout } from '../layouts/PageLayout';
 
@@ -27,6 +30,7 @@ const TransactionsPage: React.FC<{
   filterControl: TransactionFilterControl;
 }> = ({ filterControl }) => {
   const { search, setSearch, selectedCategory, setSelectedCategory } = filterControl;
+  const { selectedAccountIds, allAccountIds, setSelectedAccountIds } = useAccountFilter();
 
   const {
     insights,
@@ -53,6 +57,22 @@ const TransactionsPage: React.FC<{
     search: search || undefined,
     categoryPrimary: selectedCategory ?? undefined,
   };
+
+  const handleMerchantSearch = useCallback(
+    (merchant: string) => {
+      setSearch(resolveMerchantSearchToggle(search, merchant));
+    },
+    [search, setSearch]
+  );
+
+  const handleAccountFilter = useCallback(
+    (accountId: string) => {
+      setSelectedAccountIds(
+        resolveAccountFilterToggle(accountId, selectedAccountIds, allAccountIds)
+      );
+    },
+    [allAccountIds, selectedAccountIds, setSelectedAccountIds]
+  );
 
   const categorizeActions = (
     <div
@@ -179,7 +199,12 @@ const TransactionsPage: React.FC<{
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
           />
-          <VirtualizedTransactionList filters={filters} variant="page" />
+          <VirtualizedTransactionList
+            filters={filters}
+            variant="page"
+            onMerchantSearch={handleMerchantSearch}
+            onAccountFilter={handleAccountFilter}
+          />
         </GlassCard>
         <ToastStack
           transients={transients}

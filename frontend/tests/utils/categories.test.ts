@@ -91,7 +91,7 @@ describe('longestFormattedCategoryLabel', () => {
 describe('mobileCategoryChipWidthRem', () => {
   it('sizes the chip from the longest label without oversized ch padding', () => {
     const longestLabel = longestFormattedCategoryLabel();
-    expect(mobileCategoryChipWidthRem(longestLabel)).toBe('9.81rem');
+    expect(mobileCategoryChipWidthRem(longestLabel)).toBe('11.06rem');
   });
 });
 

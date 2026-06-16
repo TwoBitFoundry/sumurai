@@ -36,6 +36,13 @@ interface BackendPaginatedTransactionsResponse {
   page_size: number;
 }
 
+interface BackendCursorTransactionsResponse {
+  transactions: BackendTransaction[];
+  next_cursor: string | null;
+  prev_cursor: string | null;
+  has_more: boolean;
+}
+
 const DEFAULT_FETCH_PAGE_SIZE = 200;
 const DEFAULT_PAGE_SIZE = 50;
 
@@ -92,7 +99,11 @@ export class TransactionService {
     if (filters.limit != null) params.append('limit', String(filters.limit));
     const queryString = params.toString();
     const url = queryString ? `/transactions?${queryString}` : '/transactions';
-    return ApiClient.get<CursorTransactionsResponse>(url);
+    const raw = await ApiClient.get<BackendCursorTransactionsResponse>(url);
+    return {
+      ...raw,
+      transactions: raw.transactions.map((t) => TransactionTransformer.backendToFrontend(t)),
+    };
   }
 
   static async updateTransactionCategory(

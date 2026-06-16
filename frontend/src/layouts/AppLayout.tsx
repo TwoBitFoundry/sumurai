@@ -67,6 +67,7 @@ export function AppLayout({
 
         <div
           ref={floatingChromeRef}
+          data-floating-chrome
           className={cn(
             'fixed',
             'bottom-4',

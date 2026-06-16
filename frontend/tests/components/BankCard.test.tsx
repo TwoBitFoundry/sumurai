@@ -1,4 +1,12 @@
 import '../mocks/framerMotionStub';
+
+jest.mock('@/features/transactions/hooks/useTransactionListLauncher', () => ({
+  useTransactionListLauncher: () => ({
+    openTransactionList: jest.fn(),
+    close: jest.fn(),
+  }),
+}));
+
 import { render, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type React from 'react';

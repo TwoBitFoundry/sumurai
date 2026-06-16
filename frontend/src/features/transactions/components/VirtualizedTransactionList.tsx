@@ -21,6 +21,8 @@ interface Props {
   variant?: 'page' | 'contextual';
   emptyState?: React.ReactNode;
   className?: string;
+  onMerchantSearch?: (merchant: string) => void;
+  onAccountFilter?: (accountId: string) => void;
 }
 
 const OVERSCAN = 5;
@@ -30,16 +32,19 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
   variant = 'page',
   emptyState,
   className,
+  onMerchantSearch,
+  onAccountFilter,
 }) => {
-  const { isDesktop } = useViewportBreakpoint();
-  const { breakpoint } = useViewportBreakpoint();
-  const rowH = isDesktop ? DESKTOP_ROW_H : MOBILE_ROW_H;
+  const { isDesktop, breakpoint } = useViewportBreakpoint();
+  const showDesktopLayout = isDesktop && variant === 'page';
+  const rowH = showDesktopLayout ? DESKTOP_ROW_H : MOBILE_ROW_H;
 
   const { rows, hasNextPage, isFetchingNextPage, fetchNextPage, isInitialLoading, filterKey } =
     useInfiniteTransactions(filters);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(0);
+  const [listHeight, setListHeight] = useState<number | null>(null);
   const [openRowIndex, setOpenRowIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -51,6 +56,51 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (variant !== 'page') return;
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const BOTTOM_GAP = 24;
+    const MIN_HEIGHT = 384;
+
+    const compute = () => {
+      const chrome = document.querySelector('[data-floating-chrome]') as HTMLElement | null;
+      const chromeTop = chrome ? chrome.getBoundingClientRect().top : window.innerHeight;
+      const listTop = el.getBoundingClientRect().top;
+      setListHeight(Math.max(MIN_HEIGHT, chromeTop - listTop - BOTTOM_GAP));
+    };
+
+    compute();
+
+    let timer: ReturnType<typeof setTimeout>;
+    const debounced = () => {
+      clearTimeout(timer);
+      timer = setTimeout(compute, 150);
+    };
+
+    window.addEventListener('resize', debounced);
+
+    const chrome = document.querySelector('[data-floating-chrome]');
+    const chromeObserver = chrome ? new ResizeObserver(debounced) : null;
+    if (chrome && chromeObserver) chromeObserver.observe(chrome);
+
+    const intersectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) compute();
+      },
+      { threshold: 0.1 }
+    );
+    intersectionObserver.observe(el);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', debounced);
+      chromeObserver?.disconnect();
+      intersectionObserver.disconnect();
+    };
+  }, [variant]);
 
   const totalCount = rows.length + (hasNextPage ? 1 : 0);
 
@@ -72,7 +122,7 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
   );
 
   const virtualizer = useVirtualizer({
-    count: containerHeight > 0 ? totalCount : 0,
+    count: variant === 'contextual' || containerHeight > 0 ? totalCount : 0,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => rowH,
     overscan: OVERSCAN,
@@ -100,17 +150,18 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
   }, [filterKey]);
 
   const isEmpty = !isInitialLoading && rows.length === 0 && !hasNextPage;
-
-  const maxHClass =
-    variant === 'contextual' ? 'max-h-[min(50dvh,32rem)]' : 'h-[clamp(24rem,60dvh,80dvh)]';
+  const readOnly = variant === 'contextual';
+  const isContextual = variant === 'contextual';
+  const merchantSearchHandler = variant === 'page' ? onMerchantSearch : undefined;
+  const accountFilterHandler = variant === 'page' ? onAccountFilter : undefined;
 
   return (
     <div
       role="region"
       aria-label="Transaction list"
-      className={cn('relative flex flex-col', className)}
+      className={cn('relative flex flex-col', isContextual && 'min-h-0 flex-1', className)}
     >
-      {isDesktop && (
+      {showDesktopLayout && (
         <div
           role="row"
           aria-rowindex={1}
@@ -155,7 +206,11 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
         ref={scrollRef}
         role="table"
         aria-label="Transactions"
-        className={cn('relative overflow-y-auto overscroll-contain', maxHClass)}
+        className={cn(
+          'relative overflow-y-auto overscroll-contain',
+          isContextual ? 'min-h-0 flex-1 touch-pan-y' : ''
+        )}
+        style={!isContextual && listHeight != null ? { height: `${listHeight}px` } : undefined}
         data-no-swipe
       >
         <div aria-live="polite" aria-atomic="true" className="sr-only">
@@ -195,7 +250,7 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
                     style={style}
                     className={cn(
                       transactionsRowRecipes.placeholder,
-                      breakpoint === 'desktop'
+                      showDesktopLayout
                         ? transactionsRowRecipes.placeholderDesktopHeight
                         : transactionsRowRecipes.placeholderMobileHeight,
                       transactionsRowRecipes.even
@@ -206,14 +261,17 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
 
               if (!row) return null;
 
-              return isDesktop ? (
+              return showDesktopLayout ? (
                 <DesktopTransactionRow
                   key={row.id}
                   transaction={row}
                   index={item.index}
                   style={style}
+                  readOnly={readOnly}
                   onCategoryOpen={setOpenRowIndex}
                   onCategoryClose={() => setOpenRowIndex(null)}
+                  onMerchantSearch={merchantSearchHandler}
+                  onAccountFilter={accountFilterHandler}
                 />
               ) : (
                 <MobileTransactionRow
@@ -221,8 +279,11 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
                   transaction={row}
                   index={item.index}
                   style={style}
+                  readOnly={readOnly}
                   onCategoryOpen={setOpenRowIndex}
                   onCategoryClose={() => setOpenRowIndex(null)}
+                  onMerchantSearch={merchantSearchHandler}
+                  onAccountFilter={accountFilterHandler}
                 />
               );
             })}

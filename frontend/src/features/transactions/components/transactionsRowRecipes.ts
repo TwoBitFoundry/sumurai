@@ -17,7 +17,7 @@ export const transactionsRowRecipes = {
     'shrink-0',
     'tabular-nums',
   ],
-  mobileCategoryAnchor: ['absolute', 'bottom-2.5', 'right-3', 'z-20'],
+  mobileCategoryAnchor: ['absolute', 'bottom-2.5', 'right-3', 'z-20', 'w-fit', 'max-w-full'],
   mobileMerchantLine: ['min-w-0', 'pr-28'],
   mobileMetaBlock: ['mt-1', 'min-w-0', 'pr-28'],
   placeholder: [
@@ -35,7 +35,7 @@ export const transactionsRowRecipes = {
   ],
   even: ['bg-transparent', 'dark:bg-transparent'],
   merchantEllipsis: ['min-w-0', 'overflow-hidden', 'text-ellipsis', 'whitespace-nowrap'],
-  merchantCell: ['max-w-0', 'overflow-hidden', 'text-ellipsis', 'whitespace-nowrap'],
+  merchantCell: ['min-w-0', 'overflow-hidden', 'text-ellipsis', 'whitespace-nowrap'],
   categoryPill: [
     'w-full',
     'min-w-0',
@@ -43,13 +43,15 @@ export const transactionsRowRecipes = {
     '!gap-0',
     '!px-0',
     '!py-0',
+    '!overflow-visible',
     'hover:!translate-y-0',
   ],
   categoryFilterPill: ['px-2', 'py-0'],
   categoryLabel: ['min-w-0', 'flex-1', 'truncate', 'text-right'],
+  categoryLabelReadOnly: ['truncate', 'text-right'],
   categoryChevron: ['ml-1', 'shrink-0'],
   desktopGridCols:
-    'grid-cols-[minmax(0,9rem)_minmax(0,1fr)_minmax(0,8rem)_minmax(0,12rem)_minmax(0,10rem)]',
+    'grid-cols-[minmax(0,9rem)_minmax(0,1fr)_minmax(0,8rem)_minmax(0,12rem)_minmax(0,12rem)]',
   desktopGridRow: ['grid', 'items-center'],
   desktopGridHeader: ['grid', 'items-center', 'sticky', 'top-0', 'z-10'],
 } as const;

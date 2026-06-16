@@ -8,6 +8,10 @@ import {
   setSessionCollapsibleExpanded,
 } from '@/utils/sessionPreferences';
 
+jest.mock('@/components/BalancesOverview', () => ({
+  BalancesOverviewChart: () => <div data-testid="balances-chart" />,
+}));
+
 const sampleOverall: Totals = {
   cash: 123642.1,
   credit: -4713.4,
@@ -235,6 +239,17 @@ describe('BalancesInsightsPanel', () => {
     expect(expensesValue).toHaveClass(uiStatusRecipes.danger.text[0]);
     expect(cashValue).toHaveClass(uiStatusRecipes.success.text[0]);
     expect(cashValue).not.toHaveClass('font-card-title');
+  });
+
+  it('shows the balances chart at the end of the expanded panel', async () => {
+    render(<BalancesInsightsPanel overall={sampleOverall} />);
+
+    expect(screen.queryByTestId('balances-insights-chart')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /balance insights/i }));
+
+    expect(screen.getByTestId('balances-insights-chart')).toBeInTheDocument();
+    expect(screen.getByTestId('balances-chart')).toBeInTheDocument();
   });
 
   it('resets flipped categories when resetKey changes', async () => {

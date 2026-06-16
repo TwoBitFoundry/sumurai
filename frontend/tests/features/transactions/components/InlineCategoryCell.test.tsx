@@ -40,7 +40,13 @@ describe('InlineCategoryCell', () => {
     const { container } = render(<InlineCategoryCell transaction={transaction} dense={dense} />);
 
     const slot = container.firstElementChild as HTMLElement;
-    expect(slot.style.width).toBe(expectedWidth);
+
+    if (dense) {
+      expect(slot.style.width).toBe(expectedWidth);
+    } else {
+      expect(slot.style.maxWidth).toBe(expectedWidth);
+      expect(slot.className).toContain('w-full');
+    }
 
     const button = screen.getByRole('button', { name: /Edit category: Merchandise/i });
     expect(button.className).toContain('!justify-end');
@@ -49,6 +55,15 @@ describe('InlineCategoryCell', () => {
     expect(button.className).not.toContain('bg-[linear-gradient');
     expect(button.querySelector('span.flex-1')?.className).toContain('text-right');
     expect(button.querySelector('[aria-hidden="true"]')?.className).toContain('shrink-0');
+    expect(button.querySelector('[aria-hidden="true"]')?.className).not.toContain('invisible');
     expect(button.className).not.toContain('h-11');
+  });
+
+  it('omits the chevron when read only', () => {
+    render(<InlineCategoryCell transaction={transaction} readOnly />);
+
+    const button = screen.getByRole('button', { name: 'Merchandise' });
+    expect(button.querySelector('[aria-hidden="true"]')).toBeNull();
+    expect(button.className).toContain('!w-fit');
   });
 });

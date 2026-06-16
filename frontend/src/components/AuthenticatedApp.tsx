@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BottomContextualBar } from '@/components/BottomContextualBar';
 import {
   DateRangeLabelPill,
@@ -12,6 +12,7 @@ import {
 import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
 import { TransactionsSearchBar } from '@/features/transactions/components/TransactionsSearchBar';
 import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
+import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { Alert, cn } from '@/ui/primitives';
 import AccountsPage from '@/views/AccountsPage';
 import BudgetsPage from '@/views/BudgetsPage';
@@ -22,6 +23,8 @@ import { AppLayout } from '../layouts/AppLayout';
 import { GradientShell } from '../ui/primitives';
 import { text as uiTextRecipes } from '../ui/recipes';
 import type { DateRangeKey as DateRange } from '../utils/dateRanges';
+import type { NavigateToTransactionsDetail } from '../utils/events';
+import { NAVIGATE_TO_TRANSACTIONS_EVENT } from '../utils/events';
 import {
   getSessionDashboardDateRange,
   setSessionDashboardDateRange,
@@ -57,6 +60,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   };
   const budgetMonth = useBudgetMonth();
   const transactionFilters = useTransactionFilterState();
+  const { setSelectedAccountIds } = useAccountFilter();
 
   const handleTabChange = (next: TabKey) => {
     const currentIndex = TAB_INDEX.get(tab) ?? 0;
@@ -65,6 +69,27 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
     setTab(next);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
+
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<NavigateToTransactionsDetail>).detail;
+      transactionFilters.setSearch(detail.search ?? '');
+      transactionFilters.setSelectedCategory(detail.category ?? null);
+      if (detail.accountIds) {
+        setSelectedAccountIds(detail.accountIds);
+      }
+      const currentIndex = TAB_INDEX.get(tabRef.current) ?? 0;
+      const nextIndex = TAB_INDEX.get('transactions') ?? 1;
+      setTabTransitionDirection(nextIndex === currentIndex ? 0 : nextIndex > currentIndex ? 1 : -1);
+      setTab('transactions');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+    window.addEventListener(NAVIGATE_TO_TRANSACTIONS_EVENT, handler);
+    return () => window.removeEventListener(NAVIGATE_TO_TRANSACTIONS_EVENT, handler);
+  }, [transactionFilters, setSelectedAccountIds]);
 
   const bottomBarContent =
     tab === 'dashboard' ? (

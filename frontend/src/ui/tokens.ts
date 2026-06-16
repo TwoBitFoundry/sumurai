@@ -92,7 +92,7 @@ const semanticDark = {
 
 const chartThemeLight = {
   primary: chartLight,
-  grid: '#e2e8f0',
+  grid: '#94a3b8',
   axis: '#64748b',
   tooltipBg: '#ffffff',
   tooltipBorder: '#e2e8f0',

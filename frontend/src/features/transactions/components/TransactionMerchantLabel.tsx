@@ -70,6 +70,7 @@ export const TransactionMerchantLabel: React.FC<Props> = ({
               <button
                 type="button"
                 aria-label={`Show raw merchant for ${normalizedMerchant}`}
+                onClick={(event) => event.stopPropagation()}
                 className={cn(
                   overlayClassName,
                   'cursor-pointer',
@@ -99,8 +100,11 @@ export const TransactionMerchantLabel: React.FC<Props> = ({
         <button
           type="button"
           aria-label={`Show raw merchant for ${normalizedMerchant}`}
+          onClick={(event) => event.stopPropagation()}
           className={cn(
-            'w-full',
+            'block',
+            'w-fit',
+            'max-w-full',
             'rounded-md',
             'bg-transparent',
             'text-left',

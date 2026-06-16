@@ -972,39 +972,12 @@ impl PostgresRepository {
             if !search.is_empty() {
                 let search = format!("%{}%", search.to_lowercase());
                 query = query.filter(
-                    Condition::any()
-                        .add(
-                            Expr::expr(Func::lower(Func::coalesce([
-                                Expr::col((
-                                    transactions::Entity,
-                                    transactions::Column::MerchantName,
-                                ))
-                                .into(),
-                                Expr::val("").into(),
-                            ])))
-                            .like(search.clone()),
-                        )
-                        .add(
-                            Expr::expr(Func::lower(Expr::col((
-                                transactions::Entity,
-                                transactions::Column::CategoryPrimary,
-                            ))))
-                            .like(search.clone()),
-                        )
-                        .add(
-                            Expr::expr(Func::lower(Expr::col((
-                                transactions::Entity,
-                                transactions::Column::CategoryDetailed,
-                            ))))
-                            .like(search.clone()),
-                        )
-                        .add(
-                            Expr::expr(Func::lower(Expr::col((
-                                accounts::Entity,
-                                accounts::Column::Name,
-                            ))))
-                            .like(search),
-                        ),
+                    Expr::expr(Func::lower(Func::coalesce([
+                        Expr::col((transactions::Entity, transactions::Column::MerchantName))
+                            .into(),
+                        Expr::val("").into(),
+                    ])))
+                    .like(search),
                 );
             }
         }
@@ -1032,8 +1005,15 @@ impl PostgresRepository {
         if let Some(merchant) = merchant {
             let merchant = merchant.trim();
             if !merchant.is_empty() {
-                query =
-                    query.filter(transactions::Column::NormalizedMerchant.eq(merchant.to_string()));
+                let lower = merchant.to_lowercase();
+                query = query.filter(
+                    Condition::any()
+                        .add(transactions::Column::NormalizedMerchant.eq(lower.clone()))
+                        .add(
+                            Expr::expr(Func::lower(Expr::col(transactions::Column::MerchantName)))
+                                .eq(lower),
+                        ),
+                );
             }
         }
 

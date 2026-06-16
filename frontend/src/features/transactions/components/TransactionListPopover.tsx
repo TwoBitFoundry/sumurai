@@ -1,13 +1,21 @@
 import * as Popover from '@radix-ui/react-popover';
+import { ArrowUpRight } from 'lucide-react';
 import type { RefObject } from 'react';
 import type {
   TransactionListContext,
   TransactionWindowFilters,
 } from '@/features/transactions/models/transactionWindow';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
-import { cn, Modal, ModalDrawerHeader, modalDrawerSectionLabelClassName } from '@/ui/primitives';
-import { categoryPickerPopover, floatingChromeGlass } from '@/ui/recipes';
-import { formatCategoryName } from '@/utils/categories';
+import {
+  cn,
+  IconButton,
+  Modal,
+  ModalDrawerHeader,
+  modalDrawerSectionLabelClassName,
+} from '@/ui/primitives';
+import { categoryPickerPopover, floatingChromeGlass, radius } from '@/ui/recipes';
+import type { NavigateToTransactionsDetail } from '@/utils/events';
+import { dispatchNavigateToTransactions } from '@/utils/events';
 import VirtualizedTransactionList from './VirtualizedTransactionList';
 
 interface Props {
@@ -34,16 +42,21 @@ function contextToFilters(context: TransactionListContext): TransactionWindowFil
   }
 }
 
-function contextTitle(context: TransactionListContext): string {
+function contextToNavigateDetail(context: TransactionListContext): NavigateToTransactionsDetail {
   switch (context.type) {
     case 'budget':
+      return { category: context.category };
     case 'category':
-      return formatCategoryName(context.category);
+      return { category: context.category };
     case 'merchant':
-      return context.merchant;
+      return { search: context.merchant };
     case 'account':
-      return 'Account Transactions';
+      return { accountIds: [context.accountId] };
   }
+}
+
+function contextTitle(_context: TransactionListContext): string {
+  return 'Transactions';
 }
 
 export function TransactionListPopover({ open, anchorRef, context, onRequestClose }: Props) {
@@ -51,34 +64,55 @@ export function TransactionListPopover({ open, anchorRef, context, onRequestClos
   const filters = contextToFilters(context);
   const title = contextTitle(context);
 
+  const handleOpenInTransactions = () => {
+    dispatchNavigateToTransactions(contextToNavigateDetail(context));
+    onRequestClose();
+  };
+
+  const openInTransactionsButton = (
+    <IconButton
+      type="button"
+      variant="ghost"
+      size="sm"
+      aria-label="Open in transactions"
+      title="Open in transactions"
+      onClick={handleOpenInTransactions}
+      className={cn('shrink-0')}
+    >
+      <ArrowUpRight aria-hidden="true" />
+    </IconButton>
+  );
+
   const content = (
     <div
       data-testid="transaction-list-popover-content"
       className={cn(
         'flex',
         'flex-col',
-        isMobile ? 'h-[min(50dvh,32rem)]' : 'max-h-[min(50dvh,32rem)]',
-        'overflow-hidden'
+        'min-h-0',
+        'flex-1',
+        'overflow-hidden',
+        isMobile && 'h-[min(50dvh,32rem)]'
       )}
     >
       <section
-        className={cn(
-          'flex',
-          'min-h-0',
-          'flex-1',
-          'flex-col',
-          'overflow-hidden',
-          isMobile && 'px-5 pb-4 pt-5'
-        )}
+        className={cn('flex', 'min-h-0', 'flex-1', 'flex-col', isMobile && 'px-5 pb-4 pt-5')}
       >
-        <ModalDrawerHeader
-          closeWithDialog={isMobile}
-          onClose={onRequestClose}
-          closeLabel="Close transaction list"
-        >
-          <p className={cn(modalDrawerSectionLabelClassName)}>{title}</p>
-        </ModalDrawerHeader>
-        <VirtualizedTransactionList filters={filters} variant="contextual" />
+        <div className={cn('shrink-0')}>
+          <ModalDrawerHeader
+            closeWithDialog={isMobile}
+            onClose={onRequestClose}
+            closeLabel="Close transaction list"
+          >
+            <div className={cn('flex min-w-0 items-center gap-1')}>
+              <p className={cn(modalDrawerSectionLabelClassName, 'min-w-0 truncate')}>{title}</p>
+              {openInTransactionsButton}
+            </div>
+          </ModalDrawerHeader>
+        </div>
+        <div className={cn('min-h-0 flex-1 overflow-hidden')}>
+          <VirtualizedTransactionList filters={filters} variant="contextual" />
+        </div>
       </section>
     </div>
   );
@@ -143,10 +177,12 @@ export function TransactionListPopover({ open, anchorRef, context, onRequestClos
           className={cn(
             ...categoryPickerPopover.motion,
             'z-50',
+            'flex',
+            'flex-col',
             'w-[min(92vw,28rem)]',
             'min-w-[18rem]',
             'md:w-[min(32rem,calc(100vw-4rem))]',
-            'rounded-[2rem]',
+            radius.standard,
             ...floatingChromeGlass.shell,
             ...floatingChromeGlass.backdrop,
             'p-4',

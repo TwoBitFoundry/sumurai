@@ -1,7 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import type React from 'react';
-import { IconButton } from './IconButton';
+import { Button } from './Button';
 import { cn } from './utils';
 
 export interface ModalDrawerHeaderProps {
@@ -18,20 +18,21 @@ export function ModalDrawerHeader({
   closeWithDialog = false,
 }: ModalDrawerHeaderProps) {
   const closeButton = (
-    <IconButton
+    <Button
       type="button"
-      variant="ghost"
+      variant="secondary"
+      shape="square"
       size="sm"
       aria-label={closeLabel}
       onClick={closeWithDialog ? undefined : onClose}
-      className={cn('shrink-0', '-mr-1')}
+      className={cn('shrink-0')}
     >
       <X aria-hidden="true" />
-    </IconButton>
+    </Button>
   );
 
   return (
-    <div className={cn('flex items-center justify-between gap-3')}>
+    <div className={cn('flex min-w-0 items-center justify-between gap-3')}>
       <div className={cn('min-w-0 flex-1')}>{children}</div>
       {closeWithDialog ? <Dialog.Close asChild>{closeButton}</Dialog.Close> : closeButton}
     </div>

@@ -291,7 +291,7 @@ function FixedExpenseCard({
   const hoverInsetRingStyle = fixedExpenseHeroHoverRingStyle;
 
   const handleOpen = () => {
-    openTransactionList({ type: 'category', category: categoryPrimary }, cardRef);
+    openTransactionList({ type: 'merchant', merchant: item.merchant }, cardRef);
   };
 
   return (

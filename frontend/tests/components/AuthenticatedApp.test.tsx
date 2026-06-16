@@ -1,6 +1,7 @@
 import { act, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { AuthenticatedApp } from '@/components/AuthenticatedApp';
+import { useAccountFilter } from '@/hooks/useAccountFilter';
 
 const motionSectionProps: Record<
   string,
@@ -59,6 +60,10 @@ jest.mock('@/components/HeaderAccountFilter', () => ({
   HeaderAccountFilter: () => <div data-testid="header-account-filter" />,
 }));
 
+jest.mock('@/hooks/useAccountFilter', () => ({
+  useAccountFilter: jest.fn(),
+}));
+
 jest.mock('@/views/AccountsPage', () => ({
   __esModule: true,
   default: () => <div>Accounts</div>,
@@ -111,6 +116,11 @@ jest.mock('@/features/transactions/hooks/useTransactionCategories', () => ({
 
 describe('AuthenticatedApp', () => {
   beforeEach(() => {
+    jest.mocked(useAccountFilter).mockReturnValue({
+      selectedAccountIds: [],
+      allAccountIds: [],
+      setSelectedAccountIds: jest.fn(),
+    } as any);
     appLayoutMock.mockClear();
     for (const key of Object.keys(motionSectionProps)) delete motionSectionProps[key];
   });

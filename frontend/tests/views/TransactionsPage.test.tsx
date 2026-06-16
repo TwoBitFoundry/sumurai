@@ -4,8 +4,13 @@ import { useAccountsToastStack } from '@/features/accounts/hooks/useAccountsToas
 import { useAutoCategorization } from '@/features/auto-categorization/hooks/useAutoCategorization';
 import { useCategories } from '@/features/transactions/hooks/useCategories';
 import { useTransactionsContextualInsights } from '@/features/transactions/hooks/useTransactionsContextualInsights';
+import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import TransactionsPage from '@/views/TransactionsPage';
+
+jest.mock('@/hooks/useAccountFilter', () => ({
+  useAccountFilter: jest.fn(),
+}));
 
 jest.mock('@/features/transactions/hooks/useTransactionsContextualInsights', () => ({
   useTransactionsContextualInsights: jest.fn(),
@@ -97,6 +102,11 @@ jest.mock('@/components/toastStack/ToastStack', () => ({
 
 describe('TransactionsPage', () => {
   beforeEach(() => {
+    jest.mocked(useAccountFilter).mockReturnValue({
+      selectedAccountIds: [],
+      allAccountIds: ['account-1'],
+      setSelectedAccountIds: jest.fn(),
+    } as any);
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useAutoCategorization).mockReturnValue({
       job: null,
