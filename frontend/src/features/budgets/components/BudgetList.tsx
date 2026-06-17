@@ -2,16 +2,15 @@ import { TrashIcon as TrashSolidIcon } from '@heroicons/react/24/solid';
 import { Target } from 'lucide-react';
 import { type CSSProperties, useRef } from 'react';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
+import CategoryInlinePill from '@/features/transactions/components/CategoryInlinePill';
 import { useTransactionListLauncher } from '@/features/transactions/hooks/useTransactionListLauncher';
-import { cn, EmptyState, IconButton, Input, Pill } from '@/ui/primitives';
+import { cn, EmptyState, IconButton, Input } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
-  effect as uiEffectRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { heroAccents } from '@/ui/tokens';
-import { formatCategoryName } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
 import { useCategories } from '../../transactions/hooks/useCategories';
 import type { BudgetProgressEntry } from '../hooks/useBudgets';
@@ -87,7 +86,6 @@ function BudgetCard({
   const { openTransactionList } = useTransactionListLauncher();
 
   const isOver = b.spent > b.amount;
-  const displayName = formatCategoryName(b.category);
   const hoverInsetRingStyle = budgetHeroHoverRingStyle;
   const draft = drafts[b.id] ?? String(b.amount);
   const parsedDraft = Number(draft);
@@ -133,18 +131,11 @@ function BudgetCard({
           style={hoverInsetRingStyle}
         />
         <div className={cn('relative z-10 flex items-start justify-between gap-3')}>
-          <Pill
-            variant="category"
-            categoryName={b.category}
+          <CategoryInlinePill
+            categoryKey={b.category}
             accentIndexByName={accentIndexByName}
-            className={cn(
-              'transition-all duration-300',
-              ...uiEffectRecipes.glassBackdrop,
-              'dark:ring-1 dark:ring-white/10'
-            )}
-          >
-            {displayName}
-          </Pill>
+            className={cn('min-w-0', 'truncate')}
+          />
           {isEditing ? (
             <div className={cn('flex items-center justify-end gap-1.5', uiTypographyRecipes.label)}>
               <IconButton

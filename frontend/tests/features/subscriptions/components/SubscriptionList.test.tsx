@@ -97,7 +97,11 @@ describe('FixedExpenseList', () => {
     const monthlyGroup = screen.getByTestId('fixed-expense-cadence-group-monthly');
     const merchants = Array.from(
       monthlyGroup.querySelectorAll('[data-testid^="fixed-expense-card-"]')
-    ).map((card) => card.querySelector('span.truncate')?.textContent);
+    ).map(
+      (card) =>
+        card.querySelector('span.font-card-title.truncate')?.textContent ??
+        card.querySelector('span.truncate')?.textContent
+    );
 
     expect(merchants).toEqual(['Costco', 'Netflix', 'Walmart', 'Pdxfit Gym']);
     expect(screen.getByTestId('fixed-expense-card-pdxfit-gym')).toHaveTextContent('Jun 15');

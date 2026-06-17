@@ -3,7 +3,8 @@ import type { CSSProperties } from 'react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
-import { cn, EmptyState, Pill } from '@/ui/primitives';
+import CategoryInlinePill from '@/features/transactions/components/CategoryInlinePill';
+import { cn, EmptyState } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
   border as semanticBorders,
@@ -91,13 +92,12 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
         style={dashboardCategoryHoverRingStyle}
       />
       <div className={cn('relative', 'z-10', dashboardCategoryCard.metricRow)}>
-        <Pill
-          categoryName={cat.categoryKey}
+        <CategoryInlinePill
+          categoryKey={cat.categoryKey}
+          label={cat.name}
           accentIndexByName={accentIndexByName}
           className={cn('min-w-0', 'truncate')}
-        >
-          {cat.name}
-        </Pill>
+        />
         <div className={cn(dashboardCategoryCard.metricCluster)}>
           <span
             className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary, 'tabular-nums')}
@@ -288,7 +288,7 @@ const DashboardPage: React.FC<{
 
             <DashboardChartCard
               className={cn('min-w-0')}
-              title="Income vs Expenses"
+              title="Income vs expenses over time"
               refreshingLabel="Tracing the flow..."
               isRefreshing={!cashFlowLoading && cashFlowRefreshing}
             >
@@ -350,7 +350,7 @@ const DashboardPage: React.FC<{
 
             <DashboardChartCard
               className={cn('min-w-0')}
-              title="Budget vs reality"
+              title="Budget vs reality over time"
               refreshingLabel="Reviewing allowances..."
               isRefreshing={budgets.transactionsLoading}
             >

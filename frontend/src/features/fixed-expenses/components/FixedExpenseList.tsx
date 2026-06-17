@@ -17,10 +17,11 @@ import {
   groupFixedExpensesByCadence,
 } from '@/domain/fixedExpenseCadences';
 import { getFixedExpenseCategoryPrimary } from '@/domain/fixedExpenseCategories';
+import CategoryInlinePill from '@/features/transactions/components/CategoryInlinePill';
 import { useCategories } from '@/features/transactions/hooks/useCategories';
 import { useTransactionListLauncher } from '@/features/transactions/hooks/useTransactionListLauncher';
 import type { FixedExpenseSummary } from '@/types/api';
-import { cn, EmptyState, Pill } from '@/ui/primitives';
+import { cn, EmptyState } from '@/ui/primitives';
 import {
   control,
   controlIconWell,
@@ -31,7 +32,6 @@ import {
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { heroAccents } from '@/ui/tokens';
-import { formatCategoryName } from '@/utils/categories';
 import { fmtUSD } from '@/utils/format';
 
 export interface FixedExpenseListProps {
@@ -249,9 +249,11 @@ function CategoryBadge({
   accentIndexByName: ReadonlyMap<string, number>;
 }) {
   return (
-    <Pill variant="category" categoryName={categoryPrimary} accentIndexByName={accentIndexByName}>
-      {formatCategoryName(categoryPrimary)}
-    </Pill>
+    <CategoryInlinePill
+      categoryKey={categoryPrimary}
+      accentIndexByName={accentIndexByName}
+      className={cn('min-w-0', 'truncate')}
+    />
   );
 }
 
