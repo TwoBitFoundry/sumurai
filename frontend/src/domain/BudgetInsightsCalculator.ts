@@ -1,4 +1,3 @@
-import type { Transaction } from '../types/api';
 import type { BudgetStats } from './BudgetCalculator';
 import { BudgetCalculator } from './BudgetCalculator';
 
@@ -6,8 +5,7 @@ export interface BudgetInsightsInput {
   stats: BudgetStats;
   month: Date;
   referenceDate: Date;
-  transactions: Transaction[];
-  range: { start: string; end: string };
+  income: number;
   computedBudgets: Array<{ amount: number; spent: number }>;
 }
 
@@ -20,7 +18,7 @@ export interface BudgetInsights {
 }
 
 export function computeBudgetInsights(input: BudgetInsightsInput): BudgetInsights {
-  const { stats, month, referenceDate, transactions, range, computedBudgets } = input;
+  const { stats, month, referenceDate, income, computedBudgets } = input;
 
   const { totalBudgeted, totalSpent, remaining } = stats;
 
@@ -44,7 +42,6 @@ export function computeBudgetInsights(input: BudgetInsightsInput): BudgetInsight
     }
   }
 
-  const income = BudgetCalculator.calculateIncome(transactions, range.start, range.end);
   const overages = BudgetCalculator.computeOverages(computedBudgets);
   const freeSpend = income - totalBudgeted - overages;
 

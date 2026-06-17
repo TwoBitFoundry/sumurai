@@ -8,7 +8,6 @@ import { useBudgets } from '@/features/budgets/hooks/useBudgets';
 import { useCategories } from '@/features/transactions/hooks/useCategories';
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
 import { BudgetService } from '@/services/BudgetService';
-import { TransactionService } from '@/services/TransactionService';
 
 jest.mock('@/features/transactions/hooks/useCategories', () => ({
   useCategories: jest.fn(),
@@ -40,6 +39,13 @@ const asOverview = (budgets: ReturnType<typeof asBudget>[], fixed_expenses: unkn
   budgets,
   fixed_expenses,
 });
+const asBudgetSummary = (
+  income = 0,
+  category_spending: Array<{ name: string; value: number }> = []
+) => ({
+  income,
+  category_spending,
+});
 const makeSubscription = (merchant: string, monthlyCost: string) => {
   const today = new Date();
   const chargeDate = new Date(today.getFullYear(), today.getMonth(), 15).toISOString().slice(0, 10);
@@ -55,27 +61,6 @@ const makeSubscription = (merchant: string, monthlyCost: string) => {
     account_ids: [],
   };
 };
-const asTransaction = (id: string, categoryId: string, amount: number, date?: string) => {
-  // Use a deterministic date in the middle of current month to avoid timing issues
-  const today = new Date();
-  const defaultDate = new Date(today.getFullYear(), today.getMonth(), 15)
-    .toISOString()
-    .slice(0, 10);
-
-  return {
-    id,
-    date: date || defaultDate,
-    name: 'Txn',
-    merchant: 'Store',
-    amount,
-    category: { primary: categoryId.toUpperCase(), detailed: categoryId.toUpperCase() },
-    provider: 'plaid' as const,
-    account_name: 'Checking',
-    account_type: 'depository',
-    account_mask: '1234',
-  };
-};
-
 const mockPlaidAccounts = [
   {
     id: 'account1',
@@ -219,10 +204,12 @@ describe('useBudgets', () => {
     });
   });
 
-  it('fetches budgets and transactions on mount', async () => {
+  it('fetches budgets and budget summary on mount', async () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': asOverview([asBudget('1', 'groceries', 100)]),
-      'GET /api/transactions': [asTransaction('t1', 'groceries', -50)],
+      'GET /api/analytics/budget-summary*': asBudgetSummary(5000, [
+        { name: 'groceries', value: 50 },
+      ]),
       'GET /api/plaid/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
@@ -239,14 +226,40 @@ describe('useBudgets', () => {
 
     expect(result.current.budgets[0].category).toBe('groceries');
     expect(result.current.budgets[0].amount).toBe(100);
+    expect(result.current.computedBudgets[0].spent).toBe(50);
+    expect(result.current.income).toBe(5000);
   });
 
-  it('loads transactions based on budget categories', async () => {
+  it('uses the full budget summary payload for spent amounts', async () => {
+    const summaryEntries = Array.from({ length: 50 }, (_, index) =>
+      index === 45
+        ? { name: 'FOOD_AND_DRINK', value: 123 }
+        : { name: index % 2 === 0 ? 'ENTERTAINMENT' : 'TRANSPORTATION', value: 1 }
+    );
+
+    fetchMock = installFetchRoutes({
+      'GET /api/budgets/overview': asOverview([asBudget('1', 'FOOD_AND_DRINK', 100)]),
+      'GET /api/analytics/budget-summary*': asBudgetSummary(5000, summaryEntries),
+      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/status': createConnectedStatus(),
+    });
+
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper });
+
+    await waitFor(() => {
+      expect(result.current.computedBudgets[0].spent).toBe(123);
+      expect(result.current.income).toBe(5000);
+    });
+  });
+
+  it('loads budget summary based on account filters', async () => {
     let accountFilterHook: any;
 
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': asOverview([asBudget('1', 'groceries', 100)]),
-      'GET /api/transactions': [],
+      'GET /api/analytics/budget-summary*': asBudgetSummary(5000, [
+        { name: 'groceries', value: 50 },
+      ]),
       'GET /api/plaid/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
@@ -276,11 +289,13 @@ describe('useBudgets', () => {
       expect(result.current.budgets).toHaveLength(1);
     });
 
-    // Check that transactions endpoint was called with category filter
-    const transactionCall = fetchMock.mock.calls.find((c) =>
-      String(c[0]).includes('/api/transactions')
+    const summaryCall = fetchMock.mock.calls.find((c) =>
+      String(c[0]).includes('/api/analytics/budget-summary')
     );
-    expect(transactionCall).toBeTruthy();
+    expect(summaryCall).toBeTruthy();
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/api/transactions'))).toBe(
+      false
+    );
   });
 
   it('creates budget optimistically', async () => {
@@ -356,9 +371,6 @@ describe('useBudgets', () => {
         budgetsStore[0] = asBudget('1', 'groceries', budgetData.amount ?? 100);
         return budgetsStore[0];
       });
-    const getTransactionsSpy = jest
-      .spyOn(TransactionService, 'getTransactions')
-      .mockResolvedValue([]);
 
     const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper });
 
@@ -377,7 +389,6 @@ describe('useBudgets', () => {
     } finally {
       getOverviewSpy.mockRestore();
       updateBudgetSpy.mockRestore();
-      getTransactionsSpy.mockRestore();
     }
   });
 
@@ -524,7 +535,7 @@ describe('useBudgets', () => {
     expect(budgetFetchCountAfter).toBe(budgetFetchCount);
   });
 
-  it('changing month refetches transactions but not budgets while budgets stay fresh', async () => {
+  it('changing month refetches budget summary but not budgets while budgets stay fresh', async () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': asOverview([asBudget('1', 'groceries', 100)]),
       'GET /api/transactions': [],
@@ -545,8 +556,8 @@ describe('useBudgets', () => {
     const budgetFetchCount = fetchMock.mock.calls.filter((c) =>
       String(c[0]).includes('/api/budgets/overview')
     ).length;
-    const transactionFetchCount = fetchMock.mock.calls.filter((c) =>
-      String(c[0]).includes('/api/transactions')
+    const budgetSummaryFetchCount = fetchMock.mock.calls.filter((c) =>
+      String(c[0]).includes('/api/analytics/budget-summary')
     ).length;
 
     await act(() => {
@@ -555,8 +566,9 @@ describe('useBudgets', () => {
 
     await waitFor(() => {
       expect(
-        fetchMock.mock.calls.filter((c) => String(c[0]).includes('/api/transactions')).length
-      ).toBeGreaterThan(transactionFetchCount);
+        fetchMock.mock.calls.filter((c) => String(c[0]).includes('/api/analytics/budget-summary'))
+          .length
+      ).toBeGreaterThan(budgetSummaryFetchCount);
     });
 
     expect(

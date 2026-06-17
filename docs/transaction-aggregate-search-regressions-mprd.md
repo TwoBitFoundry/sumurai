@@ -238,11 +238,19 @@ Expose `budget_summary` and move `useBudgets` + budget insights onto it; remove 
 
 ### Acceptance Criteria
 
-- [ ] Budgets page spent progress reflects the full month set (>40 rows)
-- [ ] Budget insights `income` / `freeSpend` use the server `income`
-- [ ] No production `TransactionService.getTransactions()` call from `useBudgets`
-- [ ] `BudgetCalculator.calculateIncome` / `calculateSpent` removed; UI-math methods retained and still referenced
+- [x] Budgets page spent progress reflects the full month set (>40 rows)
+- [x] Budget insights `income` / `freeSpend` use the server `income`
+- [x] No production `TransactionService.getTransactions()` call from `useBudgets`
+- [x] `BudgetCalculator.calculateIncome` / `calculateSpent` removed; UI-math methods retained and still referenced
 - [ ] `bun --cwd=frontend test` and `typecheck` pass
+
+### TDD Log
+
+- Red: added backend and frontend specs for the budget summary endpoint, migrated the hook and insights calculator inputs, and added a full-payload regression for >40 summary rows.
+- Green: wired `GET /api/analytics/budget-summary`, switched `useBudgets` to consume the summary payload, removed the dead transaction aggregation methods, and updated the budgets page to use server income.
+- Refactor: kept category matching in the hook, preserved the UI math helpers, and left the rest of `BudgetCalculator` in place for shared calculations.
+- Verification: `cargo test -p sumurai-backend --locked analytics_service_tests -- --nocapture`, `cargo test -p sumurai-backend --locked`, `bun --cwd=frontend test tests/services/AnalyticsService.test.ts tests/domain/BudgetCalculator.test.ts tests/domain/BudgetInsightsCalculator.test.ts`, `bun --cwd=frontend test tests/features/budgets/hooks/useBudgets.test.tsx`, `bun --cwd=frontend run typecheck`.
+- Note: the repository-wide combined frontend test invocation still shows unrelated cross-file interference, but the changed frontend files pass in isolation.
 
 ---
 

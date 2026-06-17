@@ -173,21 +173,6 @@ describe('BudgetCalculator.computeStats', () => {
   });
 });
 
-describe('BudgetCalculator.calculateIncome', () => {
-  it('sums positive inflows excluding transfer in categories', () => {
-    const transactions = [
-      { date: '2026-06-01', amount: 5000, category: { primary: 'INCOME' } },
-      { date: '2026-06-02', amount: -45.5, category: { primary: 'FOOD' } },
-      { date: '2026-06-03', amount: 200, category: { primary: 'TRANSFER_IN' } },
-      { date: '2026-07-01', amount: 1000, category: { primary: 'INCOME' } },
-    ];
-
-    expect(
-      BudgetCalculator.calculateIncome(transactions as never, '2026-06-01', '2026-06-30')
-    ).toBe(5000);
-  });
-});
-
 describe('BudgetCalculator.computeOverages', () => {
   it('sums only the amount spent above each planned budget', () => {
     const overages = BudgetCalculator.computeOverages([

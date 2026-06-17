@@ -7,16 +7,17 @@ import { useCallback, useMemo, useState } from 'react';
 import { BudgetCalculator } from '../../../domain/BudgetCalculator';
 import { hasFixedExpenseChargeInMonth } from '../../../domain/FixedExpenseCalculator';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
+import { AnalyticsService } from '../../../services/AnalyticsService';
 import { BudgetService } from '../../../services/BudgetService';
-import { TransactionService } from '../../../services/TransactionService';
 import type {
   Budget,
+  BudgetSummaryResponse,
   BudgetsOverviewResponse,
   FixedExpenseSummary,
-  Transaction,
 } from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
 import {
+  formatCategoryName,
   isBudgetEligibleCategory,
   sortCategoryNamesAlphabetically,
 } from '../../../utils/categories';
@@ -31,7 +32,7 @@ export interface BudgetProgressEntry extends Budget {
 
 export interface UseBudgetsResult {
   isLoading: boolean;
-  transactionsLoading: boolean;
+  summaryLoading: boolean;
   error: string | null;
   validationError: string | null;
   budgets: Budget[];
@@ -40,7 +41,7 @@ export interface UseBudgetsResult {
   insightsFixedExpenses: FixedExpenseSummary[];
   filterKey: string;
   computedBudgets: BudgetProgressEntry[];
-  transactions: Transaction[];
+  income: number;
   load: () => Promise<void>;
   add: (category: string, amount: number) => Promise<void>;
   update: (id: string, amount: number) => Promise<void>;
@@ -81,19 +82,15 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
     staleTime: 5 * 60 * 1000,
   });
 
-  const txnsQuery = useQuery({
-    queryKey: ['transactions', 'budget-month', range, cacheKey],
-    queryFn: async (): Promise<Transaction[]> => {
+  const budgetSummaryQuery = useQuery({
+    queryKey: ['analytics', 'budget-summary', range, cacheKey],
+    queryFn: async (): Promise<BudgetSummaryResponse> => {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
-        return [];
+        return { income: 0, category_spending: [] };
       }
       const shouldFilter = selectedAccountIds.length > 0 && !isAllAccountsSelected;
       const accountIds = shouldFilter ? selectedAccountIds : undefined;
-      return TransactionService.getTransactions({
-        startDate: range.start,
-        endDate: range.end,
-        accountIds,
-      });
+      return AnalyticsService.getBudgetSummary(range.start, range.end, accountIds);
     },
     enabled: !accountsLoading && budgetsQuery.isSuccess,
     staleTime: 2 * 60 * 1000,
@@ -101,7 +98,8 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
 
   const budgets = budgetsQuery.data?.budgets ?? [];
   const fixedExpenses = budgetsQuery.data?.fixed_expenses ?? [];
-  const transactions = txnsQuery.data ?? [];
+  const budgetSummaryIncome = Number(budgetSummaryQuery.data?.income) || 0;
+  const budgetSummaryCategorySpending = budgetSummaryQuery.data?.category_spending ?? [];
 
   const hasAccountRoster = allAccountIds.length > 0;
   const hasEmptyAccountSelection = hasAccountRoster && selectedAccountIds.length === 0;
@@ -238,7 +236,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
     setMutationError(null);
     await queryClient.refetchQueries({ queryKey: ['budgets'] });
     await queryClient.refetchQueries({
-      queryKey: ['transactions', 'budget-month', range, cacheKey],
+      queryKey: ['analytics', 'budget-summary', range, cacheKey],
     });
   }, [queryClient, range, cacheKey]);
 
@@ -248,12 +246,11 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
 
   const categoryOptions = useMemo(() => {
     const unique = new Set<string>(rosterCategories);
-    for (const txn of transactions) {
-      const primary = txn.category?.primary || 'OTHER';
-      unique.add(primary);
+    for (const item of budgetSummaryCategorySpending) {
+      unique.add(item.name);
     }
     return sortCategoryNamesAlphabetically(Array.from(unique).filter(isBudgetEligibleCategory));
-  }, [rosterCategories, transactions]);
+  }, [budgetSummaryCategorySpending, rosterCategories]);
 
   const availableCategoryOptions = useMemo(() => {
     const usedLower = new Set([...usedCategories].map((category) => category.toLowerCase()));
@@ -261,17 +258,18 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
   }, [categoryOptions, usedCategories]);
 
   const computedBudgets = useMemo(() => {
+    const spentByCategory = new Map<string, number>();
+    for (const item of budgetSummaryCategorySpending) {
+      const key = formatCategoryName(item.name).toLowerCase();
+      spentByCategory.set(key, (spentByCategory.get(key) ?? 0) + Number(item.value ?? 0));
+    }
+
     return budgets.map<BudgetProgressEntry>((b) => {
-      const spent = BudgetCalculator.calculateSpent(
-        transactions,
-        b.category,
-        range.start,
-        range.end
-      );
+      const spent = spentByCategory.get(formatCategoryName(b.category).toLowerCase()) ?? 0;
       const percentage = BudgetCalculator.calculatePercentage(b.amount, spent);
       return { ...b, spent, percentage };
     });
-  }, [budgets, range.end, range.start, transactions]);
+  }, [budgetSummaryCategorySpending, budgets]);
 
   const add = useCallback(
     async (category: string, amount: number) => {
@@ -344,7 +342,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
 
   return {
     isLoading: budgetsQuery.isPending,
-    transactionsLoading: txnsQuery.isFetching,
+    summaryLoading: budgetSummaryQuery.isFetching,
     error,
     validationError,
     budgets,
@@ -353,7 +351,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
     insightsFixedExpenses,
     filterKey: cacheKey,
     computedBudgets,
-    transactions,
+    income: budgetSummaryIncome,
     load,
     add,
     update,

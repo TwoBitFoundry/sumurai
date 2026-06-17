@@ -1,6 +1,3 @@
-import type { Transaction } from '../types/api';
-import { formatCategoryName } from '../utils/categories';
-
 interface ComputedBudget {
   id: string;
   category: string;
@@ -22,47 +19,8 @@ export interface BudgetStats {
 }
 
 export class BudgetCalculator {
-  static calculateIncome(transactions: Transaction[], start: string, end: string): number {
-    return transactions
-      .filter((t) => {
-        const dateString = new Date(t.date).toISOString().slice(0, 10);
-        return dateString >= start && dateString <= end;
-      })
-      .filter((t) => {
-        const amount = Number(t.amount);
-        if (!Number.isFinite(amount) || amount <= 0) {
-          return false;
-        }
-        const category = (t.category?.primary || '').toUpperCase();
-        return category !== 'TRANSFER_IN';
-      })
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-  }
-
   static computeOverages(budgets: Array<{ amount: number; spent: number }>): number {
     return budgets.reduce((sum, budget) => sum + Math.max(0, budget.spent - budget.amount), 0);
-  }
-
-  static calculateSpent(
-    transactions: Transaction[],
-    categoryId: string,
-    start: string,
-    end: string
-  ): number {
-    return transactions
-      .filter((t) => {
-        const primary = t.category?.primary || '';
-        const primaryMatches = primary.toLowerCase() === categoryId.toLowerCase();
-        const primaryFriendlyMatches =
-          formatCategoryName(primary).toLowerCase() ===
-          formatCategoryName(categoryId).toLowerCase();
-        return primaryMatches || primaryFriendlyMatches;
-      })
-      .filter((t) => {
-        const dateString = new Date(t.date).toISOString().slice(0, 10);
-        return dateString >= start && dateString <= end;
-      })
-      .reduce((sum, t) => sum + (Number(t.amount) < 0 ? Math.abs(Number(t.amount || 0)) : 0), 0);
   }
 
   static calculateRemaining(budget: number, spent: number): number {

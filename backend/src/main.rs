@@ -51,8 +51,8 @@ use utils::webauthn_credentials::{
 };
 
 use crate::models::analytics::{
-    BalanceCategory, BalancesOverviewQuery, BalancesOverviewResponse, CashFlowResponse,
-    CategorySpending, DailySpending, IncomeExpenseTotals, MonthlySpending,
+    BalanceCategory, BalancesOverviewQuery, BalancesOverviewResponse, BudgetSummary,
+    CashFlowResponse, CategorySpending, DailySpending, IncomeExpenseTotals, MonthlySpending,
     NetWorthOverTimeResponse, SankeyResponse, TopMerchant,
 };
 use crate::models::app_state::AppState;
@@ -621,6 +621,10 @@ pub fn create_app(state: AppState) -> Router {
         .route(
             "/api/analytics/income-expense-totals",
             get(get_authenticated_income_expense_totals),
+        )
+        .route(
+            "/api/analytics/budget-summary",
+            get(get_authenticated_budget_summary),
         )
         .route(
             "/api/analytics/spending",
@@ -2724,6 +2728,64 @@ async fn get_authenticated_income_expense_totals(
         })?;
 
     Ok(Json(totals))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/analytics/budget-summary",
+    description = "Calculates budget income and category spending over the supplied date range.",
+    params(("start_date" = Option<String>, Query, description = "Start date in YYYY-MM-DD format"),
+           ("end_date" = Option<String>, Query, description = "End date in YYYY-MM-DD format"),
+           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
+    responses(
+        (status = 200, description = "Budget summary", body = BudgetSummary),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Analytics"
+)]
+async fn get_authenticated_budget_summary(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    AuthorizedQuery {
+        query,
+        authorized_account_ids,
+    }: AuthorizedQuery<DateRangeQuery>,
+) -> Result<Json<BudgetSummary>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    let start_date = query
+        .start_date
+        .as_ref()
+        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+    let end_date = query
+        .end_date
+        .as_ref()
+        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+
+    let account_ids: Option<Vec<Uuid>> = authorized_account_ids
+        .as_ref()
+        .map(|ids| ids.iter().copied().collect());
+
+    let summary = state
+        .analytics_service
+        .get_budget_summary(
+            state.db_repository.as_ref(),
+            &user_id,
+            SpendingTransactionQuery {
+                start_date,
+                end_date,
+                account_ids: account_ids.as_deref(),
+            },
+        )
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to get budget summary for user {}: {}", user_id, e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(Json(summary))
 }
 
 #[utoipa::path(

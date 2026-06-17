@@ -65,6 +65,9 @@ export function installFetchRoutes(routes: RouteMap) {
       }
 
       if (handler === undefined) {
+        if (url.includes('/api/analytics/budget-summary')) {
+          return toJsonResponse({ income: 0, category_spending: [] });
+        }
         throw new Error(`Unhandled fetch route: ${method} ${url}`);
       }
 

@@ -321,6 +321,64 @@ async fn given_date_range_when_loading_income_expense_totals_then_uses_category_
     );
 }
 
+#[tokio::test]
+async fn given_date_range_when_loading_budget_summary_then_uses_category_aggregate_repository_call()
+{
+    let analytics = AnalyticsService::new();
+    let mut repository = MockDatabaseRepository::new();
+    let user_id = Uuid::new_v4();
+    let start_date = NaiveDate::from_ymd_opt(2026, 6, 1).unwrap();
+    let end_date = NaiveDate::from_ymd_opt(2026, 6, 30).unwrap();
+    let grid = vec![
+        aggregate("INCOME", dec!(5000.00), dec!(0), 2),
+        aggregate("FOOD_AND_DRINK", dec!(0), dec!(420.00), 3),
+        aggregate("TRANSFER_OUT", dec!(0), dec!(200.00), 1),
+    ];
+
+    repository
+        .expect_get_category_aggregates_for_date_range()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq(start_date),
+            mockall::predicate::eq(end_date),
+            mockall::predicate::always(),
+        )
+        .returning(move |_, _, _, _| {
+            let grid = grid.clone();
+            Box::pin(async move { Ok(grid) })
+        });
+
+    let result = analytics
+        .get_budget_summary(
+            &repository,
+            &user_id,
+            SpendingTransactionQuery {
+                start_date: Some(start_date),
+                end_date: Some(end_date),
+                account_ids: None,
+            },
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        result,
+        BudgetSummary {
+            income: dec!(5000.00),
+            category_spending: vec![
+                CategorySpending {
+                    name: "FOOD_AND_DRINK".to_string(),
+                    value: dec!(420.00),
+                },
+                CategorySpending {
+                    name: "TRANSFER_OUT".to_string(),
+                    value: dec!(200.00),
+                },
+            ],
+        }
+    );
+}
+
 #[test]
 fn given_aggregates_when_reducing_ytd_totals_then_excludes_transfers_only() {
     let analytics = AnalyticsService::new();

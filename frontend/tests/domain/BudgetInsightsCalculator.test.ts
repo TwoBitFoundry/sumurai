@@ -1,7 +1,6 @@
 import type { BudgetStats } from '../../src/domain/BudgetCalculator';
 import type { BudgetInsightsInput } from '../../src/domain/BudgetInsightsCalculator';
 import { computeBudgetInsights } from '../../src/domain/BudgetInsightsCalculator';
-import type { Transaction } from '../../src/types/api';
 
 const makeStats = (overrides: Partial<BudgetStats> = {}): BudgetStats => ({
   totalBudgeted: 500,
@@ -17,22 +16,11 @@ const makeStats = (overrides: Partial<BudgetStats> = {}): BudgetStats => ({
   ...overrides,
 });
 
-const makeTxn = (date: string, amount: number, category = 'INCOME'): Transaction => ({
-  id: `txn-${date}-${amount}`,
-  date,
-  amount,
-  category: { primary: category },
-  merchant_name: 'Employer',
-  normalized_merchant: 'employer',
-  provider_account_id: 'acct-1',
-});
-
 const baseInput = (): BudgetInsightsInput => ({
   stats: makeStats(),
   month: new Date(2026, 5, 1),
   referenceDate: new Date(2026, 5, 10),
-  transactions: [makeTxn('2026-06-01', 5000)],
-  range: { start: '2026-06-01', end: '2026-06-30' },
+  income: 5000,
   computedBudgets: [{ amount: 500, spent: 200 }],
 });
 
@@ -66,22 +54,19 @@ describe('computeBudgetInsights', () => {
       expect(computeBudgetInsights(input).freeSpend).toBeCloseTo(5000 - 500 - 150);
     });
 
-    it('excludes transfer inflows from income', () => {
+    it('uses the supplied income value directly', () => {
       const input = {
         ...baseInput(),
-        transactions: [
-          makeTxn('2026-06-01', 5000, 'INCOME'),
-          makeTxn('2026-06-02', 250, 'TRANSFER_IN'),
-        ],
+        income: 5250,
       };
 
-      expect(computeBudgetInsights(input).freeSpend).toBeCloseTo(5000 - 500);
+      expect(computeBudgetInsights(input).freeSpend).toBeCloseTo(5250 - 500);
     });
 
     it('returns a negative value when planned budgets and overages exceed income', () => {
       const input = {
         ...baseInput(),
-        transactions: [makeTxn('2026-06-01', 1000)],
+        income: 1000,
         stats: makeStats({ totalBudgeted: 800, totalSpent: 900, remaining: 0, overBudgetCount: 1 }),
         computedBudgets: [{ amount: 800, spent: 900 }],
       };

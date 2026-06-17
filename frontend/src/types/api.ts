@@ -78,6 +78,16 @@ export interface IncomeExpenseTotalsResponse {
   expenses: number;
 }
 
+export interface BudgetCategorySpendingResponse {
+  name: string;
+  value: number;
+}
+
+export interface BudgetSummaryResponse {
+  income: number;
+  category_spending: BudgetCategorySpendingResponse[];
+}
+
 export type InsightFormat = 'currency' | 'count' | 'days' | 'percent' | 'ratio';
 
 export type InsightState = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'triple';

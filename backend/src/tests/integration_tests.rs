@@ -1147,6 +1147,74 @@ async fn given_authenticated_user_when_get_income_expense_totals_then_returns_fu
 }
 
 #[tokio::test]
+async fn given_authenticated_user_when_get_budget_summary_then_returns_category_spending() {
+    use crate::models::analytics::{BudgetSummary, CategoryAggregate, CategorySpending};
+    use crate::services::repository_service::MockDatabaseRepository;
+    use rust_decimal_macros::dec;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    mock_db
+        .expect_get_category_aggregates_for_date_range()
+        .returning(move |_, _, _, _| {
+            let grid = vec![
+                CategoryAggregate {
+                    category: "INCOME".to_string(),
+                    income: dec!(5000.00),
+                    expense: dec!(0),
+                    count: 2,
+                },
+                CategoryAggregate {
+                    category: "FOOD_AND_DRINK".to_string(),
+                    income: dec!(0),
+                    expense: dec!(420.00),
+                    count: 3,
+                },
+                CategoryAggregate {
+                    category: "TRANSFER_OUT".to_string(),
+                    income: dec!(0),
+                    expense: dec!(200.00),
+                    count: 1,
+                },
+            ];
+            Box::pin(async move { Ok(grid) })
+        });
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request = TestFixtures::create_authenticated_get_request(
+        "/api/analytics/budget-summary?start_date=2026-06-01&end_date=2026-06-30",
+        &token,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let summary: BudgetSummary = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        summary,
+        BudgetSummary {
+            income: dec!(5000.00),
+            category_spending: vec![
+                CategorySpending {
+                    name: "FOOD_AND_DRINK".to_string(),
+                    value: dec!(420.00),
+                },
+                CategorySpending {
+                    name: "TRANSFER_OUT".to_string(),
+                    value: dec!(200.00),
+                },
+            ],
+        }
+    );
+}
+
+#[tokio::test]
 async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_ranking() {
     use crate::models::analytics::TopMerchant;
     use crate::models::transaction::Transaction;
