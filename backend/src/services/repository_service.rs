@@ -3,7 +3,7 @@
 use crate::connection_pool::RepositoryPool;
 use crate::models::{
     account::Account,
-    analytics::MonthlyCashFlowAggregate,
+    analytics::{CategoryAggregate, MonthlyCashFlowAggregate},
     auth::{User, WebAuthnCredential},
     auto_categorization_job::TransactionCategoryUpdate,
     budget::Budget,
@@ -170,6 +170,13 @@ pub trait DatabaseRepository: Send + Sync {
         end_date: chrono::NaiveDate,
         account_ids: Option<&[Uuid]>,
     ) -> Result<Vec<MonthlyCashFlowAggregate>>;
+    async fn get_category_aggregates_for_date_range(
+        &self,
+        user_id: &Uuid,
+        start_date: chrono::NaiveDate,
+        end_date: chrono::NaiveDate,
+        account_ids: Option<&[Uuid]>,
+    ) -> Result<Vec<CategoryAggregate>>;
     async fn get_provider_transaction_ids_for_user(&self, user_id: &Uuid) -> Result<Vec<String>>;
     async fn get_accounts_for_user(&self, user_id: &Uuid) -> Result<Vec<Account>>;
     async fn get_transaction_count_by_account_for_user(
@@ -875,6 +882,52 @@ impl PostgresRepository {
                         AND {not_transfer} THEN -t.amount
                     ELSE 0
                 END), 0) AS expenses
+            FROM transactions t
+            LEFT JOIN transaction_category_overrides o
+                ON o.user_id = t.user_id
+               AND o.normalized_merchant = t.normalized_merchant
+            WHERE t.user_id = $1
+              AND t.date >= $2
+              AND t.date <= $3
+            "#
+        );
+        let mut values: Vec<Value> = vec![user_id.into(), start_date.into(), end_date.into()];
+
+        if let Some(account_ids) = account_ids.filter(|account_ids| !account_ids.is_empty()) {
+            let start_index = values.len() + 1;
+            let placeholders = (0..account_ids.len())
+                .map(|offset| format!("${}", start_index + offset))
+                .collect::<Vec<_>>()
+                .join(", ");
+            sql.push_str(&format!(" AND t.account_id IN ({placeholders})"));
+            values.extend(account_ids.iter().copied().map(Value::from));
+        }
+
+        sql.push_str(" GROUP BY 1 ORDER BY 1");
+
+        Statement::from_sql_and_values(DbBackend::Postgres, sql, values)
+    }
+
+    fn category_aggregate_statement(
+        user_id: Uuid,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+        account_ids: Option<&[Uuid]>,
+    ) -> Statement {
+        let category_expr = sql_effective_category_expr();
+        let mut sql = format!(
+            r#"
+            SELECT
+                COALESCE({category_expr}, '') AS category,
+                COALESCE(SUM(CASE
+                    WHEN t.amount > 0 THEN t.amount
+                    ELSE 0
+                END), 0) AS income,
+                COALESCE(SUM(CASE
+                    WHEN t.amount < 0 THEN -t.amount
+                    ELSE 0
+                END), 0) AS expense,
+                COUNT(*) AS count
             FROM transactions t
             LEFT JOIN transaction_category_overrides o
                 ON o.user_id = t.user_id
@@ -2469,6 +2522,39 @@ impl DatabaseRepository for PostgresRepository {
                 expenses: row.expenses,
             })
             .collect())
+    }
+
+    async fn get_category_aggregates_for_date_range(
+        &self,
+        user_id: &Uuid,
+        start_date: chrono::NaiveDate,
+        end_date: chrono::NaiveDate,
+        account_ids: Option<&[Uuid]>,
+    ) -> Result<Vec<CategoryAggregate>> {
+        if matches!(account_ids, Some([])) {
+            return Ok(Vec::new());
+        }
+
+        let user_id = *user_id;
+        let account_ids = account_ids.map(|ids| ids.to_vec());
+        let rows = self
+            .with_tenant(&user_id, move |txn| {
+                Box::pin(async move {
+                    Ok(
+                        CategoryAggregate::find_by_statement(Self::category_aggregate_statement(
+                            user_id,
+                            start_date,
+                            end_date,
+                            account_ids.as_deref(),
+                        ))
+                        .all(txn)
+                        .await?,
+                    )
+                })
+            })
+            .await?;
+
+        Ok(rows)
     }
 
     async fn get_provider_transaction_ids_for_user(&self, user_id: &Uuid) -> Result<Vec<String>> {

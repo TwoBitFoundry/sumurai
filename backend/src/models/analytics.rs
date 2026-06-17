@@ -1,4 +1,5 @@
 use rust_decimal::Decimal;
+use sea_orm::FromQueryResult;
 use serde::de::{self, Deserializer, IgnoredAny, MapAccess, Visitor};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -7,7 +8,7 @@ use utoipa::ToSchema;
 #[allow(unused_imports)]
 use serde_json::json;
 
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, ToSchema)]
 #[schema(example = json!({"month": "2024-01", "total": "1250.40"}))]
 pub struct MonthlySpending {
     pub month: String,
@@ -15,12 +16,35 @@ pub struct MonthlySpending {
     pub total: Decimal,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, ToSchema)]
 #[schema(example = json!({"name": "groceries", "value": "450.00"}))]
 pub struct CategorySpending {
     pub name: String,
     #[schema(value_type = String)]
     pub value: Decimal,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct BudgetSummary {
+    #[schema(value_type = String)]
+    pub income: Decimal,
+    pub category_spending: Vec<CategorySpending>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct IncomeExpenseTotals {
+    #[schema(value_type = String)]
+    pub income: Decimal,
+    #[schema(value_type = String)]
+    pub expenses: Decimal,
+}
+
+#[derive(Debug, Clone, PartialEq, FromQueryResult)]
+pub struct CategoryAggregate {
+    pub category: String,
+    pub income: Decimal,
+    pub expense: Decimal,
+    pub count: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

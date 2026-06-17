@@ -1,5 +1,7 @@
-use crate::models::analytics::CategorySpending;
 use crate::models::analytics::SankeyNodeKind;
+use crate::models::analytics::{
+    BudgetSummary, CategoryAggregate, CategorySpending, IncomeExpenseTotals,
+};
 use crate::models::transaction::Transaction;
 use crate::services::analytics_service::{AnalyticsService, SpendingTransactionQuery};
 use crate::services::repository_service::MockDatabaseRepository;
@@ -52,6 +54,15 @@ fn get_month_range(year: i32, month: u32) -> (NaiveDate, NaiveDate) {
             .unwrap()
     };
     (start_date, end_date)
+}
+
+fn aggregate(category: &str, income: Decimal, expense: Decimal, count: i64) -> CategoryAggregate {
+    CategoryAggregate {
+        category: category.to_string(),
+        income,
+        expense,
+        count,
+    }
 }
 
 fn months_back(year: i32, month: u32, back: u32) -> (i32, u32) {
@@ -259,6 +270,96 @@ async fn given_missing_date_range_when_loading_spending_transactions_then_uses_b
 
     assert_eq!(result.len(), 1);
     assert_eq!(result[0].amount, dec!(12.00));
+}
+
+#[test]
+fn given_aggregates_when_reducing_ytd_totals_then_excludes_transfers_only() {
+    let analytics = AnalyticsService::new();
+    let grid = vec![
+        aggregate("INCOME", dec!(5250.00), dec!(0), 2),
+        aggregate("TRANSFER_IN", dec!(300.00), dec!(0), 1),
+        aggregate("TRANSFER_OUT", dec!(0), dec!(200.00), 1),
+        aggregate("LOAN_PAYMENTS", dec!(0), dec!(405.00), 2),
+        aggregate("FOOD_AND_DRINK", dec!(0), dec!(45.00), 1),
+    ];
+
+    let result = analytics.ytd_income_expense_totals(&grid);
+
+    assert_eq!(
+        result,
+        IncomeExpenseTotals {
+            income: dec!(5250.00),
+            expenses: dec!(450.00),
+        }
+    );
+}
+
+#[test]
+fn given_aggregates_when_reducing_budget_summary_then_excludes_only_transfer_in_for_income() {
+    let analytics = AnalyticsService::new();
+    let grid = vec![
+        aggregate("INCOME", dec!(5000.00), dec!(0), 2),
+        aggregate("TRANSFER_IN", dec!(300.00), dec!(0), 1),
+        aggregate("TRANSFER_OUT", dec!(0), dec!(200.00), 1),
+        aggregate("FOOD_AND_DRINK", dec!(0), dec!(420.00), 3),
+        aggregate("BANK_FEES", dec!(0), dec!(5.00), 1),
+    ];
+
+    let result = analytics.budget_summary(&grid);
+
+    assert_eq!(
+        result,
+        BudgetSummary {
+            income: dec!(5000.00),
+            category_spending: vec![
+                CategorySpending {
+                    name: "BANK_FEES".to_string(),
+                    value: dec!(5.00),
+                },
+                CategorySpending {
+                    name: "FOOD_AND_DRINK".to_string(),
+                    value: dec!(420.00),
+                },
+                CategorySpending {
+                    name: "TRANSFER_OUT".to_string(),
+                    value: dec!(200.00),
+                },
+            ],
+        }
+    );
+}
+
+#[test]
+fn given_aggregates_when_reducing_category_chart_then_excludes_analytics_categories_and_uses_uncategorized(
+) {
+    let analytics = AnalyticsService::new();
+    let grid = vec![
+        aggregate("", dec!(0), dec!(90.00), 1),
+        aggregate("FOOD_AND_DRINK", dec!(0), dec!(120.00), 2),
+        aggregate("TRANSFER_OUT", dec!(0), dec!(200.00), 1),
+        aggregate("BANK_FEES", dec!(0), dec!(5.00), 1),
+        aggregate("RENT_AND_UTILITIES", dec!(0), dec!(800.00), 1),
+    ];
+
+    let result = analytics.category_spending_chart(&grid);
+
+    assert_eq!(
+        result,
+        vec![
+            CategorySpending {
+                name: "Uncategorized".to_string(),
+                value: dec!(90.00),
+            },
+            CategorySpending {
+                name: "FOOD_AND_DRINK".to_string(),
+                value: dec!(120.00),
+            },
+            CategorySpending {
+                name: "RENT_AND_UTILITIES".to_string(),
+                value: dec!(800.00),
+            },
+        ]
+    );
 }
 
 #[test]

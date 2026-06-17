@@ -1,9 +1,9 @@
 //! Aggregated analytics queries for dashboards.
 
 use crate::models::analytics::{
-    BalanceCategory, CashFlowPoint, CategorySpending, DailySpending, MonthlyCashFlowAggregate,
-    MonthlySpending, SankeyLink, SankeyNode, SankeyNodeKind, SankeyResponse, SankeySummary,
-    TopMerchant,
+    BalanceCategory, BudgetSummary, CashFlowPoint, CategoryAggregate, CategorySpending,
+    DailySpending, IncomeExpenseTotals, MonthlyCashFlowAggregate, MonthlySpending, SankeyLink,
+    SankeyNode, SankeyNodeKind, SankeyResponse, SankeySummary, TopMerchant,
 };
 use crate::models::transaction::Transaction;
 use crate::services::repository_service::{
@@ -85,6 +85,66 @@ impl AnalyticsService {
 
     pub fn new() -> Self {
         Self
+    }
+
+    pub fn ytd_income_expense_totals(&self, grid: &[CategoryAggregate]) -> IncomeExpenseTotals {
+        let mut income = Decimal::ZERO;
+        let mut expenses = Decimal::ZERO;
+
+        for row in grid {
+            if is_transfer_category(&row.category) {
+                continue;
+            }
+            income += row.income;
+            expenses += row.expense;
+        }
+
+        IncomeExpenseTotals {
+            income: Self::round_amount(income),
+            expenses: Self::round_amount(expenses),
+        }
+    }
+
+    pub fn budget_summary(&self, grid: &[CategoryAggregate]) -> BudgetSummary {
+        let income = grid
+            .iter()
+            .filter(|row| row.category != "TRANSFER_IN")
+            .map(|row| row.income)
+            .sum::<Decimal>();
+
+        let category_spending = grid
+            .iter()
+            .filter(|row| row.expense > Decimal::ZERO)
+            .map(|row| CategorySpending {
+                name: row.category.clone(),
+                value: Self::round_amount(row.expense),
+            })
+            .collect::<Vec<_>>();
+
+        let mut category_spending = category_spending;
+        category_spending.sort_by(|a, b| a.name.cmp(&b.name));
+
+        BudgetSummary {
+            income: Self::round_amount(income),
+            category_spending,
+        }
+    }
+
+    pub fn category_spending_chart(&self, grid: &[CategoryAggregate]) -> Vec<CategorySpending> {
+        grid.iter()
+            .filter(|row| {
+                row.expense > Decimal::ZERO
+                    && !EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES.contains(&row.category.as_str())
+            })
+            .map(|row| CategorySpending {
+                name: if row.category.is_empty() {
+                    "Uncategorized".to_string()
+                } else {
+                    row.category.clone()
+                },
+                value: Self::round_amount(row.expense),
+            })
+            .collect()
     }
 
     pub async fn load_spending_transactions(

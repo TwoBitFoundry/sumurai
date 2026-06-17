@@ -847,6 +847,195 @@ async fn given_transactions_when_filtering_server_side_then_filters_categories_a
 }
 
 #[tokio::test]
+async fn given_many_transactions_when_aggregating_categories_then_returns_full_effective_grid() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account_one = create_test_account(&repo, user.id).await;
+    let account_two = create_test_account(&repo, user.id).await;
+
+    let mut transactions = Vec::new();
+    for index in 0..1001 {
+        let mut transaction = create_test_transaction(
+            user.id,
+            account_one.id,
+            format!("aggregate_food_{index:04}"),
+            -100,
+            NaiveDate::from_ymd_opt(2024, 2, 1).unwrap(),
+        );
+        transaction.category_primary = "FOOD_AND_DRINK".to_string();
+        transaction.category_detailed = "Coffee Shop".to_string();
+        transaction.normalized_merchant = Some(format!("coffee_shop_{index:04}"));
+        transactions.push(transaction);
+    }
+
+    let mut overridden = create_test_transaction(
+        user.id,
+        account_one.id,
+        "aggregate_override".to_string(),
+        -7500,
+        NaiveDate::from_ymd_opt(2024, 2, 2).unwrap(),
+    );
+    overridden.merchant_name = Some("Gas Station".to_string());
+    overridden.category_primary = "GENERAL_MERCHANDISE".to_string();
+    overridden.category_detailed = "Fuel".to_string();
+    overridden.normalized_merchant = Some("fuel_station".to_string());
+    transactions.push(overridden);
+
+    let mut income = create_test_transaction(
+        user.id,
+        account_one.id,
+        "aggregate_income".to_string(),
+        500000,
+        NaiveDate::from_ymd_opt(2024, 2, 3).unwrap(),
+    );
+    income.category_primary = "INCOME".to_string();
+    income.category_detailed = "Salary".to_string();
+    income.normalized_merchant = Some("payroll".to_string());
+    transactions.push(income);
+
+    let mut transfer_in = create_test_transaction(
+        user.id,
+        account_one.id,
+        "aggregate_transfer_in".to_string(),
+        25000,
+        NaiveDate::from_ymd_opt(2024, 2, 4).unwrap(),
+    );
+    transfer_in.category_primary = "TRANSFER_IN".to_string();
+    transfer_in.category_detailed = "Transfer".to_string();
+    transfer_in.normalized_merchant = Some("transfer_in".to_string());
+    transactions.push(transfer_in);
+
+    let mut transfer_out = create_test_transaction(
+        user.id,
+        account_two.id,
+        "aggregate_transfer_out".to_string(),
+        -20000,
+        NaiveDate::from_ymd_opt(2024, 2, 5).unwrap(),
+    );
+    transfer_out.category_primary = "TRANSFER_OUT".to_string();
+    transfer_out.category_detailed = "Transfer".to_string();
+    transfer_out.normalized_merchant = Some("transfer_out".to_string());
+    transactions.push(transfer_out);
+
+    let mut bank_fee = create_test_transaction(
+        user.id,
+        account_two.id,
+        "aggregate_bank_fee".to_string(),
+        -500,
+        NaiveDate::from_ymd_opt(2024, 2, 6).unwrap(),
+    );
+    bank_fee.category_primary = "BANK_FEES".to_string();
+    bank_fee.category_detailed = "Bank Fee".to_string();
+    bank_fee.normalized_merchant = Some("bank_fee".to_string());
+    transactions.push(bank_fee);
+
+    repo.upsert_transactions_batch(&transactions, &user.id)
+        .await
+        .unwrap();
+
+    db::query(
+        "INSERT INTO transaction_category_overrides (id, user_id, normalized_merchant, category_name, custom_category_id)
+         VALUES ($1, $2, $3, $4, $5)",
+    )
+    .bind(Uuid::new_v4())
+    .bind(user.id)
+    .bind("fuel_station")
+    .bind("TRANSPORTATION")
+    .bind(Option::<Uuid>::None)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let aggregates = repo
+        .get_category_aggregates_for_date_range(
+            &user.id,
+            NaiveDate::from_ymd_opt(2024, 2, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 2, 28).unwrap(),
+            None,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(aggregates.len(), 6);
+
+    let food = aggregates
+        .iter()
+        .find(|row| row.category == "FOOD_AND_DRINK")
+        .unwrap();
+    assert_eq!(food.count, 1001);
+    assert_eq!(food.expense, dec!(1001.00));
+    assert_eq!(food.income, dec!(0));
+
+    let overridden = aggregates
+        .iter()
+        .find(|row| row.category == "TRANSPORTATION")
+        .unwrap();
+    assert_eq!(overridden.count, 1);
+    assert_eq!(overridden.expense, dec!(75.00));
+    assert_eq!(overridden.income, dec!(0));
+
+    let income = aggregates
+        .iter()
+        .find(|row| row.category == "INCOME")
+        .unwrap();
+    assert_eq!(income.count, 1);
+    assert_eq!(income.income, dec!(5000.00));
+    assert_eq!(income.expense, dec!(0));
+
+    let transfer_in = aggregates
+        .iter()
+        .find(|row| row.category == "TRANSFER_IN")
+        .unwrap();
+    assert_eq!(transfer_in.count, 1);
+    assert_eq!(transfer_in.income, dec!(250.00));
+
+    let transfer_out = aggregates
+        .iter()
+        .find(|row| row.category == "TRANSFER_OUT")
+        .unwrap();
+    assert_eq!(transfer_out.count, 1);
+    assert_eq!(transfer_out.expense, dec!(200.00));
+
+    let bank_fee = aggregates
+        .iter()
+        .find(|row| row.category == "BANK_FEES")
+        .unwrap();
+    assert_eq!(bank_fee.count, 1);
+    assert_eq!(bank_fee.expense, dec!(5.00));
+
+    let filtered = repo
+        .get_category_aggregates_for_date_range(
+            &user.id,
+            NaiveDate::from_ymd_opt(2024, 2, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 2, 28).unwrap(),
+            Some(&[account_two.id]),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(filtered.len(), 2);
+    assert!(filtered.iter().any(|row| row.category == "TRANSFER_OUT"));
+    assert!(filtered.iter().any(|row| row.category == "BANK_FEES"));
+
+    let empty_accounts: &[Uuid] = &[];
+    let empty = repo
+        .get_category_aggregates_for_date_range(
+            &user.id,
+            NaiveDate::from_ymd_opt(2024, 2, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 2, 28).unwrap(),
+            Some(empty_accounts),
+        )
+        .await
+        .unwrap();
+
+    assert!(empty.is_empty());
+}
+
+#[tokio::test]
 async fn given_transactions_when_aggregating_insights_then_respects_filters_and_thresholds() {
     let Some(pool) = connect_pool().await else {
         return;
