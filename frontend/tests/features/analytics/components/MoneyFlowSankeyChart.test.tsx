@@ -109,13 +109,7 @@ mock.module('@/context/ThemeContext', () => ({
   useTheme: mockUseTheme,
 }));
 
-mock.module('@/features/transactions/hooks/useTransactionListLauncher', () => ({
-  useTransactionListLauncher: mock(() => ({
-    openTransactionList: mock(() => {}),
-    close: mock(() => {}),
-  })),
-}));
-
+import { sankeyResponseToChartData } from '@/features/analytics/adapters/chartData';
 import {
   MoneyFlowSankeyChart,
   SankeyTooltipContent,
@@ -189,9 +183,9 @@ describe('MoneyFlowSankeyChart', () => {
     );
 
     expect(await screen.findByTestId('sankey-node-income')).toBeVisible();
-    expect(screen.getByText('125%')).toBeVisible();
-    expect(screen.getByText('25%')).toBeVisible();
-    expect(screen.getAllByText('100%')).toHaveLength(1);
+    expect(screen.getByText('20%')).toBeVisible();
+    expect(screen.getByText('80%')).toBeVisible();
+    expect(screen.getAllByText('100%')).toHaveLength(2);
     const savingsNode = screen.getByTestId('sankey-node-savings');
     const savingsRect = savingsNode.querySelector('rect');
     const savingsLabel = savingsNode.querySelector('text:first-of-type');
@@ -199,8 +193,8 @@ describe('MoneyFlowSankeyChart', () => {
     expect(savingsLabel).toHaveTextContent('Savings');
     expect(savingsLabel).toHaveClass('font-label');
     expect(savingsAmount).toHaveClass('font-card-title');
-    expect(Number(savingsLabel?.getAttribute('y'))).toBeGreaterThan(
-      Number(savingsRect?.getAttribute('y')) + Number(savingsRect?.getAttribute('height'))
+    expect(Number(savingsLabel?.getAttribute('y'))).toBeLessThan(
+      Number(savingsRect?.getAttribute('y'))
     );
     expect(savingsNode.querySelector('text:last-of-type')).not.toHaveAttribute('transform');
     const incomeNode = screen.getByTestId('sankey-node-income');
@@ -226,6 +220,9 @@ describe('MoneyFlowSankeyChart', () => {
       'fill',
       getThemeColors('light').semantic.credit
     );
+    expect(
+      screen.getByTestId('sankey-node-free_spending').querySelector('text:first-of-type')
+    ).toHaveTextContent('Free Spending');
     expect(screen.getByTestId('sankey-node-food_and_drink').querySelector('rect')).toHaveAttribute(
       'fill',
       '#38bdf8'
@@ -400,6 +397,7 @@ describe('MoneyFlowSankeyChart', () => {
               },
               value: 700,
               percentOfExpenses: 46.7,
+              percentContext: 'freeSpending',
             },
           } as never,
         ]}
@@ -407,7 +405,7 @@ describe('MoneyFlowSankeyChart', () => {
     );
 
     expect(screen.getByText('Merchandise')).toBeVisible();
-    expect(screen.queryByText(/free spending/i)).toBeNull();
+    expect(screen.getByText('46.7% of free spending')).toBeVisible();
   });
 
   it('falls back to the tooltip label when the payload is not a resolved node', () => {
@@ -461,6 +459,106 @@ describe('MoneyFlowSankeyChart', () => {
     expect(screen.getByText('46.7% of expenses')).toHaveClass('font-caption');
   });
 
+  it('shows savings tooltip percent as a share of income', () => {
+    const response: SankeyResponse = {
+      nodes: [
+        { id: 'income', label: 'Income', kind: 'Income' },
+        { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+        { id: 'savings', label: 'Savings', kind: 'Savings' },
+      ],
+      links: [
+        { source: 'income', target: 'expenses', value: 507.78 },
+        { source: 'income', target: 'savings', value: 1992.22 },
+      ],
+      currency: 'USD',
+      summary: {
+        income: 2500,
+        expenses: 507.78,
+        covered: 507.78,
+        deficit: 0,
+        surplus: 1992.22,
+        coverage_ratio: 1,
+      },
+    };
+
+    render(
+      <SankeyTooltipContent
+        active
+        label="SAVINGS"
+        chartData={sankeyResponseToChartData(response)}
+        summary={{
+          income: 2500,
+          expenses: 507.78,
+          covered: 507.78,
+          surplus: 1992.22,
+        }}
+        payload={[
+          {
+            name: 'SAVINGS',
+            value: 1992.22,
+            payload: {
+              value: 1992.22,
+            },
+          } as never,
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Savings')).toBeVisible();
+    expect(screen.getByText('$1,992.22')).toBeVisible();
+    expect(screen.getByText('79.7% of income')).toBeVisible();
+  });
+
+  it('shows income tooltip percent from chart data without custom payload fields', () => {
+    const response: SankeyResponse = {
+      nodes: [
+        { id: 'income', label: 'Income', kind: 'Income' },
+        { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+        { id: 'savings', label: 'Savings', kind: 'Savings' },
+      ],
+      links: [
+        { source: 'income', target: 'expenses', value: 507.78 },
+        { source: 'income', target: 'savings', value: 1992.22 },
+      ],
+      currency: 'USD',
+      summary: {
+        income: 2500,
+        expenses: 507.78,
+        covered: 507.78,
+        deficit: 0,
+        surplus: 1992.22,
+        coverage_ratio: 1,
+      },
+    };
+
+    render(
+      <SankeyTooltipContent
+        active
+        label="INCOME"
+        chartData={sankeyResponseToChartData(response)}
+        summary={{
+          income: 2500,
+          expenses: 507.78,
+          covered: 507.78,
+          surplus: 1992.22,
+        }}
+        payload={[
+          {
+            name: 'INCOME',
+            value: 2500,
+            payload: {
+              value: 2500,
+            },
+          } as never,
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Income')).toBeVisible();
+    expect(screen.getByText('$2,500.00')).toBeVisible();
+    expect(screen.getByText('100% of expenses')).toBeVisible();
+  });
+
   it('does not show the expenses hub label for income tooltips', () => {
     render(
       <SankeyTooltipContent
@@ -487,6 +585,7 @@ describe('MoneyFlowSankeyChart', () => {
               targetId: 'expenses',
               value: 500,
               percentOfExpenses: 100,
+              percentContext: 'income',
             },
           } as never,
         ]}
@@ -495,7 +594,7 @@ describe('MoneyFlowSankeyChart', () => {
 
     expect(screen.getByText('Income')).toBeVisible();
     expect(screen.getByText('$500.00')).toBeVisible();
-    expect(screen.getByText('100% of expenses')).toBeVisible();
+    expect(screen.getByText('100% of income')).toBeVisible();
   });
 
   it('does not show the expenses hub label for debt tooltips', () => {
@@ -535,12 +634,42 @@ describe('MoneyFlowSankeyChart', () => {
     expect(screen.getByText('25% of expenses')).toBeVisible();
   });
 
-  it('derives the tooltip percent from the expense total when the payload omits it', () => {
+  it('derives the tooltip percent from chart data when the payload omits it', () => {
+    const response: SankeyResponse = {
+      nodes: [
+        { id: 'income', label: 'Income', kind: 'Income' },
+        { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+        { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' },
+        { id: 'category_travel', label: 'TRAVEL', kind: 'Category' },
+      ],
+      links: [
+        { source: 'income', target: 'expenses', value: 1500 },
+        { source: 'expenses', target: 'free_spending', value: 1500 },
+        { source: 'free_spending', target: 'category_travel', value: 700 },
+      ],
+      currency: 'USD',
+      summary: {
+        income: 2500,
+        expenses: 1500,
+        covered: 1500,
+        deficit: 0,
+        surplus: 1000,
+        coverage_ratio: 1,
+      },
+    };
+    const chartData = sankeyResponseToChartData(response);
+
     render(
       <SankeyTooltipContent
         active
         label="TRAVEL"
-        expenseTotal={1500}
+        chartData={chartData}
+        summary={{
+          income: 2500,
+          expenses: 1500,
+          covered: 1500,
+          surplus: 1000,
+        }}
         payload={[
           {
             name: 'TRAVEL',
@@ -558,7 +687,7 @@ describe('MoneyFlowSankeyChart', () => {
 
     expect(screen.getByText('Travel')).toBeVisible();
     expect(screen.getByText('$700.00')).toBeVisible();
-    expect(screen.getByText('46.7% of expenses')).toBeVisible();
+    expect(screen.getByText('100% of free spending')).toBeVisible();
   });
 
   it('formats category labels from the category key instead of the prefixed node id', () => {

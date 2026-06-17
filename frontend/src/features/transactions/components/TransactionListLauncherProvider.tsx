@@ -3,7 +3,10 @@ import {
   TransactionListLauncherContext,
   type TransactionListLauncherContextType,
 } from '@/features/transactions/hooks/useTransactionListLauncher';
-import type { TransactionListContext } from '@/features/transactions/models/transactionWindow';
+import {
+  type TransactionListContext,
+  transactionListContextsEqual,
+} from '@/features/transactions/models/transactionWindow';
 import { TransactionListPopover } from './TransactionListPopover';
 
 interface State {
@@ -20,7 +23,18 @@ export function TransactionListLauncherProvider({ children }: { children: ReactN
 
   const openTransactionList = useCallback(
     (context: TransactionListContext, anchorRef: RefObject<HTMLElement>) => {
-      setState({ open: true, context, anchorRef });
+      setState((prev) => {
+        if (
+          prev.open &&
+          prev.context != null &&
+          prev.anchorRef === anchorRef &&
+          transactionListContextsEqual(prev.context, context)
+        ) {
+          return { ...prev, open: false };
+        }
+
+        return { open: true, context, anchorRef };
+      });
     },
     []
   );

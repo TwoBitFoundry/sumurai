@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
   resolveSankeyLayoutMetrics,
+  resolveSankeyTooltipMetadata,
   sankeyResponseToChartData,
 } from '@/features/analytics/adapters/chartData';
 import type { SankeyResponse } from '@/types/api';
@@ -153,34 +154,178 @@ describe('sankeyResponseToChartData', () => {
 
     expect(sankeyResponseToChartData(response)).toMatchObject({
       nodes: [
-        { id: 'income', percentOfExpenses: 106.66666666666667 },
-        { id: 'expenses', percentOfExpenses: 100 },
-        { id: 'fixed_expenses', percentOfExpenses: 10 },
-        { id: 'free_spending', percentOfExpenses: 90 },
-        { id: 'subscription', percentOfExpenses: 10 },
-        { id: 'food_and_drink', percentOfExpenses: 46.666666666666664 },
-        { id: 'transportation', percentOfExpenses: 33.33333333333333 },
-        { id: 'shopping', percentOfExpenses: 10 },
-        { id: 'savings', percentOfExpenses: 6.666666666666667 },
+        { id: 'income', percentOfExpenses: 100, percentContext: 'expenseFunding' },
+        { id: 'expenses', percentOfExpenses: 93.75, percentContext: 'income' },
+        { id: 'fixed_expenses', percentOfExpenses: 10, percentContext: 'expenses' },
+        { id: 'free_spending', percentOfExpenses: 90, percentContext: 'expenses' },
+        { id: 'subscription', percentOfExpenses: 100, percentContext: 'fixedExpenses' },
+        {
+          id: 'food_and_drink',
+          percentOfExpenses: 51.85185185185185,
+          percentContext: 'freeSpending',
+        },
+        {
+          id: 'transportation',
+          percentOfExpenses: 37.03703703703704,
+          percentContext: 'freeSpending',
+        },
+        { id: 'shopping', percentOfExpenses: 11.11111111111111, percentContext: 'freeSpending' },
+        { id: 'savings', percentOfExpenses: 6.25, percentContext: 'income' },
       ],
       links: [
-        { sourceId: 'income', targetId: 'expenses', percentOfExpenses: 100 },
-        { sourceId: 'expenses', targetId: 'fixed_expenses', percentOfExpenses: 10 },
-        { sourceId: 'expenses', targetId: 'free_spending', percentOfExpenses: 90 },
-        { sourceId: 'fixed_expenses', targetId: 'subscription', percentOfExpenses: 10 },
+        {
+          sourceId: 'income',
+          targetId: 'expenses',
+          percentOfExpenses: 93.75,
+          percentContext: 'income',
+        },
+        {
+          sourceId: 'expenses',
+          targetId: 'fixed_expenses',
+          percentOfExpenses: 10,
+          percentContext: 'expenses',
+        },
+        {
+          sourceId: 'expenses',
+          targetId: 'free_spending',
+          percentOfExpenses: 90,
+          percentContext: 'expenses',
+        },
+        {
+          sourceId: 'fixed_expenses',
+          targetId: 'subscription',
+          percentOfExpenses: 100,
+          percentContext: 'fixedExpenses',
+        },
         {
           sourceId: 'free_spending',
           targetId: 'food_and_drink',
-          percentOfExpenses: 46.666666666666664,
+          percentOfExpenses: 51.85185185185185,
+          percentContext: 'freeSpending',
         },
         {
           sourceId: 'free_spending',
           targetId: 'transportation',
-          percentOfExpenses: 33.33333333333333,
+          percentOfExpenses: 37.03703703703704,
+          percentContext: 'freeSpending',
         },
-        { sourceId: 'free_spending', targetId: 'shopping', percentOfExpenses: 10 },
-        { sourceId: 'income', targetId: 'savings', percentOfExpenses: 6.666666666666667 },
+        {
+          sourceId: 'free_spending',
+          targetId: 'shopping',
+          percentOfExpenses: 11.11111111111111,
+          percentContext: 'freeSpending',
+        },
+        {
+          sourceId: 'income',
+          targetId: 'savings',
+          percentOfExpenses: 6.25,
+          percentContext: 'income',
+        },
       ],
+    });
+  });
+
+  it('uses contextual percentages that sum to 100% within each split level', () => {
+    const response: SankeyResponse = {
+      nodes: [
+        { id: 'income', label: 'Income', kind: 'Income' },
+        { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+        { id: 'savings', label: 'Savings', kind: 'Savings' },
+      ],
+      links: [
+        { source: 'income', target: 'expenses', value: 507.78 },
+        { source: 'income', target: 'savings', value: 1992.22 },
+      ],
+      currency: 'USD',
+      summary: {
+        income: 2500,
+        expenses: 507.78,
+        covered: 507.78,
+        deficit: 0,
+        surplus: 1992.22,
+        coverage_ratio: 1,
+      },
+    };
+
+    const chartData = sankeyResponseToChartData(response);
+    expect(chartData.nodes.find((node) => node.id === 'income')).toMatchObject({
+      percentOfExpenses: 100,
+      percentContext: 'expenseFunding',
+    });
+    expect(chartData.nodes.find((node) => node.id === 'savings')).toMatchObject({
+      percentOfExpenses: 79.6888,
+      percentContext: 'income',
+    });
+    expect(chartData.nodes.find((node) => node.id === 'expenses')).toMatchObject({
+      percentOfExpenses: 20.3112,
+      percentContext: 'income',
+    });
+    expect(chartData.links).toMatchObject([
+      {
+        sourceId: 'income',
+        targetId: 'expenses',
+        percentOfExpenses: 20.3112,
+        percentContext: 'income',
+      },
+      {
+        sourceId: 'income',
+        targetId: 'savings',
+        percentOfExpenses: 79.6888,
+        percentContext: 'income',
+      },
+    ]);
+  });
+});
+
+describe('resolveSankeyTooltipMetadata', () => {
+  it('looks up tooltip percentages from chart data when recharts omits custom fields', () => {
+    const response: SankeyResponse = {
+      nodes: [
+        { id: 'income', label: 'Income', kind: 'Income' },
+        { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+        { id: 'savings', label: 'Savings', kind: 'Savings' },
+      ],
+      links: [
+        { source: 'income', target: 'expenses', value: 507.78 },
+        { source: 'income', target: 'savings', value: 1992.22 },
+      ],
+      currency: 'USD',
+      summary: {
+        income: 2500,
+        expenses: 507.78,
+        covered: 507.78,
+        deficit: 0,
+        surplus: 1992.22,
+        coverage_ratio: 1,
+      },
+    };
+    const chartData = sankeyResponseToChartData(response);
+
+    expect(resolveSankeyTooltipMetadata(chartData, { value: 2500 }, 'INCOME')).toMatchObject({
+      percentOfExpenses: 100,
+      percentContext: 'expenseFunding',
+      kind: 'Income',
+    });
+    expect(resolveSankeyTooltipMetadata(chartData, { value: 1992.22 }, 'SAVINGS')).toMatchObject({
+      percentOfExpenses: 79.6888,
+      percentContext: 'income',
+      kind: 'Savings',
+    });
+    expect(resolveSankeyTooltipMetadata(chartData, { value: 507.78 }, 'EXPENSES')).toMatchObject({
+      percentOfExpenses: 20.3112,
+      percentContext: 'income',
+      kind: 'Expenses',
+    });
+    expect(
+      resolveSankeyTooltipMetadata(chartData, {
+        source: 0,
+        target: 2,
+        value: 1992.22,
+      })
+    ).toMatchObject({
+      percentOfExpenses: 79.6888,
+      percentContext: 'income',
+      kind: 'Savings',
     });
   });
 });
