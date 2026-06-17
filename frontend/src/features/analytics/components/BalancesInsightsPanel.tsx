@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight, ChevronDown, CircleDollarSign } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, CircleDollarSign } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { AccountGroupIcon } from '@/components/AccountGroupIcon';
 import { Amount } from '@/components/Amount';
@@ -307,18 +307,6 @@ export function BalancesInsightsPanel({
                   {netAmount}
                 </div>
               )}
-              <ChevronDown
-                className={cn(
-                  'mx-auto',
-                  'h-4',
-                  'w-4',
-                  'shrink-0',
-                  'transition-transform',
-                  'duration-200',
-                  expanded && 'rotate-180',
-                  semanticTextRecipes.subtle
-                )}
-              />
             </div>
           </>
         }

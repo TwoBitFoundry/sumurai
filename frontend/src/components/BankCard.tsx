@@ -15,6 +15,7 @@ import {
   control,
   controlIconWell,
   border as uiBorderRecipes,
+  insightsPanel as uiInsightsPanelRecipes,
   status as uiStatusRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
@@ -217,123 +218,115 @@ export const BankCard: React.FC<BankCardProps> = ({
       rounded="lg"
       padding="none"
       withInnerEffects={false}
-      containerClassName={cn('p-4', 'md:p-5', 'lg:p-5')}
+      containerClassName={cn('py-4', 'pr-4', 'pl-3', 'md:py-5', 'md:pr-5', 'md:pl-3.5')}
       className={cn('space-y-6')}
     >
-      <div className={cn('relative', 'min-w-0', 'px-3', 'pt-3', 'pb-0')}>
+      <div
+        className={cn(
+          ...uiInsightsPanelRecipes.summaryToggleShell,
+          'pr-3',
+          'pl-1',
+          'pt-3',
+          'pb-2',
+          'md:pr-3',
+          'md:pl-1.5'
+        )}
+      >
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
           aria-expanded={expanded}
-          className={cn('absolute', 'inset-0', 'cursor-pointer')}
+          className={cn(...uiInsightsPanelRecipes.summaryToggleOverlay)}
         />
-        <div className={cn('relative', 'z-10', 'pointer-events-none')}>
-          <div
-            className={cn(
-              'flex',
-              'min-w-0',
-              'flex-wrap',
-              'items-center',
-              'gap-x-2',
-              'gap-y-2',
-              'md:flex-nowrap'
-            )}
-          >
+        <div
+          className={cn(
+            ...uiInsightsPanelRecipes.summaryToggleGrid,
+            ...uiInsightsPanelRecipes.summaryToggleContent
+          )}
+        >
+          <div className={cn(...uiInsightsPanelRecipes.summaryChevronColumn)} aria-hidden="true">
+            <ChevronDown
+              className={cn(...uiInsightsPanelRecipes.summaryChevron, expanded && 'rotate-180')}
+            />
+          </div>
+          <div className={cn('min-w-0')}>
             <div
               className={cn(
                 'flex',
                 'min-w-0',
-                'w-full',
-                'flex-1',
+                'flex-wrap',
                 'items-center',
                 'gap-x-2',
-                'md:w-auto'
+                'gap-y-2',
+                'md:flex-nowrap'
               )}
             >
               <div
                 className={cn(
                   'flex',
-                  'items-center',
-                  'justify-center',
-                  control.square.md,
-                  'shrink-0'
-                )}
-              >
-                <StatusPill status={bank.status} />
-              </div>
-              <h3
-                title={bank.name}
-                className={cn(
                   'min-w-0',
-                  'line-clamp-2',
-                  'break-words',
-                  uiTypographyRecipes.sectionTitle,
-                  uiTextRecipes.primary
+                  'w-full',
+                  'flex-1',
+                  'items-center',
+                  'gap-x-2',
+                  'md:w-auto'
                 )}
               >
-                {bank.name}
-              </h3>
-            </div>
-            <div
-              className={cn(
-                'pointer-events-auto',
-                'flex',
-                'w-full',
-                'items-center',
-                'gap-2',
-                'md:ml-auto',
-                'md:w-auto',
-                'md:justify-end'
-              )}
-            >
-              {syncControl}
-              {exportControl}
-              <div className={cn('flex', 'flex-1', 'justify-center', 'md:hidden')}>
-                <ChevronDown
+                <div
                   className={cn(
-                    'h-4',
-                    'w-4',
-                    'shrink-0',
-                    'transition-transform',
-                    'duration-200',
-                    expanded && 'rotate-180',
-                    'text-slate-500',
-                    'dark:text-slate-500'
+                    'flex',
+                    'items-center',
+                    'justify-center',
+                    control.square.md,
+                    'shrink-0'
                   )}
-                />
+                >
+                  <StatusPill status={bank.status} />
+                </div>
+                <h3
+                  title={bank.name}
+                  className={cn(
+                    'min-w-0',
+                    'line-clamp-2',
+                    'break-words',
+                    uiTypographyRecipes.sectionTitle,
+                    uiTextRecipes.primary
+                  )}
+                >
+                  {bank.name}
+                </h3>
               </div>
-              {disconnectControl}
+              <div
+                className={cn(
+                  'pointer-events-auto',
+                  'flex',
+                  'w-full',
+                  'items-center',
+                  'gap-2',
+                  'md:ml-auto',
+                  'md:w-auto',
+                  'md:justify-end'
+                )}
+              >
+                {syncControl}
+                {exportControl}
+                <div className={cn('ml-auto', 'md:ml-0')}>{disconnectControl}</div>
+              </div>
             </div>
-          </div>
-          {statusCaption ? (
-            <p
-              className={cn(
-                'mt-1',
-                uiTypographyRecipes.caption,
-                ...(bank.status === 'needs_reauth'
-                  ? uiStatusRecipes.warning.text
-                  : uiStatusRecipes.danger.text)
-              )}
-            >
-              {statusCaption}
-            </p>
-          ) : null}
-          <div
-            className={cn('relative', 'mt-0.5', 'hidden', 'justify-center', 'pb-0.5', 'md:flex')}
-          >
-            <ChevronDown
-              className={cn(
-                'h-4',
-                'w-4',
-                'shrink-0',
-                'transition-transform',
-                'duration-200',
-                expanded && 'rotate-180',
-                'text-slate-500',
-                'dark:text-slate-500'
-              )}
-            />
+            {statusCaption ? (
+              <p
+                className={cn(
+                  'mt-1',
+                  uiTypographyRecipes.caption,
+                  ...(bank.status === 'needs_reauth'
+                    ? uiStatusRecipes.warning.text
+                    : uiStatusRecipes.danger.text)
+                )}
+              >
+                {statusCaption}
+              </p>
+            ) : null}
           </div>
         </div>
       </div>

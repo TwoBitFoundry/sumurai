@@ -76,12 +76,11 @@ const TransactionsPage: React.FC<{
       className={cn(
         'flex',
         'w-full',
-        'shrink-0',
         'items-center',
         'justify-between',
         'gap-3',
-        'md:w-auto',
-        'md:justify-start'
+        'lg:w-auto',
+        'lg:justify-start'
       )}
     >
       <IconButton
@@ -124,6 +123,7 @@ const TransactionsPage: React.FC<{
       <PageLayout
         title="Tally the ledgers across financial allies"
         subtitle="Review, categorize, and track transactions from all your connected bank accounts."
+        actions={categorizeActions}
         error={error}
         stats={
           <TransactionInsightsPanel
@@ -139,43 +139,27 @@ const TransactionsPage: React.FC<{
           rounded="lg"
           padding="none"
           withInnerEffects={false}
-          className={cn('relative', 'z-10')}
+          containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
+          className={cn('space-y-4')}
         >
-          <div
+          <h2
             className={cn(
               'flex',
-              'flex-wrap',
+              'min-w-0',
               'items-center',
-              'justify-between',
-              'gap-3',
-              'px-3',
-              'pt-6',
-              'pb-4',
-              'md:px-6'
+              'gap-2',
+              uiTypographyRecipes.sectionTitle,
+              uiTextRecipes.primary
             )}
           >
-            <h2
-              className={cn(
-                'flex',
-                'min-w-0',
-                'w-full',
-                'items-center',
-                'gap-2',
-                'md:w-auto',
-                uiTypographyRecipes.sectionTitle,
-                uiTextRecipes.primary
-              )}
+            <span
+              className={cn(...controlIconWell.lg, heroAccents.emerald.icon)}
+              aria-hidden="true"
             >
-              <span
-                className={cn(...controlIconWell.lg, heroAccents.emerald.icon)}
-                aria-hidden="true"
-              >
-                <ReceiptText />
-              </span>
-              Transactions
-            </h2>
-            {categorizeActions}
-          </div>
+              <ReceiptText />
+            </span>
+            Transactions
+          </h2>
           <CategoryCatalogPicker
             open={isCategoryCatalogOpen}
             anchorRef={addCategoryButtonRef}

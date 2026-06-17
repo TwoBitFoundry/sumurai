@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/ui/primitives';
 import { insightsPanel as uiInsightsPanelRecipes } from '@/ui/recipes';
@@ -30,7 +31,12 @@ export function InsightsExpandablePanel({
 }: InsightsExpandablePanelProps) {
   return (
     <div data-testid={testId}>
-      <div className={cn('relative', 'z-10', 'px-3', 'py-1.5', 'md:px-4', 'md:py-2')}>
+      <div
+        className={cn(
+          ...uiInsightsPanelRecipes.summaryToggleShell,
+          ...uiInsightsPanelRecipes.summarySectionPadding
+        )}
+      >
         <button
           type="button"
           aria-expanded={expanded}
@@ -38,10 +44,21 @@ export function InsightsExpandablePanel({
           aria-label={summaryLabel}
           title={summaryLabel}
           onClick={onToggle}
-          className={cn('w-full', 'text-left')}
+          className={cn(...uiInsightsPanelRecipes.summaryToggleOverlay)}
+        />
+        <div
+          className={cn(
+            ...uiInsightsPanelRecipes.summaryToggleGrid,
+            ...uiInsightsPanelRecipes.summaryToggleContent
+          )}
         >
-          {summary}
-        </button>
+          <div className={cn(...uiInsightsPanelRecipes.summaryChevronColumn)} aria-hidden="true">
+            <ChevronDown
+              className={cn(...uiInsightsPanelRecipes.summaryChevron, expanded && 'rotate-180')}
+            />
+          </div>
+          <div className={cn('min-w-0')}>{summary}</div>
+        </div>
       </div>
 
       <AnimatePresence initial={false}>

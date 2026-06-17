@@ -1,4 +1,4 @@
-import { Activity, BarChart3, ChevronDown, Layers } from 'lucide-react';
+import { Activity, BarChart3, Layers } from 'lucide-react';
 import { useState } from 'react';
 import { InsightCard } from '@/components/widgets/InsightCard';
 import { InsightsExpandablePanel } from '@/components/widgets/InsightsExpandablePanel';
@@ -20,7 +20,7 @@ export interface TransactionInsightsPanelProps {
 }
 
 const STATE_LABEL: Record<InsightState, string> = {
-  a: 'All insights',
+  a: 'Transaction insights',
   b: 'Category insights',
   c: 'Merchant insights',
   d: 'Account insights',
@@ -267,25 +267,7 @@ export function TransactionInsightsPanel({
         summaryLabel={insightsToggleLabel}
         expanded={expanded}
         onToggle={toggleExpanded}
-        summary={
-          <>
-            <InsightsPanelHeader label={stateLabel} isLoading={isLoading} />
-            <div className={cn('flex', 'justify-center', 'pt-0.5')}>
-              <ChevronDown
-                className={cn(
-                  'h-4',
-                  'w-4',
-                  'shrink-0',
-                  'transition-transform',
-                  'duration-200',
-                  expanded && 'rotate-180',
-                  'text-slate-500',
-                  'dark:text-slate-400'
-                )}
-              />
-            </div>
-          </>
-        }
+        summary={<InsightsPanelHeader label={stateLabel} isLoading={isLoading} />}
         bodyClassName={cn(
           isMobile
             ? 'grid grid-cols-[auto_1fr_auto_auto_auto] items-baseline gap-x-2 gap-y-1.5'

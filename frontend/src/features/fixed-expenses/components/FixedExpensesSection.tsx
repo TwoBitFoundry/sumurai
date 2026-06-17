@@ -25,14 +25,11 @@ export function FixedExpensesSection({
       testId="fixed-expenses-section"
       expandLabel="Show fixed expenses"
       collapseLabel="Hide fixed expenses"
-      actionsStart={
-        <div className={cn('flex', 'items-center', 'gap-2')}>
-          {isLoading ? (
-            <Loader2 className={cn('h-3.5', 'w-3.5', 'animate-spin')} aria-hidden="true" />
-          ) : null}
-        </div>
+      actions={
+        isLoading ? (
+          <Loader2 className={cn('h-3.5', 'w-3.5', 'animate-spin')} aria-hidden="true" />
+        ) : undefined
       }
-      actionsEnd={<span aria-hidden className={cn('inline-block', 'h-9', 'w-9', 'shrink-0')} />}
     >
       <FixedExpenseList fixedExpenses={fixedExpenses} month={month} isLoading={isLoading} />
     </CollapsibleSection>

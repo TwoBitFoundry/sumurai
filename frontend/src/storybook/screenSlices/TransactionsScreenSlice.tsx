@@ -167,28 +167,27 @@ export function TransactionsScreenSlice(props: {
             rounded="lg"
             padding="none"
             withInnerEffects={false}
-            className={cn('relative', 'z-10')}
+            containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
+            className={cn('space-y-4')}
           >
-            <div className={cn('space-y-1', 'px-3', 'pt-6', 'md:px-6')}>
-              <h2
-                className={cn(
-                  'flex',
-                  'min-w-0',
-                  'items-center',
-                  'gap-2',
-                  uiTypographyRecipes.sectionTitle,
-                  uiTextRecipes.primary
-                )}
+            <h2
+              className={cn(
+                'flex',
+                'min-w-0',
+                'items-center',
+                'gap-2',
+                uiTypographyRecipes.sectionTitle,
+                uiTextRecipes.primary
+              )}
+            >
+              <span
+                className={cn(...controlIconWell.lg, heroAccents.emerald.icon)}
+                aria-hidden="true"
               >
-                <span
-                  className={cn(...controlIconWell.lg, heroAccents.emerald.icon)}
-                  aria-hidden="true"
-                >
-                  <ReceiptText />
-                </span>
-                Transactions
-              </h2>
-            </div>
+                <ReceiptText />
+              </span>
+              Transactions
+            </h2>
             <VirtualizedTransactionList filters={filters} variant="page" />
           </GlassCard>
         </PageLayout>

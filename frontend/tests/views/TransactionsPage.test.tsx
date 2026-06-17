@@ -176,8 +176,8 @@ describe('TransactionsPage', () => {
     expect(panel).toHaveAttribute('data-loading', 'false');
   });
 
-  it('renders the auto-categorize action inline with the transactions title', () => {
-    const { getByRole } = render(
+  it('renders categorize actions in the page hero with responsive layout classes', () => {
+    render(
       <TransactionsPage
         filterControl={{
           search: '',
@@ -188,7 +188,16 @@ describe('TransactionsPage', () => {
       />
     );
 
-    expect(getByRole('button', { name: /categorize/i })).toBeEnabled();
+    const heroActions = screen.getByTestId('page-actions');
+    const actionsRow = heroActions.firstElementChild;
+    expect(heroActions).toHaveTextContent('Categorize');
+    expect(actionsRow?.className).toContain('justify-between');
+    expect(actionsRow?.className).toContain('lg:w-auto');
+    expect(
+      screen.getByRole('heading', { name: 'Transactions' }).parentElement
+    ).not.toHaveTextContent('Categorize');
+    expect(screen.getByRole('button', { name: 'Categories' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /categorize/i })).toBeEnabled();
   });
 
   it('passes loading state to the insights panel independently from the list', () => {

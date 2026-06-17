@@ -95,12 +95,12 @@ describe('CollapsibleSection', () => {
       </CollapsibleSection>
     );
 
-    const chevron = document.querySelector('.lucide-chevron-down');
-    expect(chevron).toBeTruthy();
-
-    await user.click(chevron!);
+    await user.click(screen.getByRole('button', { name: 'Show budgets' }));
 
     expect(screen.getByTestId('budgets-content')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('budgets-section').querySelector('.lucide-chevron-down')
+    ).toBeTruthy();
   });
 
   it('keeps split header actions clickable while the title area toggles expansion', async () => {
@@ -130,7 +130,7 @@ describe('CollapsibleSection', () => {
     expect(screen.queryByTestId('budgets-content')).not.toBeInTheDocument();
   });
 
-  it('places split header actions inline with the title from the lg breakpoint', () => {
+  it('places split header actions inline with the title', () => {
     const { container } = render(
       <CollapsibleSection
         sectionId="budgets"
@@ -145,9 +145,11 @@ describe('CollapsibleSection', () => {
       </CollapsibleSection>
     );
 
-    const inlineActions = container.querySelector('.lg\\:ml-auto');
-    expect(inlineActions).toHaveTextContent('Edit budgets');
-    expect(inlineActions).toHaveTextContent('Add budget');
+    const headerRow = screen.getByRole('heading', { name: 'Budgets' }).parentElement?.parentElement
+      ?.parentElement;
+    expect(headerRow).toHaveTextContent('Edit budgets');
+    expect(headerRow).toHaveTextContent('Add budget');
+    expect(container.querySelector('.flex-wrap')).toBeNull();
   });
 
   it('supports keyboard activation on the title area', async () => {

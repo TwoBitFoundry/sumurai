@@ -185,15 +185,15 @@ describe('BalancesInsightsPanel', () => {
   it('renders income and expenses YTD when both props are provided', () => {
     render(<BalancesInsightsPanel overall={sampleOverall} incomeYtd={52300} expensesYtd={18400} />);
 
-    const summaryButton = screen.getByRole('button', { name: /balance insights/i });
+    const panel = screen.getByTestId('balances-insights-panel');
     const incomeBlock = screen.getByTestId('balances-ytd-income');
     const expensesBlock = screen.getByTestId('balances-ytd-expenses');
     expect(incomeBlock).toHaveClass('items-baseline');
     expect(expensesBlock).toHaveClass('items-baseline');
     expect(incomeBlock).toHaveTextContent('$52,300.00');
     expect(expensesBlock).toHaveTextContent('$18,400.00');
-    const incomeLabel = within(summaryButton).getByText('income');
-    const expensesLabel = within(summaryButton).getByText('expenses');
+    const incomeLabel = within(panel).getByText('income');
+    const expensesLabel = within(panel).getByText('expenses');
     expect(incomeLabel).toHaveClass('font-label');
     expect(incomeLabel).toHaveClass(semanticTextRecipes.label);
     expect(expensesLabel).toHaveClass('font-label');

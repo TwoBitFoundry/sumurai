@@ -8,6 +8,7 @@ import {
   control,
   controlIconWell,
   border as uiBorderRecipes,
+  insightsPanel as uiInsightsPanelRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
@@ -60,21 +61,7 @@ export function CollapsibleSection({
   }, [expandSectionRef, setExpanded]);
 
   const hasSplitActions = actionsStart != null || actionsEnd != null;
-
-  const chevron = (
-    <ChevronDown
-      className={cn(
-        'h-4',
-        'w-4',
-        'shrink-0',
-        'transition-transform',
-        'duration-200',
-        expanded && 'rotate-180',
-        'text-slate-500',
-        'dark:text-slate-500'
-      )}
-    />
-  );
+  const toggleLabel = expanded ? collapseLabel : expandLabel;
 
   const titleRow = (
     <div className={cn('flex', 'min-w-0', 'items-center', 'gap-x-2')}>
@@ -94,128 +81,84 @@ export function CollapsibleSection({
     </div>
   );
 
-  const chevronToggleButton = (className?: string) => (
-    <button
-      type="button"
-      onClick={toggleExpanded}
-      aria-hidden="true"
-      tabIndex={-1}
-      className={cn('cursor-pointer', 'pointer-events-auto', className)}
-    >
-      {chevron}
-    </button>
+  const headerShell = (content: React.ReactNode) => (
+    <div className={cn(...uiInsightsPanelRecipes.summaryToggleShell)}>
+      <button
+        type="button"
+        onClick={toggleExpanded}
+        aria-label={toggleLabel}
+        title={toggleLabel}
+        aria-expanded={expanded}
+        className={cn(...uiInsightsPanelRecipes.summaryToggleOverlay)}
+      />
+      <div
+        className={cn(
+          ...uiInsightsPanelRecipes.summaryToggleGrid,
+          ...uiInsightsPanelRecipes.summaryToggleContent
+        )}
+      >
+        <div className={cn(...uiInsightsPanelRecipes.summaryChevronColumn)} aria-hidden="true">
+          <ChevronDown
+            className={cn(...uiInsightsPanelRecipes.summaryChevron, expanded && 'rotate-180')}
+          />
+        </div>
+        <div className={cn('min-w-0')}>{content}</div>
+      </div>
+    </div>
   );
+
+  const splitActionsRow =
+    actionsStart != null || actionsEnd != null ? (
+      <div
+        className={cn(
+          'pointer-events-auto',
+          'ml-auto',
+          'flex',
+          'shrink-0',
+          'items-center',
+          'gap-2'
+        )}
+      >
+        {actionsStart != null ? <div className={cn('shrink-0')}>{actionsStart}</div> : null}
+        {actionsEnd != null ? <div className={cn('shrink-0')}>{actionsEnd}</div> : null}
+      </div>
+    ) : null;
 
   return (
     <section className={cn('space-y-4')} data-testid={testId}>
       {hasSplitActions ? (
         <div className={cn('relative')}>
-          <button
-            type="button"
-            onClick={toggleExpanded}
-            aria-label={expanded ? collapseLabel : expandLabel}
-            title={expanded ? collapseLabel : expandLabel}
-            aria-expanded={expanded}
-            className={cn('absolute', 'inset-0', 'z-0', 'cursor-pointer')}
-          />
-          <div className={cn('relative', 'z-10', 'pointer-events-none')}>
-            <div className={cn('min-w-0')}>
-              <div
-                className={cn(
-                  'flex',
-                  'min-w-0',
-                  'flex-wrap',
-                  'items-center',
-                  'gap-x-2',
-                  'gap-y-2',
-                  'lg:flex-nowrap'
-                )}
-              >
-                <div className={cn('flex', 'min-w-0', 'w-full', 'flex-1', 'flex-col', 'lg:w-auto')}>
-                  {titleRow}
-                  {description ? (
-                    <p
-                      className={cn(
-                        'mt-1',
-                        'min-w-0',
-                        uiTypographyRecipes.body,
-                        uiTextRecipes.muted
-                      )}
-                    >
-                      {description}
-                    </p>
-                  ) : null}
-                </div>
-                {actionsStart != null || actionsEnd != null ? (
-                  <div
-                    className={cn(
-                      'relative',
-                      'flex',
-                      'w-full',
-                      'items-center',
-                      'justify-between',
-                      'gap-2',
-                      'lg:ml-auto',
-                      'lg:w-auto',
-                      'lg:justify-end'
-                    )}
-                  >
-                    {actionsStart != null ? (
-                      <div className={cn('relative', 'z-10', 'shrink-0', 'pointer-events-auto')}>
-                        {actionsStart}
-                      </div>
-                    ) : null}
-                    <div
-                      className={cn('absolute', 'inset-x-0', 'flex', 'justify-center', 'lg:hidden')}
-                    >
-                      {chevronToggleButton(cn('flex', 'justify-center'))}
-                    </div>
-                    {actionsEnd != null ? (
-                      <div className={cn('relative', 'z-10', 'shrink-0', 'pointer-events-auto')}>
-                        {actionsEnd}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
+          {headerShell(
+            <div className={cn('flex', 'min-w-0', 'flex-col', 'gap-1')}>
+              <div className={cn('flex', 'min-w-0', 'items-center', 'gap-2')}>
+                <div className={cn('min-w-0', 'flex-1')}>{titleRow}</div>
+                {splitActionsRow}
               </div>
+              {description ? (
+                <p className={cn('min-w-0', uiTypographyRecipes.body, uiTextRecipes.muted)}>
+                  {description}
+                </p>
+              ) : null}
             </div>
-            <div className={cn('mt-2', 'hidden', 'justify-center', 'pb-1', 'lg:flex')}>
-              {chevronToggleButton(cn('flex', 'w-full', 'justify-center'))}
-            </div>
-          </div>
+          )}
         </div>
       ) : (
         <div className={cn('relative')}>
-          <button
-            type="button"
-            onClick={toggleExpanded}
-            aria-label={expanded ? collapseLabel : expandLabel}
-            title={expanded ? collapseLabel : expandLabel}
-            aria-expanded={expanded}
-            className={cn('w-full', 'text-left')}
-          >
-            {titleRow}
-            {description ? (
-              <p className={cn('mt-1', 'min-w-0', uiTypographyRecipes.body, uiTextRecipes.muted)}>
-                {description}
-              </p>
-            ) : null}
-            <div className={cn('flex', 'justify-center')}>{chevron}</div>
-          </button>
-          {actions ? (
-            <div
-              className={cn(
-                'pointer-events-auto',
-                'absolute',
-                'right-0',
-                'top-0',
-                'z-10',
-                'shrink-0'
-              )}
-            >
-              {actions}
+          {headerShell(
+            <div className={cn('flex', 'min-w-0', 'flex-col', 'gap-1')}>
+              <div className={cn('flex', 'min-w-0', 'items-center', 'gap-2')}>
+                <div className={cn('min-w-0', 'flex-1')}>{titleRow}</div>
+                {actions ? (
+                  <div className={cn('pointer-events-auto', 'ml-auto', 'shrink-0')}>{actions}</div>
+                ) : null}
+              </div>
+              {description ? (
+                <p className={cn('min-w-0', uiTypographyRecipes.body, uiTextRecipes.muted)}>
+                  {description}
+                </p>
+              ) : null}
             </div>
-          ) : null}
+          )}
         </div>
       )}
       <AnimatePresence initial={false}>

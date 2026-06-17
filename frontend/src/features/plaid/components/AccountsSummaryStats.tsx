@@ -1,4 +1,4 @@
-import { Building2, ChevronDown, Clock, CreditCard } from 'lucide-react';
+import { Building2, Clock, CreditCard } from 'lucide-react';
 import { useState } from 'react';
 import { InsightCard } from '@/components/widgets/InsightCard';
 import { InsightsExpandablePanel } from '@/components/widgets/InsightsExpandablePanel';
@@ -109,25 +109,7 @@ export const AccountsSummaryStats = ({ summary, lastSyncValue }: AccountsSummary
             ? 'grid grid-cols-[auto_1fr_auto_auto_auto] items-baseline gap-x-2 gap-y-1.5'
             : 'flex flex-row items-start gap-3'
         )}
-        summary={
-          <>
-            <InsightsPanelHeader label="Account insights" />
-            <div className={cn('flex', 'justify-center', 'pt-0.5')}>
-              <ChevronDown
-                className={cn(
-                  'h-4',
-                  'w-4',
-                  'shrink-0',
-                  'transition-transform',
-                  'duration-200',
-                  expanded && 'rotate-180',
-                  'text-slate-500',
-                  'dark:text-slate-400'
-                )}
-              />
-            </div>
-          </>
-        }
+        summary={<InsightsPanelHeader label="Account insights" />}
       >
         {summaryCards}
       </InsightsExpandablePanel>
