@@ -36,7 +36,7 @@ describe('BottomContextualBar', () => {
 
     const topRow = screen.getByTestId('bottom-contextual-bar-top');
     expect(topRow.className).toContain('w-full');
-    expect(topRow.className).toContain('overflow-hidden');
+    expect(topRow.className).toContain('overflow-visible');
     expect(topRow.className).not.toContain('justify-center');
     expect(topRow).toContainElement(screen.getByTestId('top-content'));
   });

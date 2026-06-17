@@ -497,6 +497,15 @@ export const budgetRealityChart = {
   animationDurationMs: 800,
 } as const;
 
+export const sankeyChartSizing = {
+  baseMinHeightPx: 280,
+  baseMaxHeightPx: 560,
+  defaultScale: 1.5,
+} as const;
+
+const sankeyDefaultMinHeightClass =
+  `min-h-[calc(${sankeyChartSizing.baseMinHeightPx}px*${sankeyChartSizing.defaultScale})]` as const;
+
 export const sankeyChart = {
   shell: [
     'flex',
@@ -510,7 +519,7 @@ export const sankeyChart = {
   ],
   viewport: [
     'h-full',
-    'min-h-[280px]',
+    sankeyDefaultMinHeightClass,
     'min-w-0',
     'w-full',
     'flex-1',
@@ -518,7 +527,7 @@ export const sankeyChart = {
     '[&_.recharts-wrapper]:overflow-visible',
     '[&_.recharts-surface]:overflow-visible',
   ],
-  emptyState: ['min-h-[280px]'],
+  emptyState: [sankeyDefaultMinHeightClass],
   nodeLabel: [font.badge],
   nodeMeta: [font.cardTitle, text.primary, 'fill-current'],
   nodePercent: [font.caption, text.muted, 'fill-current'],
@@ -545,10 +554,10 @@ export const dashboardStatsCarousel = {
   shell: ['flex', 'min-w-0', 'flex-col', 'gap-4'],
   header: ['flex', 'items-center', 'justify-between', 'gap-3'],
   label: [font.captionStrong, text.muted],
-  viewport: ['flex', 'min-h-[280px]', 'w-full', 'flex-col', 'overflow-hidden'],
+  viewport: ['flex', sankeyDefaultMinHeightClass, 'w-full', 'flex-col', 'overflow-hidden'],
   panelStack: [
     'grid',
-    'min-h-[280px]',
+    sankeyDefaultMinHeightClass,
     'w-full',
     'min-w-0',
     'overflow-visible',
@@ -557,7 +566,14 @@ export const dashboardStatsCarousel = {
     '[&>*]:min-h-0',
     '[&>*]:w-full',
   ],
-  panel: ['flex', 'min-h-[280px]', 'min-h-0', 'min-w-0', 'flex-col', 'overflow-visible'],
+  panel: [
+    'flex',
+    sankeyDefaultMinHeightClass,
+    'min-h-0',
+    'min-w-0',
+    'flex-col',
+    'overflow-visible',
+  ],
   panelActive: ['relative', 'z-10'],
   panelHidden: ['invisible', 'pointer-events-none', 'z-0'],
 } as const;

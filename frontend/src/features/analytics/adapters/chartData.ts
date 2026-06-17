@@ -2,6 +2,7 @@
  * Transforms analytics API results into chart-ready series.
  */
 
+import { sankeyChartSizing } from '@/ui/recipes';
 import type {
   AnalyticsTopMerchantsResponse,
   SankeyLink,
@@ -77,10 +78,10 @@ export type SankeyLayoutMetrics = {
   nodePadding: number;
 };
 
-const SANKEY_MIN_HEIGHT = 280;
-const SANKEY_MAX_HEIGHT = 560;
-const SANKEY_ROW_HEIGHT = 38;
-const SANKEY_HEIGHT_PADDING = 40;
+const SANKEY_MIN_HEIGHT = sankeyChartSizing.baseMinHeightPx * sankeyChartSizing.defaultScale;
+const SANKEY_MAX_HEIGHT = sankeyChartSizing.baseMaxHeightPx * sankeyChartSizing.defaultScale;
+const SANKEY_ROW_HEIGHT = 38 * sankeyChartSizing.defaultScale;
+const SANKEY_HEIGHT_PADDING = 40 * sankeyChartSizing.defaultScale;
 const SANKEY_MIN_NODE_PADDING = 6;
 const SANKEY_MAX_NODE_PADDING = 14;
 

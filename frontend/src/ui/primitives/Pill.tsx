@@ -16,20 +16,30 @@ export const pillRecipes = {
 export type PillScrollFadeSurface = 'card' | 'glassAccent';
 
 export function buildPillScrollMask(showLeft: boolean, showRight: boolean): string | undefined {
+  const fade = '2.5rem';
   if (showLeft && showRight) {
-    return 'linear-gradient(to right, transparent, black 2rem, black calc(100% - 2rem), transparent)';
+    return `linear-gradient(to right, transparent, black ${fade}, black calc(100% - ${fade}), transparent)`;
   }
   if (showLeft) {
-    return 'linear-gradient(to right, transparent, black 2rem, black 100%)';
+    return `linear-gradient(to right, transparent, black ${fade}, black 100%)`;
   }
   if (showRight) {
-    return 'linear-gradient(to right, black 0%, black calc(100% - 2rem), transparent)';
+    return `linear-gradient(to right, black 0%, black calc(100% - ${fade}), transparent)`;
   }
   return undefined;
 }
 
 export const pillScrollFadeRecipes = {
   container: ['relative', 'min-w-0', 'w-full', 'md:flex-1'],
+  maskViewport: [
+    'min-w-0',
+    'w-full',
+    'max-w-full',
+    'overflow-hidden',
+    '[mask-size:100%_100%]',
+    '[mask-repeat:no-repeat]',
+    '[mask-mode:alpha]',
+  ],
   scroll: [
     'scrollbar-hide',
     'flex',
@@ -39,8 +49,27 @@ export const pillScrollFadeRecipes = {
     'px-1',
     'pb-1',
     'pt-1',
-    '[mask-size:100%_100%]',
-    '[mask-repeat:no-repeat]',
+  ],
+  scrollArrowRail: {
+    left: ['absolute', 'left-0', 'top-1/2', 'z-20', '-translate-y-1/2'],
+    right: ['absolute', 'right-0', 'top-1/2', 'z-20', '-translate-y-1/2'],
+  },
+  scrollArrowButton: [
+    'pointer-events-auto',
+    'border-0',
+    'bg-transparent',
+    'shadow-none',
+    'transition-colors',
+    'duration-200',
+    'hover:!-translate-y-1/2',
+    'hover:border-transparent',
+    'hover:bg-transparent',
+    'active:!-translate-y-1/2',
+    'active:scale-100',
+    'text-slate-500',
+    'dark:text-slate-400',
+    'hover:text-slate-800',
+    'dark:hover:text-slate-200',
   ],
   surfaces: {
     card: {

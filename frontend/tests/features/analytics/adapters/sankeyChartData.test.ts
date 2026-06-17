@@ -4,6 +4,7 @@ import {
   sankeyResponseToChartData,
 } from '@/features/analytics/adapters/chartData';
 import type { SankeyResponse } from '@/types/api';
+import { sankeyChartSizing } from '@/ui/recipes';
 
 describe('resolveSankeyLayoutMetrics', () => {
   it('scales chart height and node padding with category count', () => {
@@ -21,9 +22,12 @@ describe('resolveSankeyLayoutMetrics', () => {
       }))
     );
 
-    expect(compact.height).toBe(280);
+    const defaultMinHeight = sankeyChartSizing.baseMinHeightPx * sankeyChartSizing.defaultScale;
+    const defaultMaxHeight = sankeyChartSizing.baseMaxHeightPx * sankeyChartSizing.defaultScale;
+
+    expect(compact.height).toBe(defaultMinHeight);
     expect(expanded.height).toBeGreaterThan(compact.height);
-    expect(expanded.height).toBeLessThanOrEqual(560);
+    expect(expanded.height).toBeLessThanOrEqual(defaultMaxHeight);
     expect(expanded.nodePadding).toBeGreaterThanOrEqual(6);
     expect(expanded.nodePadding).toBeLessThanOrEqual(14);
   });

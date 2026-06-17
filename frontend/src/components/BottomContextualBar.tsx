@@ -32,7 +32,7 @@ export function BottomContextualBar({
     >
       {topContent ? (
         <div
-          className={cn('w-full', 'min-w-0', 'max-w-full', 'overflow-hidden')}
+          className={cn('w-full', 'min-w-0', 'max-w-full', 'overflow-visible')}
           data-testid="bottom-contextual-bar-top"
         >
           {topContent}
