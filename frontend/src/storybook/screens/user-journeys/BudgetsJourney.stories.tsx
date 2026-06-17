@@ -10,7 +10,7 @@ import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvid
 import { sampleFixedExpenses } from '@/storybook/fixtures/fixed-expenses';
 import BudgetsPage from '@/views/BudgetsPage';
 import {
-  getPagedStoryTransactions,
+  getCursorStoryTransactions,
   storyBudgetRecords,
   storyCategoryList,
   storyProviderAccounts,
@@ -78,9 +78,9 @@ const handlers = [
   route('GET', '/transactions/categories', () => jsonResponse(storyTransactionCategories)),
   route('GET', '/transactions', (request) =>
     jsonResponse(
-      getPagedStoryTransactions({
-        page: Number(request.query.get('page') ?? '1'),
-        pageSize: Number(request.query.get('page_size') ?? '8'),
+      getCursorStoryTransactions({
+        cursor: request.query.get('cursor'),
+        limit: Number(request.query.get('limit') ?? '100'),
         search: request.query.get('search'),
         categoryPrimary: request.query.get('category_primary'),
       })

@@ -289,6 +289,13 @@ export const storyTransactions = [...sampleTransactions, ...transactionsTablePag
   (transaction, index) => toBackendTransaction(transaction, index + 1)
 );
 
+interface BackendCursorTransactionsResponse {
+  transactions: BackendTransaction[];
+  next_cursor: string | null;
+  prev_cursor: string | null;
+  has_more: boolean;
+}
+
 export const storyTransactionCategories = Array.from(
   new Set(storyTransactions.map((transaction) => transaction.category_primary ?? 'other'))
 );
@@ -303,33 +310,6 @@ export const storyCategoryList = {
     },
   ],
 };
-
-export function getPagedStoryTransactions(request: {
-  page?: number;
-  pageSize?: number;
-  search?: string | null;
-  categoryPrimary?: string | null;
-}): { transactions: typeof storyTransactions; total: number; page: number; page_size: number } {
-  const normalizedPage =
-    Number.isFinite(request.page ?? NaN) && (request.page ?? 0) > 0
-      ? Math.floor(request.page ?? 1)
-      : 1;
-  const normalizedPageSize =
-    Number.isFinite(request.pageSize ?? NaN) && (request.pageSize ?? 0) > 0
-      ? Math.floor(request.pageSize ?? 8)
-      : 8;
-  const filtered = filterStoryTransactions(request);
-
-  const start = (normalizedPage - 1) * normalizedPageSize;
-  const end = start + normalizedPageSize;
-
-  return {
-    transactions: filtered.slice(start, end),
-    total: filtered.length,
-    page: normalizedPage,
-    page_size: normalizedPageSize,
-  };
-}
 
 function filterStoryTransactions(request: {
   search?: string | null;
@@ -380,21 +360,19 @@ export function getCursorStoryTransactions(request: {
   endDate?: string | null;
   cursor?: string | null;
   limit?: number | null;
-}): {
-  transactions: typeof storyTransactions;
-  next_cursor: string | null;
-  prev_cursor: string | null;
-  has_more: boolean;
-} {
+}): BackendCursorTransactionsResponse {
   const normalizedLimit =
     Number.isFinite(request.limit ?? NaN) && (request.limit ?? 0) > 0
       ? Math.floor(request.limit ?? 40)
       : 40;
   const filtered = filterStoryTransactions(request);
   const cursor = request.cursor;
+  const parsedCursor = Number.parseInt(cursor ?? '', 10);
   const startIndex =
     cursor?.startsWith('cursor:') === true
       ? filtered.findIndex((transaction) => transaction.id === cursor.slice(7)) + 1
+      : Number.isFinite(parsedCursor) && parsedCursor >= 0
+        ? parsedCursor
       : 0;
   const page = filtered.slice(startIndex, startIndex + normalizedLimit);
   const last = page.at(-1);
@@ -403,7 +381,10 @@ export function getCursorStoryTransactions(request: {
   return {
     transactions: page,
     next_cursor: hasMore && last ? `cursor:${last.id}` : null,
-    prev_cursor: page[0] ? `cursor:${page[0].id}` : null,
+    prev_cursor:
+      startIndex > 0 && filtered[Math.max(0, startIndex - normalizedLimit)]
+        ? `cursor:${filtered[Math.max(0, startIndex - normalizedLimit)]!.id}`
+        : null,
     has_more: hasMore,
   };
 }

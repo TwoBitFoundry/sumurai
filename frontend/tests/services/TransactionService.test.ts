@@ -20,22 +20,53 @@ describe('TransactionService', () => {
 
   describe('getTransactions', () => {
     it('fetches and flattens all pages when pagination is not requested', async () => {
-      const mockBackendTransactions = [
-        {
-          id: '1',
-          date: '2024-01-15',
-          merchant_name: 'SuperMarket Inc',
-          amount: 45.5,
-          category_primary: 'FOOD_AND_DRINK',
-          category_detailed: 'FOOD_AND_DRINK_GROCERIES',
-          category_confidence: 'HIGH',
-          provider: 'plaid',
-          account_name: 'Everyday Checking',
-          account_type: 'depository',
-          account_mask: '1234',
-        },
-      ];
-      const expectedFrontendTransactions: Transaction[] = [
+      getSpy
+        .mockResolvedValueOnce({
+          transactions: [
+            {
+              id: '1',
+              date: '2024-01-15',
+              merchant_name: 'SuperMarket Inc',
+              amount: 45.5,
+              category_primary: 'FOOD_AND_DRINK',
+              category_detailed: 'FOOD_AND_DRINK_GROCERIES',
+              category_confidence: 'HIGH',
+              provider: 'plaid',
+              account_name: 'Everyday Checking',
+              account_type: 'depository',
+              account_mask: '1234',
+            },
+          ],
+          next_cursor: 'cursor-1',
+          prev_cursor: null,
+          has_more: true,
+        } as any)
+        .mockResolvedValueOnce({
+          transactions: [
+            {
+              id: '2',
+              date: '2024-01-16',
+              merchant_name: 'Hardware Store',
+              amount: 12.75,
+              category_primary: 'HOME_IMPROVEMENT',
+              category_detailed: 'HOME_IMPROVEMENT_HARDWARE',
+              category_confidence: 'HIGH',
+              provider: 'plaid',
+              account_name: 'Everyday Checking',
+              account_type: 'depository',
+              account_mask: '1234',
+            },
+          ],
+          next_cursor: null,
+          prev_cursor: 'cursor-1',
+          has_more: false,
+        } as any);
+
+      const result = await TransactionService.getTransactions();
+
+      expect(ApiClient.get).toHaveBeenNthCalledWith(1, '/transactions?limit=200');
+      expect(ApiClient.get).toHaveBeenNthCalledWith(2, '/transactions?cursor=cursor-1&limit=200');
+      expect(result).toEqual([
         {
           id: '1',
           date: '2024-01-15',
@@ -51,59 +82,68 @@ describe('TransactionService', () => {
           account_type: 'depository',
           account_mask: '1234',
         },
-      ];
-      getSpy.mockResolvedValue({
-        transactions: mockBackendTransactions,
-        total: 1,
-        page: 1,
-        page_size: 200,
-      } as any);
-
-      const result = await TransactionService.getTransactions();
-
-      expect(ApiClient.get).toHaveBeenCalledWith('/transactions?page=1&page_size=200');
-      expect(result).toEqual(expectedFrontendTransactions);
-    });
-
-    it('passes filters and returns a paginated response when page parameters are provided', async () => {
-      const mockBackendTransactions = [
-        {
-          id: '1',
-          date: '2024-01-15',
-          merchant_name: 'Coffee Shop',
-          amount: -5.5,
-          category_primary: 'FOOD_AND_DRINK',
-          category_detailed: 'COFFEE_SHOPS',
-          category_confidence: 'HIGH',
-          provider: 'plaid',
-          account_name: 'Everyday Checking',
-          account_type: 'depository',
-          account_mask: '1234',
-        },
         {
           id: '2',
           date: '2024-01-16',
-          merchant_name: 'Bakery',
-          amount: -12.25,
-          category_primary: 'FOOD_AND_DRINK',
-          category_detailed: 'GROCERIES',
-          category_confidence: 'HIGH',
-          provider: 'plaid',
+          name: 'Hardware Store',
+          merchant: 'Hardware Store',
+          amount: 12.75,
+          category: {
+            primary: 'HOME_IMPROVEMENT',
+            detailed: 'HOME_IMPROVEMENT_HARDWARE',
+            confidence_level: 'HIGH',
+          },
           account_name: 'Everyday Checking',
           account_type: 'depository',
           account_mask: '1234',
         },
-      ];
-      getSpy.mockResolvedValue({
-        transactions: mockBackendTransactions,
-        total: 25,
-        page: 2,
-        page_size: 10,
-      } as any);
+      ]);
+    });
+
+    it('passes filters and follows cursor pages when filters are provided', async () => {
+      getSpy
+        .mockResolvedValueOnce({
+          transactions: [
+            {
+              id: '1',
+              date: '2024-01-15',
+              merchant_name: 'Coffee Shop',
+              amount: -5.5,
+              category_primary: 'FOOD_AND_DRINK',
+              category_detailed: 'COFFEE_SHOPS',
+              category_confidence: 'HIGH',
+              provider: 'plaid',
+              account_name: 'Everyday Checking',
+              account_type: 'depository',
+              account_mask: '1234',
+            },
+          ],
+          next_cursor: 'cursor-2',
+          prev_cursor: null,
+          has_more: true,
+        } as any)
+        .mockResolvedValueOnce({
+          transactions: [
+            {
+              id: '2',
+              date: '2024-01-16',
+              merchant_name: 'Bakery',
+              amount: -12.25,
+              category_primary: 'FOOD_AND_DRINK',
+              category_detailed: 'GROCERIES',
+              category_confidence: 'HIGH',
+              provider: 'plaid',
+              account_name: 'Everyday Checking',
+              account_type: 'depository',
+              account_mask: '1234',
+            },
+          ],
+          next_cursor: null,
+          prev_cursor: 'cursor-2',
+          has_more: false,
+        } as any);
 
       const result = await TransactionService.getTransactions({
-        page: 2,
-        page_size: 10,
         startDate: '2024-01-01',
         endDate: '2024-01-31',
         categoryId: 'FOOD_AND_DRINK',
@@ -111,45 +151,15 @@ describe('TransactionService', () => {
       });
 
       expect(ApiClient.get).toHaveBeenCalledWith(
-        '/transactions?start_date=2024-01-01&end_date=2024-01-31&category_primary=FOOD_AND_DRINK&search=coffee&page=2&page_size=10'
+        '/transactions?start_date=2024-01-01&end_date=2024-01-31&category_primary=FOOD_AND_DRINK&search=coffee&limit=200'
       );
-      expect(result).toEqual({
-        transactions: [
-          {
-            id: '1',
-            date: '2024-01-15',
-            name: 'Coffee Shop',
-            merchant: 'Coffee Shop',
-            amount: -5.5,
-            category: {
-              primary: 'FOOD_AND_DRINK',
-              detailed: 'COFFEE_SHOPS',
-              confidence_level: 'HIGH',
-            },
-            account_name: 'Everyday Checking',
-            account_type: 'depository',
-            account_mask: '1234',
-          },
-          {
-            id: '2',
-            date: '2024-01-16',
-            name: 'Bakery',
-            merchant: 'Bakery',
-            amount: -12.25,
-            category: {
-              primary: 'FOOD_AND_DRINK',
-              detailed: 'GROCERIES',
-              confidence_level: 'HIGH',
-            },
-            account_name: 'Everyday Checking',
-            account_type: 'depository',
-            account_mask: '1234',
-          },
-        ],
-        total: 25,
-        page: 2,
-        page_size: 10,
-      });
+      expect(ApiClient.get).toHaveBeenNthCalledWith(
+        2,
+        '/transactions?start_date=2024-01-01&end_date=2024-01-31&category_primary=FOOD_AND_DRINK&search=coffee&cursor=cursor-2&limit=200'
+      );
+      expect(result).toHaveLength(2);
+      expect(result[0].id).toBe('1');
+      expect(result[1].id).toBe('2');
     });
 
     it('should fetch transaction categories', async () => {
@@ -180,8 +190,6 @@ describe('TransactionService', () => {
         endDate: '2024-03-31',
         categoryPrimary: 'FOOD_AND_DRINK',
         accountIds: ['account1'],
-        page: 2,
-        page_size: 10,
       });
 
       expect(ApiClient.get).toHaveBeenCalledWith(

@@ -22,11 +22,11 @@ Fix two regressions introduced by PR #164 (`fde92f75`, virtualized lists + keyse
 | `useBudgets`           | `frontend/src/features/budgets/hooks/useBudgets.ts`             | Same, with month `range.start` / `range.end`                                                    |
 
 
-`getAllTransactions` (`frontend/src/services/TransactionService.ts`) loops with `page=1,2,…` and `page_size=200` (`DEFAULT_FETCH_PAGE_SIZE`), building URLs like `/transactions?start_date=...&end_date=...&page=1&page_size=200`.
+`getAllTransactions` (`frontend/src/services/TransactionService.ts`) now loops cursor pages via `getTransactionsPage` with `limit=200`, building URLs like `/transactions?start_date=...&end_date=...&limit=200&cursor=...`.
 
 The backend handler `get_authenticated_transactions` (`backend/src/main.rs`, ~L1178) uses cursor/limit only (`limit = limit.unwrap_or(40).clamp(1, 100)`). `TransactionsQuery` (`backend/src/models/transaction.rs`) drops unknown query keys (`page`, `page_size`) via `IgnoredAny`. Response shape is `CursorTransactionsResponse` — no `total`, `page`, or `page_size`.
 
-`toPaginatedTransactionsResponse` falls back when `total` is missing: `total = transactions.length` (e.g. 40). The loop exits after one page because `paginated.transactions.length < paginated.page_size`.
+The old page-based helper had no real `total` signal and truncated after the first cursor page. The cursor loop now follows `next_cursor` until `has_more` is false.
 
 **User-visible symptoms:**
 
@@ -349,19 +349,25 @@ Make the dead/broken bulk-fetch path safe after the aggregate migration; align S
 ### Tasks
 
 - Confirm no production callers remain for `TransactionService.getTransactions()` without pagination (only `useBudgets` and `useYtdIncomeExpenses` today — both migrated by M2/M3)
-- **Preferred:** rewrite `getAllTransactions` to cursor-loop via `getTransactionsPage` (`limit=100`, follow `next_cursor` until `!has_more`) so any test/Storybook caller is correct rather than silently truncated
-- Remove the dead `hasPagination` branch if tests allow (`buildTransactionsEndpoint`, offset `page`/`page_size` overloads, `toPaginatedTransactionsResponse`) — no production callers
-- Update `frontend/tests/services/TransactionService.test.ts` and `TransactionService.integration.test.ts` to cursor-loop mocks (multi-page `has_more` / `next_cursor`)
-- Update Storybook handlers returning offset `{ total, page, page_size }`:
+- [x] Rewrite `getAllTransactions` to cursor-loop via `getTransactionsPage` (`limit=200`, follow `next_cursor` until `!has_more`) so any test/Storybook caller is correct rather than silently truncated
+- [x] Remove the dead `hasPagination` branch (`buildTransactionsEndpoint`, offset `page`/`page_size` overloads, `toPaginatedTransactionsResponse`) — no production callers
+- [x] Update `frontend/tests/services/TransactionService.test.ts` and `TransactionService.integration.test.ts` to cursor-loop mocks (multi-page `has_more` / `next_cursor`)
+- [x] Update Storybook handlers returning offset `{ total, page, page_size }`:
   - `frontend/src/storybook/screens/DashboardScreen.stories.tsx`
   - `frontend/src/components/DashboardStatsCarousel.stories.tsx`
-  - `frontend/src/storybook/screens/user-journeys/shared.tsx` (`getPagedStoryTransactions`)
+  - `frontend/src/storybook/screens/user-journeys/shared.tsx` (`getCursorStoryTransactions`)
 
 ### Acceptance Criteria
 
-- [ ] No silent 40-row truncation if `getAllTransactions` is invoked from tests/Storybook
-- [ ] `bun --cwd=frontend test -- tests/services/TransactionService.test.ts` passes
-- [ ] Offset `{ total, page, page_size }` mocks removed or documented as legacy
+- [x] No silent 40-row truncation if `getAllTransactions` is invoked from tests/Storybook
+- [x] `bun --cwd=frontend run test -- tests/services/TransactionService.test.ts tests/services/TransactionService.integration.test.ts` passes
+- [x] Offset `{ total, page, page_size }` mocks removed or documented as legacy
+
+### TDD Log
+
+- `bun --cwd=frontend run test -- tests/services/TransactionService.test.ts tests/services/TransactionService.integration.test.ts`
+- `bun --cwd=frontend run typecheck`
+- Outcome: pass
 
 ---
 
@@ -372,7 +378,7 @@ Make the dead/broken bulk-fetch path safe after the aggregate migration; align S
 - **Category friendly-name matching stays frontend-side** in `useBudgets` (`formatCategoryName`); the budget-summary grid is raw effective categories. Keep this matching identical to the old `calculateSpent`.
 - **Search behavior change:** searching the *effective* category is a deliberate improvement over pre-PR (raw column). Call it out in the PR description; it is strictly more correct (matches the filter).
 - **Caching:** the new dashboard hot-path endpoints are uncached — but the existing analytics endpoints are also uncached, so this is consistent, not a regression. Flagged as a future perf lever, out of scope here.
-- **Storybook/offset mocks:** handlers in `DashboardScreen.stories.tsx`, `DashboardStatsCarousel.stories.tsx`, `user-journeys/shared.tsx` still return `{ total, page, page_size }`.
+- **Storybook/offset mocks:** handlers in `DashboardScreen.stories.tsx`, `DashboardStatsCarousel.stories.tsx`, `user-journeys/shared.tsx` now return cursor-shaped pages.
 
 ---
 
@@ -432,9 +438,9 @@ List UI (working, unchanged):
 Aggregators (broken today):
   useBudgets / useYtdIncomeExpenses
     → getTransactions({ startDate, endDate, accountIds })
-    → getAllTransactions → GET /transactions?page=1&page_size=200&...
-    ← backend ignores page*, returns ~40 rows + has_more
-    → client thinks fetch is complete
+    → getAllTransactions → GET /transactions?limit=200&cursor=...
+    ← backend returns cursor pages with has_more / next_cursor
+    → client aggregates all pages
 
 Aggregators (target — all derive from one SQL grid):
   get_category_aggregates_for_date_range  (GROUP BY effective_category, no cap)

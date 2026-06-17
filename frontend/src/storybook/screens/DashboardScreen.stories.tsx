@@ -13,6 +13,7 @@ import type { DateRangeKey } from '@/utils/dateRanges';
 import {
   storyCategoryList,
   storyProviderAccounts,
+  getCursorStoryTransactions,
   storyTransactionCategories,
 } from './user-journeys/shared';
 import { jsonResponse, route, StoryApiScope } from './user-journeys/storyApi';
@@ -98,12 +99,14 @@ const handlers = [
   route('GET', '/analytics/sankey', () => jsonResponse(sampleSankeySurplus)),
   route('GET', '/transactions/categories', () => jsonResponse(storyTransactionCategories)),
   route('GET', '/transactions', (request) =>
-    jsonResponse({
-      transactions: [],
-      total: 0,
-      page: Number(request.query.get('page') ?? '1'),
-      page_size: Number(request.query.get('page_size') ?? '8'),
-    })
+    jsonResponse(
+      getCursorStoryTransactions({
+        cursor: request.query.get('cursor'),
+        limit: Number(request.query.get('limit') ?? '100'),
+        search: request.query.get('search'),
+        categoryPrimary: request.query.get('category_primary'),
+      })
+    )
   ),
 ];
 

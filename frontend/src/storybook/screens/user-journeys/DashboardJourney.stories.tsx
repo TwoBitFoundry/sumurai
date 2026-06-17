@@ -7,7 +7,7 @@ import { sampleFixedExpenses } from '@/storybook/fixtures/fixed-expenses';
 import type { DateRangeKey } from '@/utils/dateRanges';
 import DashboardPage from '@/views/DashboardPage';
 import {
-  getPagedStoryTransactions,
+  getCursorStoryTransactions,
   storyCategoryList,
   storyDashboardFixtures,
   storyProviderAccounts,
@@ -81,9 +81,9 @@ const handlers = [
   route('GET', '/transactions/categories', () => jsonResponse(storyTransactionCategories)),
   route('GET', '/transactions', (request) =>
     jsonResponse(
-      getPagedStoryTransactions({
-        page: Number(request.query.get('page') ?? '1'),
-        pageSize: Number(request.query.get('page_size') ?? '8'),
+      getCursorStoryTransactions({
+        cursor: request.query.get('cursor'),
+        limit: Number(request.query.get('limit') ?? '100'),
         search: request.query.get('search'),
         categoryPrimary: request.query.get('category_primary'),
       })

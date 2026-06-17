@@ -6,7 +6,6 @@ import { type BackendTransaction, TransactionTransformer } from '../domain/Trans
 import type {
   ContextualInsightsResponse,
   CursorTransactionsResponse,
-  PaginatedTransactionsResponse,
   Transaction,
   TransactionsInsightsResponse,
 } from '../types/api';
@@ -25,15 +24,6 @@ export interface TransactionFilters {
   merchant?: string;
   cursor?: string;
   limit?: number;
-  page?: number;
-  page_size?: number;
-}
-
-interface BackendPaginatedTransactionsResponse {
-  transactions: BackendTransaction[];
-  total: number;
-  page: number;
-  page_size: number;
 }
 
 interface BackendCursorTransactionsResponse {
@@ -44,28 +34,9 @@ interface BackendCursorTransactionsResponse {
 }
 
 const DEFAULT_FETCH_PAGE_SIZE = 200;
-const DEFAULT_PAGE_SIZE = 50;
 
 export class TransactionService {
-  static async getTransactions(filters?: TransactionFilters): Promise<Transaction[]>;
-  static async getTransactions(
-    filters: TransactionFilters & { page: number; page_size?: number }
-  ): Promise<PaginatedTransactionsResponse>;
-  static async getTransactions(
-    filters: TransactionFilters & { page_size: number }
-  ): Promise<PaginatedTransactionsResponse>;
-  static async getTransactions(
-    filters: TransactionFilters = {}
-  ): Promise<Transaction[] | PaginatedTransactionsResponse> {
-    if (hasPagination(filters)) {
-      const page = normalizePage(filters.page);
-      const pageSize = normalizePageSize(filters.page_size);
-      const response = await ApiClient.get<BackendPaginatedTransactionsResponse>(
-        buildTransactionsEndpoint(filters, page, pageSize)
-      );
-      return toPaginatedTransactionsResponse(response, page, pageSize);
-    }
-
+  static async getTransactions(filters: TransactionFilters = {}): Promise<Transaction[]> {
     return TransactionService.getAllTransactions(filters);
   }
 
@@ -119,63 +90,26 @@ export class TransactionService {
 
   private static async getAllTransactions(filters: TransactionFilters): Promise<Transaction[]> {
     const transactions: Transaction[] = [];
-    let page = 1;
-    let total = Number.POSITIVE_INFINITY;
 
-    while (transactions.length < total) {
-      const response = await ApiClient.get<BackendPaginatedTransactionsResponse>(
-        buildTransactionsEndpoint(filters, page, DEFAULT_FETCH_PAGE_SIZE)
-      );
-      const paginated = toPaginatedTransactionsResponse(response, page, DEFAULT_FETCH_PAGE_SIZE);
+    let cursor: string | undefined;
+    while (true) {
+      const response = await TransactionService.getTransactionsPage({
+        ...filters,
+        cursor,
+        limit: DEFAULT_FETCH_PAGE_SIZE,
+      });
 
-      transactions.push(...paginated.transactions);
-      total = paginated.total;
+      transactions.push(...response.transactions);
 
-      if (
-        paginated.transactions.length === 0 ||
-        paginated.transactions.length < paginated.page_size
-      ) {
+      if (!response.has_more || !response.next_cursor || response.transactions.length === 0) {
         break;
       }
 
-      page += 1;
+      cursor = response.next_cursor;
     }
 
     return transactions;
   }
-}
-
-function hasPagination(filters: TransactionFilters): filters is TransactionFilters & {
-  page: number;
-} {
-  return filters.page !== undefined || filters.page_size !== undefined;
-}
-
-function normalizePage(page?: number): number {
-  if (!Number.isFinite(page ?? NaN)) {
-    return 1;
-  }
-  return Math.max(1, Math.floor(page ?? 1));
-}
-
-function normalizePageSize(pageSize?: number): number {
-  if (!Number.isFinite(pageSize ?? NaN)) {
-    return DEFAULT_PAGE_SIZE;
-  }
-  return Math.max(1, Math.floor(pageSize ?? DEFAULT_PAGE_SIZE));
-}
-
-function buildTransactionsEndpoint(
-  filters: TransactionFilters,
-  page: number,
-  pageSize: number
-): string {
-  const params = buildTransactionFiltersParams(filters);
-  params.append('page', String(page));
-  params.append('page_size', String(pageSize));
-
-  const queryString = params.toString();
-  return queryString ? `/transactions?${queryString}` : '/transactions';
 }
 
 function buildTransactionsInsightsEndpoint(filters: TransactionFilters): string {
@@ -197,34 +131,4 @@ function buildTransactionFiltersParams(filters: TransactionFilters): URLSearchPa
   appendAccountQueryParams(params, filters.accountIds);
 
   return params;
-}
-
-function toPaginatedTransactionsResponse(
-  response: BackendPaginatedTransactionsResponse | BackendTransaction[] | null | undefined,
-  page: number,
-  pageSize: number
-): PaginatedTransactionsResponse {
-  if (!response || Array.isArray(response)) {
-    return {
-      transactions: Array.isArray(response)
-        ? response.map((transaction) => TransactionTransformer.backendToFrontend(transaction))
-        : [],
-      total: Array.isArray(response) ? response.length : 0,
-      page,
-      page_size: pageSize,
-    };
-  }
-
-  const transactions = Array.isArray(response.transactions)
-    ? response.transactions.map((transaction) =>
-        TransactionTransformer.backendToFrontend(transaction)
-      )
-    : [];
-
-  return {
-    transactions,
-    total: typeof response.total === 'number' ? response.total : transactions.length,
-    page: typeof response.page === 'number' ? response.page : page,
-    page_size: typeof response.page_size === 'number' ? response.page_size : pageSize,
-  };
 }

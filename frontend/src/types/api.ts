@@ -46,13 +46,6 @@ export interface Transaction {
   location?: TransactionLocation;
 }
 
-export interface PaginatedTransactionsResponse {
-  transactions: Transaction[];
-  total: number;
-  page: number;
-  page_size: number;
-}
-
 export interface CursorTransactionsResponse {
   transactions: Transaction[];
   next_cursor: string | null;
