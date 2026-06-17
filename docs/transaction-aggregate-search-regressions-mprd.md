@@ -15,10 +15,12 @@ Fix two regressions introduced by PR #164 (`fde92f75`, virtualized lists + keyse
 
 ### P1 — Aggregate callers silently truncated
 
-| Caller | File | Current fetch path |
-|--------|------|-------------------|
+
+| Caller                 | File                                                            | Current fetch path                                                                              |
+| ---------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `useYtdIncomeExpenses` | `frontend/src/features/analytics/hooks/useYtdIncomeExpenses.ts` | `TransactionService.getTransactions({ startDate, endDate, accountIds })` → `getAllTransactions` |
-| `useBudgets` | `frontend/src/features/budgets/hooks/useBudgets.ts` | Same, with month `range.start` / `range.end` |
+| `useBudgets`           | `frontend/src/features/budgets/hooks/useBudgets.ts`             | Same, with month `range.start` / `range.end`                                                    |
+
 
 `getAllTransactions` (`frontend/src/services/TransactionService.ts`) loops with `page=1,2,…` and `page_size=200` (`DEFAULT_FETCH_PAGE_SIZE`), building URLs like `/transactions?start_date=...&end_date=...&page=1&page_size=200`.
 
@@ -55,7 +57,7 @@ The backend handler `get_authenticated_transactions` (`backend/src/main.rs`, ~L1
 
 ### Adjacent (pre-existing, not a #164 regression) — `/analytics/categories` truncation
 
-`get_authenticated_category_spending` (`backend/src/main.rs`, ~L2744) loads via `analytics_service.load_spending_transactions` → `get_spending_transactions_by_date_range_for_user` (`repository_service.rs`, ~L2386) which applies `.limit(1000)` (~L2420), then groups in memory (`group_by_category_with_date_range`). Busy months (>1000 spending rows) truncate. Fixed in **Phase 4** as a separable change.
+`get_authenticated_category_spending` (`backend/src/main.rs`, ~~L2744) loads via `analytics_service.load_spending_transactions` → `get_spending_transactions_by_date_range_for_user` (`repository_service.rs`, ~L2386) which applies `.limit(1000)` (~~L2420), then groups in memory (`group_by_category_with_date_range`). Busy months (>1000 spending rows) truncate. Fixed in **Phase 4** as a separable change.
 
 ---
 
@@ -90,6 +92,8 @@ flowchart TB
   Prim --> R3 --> A3 --> Analytics
 ```
 
+
+
 **The primitive.** Raw SQL (same pattern as `monthly_cash_flow_statement`, ~L850), grouped by `sql_effective_category_expr()` = `COALESCE(o.category_name, t.category_primary)`:
 
 ```sql
@@ -108,11 +112,13 @@ GROUP BY 1
 
 No transfer/exclusion filtering happens in SQL — the grid returns every effective category. Each consumer applies its own rule over the grid in Rust, so divergent rules (which differ in *both* the excluded set *and* the matching style) stay explicit and isolated:
 
-| Consumer | income | expense / spend |
-|----------|--------|-----------------|
-| YTD (`ytd_income_expense_totals`) | Σ `income` where `!is_transfer_category(cat)` | Σ `expense` where `!is_transfer_category(cat)` |
-| Budget (`budget_summary`) | Σ `income` where `cat != "TRANSFER_IN"` (exact) | per-category `expense` (all rows) |
-| Categories chart (`category_spending_chart`) | — | per-category `expense` where `cat ∉ EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES`; empty `cat` → `"Uncategorized"` |
+
+| Consumer                                     | income                                          | expense / spend                                                                                             |
+| -------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| YTD (`ytd_income_expense_totals`)            | Σ `income` where `!is_transfer_category(cat)`   | Σ `expense` where `!is_transfer_category(cat)`                                                              |
+| Budget (`budget_summary`)                    | Σ `income` where `cat != "TRANSFER_IN"` (exact) | per-category `expense` (all rows)                                                                           |
+| Categories chart (`category_spending_chart`) | —                                               | per-category `expense` where `cat ∉ EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES`; empty `cat` → `"Uncategorized"` |
+
 
 This reproduces the existing rules exactly (verified against `computeYtdIncomeExpenses`, `BudgetCalculator`, and `group_transactions_by_category` + `spending_category_filter`).
 
@@ -204,7 +210,7 @@ Expose `ytd_income_expense_totals` and move `useYtdIncomeExpenses` onto it; remo
 - [x] Dashboard YTD panel loads without a bulk `GET /transactions`
 - [x] `incomeYtd` / `expensesYtd` reflect the server aggregate over the full YTD range
 - [x] `YtdTotalsCalculator.ts` and its test are removed; no remaining imports
-- [ ] `bun --cwd=frontend test` and `bun --cwd=frontend run typecheck` pass
+- [x] `bun --cwd=frontend test` and `bun --cwd=frontend run typecheck` pass
 
 ### TDD Log
 
@@ -242,7 +248,7 @@ Expose `budget_summary` and move `useBudgets` + budget insights onto it; remove 
 - [x] Budget insights `income` / `freeSpend` use the server `income`
 - [x] No production `TransactionService.getTransactions()` call from `useBudgets`
 - [x] `BudgetCalculator.calculateIncome` / `calculateSpent` removed; UI-math methods retained and still referenced
-- [ ] `bun --cwd=frontend test` and `typecheck` pass
+- [x] `bun --cwd=frontend test` and `typecheck` pass
 
 ### TDD Log
 
@@ -271,10 +277,17 @@ Rewrite category spending to the SQL primitive + `category_spending_chart` reduc
 
 ### Acceptance Criteria
 
-- [ ] `GET /api/analytics/categories` no longer uses `.limit(1000)`
-- [ ] Users with >1000 spending rows see correct totals (`useAnalytics` → `getCategorySpendingByDateRange`)
-- [ ] Response shape unchanged for frontend consumers
-- [ ] `cargo test -p sumurai-backend --locked` passes including the >1000-row case
+- [x] `GET /api/analytics/categories` no longer uses `.limit(1000)`
+- [x] Users with >1000 spending rows see correct totals (`useAnalytics` → `getCategorySpendingByDateRange`)
+- [x] Response shape unchanged for frontend consumers
+- [x] `cargo test -p sumurai-backend --locked` passes including the >1000-row case
+
+### TDD Log
+
+- Red: added a direct analytics service test for category spending plus an endpoint test that still asserted the old transaction-loading path.
+- Green: switched `/api/analytics/categories` to `get_category_spending`, which calls `get_category_aggregates_for_date_range` and reduces through `category_spending_chart`.
+- Refactor: kept the transaction-loading helpers in place for other callers, preserved the `Vec<CategorySpending>` response shape, and covered the handler with a boundary test.
+- Verification: `cargo fmt`, `cargo test -p sumurai-backend --locked`.
 
 ---
 
@@ -288,12 +301,14 @@ Restore fuzzy `search` across merchant, **effective** category, detailed categor
 
 - In `apply_transaction_filters` (`backend/src/services/repository_service.rs`, ~L970), replace the single `merchant_name LIKE` with a `Condition::any()`:
 
-| Branch | Column |
-|--------|--------|
-| Merchant | `LOWER(COALESCE(merchant_name, ''))` |
+
+| Branch               | Column                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------ |
+| Merchant             | `LOWER(COALESCE(merchant_name, ''))`                                                                   |
 | Category (effective) | `LOWER(effective_category_expr())` — override-aware, **consistent with the `category_primary` filter** |
-| Category detailed | `LOWER(category_detailed)` |
-| Account | `LOWER(accounts.name)` |
+| Category detailed    | `LOWER(category_detailed)`                                                                             |
+| Account              | `LOWER(accounts.name)`                                                                                 |
+
 
 - No join changes — `transactions_with_account_joins` already inner-joins `accounts` and left-joins `transaction_category_overrides`
 - **Deliberate change vs pre-PR:** the category branch searches the *effective* category (not the raw stored column), so search and filter agree on re-categorized rows
@@ -356,7 +371,7 @@ Make the dead/broken bulk-fetch path safe after the aggregate migration; align S
 
 ## Assumptions & Key Facts
 
-- Effective category = `COALESCE(o.category_name, t.category_primary)` — `effective_category_expr()` (~L770) / `sql_effective_category_expr()` (~L118) in `repository_service.rs`; Conventions in `docs/ARCHITECTURE.md`.
+- Effective category = `COALESCE(o.category_name, t.category_primary)` — `effective_category_expr()` (~~L770) / `sql_effective_category_expr()` (~~L118) in `repository_service.rs`; Conventions in `docs/ARCHITECTURE.md`.
 - `transactions_with_account_joins` (~L782) inner-joins `accounts` **and** left-joins `transaction_category_overrides` — both effective-category search and account-name search need no new join.
 - `is_transfer_category` and `EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES` live in `repository_service.rs`; the serialized API `category.primary` is already the effective category.
 - Only two production callers of `TransactionService.getTransactions()` without pagination: `useBudgets`, `useYtdIncomeExpenses`. `getTransactionsPage` (list UI) is correct and unchanged.
@@ -380,19 +395,21 @@ bun --cwd=frontend run typecheck
 
 ## File Map
 
-| Area | Files |
-|------|-------|
-| Backend models | `backend/src/models/analytics.rs` (`CategoryAggregate`, `IncomeExpenseTotals`, `BudgetSummary`; possibly `budget.rs`) |
-| Backend repo | `backend/src/services/repository_service.rs` — `get_category_aggregates_for_date_range`, `apply_transaction_filters` |
-| Backend service | `backend/src/services/analytics_service.rs` — `ytd_income_expense_totals`, `budget_summary`, `category_spending_chart` |
-| Backend handlers | `backend/src/main.rs` (`income-expense-totals`, `budget-summary`, rewritten `categories`), OpenAPI regen (`backend/openapi/`, `docs/OPENAPI.json`) |
-| Backend tests | `backend/src/tests/repository_service_tests.rs`, `analytics_service_tests.rs` |
-| Frontend service/types | `frontend/src/services/AnalyticsService.ts`, `frontend/src/types/api.ts` |
-| Frontend hooks | `frontend/src/features/analytics/hooks/useYtdIncomeExpenses.ts`, `frontend/src/features/budgets/hooks/useBudgets.ts` |
-| Frontend domain/views | `frontend/src/domain/BudgetInsightsCalculator.ts`, `frontend/src/views/BudgetsPage.tsx`; **delete** `frontend/src/domain/YtdTotalsCalculator.ts` + remove `BudgetCalculator.calculateIncome`/`calculateSpent` |
-| Transaction service cleanup | `frontend/src/services/TransactionService.ts` |
-| Frontend tests | `frontend/tests/features/budgets/hooks/useBudgets.test.tsx`, `frontend/tests/domain/`, `frontend/tests/services/TransactionService*.ts`; **delete** `frontend/tests/domain/YtdTotalsCalculator.test.ts` |
-| Storybook | `DashboardScreen.stories.tsx`, `DashboardStatsCarousel.stories.tsx`, `user-journeys/shared.tsx` |
+
+| Area                        | Files                                                                                                                                                                                                         |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend models              | `backend/src/models/analytics.rs` (`CategoryAggregate`, `IncomeExpenseTotals`, `BudgetSummary`; possibly `budget.rs`)                                                                                         |
+| Backend repo                | `backend/src/services/repository_service.rs` — `get_category_aggregates_for_date_range`, `apply_transaction_filters`                                                                                          |
+| Backend service             | `backend/src/services/analytics_service.rs` — `ytd_income_expense_totals`, `budget_summary`, `category_spending_chart`                                                                                        |
+| Backend handlers            | `backend/src/main.rs` (`income-expense-totals`, `budget-summary`, rewritten `categories`), OpenAPI regen (`backend/openapi/`, `docs/OPENAPI.json`)                                                            |
+| Backend tests               | `backend/src/tests/repository_service_tests.rs`, `analytics_service_tests.rs`                                                                                                                                 |
+| Frontend service/types      | `frontend/src/services/AnalyticsService.ts`, `frontend/src/types/api.ts`                                                                                                                                      |
+| Frontend hooks              | `frontend/src/features/analytics/hooks/useYtdIncomeExpenses.ts`, `frontend/src/features/budgets/hooks/useBudgets.ts`                                                                                          |
+| Frontend domain/views       | `frontend/src/domain/BudgetInsightsCalculator.ts`, `frontend/src/views/BudgetsPage.tsx`; **delete** `frontend/src/domain/YtdTotalsCalculator.ts` + remove `BudgetCalculator.calculateIncome`/`calculateSpent` |
+| Transaction service cleanup | `frontend/src/services/TransactionService.ts`                                                                                                                                                                 |
+| Frontend tests              | `frontend/tests/features/budgets/hooks/useBudgets.test.tsx`, `frontend/tests/domain/`, `frontend/tests/services/TransactionService*.ts`; **delete** `frontend/tests/domain/YtdTotalsCalculator.test.ts`       |
+| Storybook                   | `DashboardScreen.stories.tsx`, `DashboardStatsCarousel.stories.tsx`, `user-journeys/shared.tsx`                                                                                                               |
+
 
 ---
 

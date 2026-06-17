@@ -273,6 +273,61 @@ async fn given_missing_date_range_when_loading_spending_transactions_then_uses_b
 }
 
 #[tokio::test]
+async fn given_date_range_when_loading_category_spending_then_uses_category_aggregate_repository_call(
+) {
+    let analytics = AnalyticsService::new();
+    let mut repository = MockDatabaseRepository::new();
+    let user_id = Uuid::new_v4();
+    let start_date = NaiveDate::from_ymd_opt(2026, 6, 1).unwrap();
+    let end_date = NaiveDate::from_ymd_opt(2026, 6, 15).unwrap();
+    let grid = vec![
+        aggregate("", dec!(0), dec!(90.00), 1),
+        aggregate("FOOD_AND_DRINK", dec!(0), dec!(120.00), 2),
+        aggregate("TRANSFER_OUT", dec!(0), dec!(200.00), 1),
+    ];
+
+    repository
+        .expect_get_category_aggregates_for_date_range()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq(start_date),
+            mockall::predicate::eq(end_date),
+            mockall::predicate::always(),
+        )
+        .returning(move |_, _, _, _| {
+            let grid = grid.clone();
+            Box::pin(async move { Ok(grid) })
+        });
+
+    let result = analytics
+        .get_category_spending(
+            &repository,
+            &user_id,
+            SpendingTransactionQuery {
+                start_date: Some(start_date),
+                end_date: Some(end_date),
+                account_ids: None,
+            },
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        result,
+        vec![
+            CategorySpending {
+                name: "Uncategorized".to_string(),
+                value: dec!(90.00),
+            },
+            CategorySpending {
+                name: "FOOD_AND_DRINK".to_string(),
+                value: dec!(120.00),
+            },
+        ]
+    );
+}
+
+#[tokio::test]
 async fn given_date_range_when_loading_income_expense_totals_then_uses_category_aggregate_repository_call(
 ) {
     let analytics = AnalyticsService::new();

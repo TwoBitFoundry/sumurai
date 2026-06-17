@@ -2892,9 +2892,9 @@ async fn get_authenticated_category_spending(
         .as_ref()
         .map(|ids| ids.iter().copied().collect());
 
-    let transactions = state
+    let categories = state
         .analytics_service
-        .load_spending_transactions(
+        .get_category_spending(
             state.db_repository.as_ref(),
             &user_id,
             SpendingTransactionQuery {
@@ -2906,17 +2906,12 @@ async fn get_authenticated_category_spending(
         .await
         .map_err(|e| {
             tracing::error!(
-                "Failed to get spending transactions for user {}: {}",
+                "Failed to get category spending for user {}: {}",
                 user_id,
                 e
             );
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
-    let categories = state.analytics_service.group_by_category_with_date_range(
-        &transactions,
-        start_date,
-        end_date,
-    );
     Ok(Json(categories))
 }
 

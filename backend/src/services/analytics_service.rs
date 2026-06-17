@@ -217,6 +217,27 @@ impl AnalyticsService {
         Ok(self.budget_summary(&grid))
     }
 
+    pub async fn get_category_spending(
+        &self,
+        repository: &dyn DatabaseRepository,
+        user_id: &Uuid,
+        query: SpendingTransactionQuery<'_>,
+    ) -> Result<Vec<CategorySpending>> {
+        let (default_start, default_end) = self.current_month_date_range();
+        let start_date = query.start_date.unwrap_or(default_start);
+        let end_date = query.end_date.unwrap_or(default_end);
+        let grid = repository
+            .get_category_aggregates_for_date_range(
+                user_id,
+                start_date,
+                end_date,
+                query.account_ids,
+            )
+            .await?;
+
+        Ok(self.category_spending_chart(&grid))
+    }
+
     pub fn current_month_date_range(&self) -> (chrono::NaiveDate, chrono::NaiveDate) {
         let now = chrono::Utc::now().naive_utc().date();
         Self::get_month_range_static(now.year(), now.month())
