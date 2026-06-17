@@ -1,4 +1,4 @@
-export type FinancialProvider = 'plaid' | 'teller' | 'simplefin';
+export type FinancialProvider = 'plaid' | 'teller' | 'simplefin' | 'diy';
 export type ExportFormat = 'csv' | 'ofx';
 
 export interface TransactionLocation {

@@ -27,7 +27,6 @@ describe('ProviderSelectionPanel', () => {
       tellerApplicationId: 'app-123',
     });
 
-    expect(screen.getByText('Self-Hosted')).toBeVisible();
     expect(screen.getByText('Choose how you connect accounts')).toBeVisible();
     expect(
       screen.getByText('Pick the provider that fits your household, budget, and privacy needs.')
@@ -35,19 +34,17 @@ describe('ProviderSelectionPanel', () => {
     expect(screen.getByText('US Only')).toBeVisible();
     expect(screen.getByText('US, CA')).toBeVisible();
     expect(screen.getByText('US, CA, UK, EU')).toBeVisible();
-    expect(screen.getByText('Free')).toBeVisible();
     expect(screen.getByText('$1.50/mo')).toBeVisible();
     expect(screen.getByText('Pay/use')).toBeVisible();
     expect(screen.getByText('~7,000 Institutions')).toBeVisible();
     expect(screen.getByText('~16,000 Institutions')).toBeVisible();
     expect(screen.getByText('~12,000 Institutions')).toBeVisible();
     expect(screen.getByText('Moderate')).toBeVisible();
-    expect(screen.getByText('Strongest')).toBeVisible();
     expect(screen.getByText('Broad')).toBeVisible();
 
     const privacyLinks = screen.getAllByRole('link', { name: /privacy policy/i });
 
-    expect(privacyLinks).toHaveLength(3);
+    expect(privacyLinks).toHaveLength(4);
     expect(privacyLinks[0]).toHaveAttribute('href', 'https://teller.io/legal');
     expect(privacyLinks[1]).toHaveAttribute(
       'href',
@@ -57,10 +54,11 @@ describe('ProviderSelectionPanel', () => {
 
     const buttons = screen.getAllByRole('button', { name: /connect/i });
 
-    expect(buttons).toHaveLength(3);
+    expect(buttons).toHaveLength(4);
     expect(buttons[0]).toHaveAccessibleName('Connect');
     expect(buttons[1]).toHaveAccessibleName('Connect');
     expect(buttons[2]).toHaveAccessibleName('Connect');
+    expect(buttons[3]).toHaveAccessibleName('Connect');
   });
 
   it('keeps Teller disabled with missing credentials while SimpleFIN stays enabled', async () => {
@@ -136,6 +134,19 @@ describe('ProviderSelectionPanel', () => {
 
     expect(onSelectProvider).toHaveBeenCalledWith('teller');
     expect(screen.queryByRole('button', { name: 'Selected' })).not.toBeInTheDocument();
+  });
+
+  it('renders DIY as fourth card with Sync row showing Manual uploads', () => {
+    renderPanel({
+      availableProviders: ['plaid', 'teller', 'simplefin', 'diy'],
+      tellerApplicationId: 'app-123',
+    });
+
+    expect(screen.getByText('DIY')).toBeVisible();
+    expect(screen.getAllByText('Unlimited').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Sync')).toHaveLength(4);
+    expect(screen.getByText('Manual uploads')).toBeVisible();
+    expect(screen.getAllByText('Automatic')).toHaveLength(3);
   });
 
   it('keeps popup providers disabled until their secure connection is prepared', () => {

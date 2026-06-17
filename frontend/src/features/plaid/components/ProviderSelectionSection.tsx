@@ -1,5 +1,5 @@
 import * as Popover from '@radix-ui/react-popover';
-import { Info } from 'lucide-react';
+import { Check, Info, Minus } from 'lucide-react';
 import { useId, useState } from 'react';
 import { Button, cn, IconButton, Modal } from '@/ui/primitives';
 import {
@@ -89,7 +89,17 @@ export const ProviderSelectionSection = ({ section, isMobile }: ProviderSelectio
           uiTextRecipes.primary
         )}
       >
-        {section.value}
+        <span className={cn('flex', 'items-center', 'gap-1')}>
+          {section.synced === true ? (
+            <Check
+              aria-hidden
+              className={cn('h-3.5', 'w-3.5', 'shrink-0', ...uiStatusRecipes.success.text)}
+            />
+          ) : section.synced === false ? (
+            <Minus aria-hidden className={cn('h-3.5', 'w-3.5', 'shrink-0', uiTextRecipes.subtle)} />
+          ) : null}
+          {section.value}
+        </span>
         {privacyInfoDetails.length > 0 ? (
           isMobile ? (
             <>

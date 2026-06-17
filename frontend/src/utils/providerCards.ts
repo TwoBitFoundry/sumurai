@@ -5,6 +5,7 @@ import {
   Eye,
   Fingerprint,
   Landmark,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
   Zap,
@@ -20,6 +21,7 @@ export type ProviderCardSection = {
   value: string;
   description?: string;
   privacyDetails?: ProviderPrivacyDetail[];
+  synced?: boolean;
 };
 
 export type ProviderPrivacyDetail = {
@@ -36,7 +38,7 @@ export type ProviderCardConfig = {
   logoSrc?: string;
 };
 
-export const PROVIDER_PRICE_ORDER: FinancialProvider[] = ['teller', 'simplefin', 'plaid'];
+export const PROVIDER_PRICE_ORDER: FinancialProvider[] = ['teller', 'simplefin', 'plaid', 'diy'];
 
 export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig> = {
   plaid: {
@@ -78,6 +80,12 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
             value: 'Stops syncing; full deletion requires the Plaid Portal.',
           },
         ],
+      },
+      {
+        icon: RefreshCw,
+        label: 'Sync',
+        value: 'Automatic',
+        synced: true,
       },
     ],
   },
@@ -121,6 +129,12 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
           },
         ],
       },
+      {
+        icon: RefreshCw,
+        label: 'Sync',
+        value: 'Automatic',
+        synced: true,
+      },
     ],
   },
   simplefin: {
@@ -162,6 +176,59 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
             value: 'Deletes your setup right away.',
           },
         ],
+      },
+      {
+        icon: RefreshCw,
+        label: 'Sync',
+        value: 'Automatic',
+        synced: true,
+      },
+    ],
+  },
+  diy: {
+    title: 'DIY',
+    badge: 'Self-Hosted',
+    region: 'Unlimited',
+    privacyHref: '#',
+    sections: [
+      {
+        icon: CircleDollarSign,
+        label: 'Cost',
+        value: 'Free',
+      },
+      {
+        icon: Building2,
+        label: 'Coverage',
+        value: 'Unlimited',
+      },
+      {
+        icon: ShieldCheck,
+        label: 'Privacy',
+        value: 'Strongest',
+        privacyDetails: [
+          {
+            label: 'How it connects',
+            value: 'No third-party aggregator — you manage your own data.',
+          },
+          {
+            label: 'What it stores',
+            value: 'Only what you import; nothing leaves your self-hosted instance.',
+          },
+          {
+            label: 'How it uses data',
+            value: 'Your data never leaves your server.',
+          },
+          {
+            label: 'How to disconnect',
+            value: 'Deletes the institution and all its accounts and transactions instantly.',
+          },
+        ],
+      },
+      {
+        icon: RefreshCw,
+        label: 'Sync',
+        value: 'Manual uploads',
+        synced: false,
       },
     ],
   },
@@ -427,6 +494,70 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
   securityNote: 'Disconnect individual institutions anytime without removing your bridge access.',
 };
 
+const DIY_CONNECT_CONTENT: ConnectAccountProviderContent = {
+  displayName: 'DIY',
+  eyebrow: {
+    text: 'Self-Hosted',
+    backgroundClassName: cn(uiStatusRecipes.info.surface),
+    textClassName: cn(uiStatusRecipes.info.text),
+  },
+  heroTitle: 'Create your own institution',
+  heroDescription:
+    'Add custom institutions and accounts, then import transactions from any CSV or OFX file. No aggregator required — your data stays entirely on your server.',
+  highlightLabel: "What you'll create",
+  highlightMeta: 'No external connections',
+  features: [
+    {
+      icon: Landmark,
+      title: 'Custom institutions',
+      body: 'Name your own bank or account container and add it instantly.',
+      palette: featurePalettes.providerFeature.emerald,
+    },
+    {
+      icon: Zap,
+      title: 'Any account type',
+      body: 'Create checking, savings, loan, or credit accounts under each institution.',
+      palette: featurePalettes.providerFeature.amber,
+    },
+    {
+      icon: Sparkles,
+      title: 'File import',
+      body: 'Upload CSV or OFX files to populate transactions; no aggregator fees.',
+      palette: featurePalettes.providerFeature.purple,
+    },
+  ],
+  highlights: [
+    {
+      icon: ShieldCheck,
+      title: 'Strongest privacy',
+      body: 'No third-party ever sees your data — everything stays on your server.',
+      palette: featurePalettes.highlight.emerald,
+    },
+    {
+      icon: Fingerprint,
+      title: 'You own the data',
+      body: 'Disconnect an institution to remove all its records instantly.',
+      palette: featurePalettes.highlight.violet,
+    },
+    {
+      icon: Building2,
+      title: 'Unlimited coverage',
+      body: 'Any institution worldwide — if you can export it, you can import it.',
+      palette: featurePalettes.highlight.amber,
+    },
+    {
+      icon: Eye,
+      title: 'Always free',
+      body: 'No subscriptions, no per-account fees, no surprises.',
+      palette: featurePalettes.highlight.sky,
+    },
+  ],
+  cta: {
+    defaultLabel: 'Create custom institution',
+  },
+  securityNote: 'Your data never leaves your self-hosted instance.',
+};
+
 export const CONNECT_ACCOUNT_PROVIDER_CONTENT: Record<
   FinancialProvider,
   ConnectAccountProviderContent
@@ -434,6 +565,7 @@ export const CONNECT_ACCOUNT_PROVIDER_CONTENT: Record<
   plaid: PLAID_CONNECT_CONTENT,
   teller: TELLER_CONNECT_CONTENT,
   simplefin: SIMPLEFIN_CONNECT_CONTENT,
+  diy: DIY_CONNECT_CONTENT,
 };
 
 export const getConnectAccountProviderContent = (

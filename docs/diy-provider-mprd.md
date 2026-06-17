@@ -178,11 +178,16 @@ flows.
   enabled; all four enabled when none connected.
 
 **Acceptance criteria**
-- [ ] Picker shows 4 cards; each card has Cost, Coverage, Privacy, Sync rows.
-- [ ] DIY Sync row renders unchecked / "Manual uploads"; aggregators render checked.
-- [ ] With an aggregator connected, the other two aggregator cards are gated; DIY stays
+- [x] Picker shows 4 cards; each card has Cost, Coverage, Privacy, Sync rows.
+- [x] DIY Sync row renders unchecked / "Manual uploads"; aggregators render checked.
+- [x] With an aggregator connected, the other two aggregator cards are gated; DIY stays
       enabled.
-- [ ] Type/lint pass with the expanded `FinancialProvider` union.
+- [x] Type/lint pass with the expanded `FinancialProvider` union.
+
+**TDD log**
+- Red: added provider-card, capability, and picker coverage for DIY and aggregator gating.
+- Green: expanded `FinancialProvider`, added DIY card config/content, added Sync row rendering, and gated competing aggregators while keeping DIY enabled.
+- Verification: `bun --cwd=frontend test ./tests/utils/providerCards.test.ts ./tests/utils/providerCapabilities.test.ts ./tests/features/plaid/components/ProviderSelectionPanel.test.tsx`; `bun --cwd=frontend run typecheck`.
 
 ---
 

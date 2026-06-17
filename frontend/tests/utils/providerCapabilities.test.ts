@@ -70,4 +70,36 @@ describe('providerCapabilities', () => {
     expect(getConnectBlockedReason('teller', fullCatalogue)).toBeNull();
     expect(getConnectBlockedReason('simplefin', fullCatalogue)).toBeNull();
   });
+
+  it('given diy when checked then is always enabled regardless of catalogue', () => {
+    expect(isPickerEnabled('diy', null)).toBe(true);
+    expect(isPickerEnabled('diy', plaidOnlyCatalogue)).toBe(true);
+    expect(getConnectBlockedReason('diy', null)).toBeNull();
+    expect(getConnectBlockedReason('diy', plaidOnlyCatalogue)).toBeNull();
+  });
+
+  it('given an aggregator is connected when checking a competing aggregator then it is gated', () => {
+    const tellerConnected: ProviderCatalogue = {
+      available_providers: ['plaid', 'teller', 'simplefin'],
+      teller_application_id: 'app-123',
+      user_provider: 'teller',
+    };
+
+    expect(isPickerEnabled('plaid', tellerConnected)).toBe(false);
+    expect(isPickerEnabled('simplefin', tellerConnected)).toBe(false);
+    expect(isPickerEnabled('teller', tellerConnected)).toBe(true);
+    expect(getConnectBlockedReason('plaid', tellerConnected)).toBe('Disconnect teller first');
+    expect(getConnectBlockedReason('simplefin', tellerConnected)).toBe('Disconnect teller first');
+    expect(getConnectBlockedReason('teller', tellerConnected)).toBeNull();
+  });
+
+  it('given an aggregator is connected when checking diy then diy stays enabled', () => {
+    const plaidConnected: ProviderCatalogue = {
+      available_providers: ['plaid', 'simplefin'],
+      user_provider: 'plaid',
+    };
+
+    expect(isPickerEnabled('diy', plaidConnected)).toBe(true);
+    expect(getConnectBlockedReason('diy', plaidConnected)).toBeNull();
+  });
 });

@@ -1,9 +1,16 @@
-/**
- * Derives which providers are listed and ready to connect.
- */
-
 import type { FinancialProvider } from '@/types/api';
 import type { ProviderCatalogue } from '@/types/providerCatalog';
+
+const AGGREGATORS: ReadonlySet<FinancialProvider> = new Set(['plaid', 'teller', 'simplefin']);
+
+function isAggregator(provider: FinancialProvider): boolean {
+  return AGGREGATORS.has(provider);
+}
+
+function getConnectedAggregator(catalogue: ProviderCatalogue | null): FinancialProvider | null {
+  if (!catalogue?.user_provider) return null;
+  return isAggregator(catalogue.user_provider) ? catalogue.user_provider : null;
+}
 
 export function isProviderListed(
   provider: FinancialProvider,
@@ -20,7 +27,7 @@ export function isProviderConnectable(
     return provider !== 'teller';
   }
 
-  if (!isProviderListed(provider, catalogue)) {
+  if (provider !== 'diy' && !isProviderListed(provider, catalogue)) {
     return false;
   }
 
@@ -35,6 +42,15 @@ export function isPickerEnabled(
   provider: FinancialProvider,
   catalogue: ProviderCatalogue | null
 ): boolean {
+  if (provider === 'diy') {
+    return true;
+  }
+
+  const connectedAggregator = getConnectedAggregator(catalogue);
+  if (connectedAggregator && isAggregator(provider) && connectedAggregator !== provider) {
+    return false;
+  }
+
   if (provider === 'simplefin') {
     return true;
   }
@@ -46,6 +62,15 @@ export function getConnectBlockedReason(
   provider: FinancialProvider,
   catalogue: ProviderCatalogue | null
 ): string | null {
+  if (provider === 'diy') {
+    return null;
+  }
+
+  const connectedAggregator = getConnectedAggregator(catalogue);
+  if (connectedAggregator && isAggregator(provider) && connectedAggregator !== provider) {
+    return `Disconnect ${connectedAggregator} first`;
+  }
+
   if (provider === 'simplefin') {
     return null;
   }
