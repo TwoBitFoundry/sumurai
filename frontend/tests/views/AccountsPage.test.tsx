@@ -73,6 +73,56 @@ jest.mock('@/hooks/useProviderCatalog', () => ({
   useProviderCatalog: jest.fn(),
 }));
 
+jest.mock('@/components/onboarding/OnboardingProviderConnectModal', () => ({
+  OnboardingProviderConnectModal: ({
+    provider,
+    isOpen,
+    onClose,
+    onConnected,
+  }: {
+    provider: 'plaid' | 'teller' | 'simplefin' | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onConnected: (provider: 'plaid' | 'teller' | 'simplefin') => Promise<void> | void;
+  }) =>
+    isOpen && provider ? (
+      <div role="dialog" aria-label={`connect your ${provider} bridge`}>
+        <button type="button" onClick={() => void onConnected(provider)}>
+          Complete connect
+        </button>
+        <button type="button" onClick={onClose}>
+          Close modal
+        </button>
+      </div>
+    ) : null,
+}));
+
+jest.mock('@/features/plaid/components/ProviderSelectionPanel', () => ({
+  ProviderSelectionPanel: ({
+    availableProviders,
+    footerContent,
+    onSelectProvider,
+  }: {
+    availableProviders: Array<'plaid' | 'teller' | 'simplefin' | 'diy'>;
+    footerContent?: unknown;
+    onSelectProvider: (provider: 'plaid' | 'teller' | 'simplefin' | 'diy') => void;
+  }) => (
+    <div data-testid="provider-selection-panel">
+      {(['teller', 'simplefin', 'plaid', 'diy'] as const).map((provider) => (
+        <button
+          key={provider}
+          type="button"
+          disabled={!availableProviders.includes(provider)}
+          onClick={() => onSelectProvider(provider)}
+        >
+          Connect
+        </button>
+      ))}
+      {footerContent}
+    </div>
+  ),
+}));
+
 jest.mock('@/hooks/useFinancialConnection', () => ({
   useFinancialConnection: jest.fn(),
 }));
@@ -112,6 +162,29 @@ jest.mock('@/services/SimpleFinService', () => ({
     restoreInstitution: jest.fn(),
     syncBridge: jest.fn(),
   },
+}));
+
+jest.mock('@/features/diy/DiyInstitutionModal', () => ({
+  DiyInstitutionModal: ({
+    isOpen,
+    connectionId,
+    institutionName,
+    onComplete,
+  }: {
+    isOpen: boolean;
+    connectionId?: string | null;
+    institutionName?: string | null;
+    onComplete: (connectionId: string) => Promise<void> | void;
+  }) =>
+    isOpen ? (
+      <div data-testid="diy-institution-modal">
+        <div>{connectionId ?? 'new-diy-connection'}</div>
+        <div>{institutionName ?? 'new institution'}</div>
+        <button type="button" onClick={() => void onComplete(connectionId ?? 'conn-diy')}>
+          Complete DIY
+        </button>
+      </div>
+    ) : null,
 }));
 
 jest.mock('@/features/import/components/ImportModal', () => ({
@@ -637,6 +710,87 @@ describe('AccountsPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('opens the DIY institution modal from the page-level custom institution button', async () => {
+    const user = userEvent.setup();
+
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid', 'teller', 'diy'],
+        user_provider: 'diy',
+      })
+    );
+    jest.mocked(useAccountFilter).mockReturnValue(
+      makeTellerAccountFilter({
+        accountsByBank: {
+          'DIY Bank': [
+            {
+              id: 'acc_diy_1',
+              name: 'Checking',
+              account_type: 'checking',
+              balance_ledger: 100,
+              balance_available: 100,
+              mask: '1234',
+              provider: 'diy',
+              institution_name: 'DIY Bank',
+              connection_id: 'conn_diy_1',
+              transaction_count: 0,
+            },
+          ],
+        },
+      })
+    );
+
+    renderAccountsPage();
+
+    await user.click(screen.getByRole('button', { name: /add custom institution/i }));
+
+    const modal = screen.getByTestId('diy-institution-modal');
+    expect(modal).toBeInTheDocument();
+    expect(within(modal).getByText('new institution')).toBeVisible();
+  });
+
+  it('opens the DIY institution modal from a DIY bank row add-account action', async () => {
+    const user = userEvent.setup();
+
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid', 'teller', 'diy'],
+        user_provider: 'diy',
+      })
+    );
+    jest.mocked(useAccountFilter).mockReturnValue(
+      makeTellerAccountFilter({
+        accountsByBank: {
+          'DIY Bank': [
+            {
+              id: 'acc_diy_1',
+              name: 'Checking',
+              account_type: 'checking',
+              balance_ledger: 100,
+              balance_available: 100,
+              mask: '1234',
+              provider: 'diy',
+              institution_name: 'DIY Bank',
+              connection_id: 'conn_diy_1',
+              transaction_count: 0,
+            },
+          ],
+        },
+      })
+    );
+
+    renderAccountsPage();
+
+    await user.click(screen.getByRole('button', { name: 'Add account' }));
+
+    const modal = screen.getByTestId('diy-institution-modal');
+    expect(modal).toBeInTheDocument();
+    expect(within(modal).getByText('DIY Bank')).toBeVisible();
+    expect(within(modal).getByText('conn_diy_1')).toBeVisible();
+  });
+
   it('hides the SimpleFIN per-bank sync action while keeping sync all available', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(
@@ -881,9 +1035,10 @@ describe('AccountsPage', () => {
           name: /unite your accounts/i,
         })
       ).not.toBeInTheDocument();
-      for (const button of screen.getAllByRole('button', { name: /^connect$/i })) {
-        expect(button).toBeEnabled();
-      }
+      const connectButtons = screen.getAllByRole('button', { name: /^connect$/i });
+      expect(connectButtons).toHaveLength(4);
+      expect(connectButtons.slice(0, 3).every((button) => button.disabled === false)).toBe(true);
+      expect(connectButtons[3]).toBeDisabled();
     });
 
     it('does not show the picker when active connections exist', () => {

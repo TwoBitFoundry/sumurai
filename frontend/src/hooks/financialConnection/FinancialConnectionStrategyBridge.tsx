@@ -3,13 +3,14 @@ import type {
   FinancialConnectionStrategy,
   FinancialConnectionStrategyContext,
 } from '@/hooks/financialConnection/types';
+import { useDiyConnectionStrategy } from '@/hooks/financialConnection/useDiyConnectionStrategy';
 import { usePlaidConnectionStrategy } from '@/hooks/financialConnection/usePlaidConnectionStrategy';
 import { useSimpleFinConnectionStrategy } from '@/hooks/financialConnection/useSimpleFinConnectionStrategy';
 import { useTellerConnectionStrategy } from '@/hooks/financialConnection/useTellerConnectionStrategy';
-import type { SyncProvider } from '@/utils/queryInvalidation';
+import type { FinancialProvider } from '@/types/api';
 
 interface FinancialConnectionStrategyBridgeProps {
-  provider: SyncProvider;
+  provider: FinancialProvider;
   context: FinancialConnectionStrategyContext;
   strategyRef: MutableRefObject<FinancialConnectionStrategy>;
 }
@@ -53,6 +54,19 @@ function SimpleFinStrategyBridge({
   return strategy.render();
 }
 
+function DiyStrategyBridge({
+  context,
+  strategyRef,
+}: Omit<FinancialConnectionStrategyBridgeProps, 'provider'>) {
+  const strategy = useDiyConnectionStrategy(context);
+
+  useLayoutEffect(() => {
+    strategyRef.current = strategy;
+  });
+
+  return strategy.render();
+}
+
 export function FinancialConnectionStrategyBridge({
   provider,
   context,
@@ -65,5 +79,7 @@ export function FinancialConnectionStrategyBridge({
       return <TellerStrategyBridge context={context} strategyRef={strategyRef} />;
     case 'simplefin':
       return <SimpleFinStrategyBridge context={context} strategyRef={strategyRef} />;
+    case 'diy':
+      return <DiyStrategyBridge context={context} strategyRef={strategyRef} />;
   }
 }

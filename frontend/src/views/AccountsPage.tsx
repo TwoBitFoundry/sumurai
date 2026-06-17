@@ -7,6 +7,7 @@ import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes
 import { OnboardingProviderConnectModal } from '../components/onboarding/OnboardingProviderConnectModal';
 import { ToastStack } from '../components/toastStack/ToastStack';
 import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToastStack';
+import { DiyInstitutionModal } from '../features/diy/DiyInstitutionModal';
 import AccountsSummaryStats from '../features/plaid/components/AccountsSummaryStats';
 import ConnectButton from '../features/plaid/components/ConnectButton';
 import ConnectionsList, {
@@ -37,6 +38,7 @@ import { formatUserFacingApiError } from '../utils/formatUserFacingApiError';
 import { getProviderCardConfig, getProviderLogoSrc } from '../utils/providerCards';
 import {
   type InvalidateStaleCacheOptions,
+  isSyncProvider,
   refreshFinancialDataAfterProviderChange,
   type SyncProvider,
 } from '../utils/queryInvalidation';
@@ -67,6 +69,11 @@ const formatRelativeTime = (iso: string): string => {
 interface AccountsPageProps {
   onError?: (message: string | null) => void;
 }
+
+type DiyModalTarget = {
+  connectionId?: string | null;
+  institutionName?: string | null;
+};
 
 const toAccountType = (
   value: string | undefined
@@ -182,9 +189,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   );
 
   const providersForSync = useMemo(() => {
-    const providers = new Set<SyncProvider>([primaryProvider]);
+    const providers = new Set<SyncProvider>();
+    if (isSyncProvider(primaryProvider)) providers.add(primaryProvider);
     for (const bank of banks) {
-      providers.add(bank.provider);
+      if (isSyncProvider(bank.provider)) providers.add(bank.provider);
     }
     return providers;
   }, [banks, primaryProvider]);
@@ -212,12 +220,13 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
   const { pushToast: pushAccountsToast, ...accountsToastStack } = useAccountsToastStack(null);
   const [syncInstitutionRow, setSyncInstitutionRow] = useState<SyncAllRow | null>(null);
+  const [diyModalTarget, setDiyModalTarget] = useState<DiyModalTarget | null>(null);
   const exportInFlightRef = useRef(false);
   const dismissSyncInstitutionToast = useCallback(() => {
     setSyncInstitutionRow(null);
   }, []);
   const connectionFlow = useFinancialConnection({
-    provider: primaryProvider,
+    provider: isSyncProvider(primaryProvider) ? primaryProvider : 'simplefin',
     onError: (message) => {
       pushAccountsToast(message, 'error');
       onError?.(message);
@@ -309,6 +318,15 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
   const startProviderPickerConnection = useCallback(
     async (provider: FinancialProvider) => {
+      if (provider === 'diy') {
+        setDiyModalTarget(null);
+        return;
+      }
+
+      if (!isSyncProvider(provider)) {
+        return;
+      }
+
       if (provider === 'simplefin') {
         setPickerConnectingProvider(provider);
         return;
@@ -344,6 +362,41 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     setPickerConnectingProvider('simplefin');
   }, []);
 
+  const openDiyInstitutionModal = useCallback((target: DiyModalTarget | null = null) => {
+    setDiyModalTarget(
+      target ?? {
+        connectionId: null,
+        institutionName: null,
+      }
+    );
+  }, []);
+
+  const closeDiyInstitutionModal = useCallback(() => {
+    setDiyModalTarget(null);
+  }, []);
+
+  const handleDiyInstitutionComplete = useCallback(
+    async (_connectionId: string) => {
+      try {
+        await providerCatalog.chooseProvider('diy');
+      } catch (error) {
+        console.warn('Failed to select DIY provider after institution creation', error);
+        pushAccountsToast('Unable to select provider right now', 'error');
+      }
+
+      dispatchAccountsChanged();
+
+      try {
+        await providerCatalog.refresh();
+      } catch (error) {
+        console.warn('Failed to refresh provider catalog after DIY institution creation', error);
+      } finally {
+        setDiyModalTarget(null);
+      }
+    },
+    [providerCatalog, pushAccountsToast]
+  );
+
   useEffect(() => {
     if (exportInFlightRef.current && !isExporting && exportToast) {
       pushAccountsToast(exportToast, exportError ? 'error' : 'success');
@@ -356,13 +409,18 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   }, [exportError, exportToast, isExporting, onError, pushAccountsToast]);
 
   const handlePrimaryConnect = useCallback(() => {
+    if (primaryProvider === 'diy') {
+      openDiyInstitutionModal();
+      return;
+    }
+
     if (primaryProvider === 'simplefin') {
       openConnectModal();
       return;
     }
 
     void connectionFlow.initiateConnection();
-  }, [connectionFlow, openConnectModal, primaryProvider]);
+  }, [connectionFlow, openConnectModal, openDiyInstitutionModal, primaryProvider]);
 
   useEffect(() => {
     if (
@@ -462,7 +520,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       }
 
       const bank = banks.find((entry) => entry.id === bankId);
-      if (!bank?.connectionId) {
+      if (!bank?.connectionId || !isSyncProvider(bank.provider)) {
         return;
       }
 
@@ -584,8 +642,11 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       try {
         if (bank.provider === 'teller') {
           await TellerService.disconnect(bank.connectionId);
-        } else {
+        } else if (isSyncProvider(bank.provider)) {
           await PlaidService.disconnect(bank.connectionId);
+        }
+        if (!isSyncProvider(bank.provider)) {
+          return;
         }
         await refreshBankData(bank.provider, { resetTransactions: 'remove' });
         dispatchAccountsChanged();
@@ -790,6 +851,15 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           {connectAccountLabel}
         </ConnectButton>
       </div>
+      <Button
+        type="button"
+        variant="secondary"
+        size="md"
+        onClick={() => openDiyInstitutionModal()}
+        className={cn('self-end')}
+      >
+        Add custom institution
+      </Button>
       {!isOnline && (
         <span
           className={cn('w-full text-center', uiTypographyRecipes.caption, uiTextRecipes.warning)}
@@ -819,6 +889,16 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
               providerReadyState={pickerProviderReadyState}
               connectingProvider={activePickerConnectingProvider}
               onSelectProvider={(provider) => void startProviderPickerConnection(provider)}
+              footerContent={
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="md"
+                  onClick={() => openDiyInstitutionModal()}
+                >
+                  Add custom institution
+                </Button>
+              }
             />
           </div>
         </div>
@@ -830,6 +910,13 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
             onConnected={(provider) => void finishSimpleFinPickerConnection(provider)}
           />
         ) : null}
+        <DiyInstitutionModal
+          isOpen={diyModalTarget !== null}
+          connectionId={diyModalTarget?.connectionId ?? null}
+          institutionName={diyModalTarget?.institutionName ?? null}
+          onClose={closeDiyInstitutionModal}
+          onComplete={handleDiyInstitutionComplete}
+        />
       </div>
     );
   }
@@ -848,6 +935,12 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           onConnect={handlePrimaryConnect}
           onSync={syncBank}
           onDisconnect={disconnect}
+          onAddAccount={(bank) =>
+            openDiyInstitutionModal({
+              connectionId: bank.connectionId,
+              institutionName: bank.name,
+            })
+          }
           onExport={exportAccounts}
           isExporting={isExporting}
           isOnline={isOnline}
@@ -883,6 +976,13 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           onConnected={(provider) => void finishSimpleFinPickerConnection(provider)}
         />
       ) : null}
+      <DiyInstitutionModal
+        isOpen={diyModalTarget !== null}
+        connectionId={diyModalTarget?.connectionId ?? null}
+        institutionName={diyModalTarget?.institutionName ?? null}
+        onClose={closeDiyInstitutionModal}
+        onComplete={handleDiyInstitutionComplete}
+      />
     </div>
   );
 };

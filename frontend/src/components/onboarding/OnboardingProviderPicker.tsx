@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { OnboardingProviderConnectModal } from '@/components/onboarding/OnboardingProviderConnectModal';
+import { DiyInstitutionModal } from '@/features/diy/DiyInstitutionModal';
 import { ProviderSelectionPanel } from '@/features/plaid/components/ProviderSelectionPanel';
 import { useFinancialConnection } from '@/hooks/useFinancialConnection';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
@@ -22,6 +23,7 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
   const isOnline = useOnlineStatus();
   const providerCatalog = useProviderCatalog();
   const [connectingProvider, setConnectingProvider] = useState<FinancialProvider | null>(null);
+  const [isDiyModalOpen, setIsDiyModalOpen] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const plaidConnectionFlow = useFinancialConnection({
     provider: 'plaid',
@@ -47,6 +49,11 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
 
   const handleSelectProvider = useCallback(
     async (provider: FinancialProvider) => {
+      if (provider === 'diy') {
+        setIsDiyModalOpen(true);
+        return;
+      }
+
       setConnectingProvider(provider);
       if (provider === 'plaid') {
         await plaidConnectionFlow.initiateConnection();
@@ -83,6 +90,20 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
   const handleConnectClose = useCallback(() => {
     setConnectingProvider(null);
   }, []);
+
+  const handleDiyComplete = useCallback(
+    async (_connectionId: string) => {
+      try {
+        await providerCatalog.chooseProvider('diy');
+      } catch (err) {
+        console.warn('Failed to select DIY provider after institution creation', err);
+      } finally {
+        setIsDiyModalOpen(false);
+      }
+      await completeAndExit();
+    },
+    [completeAndExit, providerCatalog]
+  );
 
   useEffect(() => {
     if (!activeConnectionFlow || connectingProvider === 'simplefin') {
@@ -164,6 +185,11 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
             onConnected={handleConnectComplete}
           />
         ) : null}
+        <DiyInstitutionModal
+          isOpen={isDiyModalOpen}
+          onClose={() => setIsDiyModalOpen(false)}
+          onComplete={handleDiyComplete}
+        />
       </div>
     </GradientShell>
   );

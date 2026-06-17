@@ -192,6 +192,27 @@ export interface ProviderConnectResponse {
   simplefin_institutions_requiring_auth?: SimpleFinInstitutionAuthRequired[];
 }
 
+export interface CreateDiyInstitutionRequest {
+  name: string;
+}
+
+export interface CreateDiyInstitutionResponse {
+  connection_id: string;
+}
+
+export interface CreateDiyAccountRequest {
+  name: string;
+  account_type: string;
+  mask?: string | null;
+  balance?: string | null;
+}
+
+export interface CreateDiyAccountResponse {
+  id: string;
+  name: string;
+  account_type: string;
+}
+
 export interface SimpleFinInstitutionAuthRequired {
   institution_name: string;
   org_conn_id?: string | null;

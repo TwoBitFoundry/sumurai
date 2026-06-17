@@ -15,6 +15,7 @@ import {
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { getConnectAccountProviderContent } from '@/utils/providerCards';
+import { isSyncProvider } from '@/utils/queryInvalidation';
 
 interface OnboardingProviderConnectModalProps {
   provider: FinancialProvider | null;
@@ -60,7 +61,7 @@ function OnboardingProviderConnectModalContent({
   const prevInProgressRef = useRef(false);
 
   const connectionFlow = useFinancialConnection({
-    provider,
+    provider: isSyncProvider(provider) ? provider : 'simplefin',
     isOnline,
   });
   const connectContent = getConnectAccountProviderContent(provider);

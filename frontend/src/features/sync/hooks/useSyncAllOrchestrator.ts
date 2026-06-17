@@ -8,6 +8,7 @@ import { TellerService } from '@/services/TellerService';
 import type { FinancialProvider, Transaction } from '@/types/api';
 import { formatUserFacingApiError } from '@/utils/formatUserFacingApiError';
 import {
+  isSyncProvider,
   refreshFinancialDataAfterProviderChange,
   type SyncProvider,
 } from '@/utils/queryInvalidation';
@@ -40,11 +41,11 @@ const isAuthRequiredError = (error: unknown): error is ApiError =>
 
 const mapBanksToSyncRows = (banks: BankConnectionViewModel[]): SyncAllRow[] => {
   const syncBanks: SyncAllBank[] = banks
-    .filter((bank) => Boolean(bank.connectionId))
+    .filter((bank) => Boolean(bank.connectionId) && isSyncProvider(bank.provider))
     .map((bank) => ({
       id: bank.id,
       name: bank.name,
-      provider: bank.provider as FinancialProvider,
+      provider: bank.provider as SyncAllBank['provider'],
       connectionId: bank.connectionId ?? null,
     }));
 

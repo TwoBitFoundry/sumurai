@@ -5,7 +5,7 @@ import { AuthService } from '@/services/authService';
 import { ThemeTestProvider } from '../../utils/ThemeTestProvider';
 
 const chooseProviderMock = jest.fn(
-  async (_provider: 'plaid' | 'teller' | 'simplefin') => undefined
+  async (_provider: 'plaid' | 'teller' | 'simplefin' | 'diy') => undefined
 );
 const plaidInitiateConnectionMock = jest.fn(async (_setupToken?: string) => undefined);
 const tellerInitiateConnectionMock = jest.fn(async (_setupToken?: string) => undefined);
@@ -20,7 +20,7 @@ jest.mock('@/hooks/useProviderCatalog', () => {
       return {
         loading: false,
         error: null,
-        availableProviders: ['teller', 'simplefin', 'plaid'],
+        availableProviders: ['teller', 'simplefin', 'plaid', 'diy'],
         userProvider,
         tellerApplicationId: 'app-123',
         tellerEnvironment: 'development',
@@ -55,6 +55,23 @@ jest.mock('@/hooks/useFinancialConnection', () => ({
   }),
 }));
 
+jest.mock('@/features/diy/DiyInstitutionModal', () => ({
+  DiyInstitutionModal: ({
+    isOpen,
+    onComplete,
+  }: {
+    isOpen: boolean;
+    onComplete: (connectionId: string) => Promise<void> | void;
+  }) =>
+    isOpen ? (
+      <div data-testid="diy-institution-modal">
+        <button type="button" onClick={() => void onComplete('conn-diy')}>
+          Complete DIY
+        </button>
+      </div>
+    ) : null,
+}));
+
 jest.mock('@/components/onboarding/OnboardingProviderConnectModal', () => ({
   OnboardingProviderConnectModal: ({
     provider,
@@ -85,7 +102,7 @@ jest.mock('@/features/plaid/components/ProviderSelectionPanel', () => ({
     onSelectProvider,
     footerContent,
   }: {
-    onSelectProvider: (provider: 'plaid' | 'teller' | 'simplefin') => void;
+    onSelectProvider: (provider: 'plaid' | 'teller' | 'simplefin' | 'diy') => void;
     footerContent?: React.ReactNode;
   }) => (
     <div>
@@ -97,6 +114,9 @@ jest.mock('@/features/plaid/components/ProviderSelectionPanel', () => ({
       </button>
       <button type="button" onClick={() => onSelectProvider('plaid')}>
         Pick Plaid
+      </button>
+      <button type="button" onClick={() => onSelectProvider('diy')}>
+        Pick DIY
       </button>
       {footerContent}
     </div>
@@ -204,5 +224,26 @@ describe('OnboardingProviderPicker', () => {
     await user.click(screen.getByRole('button', { name: /pick plaid/i }));
 
     expect(plaidInitiateConnectionMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens the DIY institution modal and completes onboarding', async () => {
+    const user = userEvent.setup();
+    const onComplete = jest.fn();
+
+    render(
+      <ThemeTestProvider>
+        <OnboardingProviderPicker onComplete={onComplete} />
+      </ThemeTestProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: /pick diy/i }));
+    expect(screen.getByTestId('diy-institution-modal')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /complete diy/i }));
+
+    await waitFor(() => {
+      expect(chooseProviderMock).toHaveBeenCalledWith('diy');
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
   });
 });

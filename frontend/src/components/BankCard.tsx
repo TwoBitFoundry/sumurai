@@ -49,6 +49,7 @@ interface BankCardProps {
   bank: BankConnection;
   onSync: (id: string) => Promise<void>;
   onDisconnect: (id: string) => Promise<void>;
+  onAddAccount?: (id: string) => void;
   onExport?: (format: 'csv' | 'ofx', connectionId?: string) => Promise<void>;
   isExporting?: boolean;
   isOnline: boolean;
@@ -59,6 +60,7 @@ export const BankCard: React.FC<BankCardProps> = ({
   bank,
   onSync,
   onDisconnect,
+  onAddAccount,
   onExport = async () => undefined,
   isExporting = false,
   isOnline,
@@ -191,6 +193,19 @@ export const BankCard: React.FC<BankCardProps> = ({
     </Button>
   );
 
+  const addAccountControl =
+    bank.provider === 'diy' && onAddAccount ? (
+      <Button
+        type="button"
+        variant="secondary"
+        size="md"
+        onClick={() => onAddAccount(bank.id)}
+        className={cn('shrink-0', 'normal-case')}
+      >
+        Add account
+      </Button>
+    ) : null;
+
   const renderGroup = (group: AccountGroupKey, accounts: Account[]) => (
     <div key={group} className={cn('space-y-3')}>
       <span className={cn(sectionBadgeClass, 'inline-flex items-center gap-2')}>
@@ -309,6 +324,7 @@ export const BankCard: React.FC<BankCardProps> = ({
                   'md:justify-end'
                 )}
               >
+                {addAccountControl}
                 {syncControl}
                 {exportControl}
                 <div className={cn('ml-auto', 'md:ml-0')}>{disconnectControl}</div>

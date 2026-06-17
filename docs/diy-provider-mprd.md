@@ -210,10 +210,15 @@ flows.
   that reopen the same component.
 
 **Acceptance criteria**
-- [ ] DIY card opens `DiyInstitutionModal` directly (no SDK popup, no deferral screen).
-- [ ] Creating an institution + account renders it in `ConnectionsList`.
-- [ ] The per-account Import button imports transactions into a DIY account.
-- [ ] "Add account" and "Add custom institution" reopen the shared modal.
+- [x] DIY card opens `DiyInstitutionModal` directly (no SDK popup, no deferral screen).
+- [x] Creating an institution + account renders it in `ConnectionsList`.
+- [x] The per-account Import button imports transactions into a DIY account.
+- [x] "Add account" and "Add custom institution" reopen the shared modal.
+
+**TDD log**
+- Red: added DIY modal, service, host wiring, and registry coverage before the page could open the modal from the new entry points.
+- Green: implemented `DiyService`, `DiyInstitutionModal`, the DIY connection strategy registry entry, onboarding DIY selection, accounts-page DIY entry points, and DIY bank row add-account actions.
+- Verification: `bun --cwd=frontend run typecheck`; `bun --cwd=frontend test ./tests/hooks/useDiyConnectionStrategy.test.tsx ./tests/services/DiyService.test.ts ./tests/features/diy/DiyInstitutionModal.test.tsx ./tests/components/onboarding/OnboardingProviderPicker.test.tsx ./tests/views/AccountsPage.test.tsx`; `bun --cwd=frontend run lint`.
 
 ---
 
@@ -241,13 +246,18 @@ conditionally.
     independent of Link Account.
 
 **Acceptance criteria**
-- [ ] Onboarding: selecting DIY creates a first institution + account, selects `diy`, and
+- [x] Onboarding: selecting DIY creates a first institution + account, selects `diy`, and
       exits onboarding into the app.
 - [ ] Onboarding: "Skip for now" lands in the accounts-page DIY default state.
-- [ ] Accounts page, no aggregator: Link Account opens the picker (all 4).
-- [ ] Accounts page, aggregator active: Link Account opens that aggregator's flow directly;
+- [x] Accounts page, no aggregator: Link Account opens the picker (all 4).
+- [x] Accounts page, aggregator active: Link Account opens that aggregator's flow directly;
       DIY still addable via "Add custom institution".
 - [ ] Disconnecting the last aggregator returns the app to the DIY default state.
+
+**TDD log**
+- Red: isolated the DIY host paths and added coverage for the onboarding picker plus the accounts page entry points.
+- Green: wired DIY selection in onboarding to the shared modal and added the accounts-page DIY default entry points, including the conditional Link Account behavior.
+- Verification: `bun --cwd=frontend run typecheck`; `bun --cwd=frontend test ./tests/services/DiyService.test.ts ./tests/features/diy/DiyInstitutionModal.test.tsx ./tests/components/onboarding/OnboardingProviderPicker.test.tsx ./tests/views/AccountsPage.test.tsx`; `bun --cwd=frontend run lint`.
 
 ---
 
