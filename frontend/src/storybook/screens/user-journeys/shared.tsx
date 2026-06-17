@@ -373,7 +373,7 @@ export function getCursorStoryTransactions(request: {
       ? filtered.findIndex((transaction) => transaction.id === cursor.slice(7)) + 1
       : Number.isFinite(parsedCursor) && parsedCursor >= 0
         ? parsedCursor
-      : 0;
+        : 0;
   const page = filtered.slice(startIndex, startIndex + normalizedLimit);
   const last = page.at(-1);
   const hasMore = startIndex + normalizedLimit < filtered.length;
