@@ -13,11 +13,11 @@ import { useDebouncedChartRecalc } from '../features/analytics/hooks/useDebounce
 import { useYtdIncomeExpenses } from '../features/analytics/hooks/useYtdIncomeExpenses';
 import { shouldStackBalanceInstitutions } from '../features/analytics/utils/balanceInstitutionChartLayout';
 import {
+  asymmetricZeroAxisTicks,
   balancesYTickCount,
   formatBalancesAxisValue,
   safeBalanceAmount,
   sortBanksAlphabetically,
-  symmetricZeroAxisTicks,
 } from '../features/analytics/utils/balancesChartAxis';
 import {
   institutionLabelAxisHeight,
@@ -78,12 +78,12 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
     );
     const maxPositive = bankPositiveTotals.length ? Math.max(0, ...bankPositiveTotals) : 0;
     const maxNegativeAbs = bankNegativeTotals.length ? Math.max(0, ...bankNegativeTotals) : 0;
-    const maxExtent = Math.max(maxPositive, maxNegativeAbs);
-    const { ticks: yAxisTicks, domain: yAxisDomain } = symmetricZeroAxisTicks(
-      maxExtent,
+    const { ticks: yAxisTicks, domain: yAxisDomain } = asymmetricZeroAxisTicks(
+      maxPositive,
+      maxNegativeAbs,
       yTickCount
     );
-    const axisMax = yAxisDomain[1];
+    const axisMax = Math.max(Math.abs(yAxisDomain[0]), yAxisDomain[1]);
     const maxLabelLen = Math.max(
       formatBalancesAxisValue(axisMax).length,
       formatBalancesAxisValue(-axisMax).length
@@ -388,6 +388,7 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
                     domain={chartLayout.yAxisDomain}
                     ticks={chartLayout.yAxisTicks}
                     allowDecimals={false}
+                    minTickGap={0}
                     tickLine={false}
                     axisLine={false}
                     tick={(props) => (
