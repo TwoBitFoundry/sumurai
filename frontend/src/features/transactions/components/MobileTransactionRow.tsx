@@ -30,11 +30,16 @@ function amountClassName(amount: number): string {
   return uiTextRecipes.muted;
 }
 
+function stopRowActivation(event: React.SyntheticEvent) {
+  event.stopPropagation();
+}
+
 interface Props {
   transaction: Transaction;
   index: number;
   style?: React.CSSProperties;
   readOnly?: boolean;
+  variant?: 'page' | 'contextual';
   onCategoryOpen?: (index: number) => void;
   onCategoryClose?: () => void;
   onMerchantSearch?: (merchant: string) => void;
@@ -46,6 +51,7 @@ export const MobileTransactionRow: React.FC<Props> = ({
   index,
   style,
   readOnly = false,
+  variant = 'page',
   onCategoryOpen,
   onCategoryClose,
   onMerchantSearch,
@@ -67,6 +73,8 @@ export const MobileTransactionRow: React.FC<Props> = ({
       }
     : undefined;
 
+  const isPageVariant = variant === 'page';
+
   return (
     <div
       role="row"
@@ -78,67 +86,66 @@ export const MobileTransactionRow: React.FC<Props> = ({
       className={cn(
         transactionsRowRecipes.shell,
         index % 2 ? transactionsRowRecipes.odd : transactionsRowRecipes.even,
-        'relative h-full px-3 py-2.5',
-        onMerchantSearch && 'cursor-pointer'
+        isPageVariant
+          ? 'relative h-full px-4 py-2.5 md:px-8 lg:px-8'
+          : 'relative h-full px-3 py-2.5',
+        onMerchantSearch && 'cursor-pointer touch-manipulation'
       )}
     >
       <TransactionMerchantLabel
         merchantName={transaction.name}
         originalMerchantName={transaction.originalMerchantName}
-        surfaceContent={
-          <>
-            <p
-              className={cn(
-                transactionsRowRecipes.mobileMerchantLine,
-                transactionsRowRecipes.merchantEllipsis,
-                uiTypographyRecipes.cardTitle,
-                uiTextRecipes.primary
-              )}
-            >
-              {transaction.name || '-'}
+        merchantLineClassName={cn(
+          transactionsRowRecipes.mobileMerchantLine,
+          transactionsRowRecipes.merchantEllipsis,
+          uiTypographyRecipes.cardTitle,
+          uiTextRecipes.primary
+        )}
+        onMerchantActivate={handleRowActivate}
+        metaContent={
+          <div className={cn(transactionsRowRecipes.mobileMetaBlock)}>
+            <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+              {formatMobileDate(transaction.date)}
             </p>
-            <div className={cn(transactionsRowRecipes.mobileMetaBlock)}>
-              <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                {formatMobileDate(transaction.date)}
-              </p>
-              {accountLabel ? (
-                transaction.account_id && onAccountFilter ? (
-                  <button
-                    type="button"
-                    title={metaTitle}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onAccountFilter(transaction.account_id as string);
-                    }}
-                    className={cn(
-                      'pointer-events-auto min-w-0 truncate text-left',
-                      uiTypographyRecipes.caption,
-                      uiTextRecipes.muted,
-                      'hover:text-emerald-600 dark:hover:text-emerald-300'
-                    )}
-                  >
-                    {accountLabel}
-                  </button>
-                ) : (
-                  <p
-                    className={cn(
-                      'min-w-0 truncate',
-                      uiTypographyRecipes.caption,
-                      uiTextRecipes.muted
-                    )}
-                    title={metaTitle}
-                  >
-                    {accountLabel}
-                  </p>
-                )
-              ) : null}
-            </div>
-          </>
+            {accountLabel ? (
+              transaction.account_id && onAccountFilter ? (
+                <button
+                  type="button"
+                  title={metaTitle}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onAccountFilter(transaction.account_id as string);
+                  }}
+                  className={cn(
+                    'min-w-0 truncate text-left touch-manipulation',
+                    uiTypographyRecipes.caption,
+                    uiTextRecipes.muted,
+                    'hover:text-emerald-600 dark:hover:text-emerald-300'
+                  )}
+                >
+                  {accountLabel}
+                </button>
+              ) : (
+                <p
+                  className={cn(
+                    'min-w-0 truncate',
+                    uiTypographyRecipes.caption,
+                    uiTextRecipes.muted
+                  )}
+                  title={metaTitle}
+                >
+                  {accountLabel}
+                </p>
+              )
+            ) : null}
+          </div>
         }
       />
       <p
         className={cn(
-          transactionsRowRecipes.mobileAmount,
+          isPageVariant
+            ? transactionsRowRecipes.mobileAmountPage
+            : transactionsRowRecipes.mobileAmount,
           uiTypographyRecipes.cardTitle,
           amountClassName(transaction.amount)
         )}
@@ -147,8 +154,13 @@ export const MobileTransactionRow: React.FC<Props> = ({
       </p>
       <div
         role="cell"
-        className={cn(transactionsRowRecipes.mobileCategoryAnchor)}
-        onMouseDown={(event) => event.stopPropagation()}
+        className={cn(
+          isPageVariant
+            ? transactionsRowRecipes.mobileCategoryAnchorPage
+            : transactionsRowRecipes.mobileCategoryAnchor
+        )}
+        onMouseDown={stopRowActivation}
+        onPointerDown={stopRowActivation}
       >
         <InlineCategoryCell
           transaction={transaction}

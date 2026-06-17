@@ -15,7 +15,9 @@ interface Props {
   merchantName?: string;
   originalMerchantName?: string;
   className?: string;
-  surfaceContent?: React.ReactNode;
+  merchantLineClassName?: string;
+  metaContent?: React.ReactNode;
+  onMerchantActivate?: () => void;
 }
 
 function RawMerchantPopoverContent({ rawMerchant }: { rawMerchant: string }) {
@@ -48,44 +50,100 @@ function RawMerchantPopoverContent({ rawMerchant }: { rawMerchant: string }) {
   );
 }
 
+function MerchantInteractiveLine({
+  normalizedMerchant,
+  showPopover,
+  rawMerchant,
+  onMerchantActivate,
+  className,
+}: {
+  normalizedMerchant: string;
+  showPopover: boolean;
+  rawMerchant?: string;
+  onMerchantActivate?: () => void;
+  className?: string;
+}) {
+  const lineClassName = cn(
+    'block',
+    'w-fit',
+    'max-w-full',
+    'rounded-md',
+    'bg-transparent',
+    'text-left',
+    'transition-colors',
+    'duration-150',
+    'touch-manipulation',
+    uiFocusRecipes.visible,
+    className
+  );
+
+  if (showPopover) {
+    return (
+      <Popover.Root>
+        <Popover.Trigger asChild>
+          <button
+            type="button"
+            aria-label={`Show raw merchant for ${normalizedMerchant}`}
+            onClick={(event) => event.stopPropagation()}
+            className={cn(
+              lineClassName,
+              'cursor-pointer',
+              'hover:text-emerald-600',
+              'dark:hover:text-emerald-300'
+            )}
+          >
+            {normalizedMerchant}
+          </button>
+        </Popover.Trigger>
+        <Popover.Portal>
+          <RawMerchantPopoverContent rawMerchant={rawMerchant ?? ''} />
+        </Popover.Portal>
+      </Popover.Root>
+    );
+  }
+
+  if (onMerchantActivate) {
+    return (
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onMerchantActivate();
+        }}
+        className={cn(lineClassName, 'cursor-pointer')}
+      >
+        {normalizedMerchant}
+      </button>
+    );
+  }
+
+  return <span className={className}>{normalizedMerchant}</span>;
+}
+
 export const TransactionMerchantLabel: React.FC<Props> = ({
   merchantName,
   originalMerchantName,
   className,
-  surfaceContent,
+  merchantLineClassName,
+  metaContent,
+  onMerchantActivate,
 }) => {
   const normalizedMerchant = merchantName || '-';
   const rawMerchant = originalMerchantName?.trim();
   const showPopover = Boolean(rawMerchant && rawMerchant !== normalizedMerchant);
+  const useMobileLayout = metaContent !== undefined || onMerchantActivate !== undefined;
 
-  if (surfaceContent) {
-    const overlayClassName = cn(transactionsRowRecipes.mainSurface, className);
-
+  if (useMobileLayout) {
     return (
       <div className={cn(transactionsRowRecipes.mainSurfaceHost)}>
-        <div className={cn(transactionsRowRecipes.mainSurfaceContent)}>{surfaceContent}</div>
-        {showPopover ? (
-          <Popover.Root>
-            <Popover.Trigger asChild>
-              <button
-                type="button"
-                aria-label={`Show raw merchant for ${normalizedMerchant}`}
-                onClick={(event) => event.stopPropagation()}
-                className={cn(
-                  overlayClassName,
-                  'cursor-pointer',
-                  'touch-manipulation',
-                  uiFocusRecipes.visible
-                )}
-              />
-            </Popover.Trigger>
-            <Popover.Portal>
-              <RawMerchantPopoverContent rawMerchant={rawMerchant ?? ''} />
-            </Popover.Portal>
-          </Popover.Root>
-        ) : (
-          <div className={cn(overlayClassName, 'pointer-events-none')} aria-hidden="true" />
-        )}
+        <MerchantInteractiveLine
+          normalizedMerchant={normalizedMerchant}
+          showPopover={showPopover}
+          rawMerchant={rawMerchant}
+          onMerchantActivate={onMerchantActivate}
+          className={merchantLineClassName}
+        />
+        {metaContent}
       </div>
     );
   }
@@ -95,34 +153,12 @@ export const TransactionMerchantLabel: React.FC<Props> = ({
   }
 
   return (
-    <Popover.Root>
-      <Popover.Trigger asChild>
-        <button
-          type="button"
-          aria-label={`Show raw merchant for ${normalizedMerchant}`}
-          onClick={(event) => event.stopPropagation()}
-          className={cn(
-            'block',
-            'w-fit',
-            'max-w-full',
-            'rounded-md',
-            'bg-transparent',
-            'text-left',
-            'transition-colors',
-            'duration-150',
-            'hover:text-emerald-600',
-            'dark:hover:text-emerald-300',
-            uiFocusRecipes.visible,
-            className
-          )}
-        >
-          {normalizedMerchant}
-        </button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <RawMerchantPopoverContent rawMerchant={rawMerchant ?? ''} />
-      </Popover.Portal>
-    </Popover.Root>
+    <MerchantInteractiveLine
+      normalizedMerchant={normalizedMerchant}
+      showPopover={showPopover}
+      rawMerchant={rawMerchant}
+      className={className}
+    />
   );
 };
 

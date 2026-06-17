@@ -199,7 +199,10 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
             'transition-colors duration-500'
           )}
         >
-          <div role="columnheader" className={cn('px-4 py-3', uiTypographyRecipes.label)}>
+          <div
+            role="columnheader"
+            className={cn('pl-4 py-3 md:pl-8 lg:pl-8', uiTypographyRecipes.label)}
+          >
             Date
           </div>
           <div role="columnheader" className={cn('px-4 py-3', uiTypographyRecipes.label)}>
@@ -219,7 +222,7 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
           </div>
           <div
             role="columnheader"
-            className={cn('px-4 py-3 text-right', uiTypographyRecipes.label)}
+            className={cn('pr-4 py-3 text-right md:pr-8 lg:pr-8', uiTypographyRecipes.label)}
           >
             Category
           </div>
@@ -301,6 +304,7 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
                     <DesktopTransactionRow
                       transaction={row}
                       index={item.index}
+                      variant={variant}
                       readOnly={readOnly}
                       onCategoryOpen={setOpenRowIndex}
                       onCategoryClose={() => setOpenRowIndex(null)}
@@ -311,6 +315,7 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
                     <MobileTransactionRow
                       transaction={row}
                       index={item.index}
+                      variant={variant}
                       readOnly={readOnly}
                       onCategoryOpen={setOpenRowIndex}
                       onCategoryClose={() => setOpenRowIndex(null)}

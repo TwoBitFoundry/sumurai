@@ -11,9 +11,7 @@ export const transactionsRowRecipes = {
     'hover:ring-2 hover:ring-inset hover:ring-emerald-400/60',
     'dark:hover:ring-emerald-400/50',
   ],
-  mainSurface: ['absolute', 'inset-0', 'z-0', 'rounded-md', 'bg-transparent'],
   mainSurfaceHost: ['relative', 'min-w-0', 'w-full'],
-  mainSurfaceContent: ['relative', 'z-10', 'pointer-events-none'],
   mobileAmount: [
     'pointer-events-none',
     'absolute',
@@ -24,6 +22,27 @@ export const transactionsRowRecipes = {
     'tabular-nums',
   ],
   mobileCategoryAnchor: ['absolute', 'bottom-2.5', 'right-3', 'z-20', 'w-fit', 'max-w-full'],
+  mobileAmountPage: [
+    'pointer-events-none',
+    'absolute',
+    'top-2.5',
+    'right-4',
+    'md:right-8',
+    'lg:right-8',
+    'z-10',
+    'shrink-0',
+    'tabular-nums',
+  ],
+  mobileCategoryAnchorPage: [
+    'absolute',
+    'bottom-2.5',
+    'right-4',
+    'md:right-8',
+    'lg:right-8',
+    'z-20',
+    'w-fit',
+    'max-w-full',
+  ],
   mobileMerchantLine: ['min-w-0', 'pr-28'],
   mobileMetaBlock: ['mt-1', 'min-w-0', 'pr-28'],
   placeholder: [
@@ -43,7 +62,8 @@ export const transactionsRowRecipes = {
   merchantEllipsis: ['min-w-0', 'overflow-hidden', 'text-ellipsis', 'whitespace-nowrap'],
   merchantCell: ['min-w-0', 'overflow-hidden', 'text-ellipsis', 'whitespace-nowrap', 'text-left'],
   categoryPill: [
-    'w-full',
+    'w-fit',
+    'max-w-full',
     'min-w-0',
     '!justify-end',
     '!gap-0',
@@ -64,7 +84,7 @@ export const transactionsRowRecipes = {
   categoryLabelReadOnly: ['truncate', 'text-right'],
   categoryChevron: ['ml-1', 'shrink-0'],
   desktopGridCols:
-    'grid-cols-[minmax(0,9rem)_minmax(0,30%)_minmax(0,8rem)_minmax(0,12rem)_minmax(12rem,20%)]',
+    'grid-cols-[minmax(0,9rem)_minmax(0,1fr)_minmax(0,8rem)_minmax(0,12rem)_minmax(0,1fr)]',
   desktopGridRow: ['grid', 'w-full', 'items-center'],
   desktopGridHeader: ['grid', 'w-full', 'items-center', 'sticky', 'top-0', 'z-10'],
 } as const;

@@ -139,7 +139,7 @@ const TransactionsPage: React.FC<{
           rounded="lg"
           padding="none"
           withInnerEffects={false}
-          containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
+          containerClassName={cn('pt-4', 'md:pt-8', 'lg:pt-8')}
           className={cn('space-y-4')}
         >
           <h2
@@ -148,6 +148,9 @@ const TransactionsPage: React.FC<{
               'min-w-0',
               'items-center',
               'gap-2',
+              'px-4',
+              'md:px-8',
+              'lg:px-8',
               uiTypographyRecipes.sectionTitle,
               uiTextRecipes.primary
             )}

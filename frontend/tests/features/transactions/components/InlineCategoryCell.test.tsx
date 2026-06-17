@@ -45,7 +45,8 @@ describe('InlineCategoryCell', () => {
       expect(slot.style.width).toBe(expectedWidth);
     } else {
       expect(slot.style.maxWidth).toBe(expectedWidth);
-      expect(slot.className).toContain('w-full');
+      expect(slot.className).toContain('ml-auto');
+      expect(slot.className).toContain('w-fit');
     }
 
     const button = screen.getByRole('button', { name: /Edit category: Merchandise/i });

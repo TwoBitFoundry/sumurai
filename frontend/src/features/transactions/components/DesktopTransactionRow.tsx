@@ -8,11 +8,16 @@ import InlineCategoryCell from './InlineCategoryCell';
 import TransactionMerchantLabel from './TransactionMerchantLabel';
 import { transactionsRowRecipes } from './transactionsRowRecipes';
 
+function stopRowActivation(event: React.SyntheticEvent) {
+  event.stopPropagation();
+}
+
 interface Props {
   transaction: Transaction;
   index: number;
   style?: React.CSSProperties;
   readOnly?: boolean;
+  variant?: 'page' | 'contextual';
   onCategoryOpen?: (index: number) => void;
   onCategoryClose?: () => void;
   onMerchantSearch?: (merchant: string) => void;
@@ -24,6 +29,7 @@ export const DesktopTransactionRow: React.FC<Props> = ({
   index,
   style,
   readOnly = false,
+  variant = 'page',
   onCategoryOpen,
   onCategoryClose,
   onMerchantSearch,
@@ -40,6 +46,8 @@ export const DesktopTransactionRow: React.FC<Props> = ({
       }
     : undefined;
 
+  const isPageVariant = variant === 'page';
+
   return (
     <div
       role="row"
@@ -54,13 +62,15 @@ export const DesktopTransactionRow: React.FC<Props> = ({
         transactionsRowRecipes.shell,
         index % 2 ? transactionsRowRecipes.odd : transactionsRowRecipes.even,
         'h-full',
-        onMerchantSearch && 'cursor-pointer'
+        onMerchantSearch && 'cursor-pointer touch-manipulation'
       )}
     >
       <div
         role="cell"
         className={cn(
-          'px-4 py-3 relative align-middle tabular-nums',
+          isPageVariant
+            ? 'pl-4 py-3 md:pl-8 lg:pl-8 relative align-middle tabular-nums'
+            : 'px-4 py-3 relative align-middle tabular-nums',
           uiTypographyRecipes.body,
           uiTextRecipes.primary,
           'transition-colors duration-500'
@@ -141,8 +151,12 @@ export const DesktopTransactionRow: React.FC<Props> = ({
       </div>
       <div
         role="cell"
-        className={cn('min-w-0 whitespace-nowrap px-4 py-3 align-middle text-right')}
-        onMouseDown={(event) => event.stopPropagation()}
+        className={cn(
+          'flex min-w-0 justify-end py-3 align-middle',
+          isPageVariant ? 'pr-4 md:pr-8 lg:pr-8' : 'px-4'
+        )}
+        onMouseDown={stopRowActivation}
+        onPointerDown={stopRowActivation}
       >
         <InlineCategoryCell
           transaction={r}
