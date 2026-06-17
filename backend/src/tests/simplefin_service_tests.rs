@@ -1007,6 +1007,9 @@ async fn build_simplefin_handler_app(
             cache_service.clone(),
         ),
     );
+    let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
+        db_repository.clone(),
+    ));
 
     let state = AppState {
         plaid_service,
@@ -1036,6 +1039,7 @@ async fn build_simplefin_handler_app(
             )
             .unwrap(),
         ),
+        diy_service,
     };
 
     Ok(create_app(state))

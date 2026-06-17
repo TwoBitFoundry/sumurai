@@ -450,6 +450,10 @@ async fn main() -> anyhow::Result<()> {
         )
     };
 
+    let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
+        db_repository.clone(),
+    ));
+
     let state = AppState {
         plaid_service,
         plaid_client,
@@ -470,6 +474,7 @@ async fn main() -> anyhow::Result<()> {
         category_management_service,
         auto_categorization_service,
         webauthn_service,
+        diy_service,
     };
 
     let app = create_app(state);
@@ -580,6 +585,11 @@ pub fn create_app(state: AppState) -> Router {
         )
         .route("/api/providers/info", get(get_authenticated_provider_info))
         .route("/api/providers/select", post(select_authenticated_provider))
+        .route("/api/diy/institutions", post(create_diy_institution))
+        .route(
+            "/api/diy/institutions/{connection_id}/accounts",
+            post(create_diy_account),
+        )
         .route(
             "/api/providers/connect",
             post(connect_authenticated_provider),
@@ -4072,6 +4082,139 @@ async fn health_check() -> &'static str {
         "Health check invoked"
     );
     "OK"
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/diy/institutions",
+    description = "Creates a new DIY institution (provider_connection with provider='diy') for the authenticated user.",
+    request_body = crate::models::diy::CreateDiyInstitutionRequest,
+    responses(
+        (status = 200, description = "Institution created successfully", body = crate::models::diy::CreateDiyInstitutionResponse),
+        (status = 400, description = "Invalid request body", body = ApiErrorResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "DIY Provider"
+)]
+async fn create_diy_institution(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<crate::models::diy::CreateDiyInstitutionRequest>,
+) -> Result<
+    Json<crate::models::diy::CreateDiyInstitutionResponse>,
+    (StatusCode, Json<ApiErrorResponse>),
+> {
+    let user_id = auth_context.user_id;
+
+    if req.name.trim().is_empty() {
+        return Err(
+            ApiErrorResponse::new("BAD_REQUEST", "Institution name cannot be empty")
+                .into_response(StatusCode::BAD_REQUEST),
+        );
+    }
+
+    match state
+        .diy_service
+        .create_institution(user_id, req.name.trim())
+        .await
+    {
+        Ok(connection) => Ok(Json(crate::models::diy::CreateDiyInstitutionResponse {
+            connection_id: connection.id,
+        })),
+        Err(e) => {
+            tracing::error!(
+                "Failed to create DIY institution for user {}: {}",
+                user_id,
+                e
+            );
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to create institution",
+            ))
+        }
+    }
+}
+
+const DIY_VALID_ACCOUNT_TYPES: &[&str] = &["checking", "savings", "loan", "credit"];
+
+#[utoipa::path(
+    post,
+    path = "/api/diy/institutions/{connection_id}/accounts",
+    description = "Creates a new account under a DIY institution owned by the authenticated user.",
+    params(
+        ("connection_id" = Uuid, Path, description = "DIY institution connection ID")
+    ),
+    request_body = crate::models::diy::CreateDiyAccountRequest,
+    responses(
+        (status = 200, description = "Account created successfully", body = crate::models::diy::CreateDiyAccountResponse),
+        (status = 400, description = "Invalid account type or empty name", body = ApiErrorResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Connection is not a DIY connection", body = ApiErrorResponse),
+        (status = 404, description = "Connection not found", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "DIY Provider"
+)]
+async fn create_diy_account(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    axum::extract::Path(connection_id): axum::extract::Path<uuid::Uuid>,
+    Json(req): Json<crate::models::diy::CreateDiyAccountRequest>,
+) -> Result<Json<crate::models::diy::CreateDiyAccountResponse>, (StatusCode, Json<ApiErrorResponse>)>
+{
+    let user_id = auth_context.user_id;
+
+    if req.name.trim().is_empty() {
+        return Err(
+            ApiErrorResponse::new("BAD_REQUEST", "Account name cannot be empty")
+                .into_response(StatusCode::BAD_REQUEST),
+        );
+    }
+
+    if !DIY_VALID_ACCOUNT_TYPES.contains(&req.account_type.as_str()) {
+        return Err(ApiErrorResponse::new(
+            "BAD_REQUEST",
+            &format!(
+                "account_type must be one of: {}",
+                DIY_VALID_ACCOUNT_TYPES.join(", ")
+            ),
+        )
+        .into_response(StatusCode::BAD_REQUEST));
+    }
+
+    match state
+        .diy_service
+        .create_account(user_id, connection_id, &req)
+        .await
+    {
+        Ok(account) => Ok(Json(crate::models::diy::CreateDiyAccountResponse {
+            id: account.id,
+            name: account.name,
+            account_type: account.account_type,
+        })),
+        Err(e) if e.to_string().contains("not found") => {
+            Err(ApiErrorResponse::new("NOT_FOUND", "Connection not found")
+                .into_response(StatusCode::NOT_FOUND))
+        }
+        Err(e) if e.to_string().contains("not diy") => Err(ApiErrorResponse::new(
+            "FORBIDDEN",
+            "Connection is not a DIY connection",
+        )
+        .into_response(StatusCode::FORBIDDEN)),
+        Err(e) => {
+            tracing::error!(
+                "Failed to create DIY account for user {} connection {}: {}",
+                user_id,
+                connection_id,
+                e
+            );
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to create account",
+            ))
+        }
+    }
 }
 
 #[utoipa::path(

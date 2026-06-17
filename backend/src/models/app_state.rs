@@ -4,6 +4,7 @@ use crate::config::Config;
 use crate::providers::ProviderRegistry;
 use crate::services::categorization::categorization_service::Categorizer;
 use crate::services::category_management::service::CategoryManagementService;
+use crate::services::diy_service::DiyService;
 use crate::services::otel_traces_relay::OtlpTracesRelay;
 use crate::services::plaid_service::{PlaidService, RealPlaidClient};
 use crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService;
@@ -37,6 +38,7 @@ pub struct AppState {
     #[allow(dead_code)]
     pub(crate) auto_categorization_service: Arc<AutoCategorizationService>,
     pub(crate) webauthn_service: Arc<WebAuthnService>,
+    pub(crate) diy_service: Arc<DiyService>,
 }
 
 impl Clone for AppState {
@@ -61,6 +63,7 @@ impl Clone for AppState {
             category_management_service: self.category_management_service.clone(),
             auto_categorization_service: self.auto_categorization_service.clone(),
             webauthn_service: self.webauthn_service.clone(),
+            diy_service: self.diy_service.clone(),
         }
     }
 }

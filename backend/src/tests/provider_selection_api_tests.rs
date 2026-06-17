@@ -146,6 +146,9 @@ async fn build_test_app(
             cache_service.clone(),
         ),
     );
+    let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
+        db_repository.clone(),
+    ));
 
     let state = AppState {
         plaid_service: plaid_service_arc,
@@ -175,6 +178,7 @@ async fn build_test_app(
             )
             .unwrap(),
         ),
+        diy_service,
     };
 
     create_app(state)

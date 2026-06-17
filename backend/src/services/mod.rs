@@ -7,6 +7,7 @@ pub mod cache_service;
 pub mod categorization;
 pub mod category_management;
 pub mod connection_service;
+pub mod diy_service;
 pub mod export_service;
 pub mod import_service;
 pub mod merchant_normalization;

@@ -417,6 +417,9 @@ impl TestFixtures {
                 cache_service.clone(),
             ),
         );
+        let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
+            db_repository.clone(),
+        ));
 
         let state = AppState {
             plaid_service: plaid_service_arc,
@@ -446,6 +449,7 @@ impl TestFixtures {
                 )
                 .unwrap(),
             ),
+            diy_service,
         };
 
         Ok(create_app(state))
@@ -572,6 +576,9 @@ impl TestFixtures {
                 cache_service.clone(),
             ),
         );
+        let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
+            db_repository.clone(),
+        ));
 
         let state = AppState {
             plaid_service: plaid_service_arc,
@@ -601,6 +608,7 @@ impl TestFixtures {
                 )
                 .unwrap(),
             ),
+            diy_service,
         };
 
         Ok(create_app(state))
@@ -682,6 +690,9 @@ impl TestFixtures {
                 cache_service.clone(),
             ),
         );
+        let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
+            db_repository.clone(),
+        ));
 
         let state = AppState {
             plaid_service: plaid_service_arc,
@@ -711,6 +722,7 @@ impl TestFixtures {
                 )
                 .unwrap(),
             ),
+            diy_service,
         };
 
         Ok(create_app(state))

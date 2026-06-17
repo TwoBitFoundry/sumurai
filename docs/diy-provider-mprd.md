@@ -142,13 +142,18 @@ flows.
 - Regenerate OpenAPI (`backend/openapi/`, `docs/OPENAPI.json`).
 
 **Acceptance criteria**
-- [ ] `POST /api/diy/institutions` creates a `provider='diy'` connection owned by the user.
-- [ ] `POST /api/diy/institutions/{id}/accounts` creates an account with the chosen type
+- [x] `POST /api/diy/institutions` creates a `provider='diy'` connection owned by the user.
+- [x] `POST /api/diy/institutions/{id}/accounts` creates an account with the chosen type
       under that connection.
-- [ ] Creating an account under a non-owned or non-DIY connection is rejected.
-- [ ] Importing into a DIY account via the existing endpoint works.
-- [ ] Disconnecting a DIY institution removes its accounts + transactions.
-- [ ] OpenAPI artifacts regenerated and committed.
+- [x] Creating an account under a non-owned or non-DIY connection is rejected.
+- [x] Importing into a DIY account via the existing endpoint works.
+- [x] Disconnecting a DIY institution removes its accounts + transactions.
+- [x] OpenAPI artifacts regenerated and committed.
+
+**TDD log**
+- Red: created `diy_api_tests.rs` with 7 boundary tests; all failed with 404.
+- Green: created `models/diy.rs` (DTOs), `services/diy_service.rs` (create_institution/create_account); added `DiyService` to `AppState`; added `create_diy_institution` + `create_diy_account` handlers with validation; registered routes `/api/diy/institutions` and `/api/diy/institutions/{connection_id}/accounts`; added schemas + paths to OpenAPI; regenerated `docs/OPENAPI.json`.
+- 686 backend tests pass; clippy clean.
 
 ---
 
