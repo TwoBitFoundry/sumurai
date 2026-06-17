@@ -172,6 +172,30 @@ impl AnalyticsService {
         }
     }
 
+    pub async fn get_income_expense_totals(
+        &self,
+        repository: &dyn DatabaseRepository,
+        user_id: &Uuid,
+        query: SpendingTransactionQuery<'_>,
+    ) -> Result<IncomeExpenseTotals> {
+        let today = chrono::Utc::now().naive_utc().date();
+        let year = today.year();
+        let start_date = query
+            .start_date
+            .unwrap_or_else(|| chrono::NaiveDate::from_ymd_opt(year, 1, 1).unwrap());
+        let end_date = query.end_date.unwrap_or(today);
+        let grid = repository
+            .get_category_aggregates_for_date_range(
+                user_id,
+                start_date,
+                end_date,
+                query.account_ids,
+            )
+            .await?;
+
+        Ok(self.ytd_income_expense_totals(&grid))
+    }
+
     pub fn current_month_date_range(&self) -> (chrono::NaiveDate, chrono::NaiveDate) {
         let now = chrono::Utc::now().naive_utc().date();
         Self::get_month_range_static(now.year(), now.month())

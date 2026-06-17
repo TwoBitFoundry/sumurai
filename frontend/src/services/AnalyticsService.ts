@@ -10,6 +10,7 @@ import type {
   AnalyticsMonthlyTotalsResponse,
   AnalyticsSpendingResponse,
   AnalyticsTopMerchantsResponse,
+  IncomeExpenseTotalsResponse,
   SankeyResponse,
 } from '../types/api';
 import { appendAccountQueryParams } from '../utils/queryParams';
@@ -34,6 +35,21 @@ export class AnalyticsService {
     if (qs) endpoint += `?${qs}`;
     const result = await ApiClient.get<number | string>(endpoint);
     return typeof result === 'number' ? result : Number(result);
+  }
+
+  static async getIncomeExpenseTotals(
+    startDate?: string,
+    endDate?: string,
+    accountIds?: string[]
+  ): Promise<IncomeExpenseTotalsResponse> {
+    let endpoint = '/analytics/income-expense-totals';
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    appendAccountQueryParams(params, accountIds);
+    const qs = params.toString();
+    if (qs) endpoint += `?${qs}`;
+    return ApiClient.get<IncomeExpenseTotalsResponse>(endpoint);
   }
 
   static async getCategorySpendingByDateRange(

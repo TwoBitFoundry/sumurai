@@ -201,10 +201,18 @@ Expose `ytd_income_expense_totals` and move `useYtdIncomeExpenses` onto it; remo
 
 ### Acceptance Criteria
 
-- [ ] Dashboard YTD panel loads without a bulk `GET /transactions`
-- [ ] `incomeYtd` / `expensesYtd` reflect the server aggregate over the full YTD range
-- [ ] `YtdTotalsCalculator.ts` and its test are removed; no remaining imports
+- [x] Dashboard YTD panel loads without a bulk `GET /transactions`
+- [x] `incomeYtd` / `expensesYtd` reflect the server aggregate over the full YTD range
+- [x] `YtdTotalsCalculator.ts` and its test are removed; no remaining imports
 - [ ] `bun --cwd=frontend test` and `bun --cwd=frontend run typecheck` pass
+
+### TDD Log
+
+- Red: added backend handler and frontend service/hook specs for the YTD totals endpoint.
+- Green: wired `GET /api/analytics/income-expense-totals` through the analytics reducer, updated the frontend hook to consume it, and deleted the old TS calculator.
+- Refactor: kept the query key and empty-account guard in the hook, added direct service coverage, and regenerated OpenAPI.
+- Verification: `cargo test -p sumurai-backend --locked`, `cargo test -p sumurai-backend --locked regenerate_openapi_artifacts -- --ignored`, `bun --cwd=frontend test tests/services/AnalyticsService.test.ts tests/features/analytics/hooks/useYtdIncomeExpenses.test.tsx`, `bun --cwd=frontend run typecheck`.
+- Note: the repository-wide `bun --cwd=frontend test` run currently fails in unrelated pre-existing frontend tests, so the full-suite checkbox remains open.
 
 ---
 

@@ -190,6 +190,70 @@
         ]
       }
     },
+    "/api/analytics/income-expense-totals": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Calculates the user's year-to-date income and expenses over the supplied date range.",
+        "operationId": "get_authenticated_income_expense_totals",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "Start date in YYYY-MM-DD format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "End date in YYYY-MM-DD format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account_ids",
+            "in": "query",
+            "description": "Filter by account IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Income and expense totals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomeExpenseTotals"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
     "/api/analytics/monthly-totals": {
       "get": {
         "tags": [
@@ -4027,6 +4091,21 @@
           "truncated_count": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "IncomeExpenseTotals": {
+        "type": "object",
+        "required": [
+          "income",
+          "expenses"
+        ],
+        "properties": {
+          "expenses": {
+            "type": "string"
+          },
+          "income": {
+            "type": "string"
           }
         }
       },

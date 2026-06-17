@@ -73,6 +73,11 @@ export interface TransactionsInsightsResponse {
   top_categories: string[];
 }
 
+export interface IncomeExpenseTotalsResponse {
+  income: number;
+  expenses: number;
+}
+
 export type InsightFormat = 'currency' | 'count' | 'days' | 'percent' | 'ratio';
 
 export type InsightState = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'triple';

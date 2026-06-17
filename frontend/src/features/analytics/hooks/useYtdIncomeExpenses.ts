@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { computeYtdIncomeExpenses } from '@/domain/YtdTotalsCalculator';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
-import { TransactionService } from '@/services/TransactionService';
+import { AnalyticsService } from '@/services/AnalyticsService';
 import { accountIdsCacheKey } from '@/utils/cacheKeys';
 
 export type UseYtdIncomeExpensesResult = {
@@ -43,13 +42,12 @@ export function useYtdIncomeExpenses(): UseYtdIncomeExpensesResult {
 
       const accountIds =
         !isAllAccountsSelected && selectedAccountIds.length > 0 ? selectedAccountIds : undefined;
-      const transactions = await TransactionService.getTransactions({
-        startDate,
-        endDate,
-        accountIds,
-      });
+      const totals = await AnalyticsService.getIncomeExpenseTotals(startDate, endDate, accountIds);
 
-      return computeYtdIncomeExpenses(transactions, year);
+      return {
+        incomeYtd: Number(totals.income) || 0,
+        expensesYtd: Number(totals.expenses) || 0,
+      };
     },
   });
 
