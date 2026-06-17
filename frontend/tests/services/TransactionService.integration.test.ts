@@ -11,80 +11,8 @@ describe('TransactionService via ApiClient', () => {
     jest.clearAllMocks();
   });
 
-  describe('getTransactions', () => {
-    it('should fetch transactions without filters using the default first page', async () => {
-      fetchSpy
-        .mockResolvedValueOnce(
-          new Response(
-            JSON.stringify({
-              transactions: [
-                {
-                  id: 'txn-1',
-                  date: '2025-01-15',
-                  merchant_name: 'Coffee Shop',
-                  amount: 5.5,
-                  category_primary: 'Food & Drink',
-                  category_detailed: 'Coffee Shops',
-                  category_confidence: 'high',
-                  pending: false,
-                  account_id: 'acc-1',
-                },
-              ],
-              next_cursor: 'cursor-1',
-              prev_cursor: null,
-              has_more: true,
-            }),
-            {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' },
-            }
-          )
-        )
-        .mockResolvedValueOnce(
-          new Response(
-            JSON.stringify({
-              transactions: [
-                {
-                  id: 'txn-2',
-                  date: '2025-01-16',
-                  merchant_name: 'Bakery',
-                  amount: 12.5,
-                  category_primary: 'Food & Drink',
-                  category_detailed: 'Coffee Shops',
-                  category_confidence: 'high',
-                  pending: false,
-                  account_id: 'acc-1',
-                },
-              ],
-              next_cursor: null,
-              prev_cursor: 'cursor-1',
-              has_more: false,
-            }),
-            {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' },
-            }
-          )
-        );
-
-      const transactions = await TransactionService.getTransactions();
-
-      expect(fetchSpy).toHaveBeenNthCalledWith(
-        1,
-        expect.stringContaining('/api/transactions?limit=200'),
-        expect.any(Object)
-      );
-      expect(fetchSpy).toHaveBeenNthCalledWith(
-        2,
-        expect.stringContaining('/api/transactions?cursor=cursor-1&limit=200'),
-        expect.any(Object)
-      );
-      expect(transactions).toHaveLength(2);
-      expect(transactions[0].id).toBe('txn-1');
-      expect(transactions[1].id).toBe('txn-2');
-    });
-
-    it('should fetch filtered transactions across cursor pages', async () => {
+  describe('getTransactionsPage', () => {
+    it('should fetch a filtered transaction page with cursor params', async () => {
       const mockResponse = new Response(
         JSON.stringify({
           transactions: [
@@ -100,9 +28,9 @@ describe('TransactionService via ApiClient', () => {
               account_id: 'acc-1',
             },
           ],
-          next_cursor: null,
+          next_cursor: 'cursor-2',
           prev_cursor: null,
-          has_more: false,
+          has_more: true,
         }),
         {
           status: 200,
@@ -111,19 +39,28 @@ describe('TransactionService via ApiClient', () => {
       );
       fetchSpy.mockResolvedValueOnce(mockResponse);
 
-      const response = await TransactionService.getTransactions({
+      const response = await TransactionService.getTransactionsPage({
         search: 'coffee',
         categoryPrimary: 'Food & Drink',
+        cursor: 'cursor-1',
+        limit: 40,
       });
 
       expect(fetchSpy).toHaveBeenCalledWith(
         expect.stringContaining(
-          '/api/transactions?category_primary=Food+%26+Drink&search=coffee&limit=200'
+          '/api/transactions?category_primary=Food+%26+Drink&search=coffee&cursor=cursor-1&limit=40'
         ),
         expect.any(Object)
       );
-      expect(response).toHaveLength(1);
-      expect(response[0]).toEqual(expect.objectContaining({ id: 'txn-2' }));
+      expect(response).toEqual(
+        expect.objectContaining({
+          next_cursor: 'cursor-2',
+          prev_cursor: null,
+          has_more: true,
+        })
+      );
+      expect(response.transactions).toHaveLength(1);
+      expect(response.transactions[0].id).toBe('txn-2');
     });
 
     it('should fetch transaction categories', async () => {
@@ -146,7 +83,7 @@ describe('TransactionService via ApiClient', () => {
       });
       fetchSpy.mockResolvedValueOnce(mockResponse);
 
-      await expect(TransactionService.getTransactions()).rejects.toThrow();
+      await expect(TransactionService.getTransactionsPage()).rejects.toThrow();
     });
 
     it('should transform backend transaction format to frontend format', async () => {
@@ -176,11 +113,11 @@ describe('TransactionService via ApiClient', () => {
       );
       fetchSpy.mockResolvedValueOnce(mockResponse);
 
-      const response = await TransactionService.getTransactions();
+      const response = await TransactionService.getTransactionsPage();
 
-      expect(response).toHaveLength(1);
-      expect(response[0].id).toBe('backend-id-1');
-      expect(response[0].amount).toBe(-25.0);
+      expect(response.transactions).toHaveLength(1);
+      expect(response.transactions[0].id).toBe('backend-id-1');
+      expect(response.transactions[0].amount).toBe(-25.0);
     });
   });
 });

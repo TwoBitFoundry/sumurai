@@ -6,7 +6,6 @@ import { type BackendTransaction, TransactionTransformer } from '../domain/Trans
 import type {
   ContextualInsightsResponse,
   CursorTransactionsResponse,
-  Transaction,
   TransactionsInsightsResponse,
 } from '../types/api';
 import { appendAccountQueryParams } from '../utils/queryParams';
@@ -26,20 +25,7 @@ export interface TransactionFilters {
   limit?: number;
 }
 
-interface BackendCursorTransactionsResponse {
-  transactions: BackendTransaction[];
-  next_cursor: string | null;
-  prev_cursor: string | null;
-  has_more: boolean;
-}
-
-const DEFAULT_FETCH_PAGE_SIZE = 200;
-
 export class TransactionService {
-  static async getTransactions(filters: TransactionFilters = {}): Promise<Transaction[]> {
-    return TransactionService.getAllTransactions(filters);
-  }
-
   static async getTransactionCategories(): Promise<string[]> {
     const categories = await ApiClient.get<string[]>('/transactions/categories');
     return Array.isArray(categories) ? categories : [];
@@ -63,7 +49,7 @@ export class TransactionService {
   }
 
   static async getTransactionsPage(
-    filters: TransactionFilters & { cursor?: string; limit?: number }
+    filters: TransactionFilters & { cursor?: string; limit?: number } = {}
   ): Promise<CursorTransactionsResponse> {
     const params = buildTransactionFiltersParams(filters);
     if (filters.cursor) params.append('cursor', filters.cursor);
@@ -87,29 +73,13 @@ export class TransactionService {
       is_custom: isCustom,
     });
   }
+}
 
-  private static async getAllTransactions(filters: TransactionFilters): Promise<Transaction[]> {
-    const transactions: Transaction[] = [];
-
-    let cursor: string | undefined;
-    while (true) {
-      const response = await TransactionService.getTransactionsPage({
-        ...filters,
-        cursor,
-        limit: DEFAULT_FETCH_PAGE_SIZE,
-      });
-
-      transactions.push(...response.transactions);
-
-      if (!response.has_more || !response.next_cursor || response.transactions.length === 0) {
-        break;
-      }
-
-      cursor = response.next_cursor;
-    }
-
-    return transactions;
-  }
+interface BackendCursorTransactionsResponse {
+  transactions: BackendTransaction[];
+  next_cursor: string | null;
+  prev_cursor: string | null;
+  has_more: boolean;
 }
 
 function buildTransactionsInsightsEndpoint(filters: TransactionFilters): string {
