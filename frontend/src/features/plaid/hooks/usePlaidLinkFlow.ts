@@ -11,7 +11,10 @@ import { type PlaidConnection, usePlaidConnections } from '../../../hooks/usePla
 import { useInstrumentedCallback } from '../../../observability';
 import { ApiClient } from '../../../services/ApiClient';
 import { PlaidService } from '../../../services/PlaidService';
-import { invalidateStaleCacheQueries } from '../../../utils/queryInvalidation';
+import {
+  type InvalidateStaleCacheOptions,
+  invalidateStaleCacheQueries,
+} from '../../../utils/queryInvalidation';
 
 interface UsePlaidLinkFlowOptions {
   onError?: (message: string | null) => void;
@@ -63,9 +66,12 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
     }
   }, [enabled, onError]);
 
-  const invalidatePlaidCache = useCallback(() => {
-    return invalidateStaleCacheQueries(queryClient, ['plaid']);
-  }, [queryClient]);
+  const invalidatePlaidCache = useCallback(
+    (options?: InvalidateStaleCacheOptions) => {
+      return invalidateStaleCacheQueries(queryClient, ['plaid'], options);
+    },
+    [queryClient]
+  );
 
   const handleSuccess = useInstrumentedCallback(
     'PlaidLink.onSuccess',
@@ -91,14 +97,14 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
             const { transactions = [] } = result || {};
             const count = Array.isArray(transactions) ? transactions.length : 0;
             setToast(`Bank connected! Synced ${count} transactions`);
-            await invalidatePlaidCache();
+            await invalidatePlaidCache({ resetTransactions: 'remove' });
           } catch (syncError: unknown) {
             console.warn('Failed to sync transactions after connection', syncError);
-            await invalidatePlaidCache();
+            await invalidatePlaidCache({ resetTransactions: 'remove' });
             setToast(`Bank connected to ${syncTarget?.institutionName ?? 'your bank'}`);
           }
         } else {
-          await invalidatePlaidCache();
+          await invalidatePlaidCache({ resetTransactions: 'remove' });
           setToast('Bank connected successfully!');
         }
       } catch (error: unknown) {
@@ -185,7 +191,7 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
         const { transactions = [] } = result || {};
         const count = Array.isArray(transactions) ? transactions.length : 0;
         setToast(`Synced ${count} new transactions from ${connection.institutionName}`);
-        await invalidatePlaidCache();
+        await invalidatePlaidCache({ resetTransactions: 'reset' });
       } catch (error: unknown) {
         const message = `Sync failed for ${connection.institutionName}: ${error instanceof Error ? error.message : 'Unknown error'}`;
         handleError(message);
@@ -218,7 +224,7 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
       try {
         await PlaidService.disconnect(connectionId);
         setToast(`${connection.institutionName} disconnected successfully`);
-        await invalidatePlaidCache();
+        await invalidatePlaidCache({ resetTransactions: 'remove' });
       } catch (error: unknown) {
         const message = `Failed to disconnect ${connection.institutionName}: ${error instanceof Error ? error.message : 'Unknown error'}`;
         handleError(message);

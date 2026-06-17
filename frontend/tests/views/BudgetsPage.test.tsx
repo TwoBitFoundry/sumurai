@@ -12,6 +12,13 @@ jest.mock('@/features/budgets/hooks/useBudgets', () => ({
   useBudgets: jest.fn(),
 }));
 
+jest.mock('@/features/transactions/hooks/useTransactionListLauncher', () => ({
+  useTransactionListLauncher: () => ({
+    openTransactionList: jest.fn(),
+    close: jest.fn(),
+  }),
+}));
+
 jest.mock('@/features/transactions/hooks/useCategories', () => ({
   useCategories: () => ({
     system: [],

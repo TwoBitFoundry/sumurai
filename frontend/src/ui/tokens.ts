@@ -92,7 +92,7 @@ const semanticDark = {
 
 const chartThemeLight = {
   primary: chartLight,
-  grid: '#e2e8f0',
+  grid: '#94a3b8',
   axis: '#64748b',
   tooltipBg: '#ffffff',
   tooltipBorder: '#e2e8f0',
@@ -177,13 +177,15 @@ export const accountTypeDot = {
   other: '#94a3b8',
 } as const;
 
-const pillTypography = 'text-[0.6rem] font-bold uppercase tracking-[0.18em]';
+const categoryTagTypography = 'text-[0.6rem] font-bold uppercase tracking-[0.18em]';
+const categoryInlineLabelTypography =
+  'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]';
 
 export const categoryAccents: CategoryTheme[] = [
   {
     key: 'sky',
-    tag: `${pillTypography} text-sky-500 dark:text-sky-300 border border-sky-200/70 dark:border-transparent bg-sky-500/20 dark:bg-sky-400/14`,
-    inlineLabel: `${pillTypography} text-sky-500 dark:text-sky-300`,
+    tag: `${categoryTagTypography} text-sky-500 dark:text-sky-300 border border-sky-200/70 dark:border-transparent bg-sky-500/20 dark:bg-sky-400/14`,
+    inlineLabel: `${categoryInlineLabelTypography} text-sky-500 dark:text-sky-300`,
     chipSurface:
       '!border !border-sky-200/60 dark:!border-transparent !bg-sky-500/20 dark:!bg-sky-400/14',
     chipSurfaceSelected:
@@ -194,8 +196,8 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'emerald',
-    tag: `${pillTypography} text-emerald-500 dark:text-emerald-300 border border-emerald-200/70 dark:border-transparent bg-emerald-500/20 dark:bg-emerald-400/14`,
-    inlineLabel: `${pillTypography} text-emerald-500 dark:text-emerald-300`,
+    tag: `${categoryTagTypography} text-emerald-500 dark:text-emerald-300 border border-emerald-200/70 dark:border-transparent bg-emerald-500/20 dark:bg-emerald-400/14`,
+    inlineLabel: `${categoryInlineLabelTypography} text-emerald-500 dark:text-emerald-300`,
     chipSurface:
       '!border !border-emerald-200/60 dark:!border-transparent !bg-emerald-500/20 dark:!bg-emerald-400/14',
     chipSurfaceSelected:
@@ -206,8 +208,8 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'cyan',
-    tag: `${pillTypography} text-cyan-500 dark:text-cyan-300 border border-cyan-200/70 dark:border-transparent bg-cyan-500/20 dark:bg-cyan-400/14`,
-    inlineLabel: `${pillTypography} text-cyan-500 dark:text-cyan-300`,
+    tag: `${categoryTagTypography} text-cyan-500 dark:text-cyan-300 border border-cyan-200/70 dark:border-transparent bg-cyan-500/20 dark:bg-cyan-400/14`,
+    inlineLabel: `${categoryInlineLabelTypography} text-cyan-500 dark:text-cyan-300`,
     chipSurface:
       '!border !border-cyan-200/60 dark:!border-transparent !bg-cyan-500/20 dark:!bg-cyan-400/14',
     chipSurfaceSelected:
@@ -218,8 +220,8 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'violet',
-    tag: `${pillTypography} text-violet-500 dark:text-violet-300 border border-violet-200/70 dark:border-transparent bg-violet-500/20 dark:bg-violet-400/14`,
-    inlineLabel: `${pillTypography} text-violet-500 dark:text-violet-300`,
+    tag: `${categoryTagTypography} text-violet-500 dark:text-violet-300 border border-violet-200/70 dark:border-transparent bg-violet-500/20 dark:bg-violet-400/14`,
+    inlineLabel: `${categoryInlineLabelTypography} text-violet-500 dark:text-violet-300`,
     chipSurface:
       '!border !border-violet-200/60 dark:!border-transparent !bg-violet-500/20 dark:!bg-violet-400/14',
     chipSurfaceSelected:
@@ -230,8 +232,8 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'amber',
-    tag: `${pillTypography} text-amber-500 dark:text-amber-300 border border-amber-200/70 dark:border-transparent bg-amber-500/20 dark:bg-amber-400/14`,
-    inlineLabel: `${pillTypography} text-amber-500 dark:text-amber-300`,
+    tag: `${categoryTagTypography} text-amber-500 dark:text-amber-300 border border-amber-200/70 dark:border-transparent bg-amber-500/20 dark:bg-amber-400/14`,
+    inlineLabel: `${categoryInlineLabelTypography} text-amber-500 dark:text-amber-300`,
     chipSurface:
       '!border !border-amber-200/60 dark:!border-transparent !bg-amber-500/20 dark:!bg-amber-400/14',
     chipSurfaceSelected:
@@ -242,8 +244,8 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'rose',
-    tag: `${pillTypography} text-rose-500 dark:text-rose-300 border border-rose-200/70 dark:border-transparent bg-rose-500/20 dark:bg-rose-400/14`,
-    inlineLabel: `${pillTypography} text-rose-500 dark:text-rose-300`,
+    tag: `${categoryTagTypography} text-rose-500 dark:text-rose-300 border border-rose-200/70 dark:border-transparent bg-rose-500/20 dark:bg-rose-400/14`,
+    inlineLabel: `${categoryInlineLabelTypography} text-rose-500 dark:text-rose-300`,
     chipSurface:
       '!border !border-rose-200/60 dark:!border-transparent !bg-rose-500/20 dark:!bg-rose-400/14',
     chipSurfaceSelected:
@@ -254,8 +256,8 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'indigo',
-    tag: `${pillTypography} text-indigo-500 dark:text-indigo-300 border border-indigo-200/70 dark:border-transparent bg-indigo-500/20 dark:bg-indigo-400/14`,
-    inlineLabel: `${pillTypography} text-indigo-500 dark:text-indigo-300`,
+    tag: `${categoryTagTypography} text-indigo-500 dark:text-indigo-300 border border-indigo-200/70 dark:border-transparent bg-indigo-500/20 dark:bg-indigo-400/14`,
+    inlineLabel: `${categoryInlineLabelTypography} text-indigo-500 dark:text-indigo-300`,
     chipSurface:
       '!border !border-indigo-200/60 dark:!border-transparent !bg-indigo-500/20 dark:!bg-indigo-400/14',
     chipSurfaceSelected:
@@ -266,8 +268,8 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'fuchsia',
-    tag: `${pillTypography} text-fuchsia-500 dark:text-fuchsia-300 border border-fuchsia-200/70 dark:border-transparent bg-fuchsia-500/20 dark:bg-fuchsia-400/14`,
-    inlineLabel: `${pillTypography} text-fuchsia-500 dark:text-fuchsia-300`,
+    tag: `${categoryTagTypography} text-fuchsia-500 dark:text-fuchsia-300 border border-fuchsia-200/70 dark:border-transparent bg-fuchsia-500/20 dark:bg-fuchsia-400/14`,
+    inlineLabel: `${categoryInlineLabelTypography} text-fuchsia-500 dark:text-fuchsia-300`,
     chipSurface:
       '!border !border-fuchsia-200/60 dark:!border-transparent !bg-fuchsia-500/20 dark:!bg-fuchsia-400/14',
     chipSurfaceSelected:
@@ -278,8 +280,8 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'teal',
-    tag: `${pillTypography} text-teal-500 dark:text-teal-300 border border-teal-200/70 dark:border-transparent bg-teal-500/20 dark:bg-teal-400/14`,
-    inlineLabel: `${pillTypography} text-teal-500 dark:text-teal-300`,
+    tag: `${categoryTagTypography} text-teal-500 dark:text-teal-300 border border-teal-200/70 dark:border-transparent bg-teal-500/20 dark:bg-teal-400/14`,
+    inlineLabel: `${categoryInlineLabelTypography} text-teal-500 dark:text-teal-300`,
     chipSurface:
       '!border !border-teal-200/60 dark:!border-transparent !bg-teal-500/20 dark:!bg-teal-400/14',
     chipSurfaceSelected:
@@ -290,8 +292,8 @@ export const categoryAccents: CategoryTheme[] = [
   },
   {
     key: 'lime',
-    tag: `${pillTypography} text-lime-500 dark:text-lime-300 border border-lime-200/70 dark:border-transparent bg-lime-500/20 dark:bg-lime-400/14`,
-    inlineLabel: `${pillTypography} text-lime-500 dark:text-lime-300`,
+    tag: `${categoryTagTypography} text-lime-500 dark:text-lime-300 border border-lime-200/70 dark:border-transparent bg-lime-500/20 dark:bg-lime-400/14`,
+    inlineLabel: `${categoryInlineLabelTypography} text-lime-500 dark:text-lime-300`,
     chipSurface:
       '!border !border-lime-200/60 dark:!border-transparent !bg-lime-500/20 dark:!bg-lime-400/14',
     chipSurfaceSelected:

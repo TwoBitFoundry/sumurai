@@ -8,6 +8,26 @@ jest.mock('@/features/transactions/components/InlineCategoryCell', () => ({
   default: () => <span data-testid="inline-category-cell" />,
 }));
 
+jest.mock('@/hooks/useAccountFilter', () => ({
+  useAccountFilter: () => ({
+    selectedAccountIds: [],
+    allAccountIds: [],
+    isAllAccountsSelected: true,
+    accountsByBank: {},
+    loading: false,
+    setSelectedAccountIds: jest.fn(),
+    toggleBank: jest.fn(),
+    toggleAccount: jest.fn(),
+    removeAccountsByIds: jest.fn(),
+  }),
+  AccountFilterProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+jest.mock('@/features/transactions/components/VirtualizedTransactionList', () => ({
+  __esModule: true,
+  default: () => <div data-testid="virtualized-transaction-list" />,
+}));
+
 describe('storybook screen slices responsive contract', () => {
   it('keeps the transactions slice stats grid in two columns on mobile', () => {
     const { container } = render(<TransactionsScreenSlice state="loaded" />);

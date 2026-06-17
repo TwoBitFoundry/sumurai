@@ -133,7 +133,7 @@ type Story = StoryObj<typeof meta>;
 export const StateA: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('All insights')).toBeVisible();
+    await expect(canvas.getByText('Transaction insights')).toBeVisible();
     await expandTransactionInsights(canvas);
     await expect(canvas.getByText('Volume')).toBeVisible();
     await expect(canvas.getByText('Typical')).toBeVisible();

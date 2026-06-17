@@ -93,7 +93,9 @@ export function useFinancialConnection(
   }, []);
 
   const invalidateCache = useCallback(async () => {
-    await refreshFinancialDataAfterProviderChange(queryClient, [provider]);
+    await refreshFinancialDataAfterProviderChange(queryClient, [provider], {
+      resetTransactions: 'remove',
+    });
   }, [queryClient, provider]);
 
   const strategyContext = useMemo<FinancialConnectionStrategyContext>(

@@ -53,4 +53,50 @@ describe('invalidateStaleCacheQueries', () => {
     });
     expect(invalidateQueries).toHaveBeenCalledTimes(6);
   });
+
+  it('removes transaction queries before invalidating when requested', async () => {
+    const cancelQueries = createMockFunction().mockResolvedValue(undefined);
+    const removeQueries = createMockFunction();
+    const resetQueries = createMockFunction().mockResolvedValue(undefined);
+    const invalidateQueries = createMockFunction().mockResolvedValue(undefined);
+    const queryClient = {
+      cancelQueries,
+      removeQueries,
+      resetQueries,
+      invalidateQueries,
+    } as any;
+
+    await invalidateStaleCacheQueries(queryClient, ['plaid'], {
+      resetTransactions: 'remove',
+    });
+
+    expect(cancelQueries).toHaveBeenCalledWith({ queryKey: ['transactions'] });
+    expect(removeQueries).toHaveBeenCalledWith({ queryKey: ['transactions'] });
+    expect(resetQueries).not.toHaveBeenCalled();
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['transactions'],
+      refetchType: 'active',
+    });
+  });
+
+  it('resets transaction queries before invalidating when requested', async () => {
+    const cancelQueries = createMockFunction().mockResolvedValue(undefined);
+    const removeQueries = createMockFunction();
+    const resetQueries = createMockFunction().mockResolvedValue(undefined);
+    const invalidateQueries = createMockFunction().mockResolvedValue(undefined);
+    const queryClient = {
+      cancelQueries,
+      removeQueries,
+      resetQueries,
+      invalidateQueries,
+    } as any;
+
+    await invalidateStaleCacheQueries(queryClient, ['teller'], {
+      resetTransactions: 'reset',
+    });
+
+    expect(cancelQueries).toHaveBeenCalledWith({ queryKey: ['transactions'] });
+    expect(resetQueries).toHaveBeenCalledWith({ queryKey: ['transactions'] });
+    expect(removeQueries).not.toHaveBeenCalled();
+  });
 });

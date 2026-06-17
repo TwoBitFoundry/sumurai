@@ -649,11 +649,17 @@ async fn given_inactive_provider_account_filter_when_getting_transactions_then_f
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_transactions_paginated()
-        .returning(|_, _, _, _, _, _, _, _| Box::pin(async { Ok(vec![]) }));
-    mock_db
-        .expect_count_transactions()
-        .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
+        .expect_get_transactions_keyset()
+        .returning(|_, _, _, _, _, _, _, _, _| {
+            Box::pin(async {
+                Ok(crate::models::transaction::CursorTransactionsResponse {
+                    transactions: vec![],
+                    next_cursor: None,
+                    prev_cursor: None,
+                    has_more: false,
+                })
+            })
+        });
 
     let app = build_test_app(mock_db, provider_registry(&["plaid", "teller"])).await;
 

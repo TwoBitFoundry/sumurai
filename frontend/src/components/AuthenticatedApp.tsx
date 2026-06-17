@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BottomContextualBar } from '@/components/BottomContextualBar';
 import {
   DateRangeLabelPill,
@@ -10,9 +10,11 @@ import {
   BudgetMonthPillSlider,
 } from '@/features/budgets/components/BudgetMonthPillSlider';
 import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
+import { TransactionsFilters } from '@/features/transactions/components/TransactionsFilters';
 import { TransactionsSearchBar } from '@/features/transactions/components/TransactionsSearchBar';
+import { useCategories } from '@/features/transactions/hooks/useCategories';
 import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
-import { useTransactions } from '@/features/transactions/hooks/useTransactions';
+import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { Alert, cn } from '@/ui/primitives';
 import AccountsPage from '@/views/AccountsPage';
 import BudgetsPage from '@/views/BudgetsPage';
@@ -23,6 +25,8 @@ import { AppLayout } from '../layouts/AppLayout';
 import { GradientShell } from '../ui/primitives';
 import { text as uiTextRecipes } from '../ui/recipes';
 import type { DateRangeKey as DateRange } from '../utils/dateRanges';
+import type { NavigateToTransactionsDetail } from '../utils/events';
+import { NAVIGATE_TO_TRANSACTIONS_EVENT } from '../utils/events';
 import {
   getSessionDashboardDateRange,
   setSessionDashboardDateRange,
@@ -58,11 +62,8 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   };
   const budgetMonth = useBudgetMonth();
   const transactionFilters = useTransactionFilterState();
-  const transactionsControl = useTransactions({
-    pageSize: 8,
-    filterControl: transactionFilters,
-    enabled: tab === 'transactions',
-  });
+  const { filterCategories, custom: customCategories } = useCategories();
+  const { setSelectedAccountIds } = useAccountFilter();
 
   const handleTabChange = (next: TabKey) => {
     const currentIndex = TAB_INDEX.get(tab) ?? 0;
@@ -72,31 +73,67 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<NavigateToTransactionsDetail>).detail;
+      transactionFilters.setSearch(detail.search ?? '');
+      transactionFilters.setSelectedCategory(detail.category ?? null);
+      if (detail.accountIds) {
+        setSelectedAccountIds(detail.accountIds);
+      }
+      const currentIndex = TAB_INDEX.get(tabRef.current) ?? 0;
+      const nextIndex = TAB_INDEX.get('transactions') ?? 1;
+      setTabTransitionDirection(nextIndex === currentIndex ? 0 : nextIndex > currentIndex ? 1 : -1);
+      setTab('transactions');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+    window.addEventListener(NAVIGATE_TO_TRANSACTIONS_EVENT, handler);
+    return () => window.removeEventListener(NAVIGATE_TO_TRANSACTIONS_EVENT, handler);
+  }, [transactionFilters, setSelectedAccountIds]);
+
   const bottomBarContent =
     tab === 'dashboard' ? (
-      <BottomContextualBar topContent={<DateRangeLabelPill dateRange={dateRange} />}>
+      <BottomContextualBar
+        topContent={
+          <div className={cn('flex', 'w-full', 'justify-center')}>
+            <DateRangeLabelPill dateRange={dateRange} />
+          </div>
+        }
+      >
         <DateRangePillSlider dateRange={dateRange} onChange={setDateRange} />
       </BottomContextualBar>
     ) : tab === 'transactions' ? (
-      <BottomContextualBar>
+      <BottomContextualBar
+        topContent={
+          <TransactionsFilters
+            search={transactionFilters.search}
+            onSearch={transactionFilters.setSearch}
+            categories={filterCategories}
+            customCategories={customCategories}
+            selectedCategory={transactionFilters.selectedCategory}
+            onSelectCategory={transactionFilters.setSelectedCategory}
+            showSearch={false}
+            showCategories
+            showFilterLabel={false}
+            layout="inline"
+          />
+        }
+      >
         <TransactionsSearchBar
           search={transactionFilters.search}
           onSearch={transactionFilters.setSearch}
-          currentPage={transactionsControl.currentPage}
-          totalPages={transactionsControl.totalPages}
-          onPrev={() =>
-            transactionFilters.setCurrentPage(Math.max(1, transactionsControl.currentPage - 1))
-          }
-          onNext={() =>
-            transactionFilters.setCurrentPage(
-              Math.min(transactionsControl.totalPages, transactionsControl.currentPage + 1)
-            )
-          }
         />
       </BottomContextualBar>
     ) : tab === 'budgets' ? (
       <BottomContextualBar
-        topContent={<BudgetMonthLabelPill monthLabel={budgetMonth.monthLabel} />}
+        topContent={
+          <div className={cn('flex', 'w-full', 'justify-center')}>
+            <BudgetMonthLabelPill monthLabel={budgetMonth.monthLabel} />
+          </div>
+        }
       >
         <BudgetMonthPillSlider
           onPreviousMonth={budgetMonth.goToPreviousMonth}
@@ -141,12 +178,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
                 {tab === 'dashboard' && (
                   <DashboardPage dateRange={dateRange} setDateRange={setDateRange} />
                 )}
-                {tab === 'transactions' && (
-                  <TransactionsPage
-                    filterControl={transactionFilters}
-                    transactionsControl={transactionsControl}
-                  />
-                )}
+                {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
                 {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}
                 {tab === 'accounts' && <AccountsPage onError={setError} />}
                 {tab === 'settings' && <SettingsPage onLogout={onLogout} />}

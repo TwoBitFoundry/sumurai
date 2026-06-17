@@ -5,6 +5,7 @@
 import { type BackendTransaction, TransactionTransformer } from '../domain/TransactionTransformer';
 import type {
   ContextualInsightsResponse,
+  CursorTransactionsResponse,
   PaginatedTransactionsResponse,
   Transaction,
   TransactionsInsightsResponse,
@@ -21,6 +22,9 @@ export interface TransactionFilters {
   search?: string;
   dateRange?: string;
   accountIds?: string[];
+  merchant?: string;
+  cursor?: string;
+  limit?: number;
   page?: number;
   page_size?: number;
 }
@@ -30,6 +34,13 @@ interface BackendPaginatedTransactionsResponse {
   total: number;
   page: number;
   page_size: number;
+}
+
+interface BackendCursorTransactionsResponse {
+  transactions: BackendTransaction[];
+  next_cursor: string | null;
+  prev_cursor: string | null;
+  has_more: boolean;
 }
 
 const DEFAULT_FETCH_PAGE_SIZE = 200;
@@ -78,6 +89,21 @@ export class TransactionService {
       ? `/transactions/contextual-insights?${queryString}`
       : '/transactions/contextual-insights';
     return ApiClient.get<ContextualInsightsResponse>(url);
+  }
+
+  static async getTransactionsPage(
+    filters: TransactionFilters & { cursor?: string; limit?: number }
+  ): Promise<CursorTransactionsResponse> {
+    const params = buildTransactionFiltersParams(filters);
+    if (filters.cursor) params.append('cursor', filters.cursor);
+    if (filters.limit != null) params.append('limit', String(filters.limit));
+    const queryString = params.toString();
+    const url = queryString ? `/transactions?${queryString}` : '/transactions';
+    const raw = await ApiClient.get<BackendCursorTransactionsResponse>(url);
+    return {
+      ...raw,
+      transactions: raw.transactions.map((t) => TransactionTransformer.backendToFrontend(t)),
+    };
   }
 
   static async updateTransactionCategory(
@@ -167,6 +193,7 @@ function buildTransactionFiltersParams(filters: TransactionFilters): URLSearchPa
   if (filters.categoryId) params.append('category_primary', filters.categoryId);
   if (filters.search) params.append('search', filters.search);
   if (filters.searchTerm) params.append('search', filters.searchTerm);
+  if (filters.merchant) params.append('merchant', filters.merchant);
   appendAccountQueryParams(params, filters.accountIds);
 
   return params;

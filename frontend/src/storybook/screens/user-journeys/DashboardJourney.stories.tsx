@@ -21,6 +21,25 @@ const meta = {
     layout: 'fullscreen',
   },
   tags: ['autodocs', 'test'],
+  decorators: [
+    (Story) => {
+      const raw = window.sessionStorage.getItem('sumurai.ui.collapsibleExpanded');
+      if (raw) {
+        try {
+          const map = JSON.parse(raw) as Record<string, boolean>;
+          delete map['balances-insights'];
+          if (Object.keys(map).length === 0) {
+            window.sessionStorage.removeItem('sumurai.ui.collapsibleExpanded');
+          } else {
+            window.sessionStorage.setItem('sumurai.ui.collapsibleExpanded', JSON.stringify(map));
+          }
+        } catch {
+          window.sessionStorage.removeItem('sumurai.ui.collapsibleExpanded');
+        }
+      }
+      return <Story />;
+    },
+  ],
 } satisfies Meta;
 
 export default meta;
@@ -101,11 +120,14 @@ export const Journey: Story = {
       { timeout: 15000 }
     );
 
-    await userEvent.click(canvas.getByRole('tab', { name: /show balance insights/i }));
+    const balanceInsights = canvas.getByRole('button', { name: /balance insights/i });
+    if (balanceInsights.getAttribute('aria-expanded') !== 'true') {
+      await userEvent.click(balanceInsights);
+    }
     await waitFor(() => {
       expect(canvas.getByTestId('balances-chart-plot')).toBeVisible();
     });
-    await userEvent.click(canvas.getByRole('tab', { name: /show money flow/i }));
+
     await waitFor(
       () => {
         expect(canvas.getByTestId('sankey-node-income')).toBeVisible();

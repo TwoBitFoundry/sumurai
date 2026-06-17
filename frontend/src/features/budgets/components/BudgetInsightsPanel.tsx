@@ -1,4 +1,4 @@
-import { ChevronDown, Flame, Repeat2, Wallet } from 'lucide-react';
+import { Flame, Repeat2, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { InsightCard } from '@/components/widgets/InsightCard';
 import { InsightsExpandablePanel } from '@/components/widgets/InsightsExpandablePanel';
@@ -266,19 +266,6 @@ export function BudgetInsightsPanel({
                 )}
               >
                 {fmtUSD(totalBudgeted)}
-              </div>
-              <div className={cn('col-span-3', 'flex', 'justify-center')}>
-                <ChevronDown
-                  className={cn(
-                    'h-4',
-                    'w-4',
-                    'shrink-0',
-                    'transition-transform',
-                    'duration-200',
-                    expanded && 'rotate-180',
-                    semanticTextRecipes.subtle
-                  )}
-                />
               </div>
             </div>
           </>

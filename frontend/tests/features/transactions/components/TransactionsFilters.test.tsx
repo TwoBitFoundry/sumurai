@@ -112,6 +112,29 @@ describe('TransactionsFilters', () => {
     expect(entertainmentButton.className).not.toContain('!bg-emerald-500/50');
   });
 
+  it('keeps inline category filters in a bounded scroll container', () => {
+    const { container } = render(
+      <TransactionsFilters
+        {...filterProps}
+        categories={['food_and_drink', 'entertainment', 'Bills', 'Subscriptions', 'Travel']}
+        layout="inline"
+        showFilterLabel={false}
+      />
+    );
+
+    const filters = screen.getByTestId('transactions-filters');
+    const scrollContainer = container.querySelector('[data-no-swipe]');
+    const billsButton = screen.getByRole('button', { name: 'Bills' });
+
+    expect(filters.className).toContain('overflow-hidden');
+    expect(scrollContainer?.className).toContain('overflow-x-auto');
+    expect(scrollContainer?.className).toContain('w-full');
+    expect(scrollContainer?.className).toContain('max-w-full');
+    expect(scrollContainer?.className).toContain('py-1.5');
+    expect(billsButton.className).toContain('backdrop-blur-md');
+    expect(billsButton.className).toContain('backdrop-saturate-[150%]');
+  });
+
   it('shows a delete affordance for custom categories without toggling the filter', async () => {
     const onSelectCategory = jest.fn();
     const user = userEvent.setup();

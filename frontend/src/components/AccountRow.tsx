@@ -1,7 +1,8 @@
 import { Upload } from 'lucide-react';
 import type React from 'react';
-import { type CSSProperties, useState } from 'react';
+import { type CSSProperties, useRef, useState } from 'react';
 import { ImportModal } from '@/features/import/components/ImportModal';
+import { useTransactionListLauncher } from '@/features/transactions/hooks/useTransactionListLauncher';
 import { cn, GlassCard, IconButton } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
@@ -27,6 +28,14 @@ interface AccountRowProps {
 }
 
 const cardContainerClasses = cn('group', 'relative', 'overflow-hidden');
+
+const accountTriggerFocusRing = [
+  'cursor-pointer',
+  'focus-visible:outline-none',
+  'focus-visible:ring-2',
+  'focus-visible:ring-inset',
+  'focus-visible:ring-[var(--color-border-focus-active)]',
+] as const;
 
 const accountHeroHoverRingStyle = {
   boxShadow: `inset 0 0 0 2px ${heroAccents.violet.ringHex}`,
@@ -57,6 +66,8 @@ const formatMoney = (amount?: number) => {
 
 export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImportSuccess }) => {
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const { openTransactionList } = useTransactionListLauncher();
   const isDebtAccount = account.type === 'credit' || account.type === 'loan';
   const isOtherAccount = account.type === 'other';
 
@@ -79,15 +90,21 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
     rawBalance === 0 && uiTextRecipes.subtle
   );
 
+  const handleOpen = () => {
+    openTransactionList({ type: 'account', accountId: account.id }, cardRef);
+  };
+
   return (
     <>
       <GlassCard
+        ref={cardRef}
         variant="accent"
         rounded="lg"
         padding="none"
         elevated={false}
         withInnerEffects={false}
-        containerClassName={cardContainerClasses}
+        containerClassName={cn(cardContainerClasses, 'cursor-pointer', ...accountTriggerFocusRing)}
+        onClick={handleOpen}
         beforeContent={
           <div
             aria-hidden
@@ -122,7 +139,10 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
                 aria-label="Import transactions"
                 title="Import transactions"
                 disabled={!isOnline}
-                onClick={() => setIsImportOpen(true)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsImportOpen(true);
+                }}
                 className={cn('shrink-0', !isOnline && 'opacity-45')}
               >
                 <Upload />

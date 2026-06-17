@@ -17,10 +17,28 @@ import { transactionsRowRecipes } from './transactionsRowRecipes';
 interface Props {
   transaction: Transaction;
   dense?: boolean;
+  readOnly?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function InlineCategoryCell({ transaction, dense: _dense = false }: Props) {
+export function InlineCategoryCell({
+  transaction,
+  dense: _dense = false,
+  readOnly = false,
+  onOpenChange,
+}: Props) {
   const [open, setOpen] = useState(false);
+  const openRef = useRef(false);
+  const onOpenChangeRef = useRef(onOpenChange);
+  onOpenChangeRef.current = onOpenChange;
+
+  const setOpenWithCallback = (next: boolean | ((prev: boolean) => boolean)) => {
+    const value = typeof next === 'function' ? next(openRef.current) : next;
+    if (value === openRef.current) return;
+    openRef.current = value;
+    setOpen(value);
+    onOpenChangeRef.current?.(value);
+  };
   const anchorRef = useRef<HTMLButtonElement>(null);
   const { accentIndexByName, all } = useCategories();
   const { updateTransactionCategory } = useUpdateTransactionCategory();
@@ -38,14 +56,19 @@ export function InlineCategoryCell({ transaction, dense: _dense = false }: Props
     return mobileCategoryChipWidthRem(longestLabel);
   }, [all]);
 
-  const categoryChipStyle = {
-    width: categoryChipWidth,
-    flexBasis: categoryChipWidth,
-  };
+  const categoryChipStyle = _dense
+    ? { width: categoryChipWidth, flexBasis: categoryChipWidth }
+    : { maxWidth: categoryChipWidth };
 
   return (
     <div
-      className={cn('inline-flex', 'shrink-0', 'items-center', 'min-w-0')}
+      className={cn(
+        'inline-flex',
+        'min-w-0',
+        'max-w-full',
+        'items-center',
+        readOnly ? 'w-fit' : _dense ? 'shrink-0' : 'ml-auto w-fit max-w-full'
+      )}
       style={categoryChipStyle}
     >
       <Button
@@ -53,21 +76,39 @@ export function InlineCategoryCell({ transaction, dense: _dense = false }: Props
         type="button"
         variant="tab"
         size="sm"
-        aria-label={`Edit category: ${label}`}
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
+        aria-label={readOnly ? label : `Edit category: ${label}`}
+        aria-expanded={readOnly ? undefined : open}
+        onClick={
+          readOnly
+            ? undefined
+            : (event) => {
+                event.stopPropagation();
+                setOpenWithCallback((value) => !value);
+              }
+        }
         className={cn(
           transactionsRowRecipes.categoryPill,
+          readOnly && '!w-fit',
           themeInlineLabelClasses(categoryName, accentIndexByName)
         )}
       >
-        <span className={cn(transactionsRowRecipes.categoryLabel)}>{label}</span>
         <span
-          className={cn(controlIconWell.sm, transactionsRowRecipes.categoryChevron)}
-          aria-hidden="true"
+          className={cn(
+            readOnly
+              ? transactionsRowRecipes.categoryLabelReadOnly
+              : transactionsRowRecipes.categoryLabel
+          )}
         >
-          <ChevronDown />
+          {label}
         </span>
+        {!readOnly ? (
+          <span
+            className={cn(controlIconWell.sm, transactionsRowRecipes.categoryChevron)}
+            aria-hidden="true"
+          >
+            <ChevronDown />
+          </span>
+        ) : null}
       </Button>
       <CategoryPicker
         open={open}
@@ -80,7 +121,7 @@ export function InlineCategoryCell({ transaction, dense: _dense = false }: Props
             isCustom: nextIsCustom,
           });
         }}
-        onRequestClose={() => setOpen(false)}
+        onRequestClose={() => setOpenWithCallback(false)}
       />
     </div>
   );

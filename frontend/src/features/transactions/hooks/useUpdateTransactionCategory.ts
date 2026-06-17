@@ -1,6 +1,11 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { type InfiniteData, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TransactionService } from '../../../services/TransactionService';
-import type { PaginatedTransactionsResponse, Transaction } from '../../../types/api';
+import type { CursorTransactionsResponse } from '../../../types/api';
+import {
+  TRANSACTIONS_INFINITE_QUERY_KEY,
+  TRANSACTIONS_QUERY_ROOT_KEY,
+  withUpdatedTransactionCategoryInInfiniteData,
+} from '../utils/transactionQueryCache';
 
 interface UpdateTransactionCategoryVariables {
   transactionId: string;
@@ -20,43 +25,35 @@ export function useUpdateTransactionCategory() {
       );
     },
     onMutate: async (variables) => {
-      await queryClient.cancelQueries({ queryKey: ['transactions'] });
+      await queryClient.cancelQueries({ queryKey: TRANSACTIONS_QUERY_ROOT_KEY });
 
-      const transactionsData = queryClient.getQueryData<PaginatedTransactionsResponse>([
-        'transactions',
-        'list',
-      ]);
-      const previous = transactionsData ? { ...transactionsData } : null;
+      const previousInfinite = queryClient.getQueriesData<InfiniteData<CursorTransactionsResponse>>(
+        {
+          queryKey: TRANSACTIONS_INFINITE_QUERY_KEY,
+        }
+      );
 
-      queryClient.setQueryData<PaginatedTransactionsResponse>(['transactions', 'list'], (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          transactions: old.transactions.map((txn) =>
-            txn.id === variables.transactionId
-              ? {
-                  ...txn,
-                  category: {
-                    ...txn.category,
-                    primary: variables.categoryName,
-                    is_custom: variables.isCustom,
-                    is_overridden: true,
-                  },
-                }
-              : txn
-          ),
-        };
-      });
+      queryClient.setQueriesData<InfiniteData<CursorTransactionsResponse>>(
+        { queryKey: TRANSACTIONS_INFINITE_QUERY_KEY },
+        (old) => {
+          if (!old) return old;
+          return withUpdatedTransactionCategoryInInfiniteData(old, variables);
+        }
+      );
 
-      return { previous };
+      return { previousInfinite };
     },
     onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(['transactions', 'list'], context.previous);
+      if (!context?.previousInfinite) {
+        return;
+      }
+
+      for (const [queryKey, data] of context.previousInfinite) {
+        queryClient.setQueryData(queryKey, data);
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions', 'list'] });
+      queryClient.invalidateQueries({ queryKey: TRANSACTIONS_INFINITE_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
   });

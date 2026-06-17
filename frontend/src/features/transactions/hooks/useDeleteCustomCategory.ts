@@ -11,7 +11,7 @@ export function useDeleteCustomCategory() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['transactions', 'categories'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions', 'list'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions', 'infinite'] });
     },
   });
 

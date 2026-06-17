@@ -109,12 +109,14 @@ export function GlassCard({
   className,
   containerClassName,
   beforeContent,
+  ref,
   ...props
-}: GlassCardProps) {
+}: GlassCardProps & { ref?: React.RefObject<HTMLDivElement | null> }) {
   const roundedClass = uiRadiusRecipes.standard;
 
   return (
     <div
+      ref={ref}
       className={cn(glassCardVariants({ elevated, variant, rounded, padding }), containerClassName)}
       {...props}
     >

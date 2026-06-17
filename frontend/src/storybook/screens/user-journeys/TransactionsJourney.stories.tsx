@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { BottomContextualBar } from '@/components/BottomContextualBar';
+import { TransactionsFilters } from '@/features/transactions/components/TransactionsFilters';
 import { TransactionsSearchBar } from '@/features/transactions/components/TransactionsSearchBar';
 import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
-import { useTransactions } from '@/features/transactions/hooks/useTransactions';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import TransactionsPage from '@/views/TransactionsPage';
 import {
-  getPagedStoryTransactions,
+  getCursorStoryTransactions,
   storyCategoryList,
   storyProviderAccounts,
   storyTransactionCategories,
@@ -20,6 +20,13 @@ const meta = {
     layout: 'fullscreen',
   },
   tags: ['autodocs', 'test'],
+  decorators: [
+    (Story) => {
+      window.sessionStorage.removeItem('sumurai.ui.transactionsSearch');
+      window.sessionStorage.removeItem('sumurai.ui.transactionsCategory');
+      return <Story />;
+    },
+  ],
 } satisfies Meta;
 
 export default meta;
@@ -34,38 +41,39 @@ const handlers = [
   route('GET', '/transactions/categories', () => jsonResponse(storyTransactionCategories)),
   route('GET', '/transactions', (request) =>
     jsonResponse(
-      getPagedStoryTransactions({
-        page: Number(request.query.get('page') ?? '1'),
-        pageSize: Number(request.query.get('page_size') ?? '8'),
+      getCursorStoryTransactions({
         search: request.query.get('search'),
         categoryPrimary: request.query.get('category_primary'),
+        cursor: request.query.get('cursor'),
+        limit: Number(request.query.get('limit') ?? '40'),
       })
     )
   ),
 ];
 
 function TransactionsJourney() {
-  const filterControl = useTransactionFilterState();
-  const transactionsControl = useTransactions({ pageSize: 8, filterControl });
+  const filterControl = useTransactionFilterState({ search: '', category: null });
+  const categories = ['Food & Drink', 'Merchandise', 'Services', 'Bills', 'Subscriptions'];
   return (
     <AccountFilterStoryProvider>
       <StoryApiScope handlers={handlers}>
-        <TransactionsPage filterControl={filterControl} transactionsControl={transactionsControl} />
-        <BottomContextualBar>
-          <TransactionsSearchBar
-            search={filterControl.search}
-            onSearch={filterControl.setSearch}
-            currentPage={transactionsControl.currentPage}
-            totalPages={transactionsControl.totalPages}
-            onPrev={() =>
-              filterControl.setCurrentPage(Math.max(1, transactionsControl.currentPage - 1))
-            }
-            onNext={() =>
-              filterControl.setCurrentPage(
-                Math.min(transactionsControl.totalPages, transactionsControl.currentPage + 1)
-              )
-            }
-          />
+        <TransactionsPage filterControl={filterControl} />
+        <BottomContextualBar
+          topContent={
+            <TransactionsFilters
+              search={filterControl.search}
+              onSearch={filterControl.setSearch}
+              categories={categories}
+              selectedCategory={filterControl.selectedCategory}
+              onSelectCategory={filterControl.setSelectedCategory}
+              showSearch={false}
+              showCategories
+              showFilterLabel={false}
+              layout="inline"
+            />
+          }
+        >
+          <TransactionsSearchBar search={filterControl.search} onSearch={filterControl.setSearch} />
         </BottomContextualBar>
       </StoryApiScope>
     </AccountFilterStoryProvider>
@@ -84,36 +92,30 @@ export const Journey: Story = {
 
     const page = within(canvas.getByTestId('transactions-page'));
 
-    await waitFor(() => {
-      expect(page.getByText(/page 1 of 2/i)).toBeVisible();
-    });
-
-    const nextPage = canvas.getByRole('button', { name: /next page/i });
-    await waitFor(() => {
-      expect(nextPage).not.toBeDisabled();
-    });
-    await userEvent.click(nextPage);
     await waitFor(
       () => {
-        expect(page.getByText(/page 2 of 2/i)).toBeVisible();
+        expect(page.getByRole('region', { name: /transaction list/i })).toBeVisible();
       },
       { timeout: storyInteractionTimeoutMs }
     );
-    const search = canvas.getByPlaceholderText('Search transactions');
+
+    const search = within(canvas.getByTestId('transactions-search-bar')).getByPlaceholderText(
+      'Search transactions'
+    );
+    await userEvent.clear(search);
     await userEvent.type(search, 'Coffee');
     await waitFor(
       () => {
         expect(
           page.getByText(/coffee collective wholesale roasters group international/i)
         ).toBeVisible();
-        expect(page.getByText(/page 1 of 1/i)).toBeVisible();
       },
       { timeout: storyInteractionTimeoutMs }
     );
 
-    const toolbar = page.getByTestId('transactions-toolbar');
+    const filters = canvas.getByTestId('transactions-filters');
     const category = await waitFor(
-      () => within(toolbar).getByRole('button', { name: /food & drink/i }),
+      () => within(filters).getByRole('button', { name: /food & drink/i }),
       { timeout: storyInteractionTimeoutMs }
     );
     await userEvent.click(category);

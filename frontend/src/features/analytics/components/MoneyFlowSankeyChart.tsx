@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Waypoints } from 'lucide-react';
-import { useLayoutEffect, useMemo } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import type { SankeyLinkProps, SankeyNodeProps, TooltipContentProps } from 'recharts';
 import { Sankey, Tooltip } from 'recharts';
+import { useTransactionListLauncher } from '@/features/transactions/hooks/useTransactionListLauncher';
 import type { SankeyResponse } from '@/types/api';
 import { cn, EmptyState } from '@/ui/primitives';
 import { sankeyChart, text as uiTextRecipes } from '@/ui/recipes';
@@ -267,12 +268,14 @@ function SankeyNodeShape({
   colors,
   mode,
   accentIndexByName,
+  onClickCategoryNode,
 }: SankeyNodeProps & {
   value?: number;
   payload: SankeyNodePayload;
   colors: ReturnType<typeof useTheme>['colors'];
   mode: ThemeMode;
   accentIndexByName: ReadonlyMap<string, number>;
+  onClickCategoryNode?: (category: string) => void;
 }) {
   const nodeX = useSankeyNodeScalar(payload.id, 'x', x);
   const nodeY = useSankeyNodeScalar(payload.id, 'y', y);
@@ -307,8 +310,18 @@ function SankeyNodeShape({
   const savingsPercentY = nodeY + nodeHeight + 46;
   const percentTransform = `rotate(270 ${percentX} ${centerY})`;
 
+  const isCategory = isSankeyCategoryNode(payload);
+  const handleClick =
+    isCategory && onClickCategoryNode
+      ? () => onClickCategoryNode(resolveSankeyCategoryKey(payload))
+      : undefined;
+
   return (
-    <g data-testid={`sankey-node-${payload.id}`}>
+    <g
+      data-testid={`sankey-node-${payload.id}`}
+      onClick={handleClick}
+      style={isCategory && onClickCategoryNode ? { cursor: 'pointer' } : undefined}
+    >
       <rect
         x={nodeX}
         y={nodeY}
@@ -473,6 +486,8 @@ function MoneyFlowSankeyChartContent({
 }: MoneyFlowSankeyChartContentProps) {
   const { colors, mode } = useTheme();
   const { ref: chartContainerRef, width: measuredWidth, remeasure } = useChartContainerSize();
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const { openTransactionList } = useTransactionListLauncher();
   const chartData = useMemo<SankeyChartData>(() => sankeyResponseToChartData(data), [data]);
   const categoryNodes = chartData.nodes.filter((node) => node.kind === 'Category');
   const chartMargin = sankeyChart.margin;
@@ -512,6 +527,7 @@ function MoneyFlowSankeyChartContent({
   return (
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
+        ref={anchorRef}
         key={stateKey}
         className={cn(...(isChart ? sankeyChart.shell : sankeyChart.emptyState), className)}
         initial={{ opacity: 0 }}
@@ -565,6 +581,9 @@ function MoneyFlowSankeyChartContent({
                       colors={colors}
                       mode={mode}
                       accentIndexByName={accentIndexByName}
+                      onClickCategoryNode={(category) => {
+                        openTransactionList({ type: 'category', category }, anchorRef);
+                      }}
                     />
                   )}
                   link={(props) => (

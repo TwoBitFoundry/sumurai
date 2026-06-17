@@ -1,4 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+jest.mock('@/features/transactions/hooks/useTransactionListLauncher', () => ({
+  useTransactionListLauncher: () => ({
+    openTransactionList: jest.fn(),
+    close: jest.fn(),
+  }),
+}));
+
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeProviderCatalogMock } from '@tests/utils/providerCatalogMocks';

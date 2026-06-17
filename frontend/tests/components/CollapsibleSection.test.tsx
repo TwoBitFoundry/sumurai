@@ -77,6 +77,32 @@ describe('CollapsibleSection', () => {
     expect(getSessionCollapsibleExpanded('budgets')).toBe(true);
   });
 
+  it('toggles expansion when clicking the split-header chevron', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CollapsibleSection
+        sectionId="budgets"
+        title="Budgets"
+        testId="budgets-section"
+        expandLabel="Show budgets"
+        collapseLabel="Hide budgets"
+        actionsEnd={
+          <span aria-hidden className="inline-block h-9 w-9 shrink-0 pointer-events-none" />
+        }
+      >
+        <div data-testid="budgets-content">Budget content</div>
+      </CollapsibleSection>
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Show budgets' }));
+
+    expect(screen.getByTestId('budgets-content')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('budgets-section').querySelector('.lucide-chevron-down')
+    ).toBeTruthy();
+  });
+
   it('keeps split header actions clickable while the title area toggles expansion', async () => {
     const user = userEvent.setup();
     const onEdit = jest.fn();
@@ -104,7 +130,7 @@ describe('CollapsibleSection', () => {
     expect(screen.queryByTestId('budgets-content')).not.toBeInTheDocument();
   });
 
-  it('places split header actions inline with the title from the md breakpoint', () => {
+  it('places split header actions inline with the title', () => {
     const { container } = render(
       <CollapsibleSection
         sectionId="budgets"
@@ -119,9 +145,11 @@ describe('CollapsibleSection', () => {
       </CollapsibleSection>
     );
 
-    const inlineActions = container.querySelector('.md\\:ml-auto');
-    expect(inlineActions).toHaveTextContent('Edit budgets');
-    expect(inlineActions).toHaveTextContent('Add budget');
+    const headerRow = screen.getByRole('heading', { name: 'Budgets' }).parentElement?.parentElement
+      ?.parentElement;
+    expect(headerRow).toHaveTextContent('Edit budgets');
+    expect(headerRow).toHaveTextContent('Add budget');
+    expect(container.querySelector('.flex-wrap')).toBeNull();
   });
 
   it('supports keyboard activation on the title area', async () => {

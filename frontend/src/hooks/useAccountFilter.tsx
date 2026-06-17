@@ -19,6 +19,7 @@ import {
   type AccountsByBank,
   type ProviderAccount,
 } from '@/context/AccountFilterContext';
+import { resetTransactionQueries } from '@/features/transactions/utils/transactionQueryCache';
 import { ProviderCatalog } from '@/services/ProviderCatalog';
 import {
   ACCOUNT_FILTER_CHANNEL,
@@ -161,6 +162,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
   useEffect(() => {
     const handleAccountsChanged = () => {
       void queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      void resetTransactionQueries(queryClient, 'remove');
     };
 
     window.addEventListener(ACCOUNTS_CHANGED_EVENT, handleAccountsChanged);

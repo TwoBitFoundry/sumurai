@@ -3,6 +3,13 @@ import { BudgetList } from '@/features/budgets/components/BudgetList';
 import { radius as uiRadiusRecipes } from '@/ui/recipes';
 import { heroAccents } from '@/ui/tokens';
 
+jest.mock('@/features/transactions/hooks/useTransactionListLauncher', () => ({
+  useTransactionListLauncher: () => ({
+    openTransactionList: jest.fn(),
+    close: jest.fn(),
+  }),
+}));
+
 jest.mock('@/features/transactions/hooks/useCategories', () => ({
   useCategories: () => ({
     system: [],

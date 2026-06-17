@@ -1,6 +1,7 @@
 import { act, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { AuthenticatedApp } from '@/components/AuthenticatedApp';
+import { useAccountFilter } from '@/hooks/useAccountFilter';
 
 const motionSectionProps: Record<
   string,
@@ -59,6 +60,10 @@ jest.mock('@/components/HeaderAccountFilter', () => ({
   HeaderAccountFilter: () => <div data-testid="header-account-filter" />,
 }));
 
+jest.mock('@/hooks/useAccountFilter', () => ({
+  useAccountFilter: jest.fn(),
+}));
+
 jest.mock('@/views/AccountsPage', () => ({
   __esModule: true,
   default: () => <div>Accounts</div>,
@@ -95,22 +100,25 @@ jest.mock('@/features/transactions/hooks/useTransactionFilterState', () => ({
   }),
 }));
 
-jest.mock('@/features/transactions/hooks/useTransactions', () => ({
-  useTransactions: () => ({
-    currentPage: 1,
-    totalPages: 3,
-  }),
-}));
-
-jest.mock('@/features/transactions/hooks/useTransactionCategories', () => ({
-  useTransactionCategories: () => ({
-    categories: ['food_and_drink'],
-    loading: false,
+jest.mock('@/features/transactions/hooks/useCategories', () => ({
+  useCategories: () => ({
+    filterCategories: ['FOOD_AND_DRINK', 'BILLS'],
+    custom: [],
+    system: [],
+    all: [],
+    accentIndexByName: new Map(),
+    isLoading: false,
+    error: null,
   }),
 }));
 
 describe('AuthenticatedApp', () => {
   beforeEach(() => {
+    jest.mocked(useAccountFilter).mockReturnValue({
+      selectedAccountIds: [],
+      allAccountIds: [],
+      setSelectedAccountIds: jest.fn(),
+    } as any);
     appLayoutMock.mockClear();
     for (const key of Object.keys(motionSectionProps)) delete motionSectionProps[key];
   });
@@ -129,13 +137,12 @@ describe('AuthenticatedApp', () => {
     expect(screen.getByText('Budgets')).toBeInTheDocument();
   });
 
-  it('renders transaction search and pagination in the bottom bar for the transactions tab', () => {
+  it('renders transaction search and category filters in the bottom bar for the transactions tab', () => {
     render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="transactions" />);
 
     expect(screen.getByTestId('transactions-search-bar')).toBeInTheDocument();
-    expect(screen.getByTestId('transactions-search-pagination')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Previous page' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next page' })).toBeInTheDocument();
+    expect(screen.getByTestId('transactions-filters')).toBeInTheDocument();
+    expect(screen.getByTestId('bottom-contextual-bar-top')).toBeInTheDocument();
     expect(screen.getByText('Transactions')).toBeInTheDocument();
   });
 

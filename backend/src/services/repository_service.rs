@@ -10,8 +10,9 @@ use crate::models::{
     custom_category::CustomCategory,
     plaid::{LatestAccountBalance, PlaidCredentials, ProviderConnection},
     transaction::{
-        ContextualInsightsResponse, InsightFormat, InsightMetric, InsightState, LargestTransaction,
-        Transaction, TransactionWithAccount, TransactionsInsightsResponse,
+        ContextualInsightsResponse, CursorTransactionsResponse, InsightFormat, InsightMetric,
+        InsightState, LargestTransaction, Transaction, TransactionWithAccount,
+        TransactionsInsightsResponse,
     },
     transaction_category_override::TransactionCategoryOverride,
 };
@@ -214,6 +215,19 @@ pub trait DatabaseRepository: Send + Sync {
         end_date: Option<NaiveDate>,
         category_primary: Option<&str>,
     ) -> Result<i64>;
+    #[allow(clippy::too_many_arguments)]
+    async fn get_transactions_keyset(
+        &self,
+        user_id: &Uuid,
+        limit: i64,
+        cursor: Option<&str>,
+        search: Option<&str>,
+        account_ids: Option<&[Uuid]>,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
+        category_primary: Option<&str>,
+        merchant: Option<&str>,
+    ) -> Result<CursorTransactionsResponse>;
     #[allow(clippy::too_many_arguments)]
     async fn get_transactions_insights(
         &self,
@@ -949,6 +963,7 @@ impl PostgresRepository {
         start_date: Option<NaiveDate>,
         end_date: Option<NaiveDate>,
         category_primary: Option<&str>,
+        merchant: Option<&str>,
     ) -> Select<transactions::Entity> {
         query = query.filter(transactions::Column::UserId.eq(*user_id));
 
@@ -957,39 +972,12 @@ impl PostgresRepository {
             if !search.is_empty() {
                 let search = format!("%{}%", search.to_lowercase());
                 query = query.filter(
-                    Condition::any()
-                        .add(
-                            Expr::expr(Func::lower(Func::coalesce([
-                                Expr::col((
-                                    transactions::Entity,
-                                    transactions::Column::MerchantName,
-                                ))
-                                .into(),
-                                Expr::val("").into(),
-                            ])))
-                            .like(search.clone()),
-                        )
-                        .add(
-                            Expr::expr(Func::lower(Expr::col((
-                                transactions::Entity,
-                                transactions::Column::CategoryPrimary,
-                            ))))
-                            .like(search.clone()),
-                        )
-                        .add(
-                            Expr::expr(Func::lower(Expr::col((
-                                transactions::Entity,
-                                transactions::Column::CategoryDetailed,
-                            ))))
-                            .like(search.clone()),
-                        )
-                        .add(
-                            Expr::expr(Func::lower(Expr::col((
-                                accounts::Entity,
-                                accounts::Column::Name,
-                            ))))
-                            .like(search),
-                        ),
+                    Expr::expr(Func::lower(Func::coalesce([
+                        Expr::col((transactions::Entity, transactions::Column::MerchantName))
+                            .into(),
+                        Expr::val("").into(),
+                    ])))
+                    .like(search),
                 );
             }
         }
@@ -1014,6 +1002,21 @@ impl PostgresRepository {
             }
         }
 
+        if let Some(merchant) = merchant {
+            let merchant = merchant.trim();
+            if !merchant.is_empty() {
+                let lower = merchant.to_lowercase();
+                query = query.filter(
+                    Condition::any()
+                        .add(transactions::Column::NormalizedMerchant.eq(lower.clone()))
+                        .add(
+                            Expr::expr(Func::lower(Expr::col(transactions::Column::MerchantName)))
+                                .eq(lower),
+                        ),
+                );
+            }
+        }
+
         query
     }
 
@@ -1034,6 +1037,7 @@ impl PostgresRepository {
             start_date,
             end_date,
             category_primary,
+            None,
         )
         .select_only()
         .column(transactions::Column::Amount)
@@ -1629,6 +1633,7 @@ impl DatabaseRepository for PostgresRepository {
                             None,
                             None,
                             None,
+                            None,
                         ))
                         .order_by_desc(transactions::Column::Date)
                         .order_by_desc(transactions::Column::CreatedAt)
@@ -1667,6 +1672,7 @@ impl DatabaseRepository for PostgresRepository {
                             &user_id,
                             None,
                             account_ids.as_deref(),
+                            None,
                             None,
                             None,
                             None,
@@ -1717,6 +1723,7 @@ impl DatabaseRepository for PostgresRepository {
                             start_date,
                             end_date,
                             category_primary.as_deref(),
+                            None,
                         ))
                         .order_by_desc(transactions::Column::Date)
                         .order_by_desc(transactions::Column::CreatedAt)
@@ -1760,12 +1767,121 @@ impl DatabaseRepository for PostgresRepository {
                     start_date,
                     end_date,
                     category_primary.as_deref(),
+                    None,
                 )
                 .count(txn)
                 .await? as i64)
             })
         })
         .await
+    }
+
+    async fn get_transactions_keyset(
+        &self,
+        user_id: &Uuid,
+        limit: i64,
+        cursor: Option<&str>,
+        search: Option<&str>,
+        account_ids: Option<&[Uuid]>,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
+        category_primary: Option<&str>,
+        merchant: Option<&str>,
+    ) -> Result<CursorTransactionsResponse> {
+        use base64::Engine;
+
+        let cursor_pos: Option<(NaiveDate, Uuid)> = match cursor {
+            None => None,
+            Some(raw) => {
+                let bytes = base64::engine::general_purpose::STANDARD
+                    .decode(raw)
+                    .map_err(|_| anyhow::anyhow!("invalid cursor"))?;
+                let s = String::from_utf8(bytes)
+                    .map_err(|_| anyhow::anyhow!("invalid cursor encoding"))?;
+                let (date_str, id_str) = s
+                    .split_once(':')
+                    .ok_or_else(|| anyhow::anyhow!("malformed cursor"))?;
+                let date = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+                    .map_err(|_| anyhow::anyhow!("invalid cursor date"))?;
+                let id =
+                    Uuid::parse_str(id_str).map_err(|_| anyhow::anyhow!("invalid cursor id"))?;
+                Some((date, id))
+            }
+        };
+
+        let user_id = *user_id;
+        let search = search.map(str::to_string);
+        let account_ids = account_ids.map(|ids| ids.to_vec());
+        let category_primary = category_primary.map(str::to_string);
+        let merchant = merchant.map(str::to_string);
+        let fetch_limit = limit.clamp(1, 100);
+
+        let rows = self
+            .with_tenant(&user_id, move |txn| {
+                Box::pin(async move {
+                    let mut q =
+                        Self::transaction_with_account_select(Self::apply_transaction_filters(
+                            Self::transactions_with_account_joins(),
+                            &user_id,
+                            search.as_deref(),
+                            account_ids.as_deref(),
+                            start_date,
+                            end_date,
+                            category_primary.as_deref(),
+                            merchant.as_deref(),
+                        ));
+
+                    if let Some((cursor_date, cursor_id)) = cursor_pos {
+                        q = q.filter(
+                            Condition::any()
+                                .add(transactions::Column::Date.lt(cursor_date))
+                                .add(
+                                    Condition::all()
+                                        .add(transactions::Column::Date.eq(cursor_date))
+                                        .add(transactions::Column::Id.lt(cursor_id)),
+                                ),
+                        );
+                    }
+
+                    Ok(q.order_by_desc(transactions::Column::Date)
+                        .order_by_desc(transactions::Column::Id)
+                        .limit((fetch_limit + 1) as u64)
+                        .into_model::<TransactionWithAccountRow>()
+                        .all(txn)
+                        .await?)
+                })
+            })
+            .await?;
+
+        let has_more = rows.len() as i64 > fetch_limit;
+        let mut transactions: Vec<TransactionWithAccount> = rows
+            .into_iter()
+            .take(fetch_limit as usize)
+            .map(Self::map_transaction_with_account_row)
+            .collect();
+
+        let next_cursor = if has_more {
+            transactions.last().map(|t| {
+                let raw = format!("{}:{}", t.date, t.id);
+                base64::engine::general_purpose::STANDARD.encode(raw.as_bytes())
+            })
+        } else {
+            None
+        };
+
+        let prev_cursor = transactions.first().map(|t| {
+            let raw = format!("{}:{}", t.date, t.id);
+            base64::engine::general_purpose::STANDARD.encode(raw.as_bytes())
+        });
+
+        transactions.shrink_to_fit();
+
+        Ok(CursorTransactionsResponse {
+            transactions,
+            next_cursor,
+            prev_cursor,
+            has_more,
+        })
     }
 
     async fn get_transactions_insights(

@@ -17,9 +17,11 @@ import {
   groupFixedExpensesByCadence,
 } from '@/domain/fixedExpenseCadences';
 import { getFixedExpenseCategoryPrimary } from '@/domain/fixedExpenseCategories';
+import CategoryInlinePill from '@/features/transactions/components/CategoryInlinePill';
 import { useCategories } from '@/features/transactions/hooks/useCategories';
+import { useTransactionListLauncher } from '@/features/transactions/hooks/useTransactionListLauncher';
 import type { FixedExpenseSummary } from '@/types/api';
-import { cn, EmptyState, Pill } from '@/ui/primitives';
+import { cn, EmptyState } from '@/ui/primitives';
 import {
   control,
   controlIconWell,
@@ -30,7 +32,6 @@ import {
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { heroAccents } from '@/ui/tokens';
-import { formatCategoryName } from '@/utils/categories';
 import { fmtUSD } from '@/utils/format';
 
 export interface FixedExpenseListProps {
@@ -248,9 +249,11 @@ function CategoryBadge({
   accentIndexByName: ReadonlyMap<string, number>;
 }) {
   return (
-    <Pill variant="category" categoryName={categoryPrimary} accentIndexByName={accentIndexByName}>
-      {formatCategoryName(categoryPrimary)}
-    </Pill>
+    <CategoryInlinePill
+      categoryKey={categoryPrimary}
+      accentIndexByName={accentIndexByName}
+      className={cn('min-w-0', 'truncate')}
+    />
   );
 }
 
@@ -265,6 +268,13 @@ const fixedExpenseRowShell = [
   ...dashboardCategoryCard.shell,
 ] as const;
 
+const fixedExpenseTriggerFocusRing = [
+  'focus-visible:outline-none',
+  'focus-visible:ring-2',
+  'focus-visible:ring-inset',
+  'focus-visible:ring-[var(--color-border-focus-active)]',
+] as const;
+
 function FixedExpenseCard({
   item,
   month,
@@ -274,20 +284,38 @@ function FixedExpenseCard({
   month: Date;
   accentIndexByName: ReadonlyMap<string, number>;
 }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const { openTransactionList } = useTransactionListLauncher();
   const categoryPrimary = getFixedExpenseCategoryPrimary(item.category);
   const referenceToday = new Date();
   const dueDates = listFixedExpenseDueDatesInMonth(item, month, referenceToday);
   const monthState = resolveFixedExpenseMonthState(item, month, referenceToday, dueDates);
   const hoverInsetRingStyle = fixedExpenseHeroHoverRingStyle;
 
+  const handleOpen = () => {
+    openTransactionList({ type: 'merchant', merchant: item.merchant }, cardRef);
+  };
+
   return (
     <li className={cn(heroStatCardRecipes.base, 'min-w-0', 'w-full')}>
       <div
+        ref={cardRef}
         data-testid={`fixed-expense-card-${item.normalized_merchant}`}
         className={cn(
           fixedExpenseRowShell,
-          'flex w-full flex-col gap-1.5 !px-3.5 !py-2 text-left md:!px-4'
+          'flex w-full flex-col gap-1.5 !px-3.5 !py-2 text-left md:!px-4',
+          'cursor-pointer',
+          fixedExpenseTriggerFocusRing
         )}
+        role="button"
+        tabIndex={0}
+        onClick={handleOpen}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleOpen();
+          }
+        }}
       >
         <div
           aria-hidden

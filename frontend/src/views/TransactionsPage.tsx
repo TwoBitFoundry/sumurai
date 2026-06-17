@@ -1,6 +1,6 @@
 import { Loader2, ReceiptText, Tags, WandSparkles } from 'lucide-react';
 import type React from 'react';
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Button, cn, GlassCard, IconButton } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import {
@@ -15,73 +15,72 @@ import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToa
 import { useAutoCategorization } from '../features/auto-categorization/hooks/useAutoCategorization';
 import CategoryCatalogPicker from '../features/transactions/components/CategoryCatalogPicker';
 import { TransactionInsightsPanel } from '../features/transactions/components/TransactionInsightsPanel';
-import TransactionsTable from '../features/transactions/components/TransactionsTable';
-import TransactionsToolbar from '../features/transactions/components/TransactionsToolbar';
-import { useCategories } from '../features/transactions/hooks/useCategories';
+import VirtualizedTransactionList from '../features/transactions/components/VirtualizedTransactionList';
 import type { TransactionFilterControl } from '../features/transactions/hooks/useTransactionFilterState';
-import {
-  type UseTransactionsResult,
-  useTransactions,
-} from '../features/transactions/hooks/useTransactions';
 import { useTransactionsContextualInsights } from '../features/transactions/hooks/useTransactionsContextualInsights';
+import { resolveAccountFilterToggle } from '../features/transactions/utils/resolveAccountFilterToggle';
+import { resolveMerchantSearchToggle } from '../features/transactions/utils/resolveMerchantSearchToggle';
+import { useAccountFilter } from '../hooks/useAccountFilter';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { PageLayout } from '../layouts/PageLayout';
 
 const TransactionsPage: React.FC<{
   filterControl: TransactionFilterControl;
-  transactionsControl?: UseTransactionsResult;
-}> = ({ filterControl, transactionsControl }) => {
-  const ownedTransactions = useTransactions({
-    pageSize: 8,
-    filterControl,
-    enabled: !transactionsControl,
-  });
-  const {
-    isLoading,
-    error,
-    search,
-    setSearch,
-    selectedCategory,
-    setSelectedCategory,
-    currentPage,
-    pageItems,
-    totalItems,
-    totalPages,
-    tableAnimationKey,
-    dateRange,
-    categories,
-  } = transactionsControl ?? ownedTransactions;
+}> = ({ filterControl }) => {
+  const { search, setSearch, selectedCategory, setSelectedCategory } = filterControl;
+  const { selectedAccountIds, allAccountIds, setSelectedAccountIds } = useAccountFilter();
+
   const {
     insights,
     displayState,
     isLoading: insightsLoading,
     accountKey,
+    error,
   } = useTransactionsContextualInsights({
     search,
     selectedCategory,
-    dateRange,
+    dateRange: undefined,
   });
   const isOnline = useOnlineStatus();
   const autoCategorization = useAutoCategorization();
   const { pinnedToast, transients, dismissTransient, dismissPinned, pushToast } =
     useAccountsToastStack(autoCategorization.job);
 
-  const { custom } = useCategories();
   const addCategoryButtonRef = useRef<HTMLButtonElement>(null);
   const [isCategoryCatalogOpen, setIsCategoryCatalogOpen] = useState(false);
 
-  const insightsResetKey = `${displayState}-${search}-${selectedCategory ?? ''}-${accountKey}-${dateRange ?? ''}`;
+  const insightsResetKey = `${displayState}-${search}-${selectedCategory ?? ''}-${accountKey}`;
+  const filters = {
+    search: search || undefined,
+    categoryPrimary: selectedCategory ?? undefined,
+  };
+
+  const handleMerchantSearch = useCallback(
+    (merchant: string) => {
+      setSearch(resolveMerchantSearchToggle(search, merchant));
+    },
+    [search, setSearch]
+  );
+
+  const handleAccountFilter = useCallback(
+    (accountId: string) => {
+      setSelectedAccountIds(
+        resolveAccountFilterToggle(accountId, selectedAccountIds, allAccountIds)
+      );
+    },
+    [allAccountIds, selectedAccountIds, setSelectedAccountIds]
+  );
+
   const categorizeActions = (
     <div
       className={cn(
         'flex',
         'w-full',
-        'shrink-0',
         'items-center',
         'justify-between',
         'gap-3',
-        'md:w-auto',
-        'md:justify-start'
+        'lg:w-auto',
+        'lg:justify-start'
       )}
     >
       <IconButton
@@ -124,6 +123,7 @@ const TransactionsPage: React.FC<{
       <PageLayout
         title="Tally the ledgers across financial allies"
         subtitle="Review, categorize, and track transactions from all your connected bank accounts."
+        actions={categorizeActions}
         error={error}
         stats={
           <TransactionInsightsPanel
@@ -139,42 +139,30 @@ const TransactionsPage: React.FC<{
           rounded="lg"
           padding="none"
           withInnerEffects={false}
-          className={cn('relative', 'z-10')}
+          containerClassName={cn('pt-4', 'md:pt-8', 'lg:pt-8')}
+          className={cn('space-y-4')}
         >
-          <div
+          <h2
             className={cn(
               'flex',
-              'flex-wrap',
+              'min-w-0',
               'items-center',
-              'justify-between',
-              'gap-3',
-              'px-3',
-              'pt-6',
-              'md:px-6'
+              'gap-2',
+              'px-4',
+              'md:px-8',
+              'lg:px-8',
+              uiTypographyRecipes.sectionTitle,
+              uiTextRecipes.primary
             )}
           >
-            <h2
-              className={cn(
-                'flex',
-                'min-w-0',
-                'w-full',
-                'items-center',
-                'gap-2',
-                'md:w-auto',
-                uiTypographyRecipes.sectionTitle,
-                uiTextRecipes.primary
-              )}
+            <span
+              className={cn(...controlIconWell.lg, heroAccents.emerald.icon)}
+              aria-hidden="true"
             >
-              <span
-                className={cn(...controlIconWell.lg, heroAccents.emerald.icon)}
-                aria-hidden="true"
-              >
-                <ReceiptText />
-              </span>
-              Transactions
-            </h2>
-            {categorizeActions}
-          </div>
+              <ReceiptText />
+            </span>
+            Transactions
+          </h2>
           <CategoryCatalogPicker
             open={isCategoryCatalogOpen}
             anchorRef={addCategoryButtonRef}
@@ -188,22 +176,11 @@ const TransactionsPage: React.FC<{
               }
             }}
           />
-          <TransactionsToolbar
-            search={search}
-            onSearch={setSearch}
-            categories={categories}
-            customCategories={custom}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-          />
-          <TransactionsTable
-            items={pageItems}
-            total={totalItems}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={8}
-            isLoading={isLoading}
-            bodyAnimationKey={tableAnimationKey}
+          <VirtualizedTransactionList
+            filters={filters}
+            variant="page"
+            onMerchantSearch={handleMerchantSearch}
+            onAccountFilter={handleAccountFilter}
           />
         </GlassCard>
         <ToastStack

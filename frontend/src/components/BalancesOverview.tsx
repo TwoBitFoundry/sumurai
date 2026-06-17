@@ -11,18 +11,18 @@ import { chartTooltipRechartsProps } from '../features/analytics/components/Char
 import { useChartContainerSize } from '../features/analytics/hooks/useChartContainerSize';
 import { useDebouncedChartRecalc } from '../features/analytics/hooks/useDebouncedChartRecalc';
 import { useYtdIncomeExpenses } from '../features/analytics/hooks/useYtdIncomeExpenses';
+import { shouldStackBalanceInstitutions } from '../features/analytics/utils/balanceInstitutionChartLayout';
 import {
+  asymmetricZeroAxisTicks,
   balancesYTickCount,
   formatBalancesAxisValue,
   safeBalanceAmount,
   sortBanksAlphabetically,
-  symmetricZeroAxisTicks,
 } from '../features/analytics/utils/balancesChartAxis';
 import {
-  INSTITUTION_LABEL_AXIS_GAP,
-  INSTITUTION_LABEL_LINE_HEIGHT,
+  institutionLabelAxisHeight,
   institutionLabelLineCount,
-  maxCharsPerInstitutionSlot,
+  maxCharsPerInstitutionSlotForWidth,
 } from '../features/analytics/utils/wrapInstitutionLabel';
 import { useBalancesOverview } from '../hooks/useBalancesOverview';
 import { Alert, Button, cn, EmptyState } from '../ui/primitives';
@@ -66,7 +66,7 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
   const overall = data?.overall;
 
   const { ref: chartSizeRef, width: chartContainerWidth } = useChartContainerSize();
-  const chartInnerHeight = Math.max(220, Math.round(chartContainerWidth * 0.35));
+  const chartInnerHeight = Math.max(120, Math.round(chartContainerWidth * 0.13));
   const yTickCount = balancesYTickCount(chartInnerHeight);
 
   const chartLayout = useMemo(() => {
@@ -78,12 +78,12 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
     );
     const maxPositive = bankPositiveTotals.length ? Math.max(0, ...bankPositiveTotals) : 0;
     const maxNegativeAbs = bankNegativeTotals.length ? Math.max(0, ...bankNegativeTotals) : 0;
-    const maxExtent = Math.max(maxPositive, maxNegativeAbs);
-    const { ticks: yAxisTicks, domain: yAxisDomain } = symmetricZeroAxisTicks(
-      maxExtent,
+    const { ticks: yAxisTicks, domain: yAxisDomain } = asymmetricZeroAxisTicks(
+      maxPositive,
+      maxNegativeAbs,
       yTickCount
     );
-    const axisMax = yAxisDomain[1];
+    const axisMax = Math.max(Math.abs(yAxisDomain[0]), yAxisDomain[1]);
     const maxLabelLen = Math.max(
       formatBalancesAxisValue(axisMax).length,
       formatBalancesAxisValue(-axisMax).length
@@ -94,7 +94,11 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
     if (maxLabelLen >= 18) yTickFontSize = 9;
     const approxCharWidth = yTickFontSize * 0.62;
     const yAxisWidth = Math.min(120, Math.ceil(maxLabelLen * approxCharWidth) + 12);
-    const maxCharsPerLine = maxCharsPerInstitutionSlot(debouncedBanks.length);
+    const maxCharsPerLine = maxCharsPerInstitutionSlotForWidth(
+      debouncedBanks.length,
+      chartContainerWidth,
+      yAxisWidth
+    );
     const maxLabelLines =
       debouncedBanks.length > 0
         ? Math.max(
@@ -104,10 +108,9 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
             )
           )
         : 1;
-    const xAxisHeight =
-      maxLabelLines * INSTITUTION_LABEL_LINE_HEIGHT + INSTITUTION_LABEL_AXIS_GAP + 8;
+    const xAxisHeight = institutionLabelAxisHeight(maxLabelLines);
     return { yTickFontSize, yAxisWidth, yAxisTicks, maxCharsPerLine, xAxisHeight, yAxisDomain };
-  }, [debouncedBanks, yTickCount]);
+  }, [chartContainerWidth, debouncedBanks, yTickCount]);
 
   const chartData = useMemo<BankBarDatum[]>(
     () =>
@@ -120,6 +123,8 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
       })),
     [debouncedBanks]
   );
+  const useStackedBars = shouldStackBalanceInstitutions(chartData.length);
+  const balanceStackId = useStackedBars ? 'balance' : undefined;
 
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -162,15 +167,7 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
   const touchTooltipDatum =
     isTouchPrimary && selectedIndex != null ? chartData[selectedIndex] : undefined;
 
-  const touchTooltipProps =
-    touchTooltipDatum && tooltipAnchor
-      ? {
-          active: true as const,
-          coordinate: tooltipAnchor,
-          payload: [{ payload: touchTooltipDatum }],
-          label: touchTooltipDatum.bank,
-        }
-      : {};
+  const showTouchTooltip = Boolean(isTouchPrimary && touchTooltipDatum && tooltipAnchor);
 
   const cancelHoverClear = useCallback(() => {
     if (hoverClearTimeoutRef.current) {
@@ -289,7 +286,7 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
             ref={chartContainerRef}
             className={cn(
               'relative',
-              'mt-4',
+              'mt-2',
               'w-full',
               'min-w-0',
               'overflow-visible',
@@ -309,6 +306,30 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
               style={{ height: 1 }}
               aria-hidden
             />
+            {showTouchTooltip && touchTooltipDatum && tooltipAnchor ? (
+              <div
+                className={cn('pointer-events-none', 'absolute', 'z-50', 'max-w-[min(100%,20rem)]')}
+                style={{
+                  left: tooltipAnchor.x,
+                  top: 0,
+                  transform: 'translate(-50%, calc(-100% - 0.5rem))',
+                }}
+                data-testid="balances-chart-touch-tooltip"
+              >
+                <BalancesBankTooltip
+                  active
+                  payload={
+                    [
+                      { payload: touchTooltipDatum, graphicalItemId: 'balances-touch' },
+                    ] as Parameters<typeof BalancesBankTooltip>[0]['payload']
+                  }
+                  label={touchTooltipDatum.bank}
+                  coordinate={tooltipAnchor}
+                  accessibilityLayer={false}
+                  activeIndex={selectedIndex != null ? String(selectedIndex) : undefined}
+                />
+              </div>
+            ) : null}
             {chartContainerWidth > 0 && chartData.length === 0 && (
               <div
                 className={cn('w-full', 'min-w-0', 'flex', 'items-center', 'justify-center')}
@@ -327,12 +348,13 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
                 className={cn('w-full', 'min-w-0')}
                 style={{ height: totalChartHeight }}
                 data-testid="balances-chart-plot"
+                data-chart-layout={useStackedBars ? 'stacked' : 'grouped'}
               >
                 <BarChart
                   width={chartContainerWidth}
                   height={totalChartHeight}
                   data={chartData}
-                  stackOffset="sign"
+                  stackOffset={useStackedBars ? 'sign' : undefined}
                   accessibilityLayer={false}
                   margin={{
                     top: 8,
@@ -349,6 +371,7 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
                     dataKey="bank"
                     interval={0}
                     tickLine={false}
+                    tickMargin={0}
                     axisLine={{ stroke: colors.chart.grid }}
                     height={chartLayout.xAxisHeight}
                     tick={(props) => (
@@ -365,6 +388,7 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
                     domain={chartLayout.yAxisDomain}
                     ticks={chartLayout.yAxisTicks}
                     allowDecimals={false}
+                    minTickGap={0}
                     tickLine={false}
                     axisLine={false}
                     tick={(props) => (
@@ -379,14 +403,14 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
                   <ReferenceLine y={0} stroke={colors.chart.grid} strokeWidth={1} />
                   <Tooltip
                     cursor={false}
+                    active={isTouchPrimary ? false : undefined}
                     content={(tooltipProps) => <BalancesBankTooltip {...tooltipProps} />}
                     {...chartTooltipRechartsProps}
-                    {...touchTooltipProps}
                   />
                   <Bar
                     dataKey="cash"
                     name={ACCOUNT_GROUP_LABELS.cash}
-                    stackId="balance"
+                    stackId={balanceStackId}
                     fill={colors.semantic.cash}
                     legendType="circle"
                     onMouseEnter={handleBarMouseEnter}
@@ -399,7 +423,7 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
                   <Bar
                     dataKey="investments"
                     name={ACCOUNT_GROUP_LABELS.investments}
-                    stackId="balance"
+                    stackId={balanceStackId}
                     fill={colors.semantic.investments}
                     legendType="circle"
                     onMouseEnter={handleBarMouseEnter}
@@ -412,7 +436,7 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
                   <Bar
                     dataKey="credit"
                     name={ACCOUNT_GROUP_LABELS.credit}
-                    stackId="balance"
+                    stackId={balanceStackId}
                     fill={colors.semantic.credit}
                     legendType="circle"
                     onMouseEnter={handleBarMouseEnter}
@@ -425,7 +449,7 @@ export function BalancesOverview({ variant = 'full' }: BalancesOverviewProps = {
                   <Bar
                     dataKey="loan"
                     name={ACCOUNT_GROUP_LABELS.loans}
-                    stackId="balance"
+                    stackId={balanceStackId}
                     fill={colors.semantic.loan}
                     legendType="circle"
                     onMouseEnter={handleBarMouseEnter}

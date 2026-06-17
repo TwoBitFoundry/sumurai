@@ -25,6 +25,7 @@ interface Props {
   showSearch?: boolean;
   showCategories?: boolean;
   showFilterLabel?: boolean;
+  layout?: 'stacked' | 'inline';
 }
 
 export const TransactionsFilters: React.FC<Props> = ({
@@ -37,6 +38,7 @@ export const TransactionsFilters: React.FC<Props> = ({
   showSearch = true,
   showCategories = true,
   showFilterLabel = true,
+  layout = 'stacked',
 }) => {
   const { accentIndexByName } = useCategories();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -86,6 +88,7 @@ export const TransactionsFilters: React.FC<Props> = ({
   }, [categories.length, showCategories, checkScroll]);
 
   const scrollMask = buildPillScrollMask(showLeftFade, showRightFade);
+  const isInline = layout === 'inline';
 
   const handleDeleteSuccess = () => {
     if (deleteTarget && selectedCategory === deleteTarget.display_name) {
@@ -123,14 +126,15 @@ export const TransactionsFilters: React.FC<Props> = ({
       )}
       {showCategories && (
         <div
+          data-testid="transactions-filters"
           className={cn(
             'flex',
             'w-full',
-            'flex-col',
-            'gap-2',
-            'md:flex-row',
-            'md:items-center',
-            'md:gap-3'
+            'min-w-0',
+            'max-w-full',
+            isInline
+              ? ['items-center', 'overflow-hidden']
+              : ['flex-col', 'gap-2', 'md:flex-row', 'md:items-center', 'md:gap-3']
           )}
         >
           {showFilterLabel ? (
@@ -146,11 +150,26 @@ export const TransactionsFilters: React.FC<Props> = ({
               Filter
             </span>
           ) : null}
-          <div className={cn(...pillScrollFadeRecipes.container)}>
+          <div
+            className={cn(
+              'relative',
+              'min-w-0',
+              'w-full',
+              'max-w-full',
+              isInline ? ['flex-1', 'overflow-hidden'] : ['overflow-hidden', 'md:flex-1']
+            )}
+          >
             <div
               ref={scrollContainerRef}
               onScroll={checkScroll}
-              className={cn(...pillScrollFadeRecipes.scroll)}
+              data-no-swipe
+              className={cn(
+                ...pillScrollFadeRecipes.scroll,
+                'min-w-0',
+                'max-w-full',
+                isInline && 'w-full',
+                isInline && transactionsRowRecipes.contextualFilterScroll
+              )}
               style={{
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
@@ -184,6 +203,10 @@ export const TransactionsFilters: React.FC<Props> = ({
                         'whitespace-nowrap',
                         transactionsRowRecipes.categoryFilterPill,
                         isCustom && 'pr-10 hover:translate-y-0',
+                        isInline && [
+                          ...transactionsRowRecipes.contextualFilterChipGlass,
+                          'hover:translate-y-0',
+                        ],
                         theme.inlineLabel,
                         isSelected ? theme.chipSurfaceSelected : theme.chipSurface,
                         isSelected && ['ring-2', theme.ring]

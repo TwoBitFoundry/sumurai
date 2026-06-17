@@ -24,6 +24,9 @@ describe('InsightsExpandablePanel', () => {
 
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(toggle).toHaveAttribute('title', 'Balance insights');
+    expect(
+      screen.getByTestId('expandable-insights').querySelector('.lucide-chevron-down')
+    ).toBeTruthy();
     expect(screen.queryByTestId('expandable-insights-body')).not.toBeInTheDocument();
 
     await userEvent.click(toggle);

@@ -41,6 +41,8 @@ describe('DateRangePillSlider', () => {
 
     const shell = screen.getByTestId('date-range-pill-slider');
     expect(shell.className).toContain('min-w-0');
+    expect(shell.className).toContain('w-fit');
+    expect(shell.className).toContain('max-w-full');
     expect(shell.className).toContain('overflow-x-auto');
   });
 

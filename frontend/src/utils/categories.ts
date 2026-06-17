@@ -75,7 +75,8 @@ export function longestFormattedCategoryLabel(
 export function mobileCategoryChipWidthRem(longestLabel: string): string {
   const contentRem = longestLabel.length * 0.48;
   const chromeRem = 1.65;
-  return `${(contentRem + chromeRem).toFixed(2)}rem`;
+  const chevronRem = 1.25;
+  return `${(contentRem + chromeRem + chevronRem).toFixed(2)}rem`;
 }
 
 export function sortCategoryNamesAlphabetically(names: string[]): string[] {

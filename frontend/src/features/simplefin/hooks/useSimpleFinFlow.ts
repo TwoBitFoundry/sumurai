@@ -4,7 +4,10 @@ import type { UsePlaidLinkFlowResult } from '@/features/plaid/hooks/usePlaidLink
 import { formatSimpleFinAuthRequiredToast } from '@/features/simplefin/utils/formatSimpleFinAuthRequiredToast';
 import { SimpleFinService } from '@/services/SimpleFinService';
 import type { ProviderConnectionStatus } from '@/types/api';
-import { refreshFinancialDataAfterProviderChange } from '@/utils/queryInvalidation';
+import {
+  type InvalidateStaleCacheOptions,
+  refreshFinancialDataAfterProviderChange,
+} from '@/utils/queryInvalidation';
 import type { PlaidConnection } from '../../../hooks/usePlaidConnections';
 
 interface UseSimpleFinFlowOptions {
@@ -66,9 +69,12 @@ export function useSimpleFinFlow(options: UseSimpleFinFlowOptions = {}): UsePlai
     }
   }, [enabled, onError]);
 
-  const invalidateSimpleFinCache = useCallback(() => {
-    return refreshFinancialDataAfterProviderChange(queryClient, ['simplefin']);
-  }, [queryClient]);
+  const invalidateSimpleFinCache = useCallback(
+    (options?: InvalidateStaleCacheOptions) => {
+      return refreshFinancialDataAfterProviderChange(queryClient, ['simplefin'], options);
+    },
+    [queryClient]
+  );
 
   const syncAll = useCallback(async () => {
     if (!enabled || !isOnline) {
@@ -82,7 +88,7 @@ export function useSimpleFinFlow(options: UseSimpleFinFlowOptions = {}): UsePlai
     }
 
     await SimpleFinService.syncBridge(connectionId);
-    await invalidateSimpleFinCache();
+    await invalidateSimpleFinCache({ resetTransactions: 'reset' });
   }, [connections, enabled, invalidateSimpleFinCache, isOnline]);
 
   const connect = useCallback(
@@ -96,7 +102,7 @@ export function useSimpleFinFlow(options: UseSimpleFinFlowOptions = {}): UsePlai
       try {
         const result = await SimpleFinService.connectAndSyncAll(setupToken);
         await connectionsQuery.refetch();
-        await invalidateSimpleFinCache();
+        await invalidateSimpleFinCache({ resetTransactions: 'remove' });
         if (result.institutionsRequiringAuth.length > 0) {
           setToast(formatSimpleFinAuthRequiredToast(result.institutionsRequiringAuth));
         } else {
@@ -121,7 +127,7 @@ export function useSimpleFinFlow(options: UseSimpleFinFlowOptions = {}): UsePlai
       clearError();
       try {
         await SimpleFinService.syncTransactions(connectionId);
-        await invalidateSimpleFinCache();
+        await invalidateSimpleFinCache({ resetTransactions: 'reset' });
         setToast('Sync started for SimpleFIN connection');
       } catch (syncError: unknown) {
         const message = `Sync failed: ${syncError instanceof Error ? syncError.message : 'Unknown error'}`;
@@ -141,7 +147,7 @@ export function useSimpleFinFlow(options: UseSimpleFinFlowOptions = {}): UsePlai
       try {
         await SimpleFinService.disconnect(connectionId);
         await connectionsQuery.refetch();
-        await invalidateSimpleFinCache();
+        await invalidateSimpleFinCache({ resetTransactions: 'remove' });
         setToast('Disconnected SimpleFIN institution');
       } catch (disconnectError: unknown) {
         const message = `Failed to disconnect: ${disconnectError instanceof Error ? disconnectError.message : 'Unknown error'}`;

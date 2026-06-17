@@ -17,6 +17,39 @@ import {
 } from './user-journeys/shared';
 import { jsonResponse, route, StoryApiScope } from './user-journeys/storyApi';
 
+const storyInteractionTimeoutMs = 15_000;
+
+function clearBalancesInsightsSession() {
+  const raw = window.sessionStorage.getItem('sumurai.ui.collapsibleExpanded');
+  if (!raw) {
+    return;
+  }
+  try {
+    const map = JSON.parse(raw) as Record<string, boolean>;
+    delete map['balances-insights'];
+    if (Object.keys(map).length === 0) {
+      window.sessionStorage.removeItem('sumurai.ui.collapsibleExpanded');
+      return;
+    }
+    window.sessionStorage.setItem('sumurai.ui.collapsibleExpanded', JSON.stringify(map));
+  } catch {
+    window.sessionStorage.removeItem('sumurai.ui.collapsibleExpanded');
+  }
+}
+
+async function expandBalanceInsights(canvas: ReturnType<typeof within>) {
+  const summaryButton = canvas.getByRole('button', { name: /balance insights/i });
+  if (summaryButton.getAttribute('aria-expanded') !== 'true') {
+    await userEvent.click(summaryButton);
+  }
+  await waitFor(
+    () => {
+      expect(canvas.getByTestId('balances-chart-plot')).toBeVisible();
+    },
+    { timeout: storyInteractionTimeoutMs }
+  );
+}
+
 const handlers = [
   route('GET', '/categories', () => jsonResponse(storyCategoryList)),
   route('GET', '/providers/accounts', () => jsonResponse(storyProviderAccounts)),
@@ -99,11 +132,14 @@ const meta = {
     layout: 'fullscreen',
   },
   decorators: [
-    (Story) => (
-      <DashboardShell>
-        <Story />
-      </DashboardShell>
-    ),
+    (Story) => {
+      clearBalancesInsightsSession();
+      return (
+        <DashboardShell>
+          <Story />
+        </DashboardShell>
+      );
+    },
   ],
 } satisfies Meta;
 
@@ -119,12 +155,9 @@ export const HappyPath: Story = {
       () => {
         expect(canvas.getByTestId('sankey-node-income')).toBeVisible();
       },
-      { timeout: 15000 }
+      { timeout: storyInteractionTimeoutMs }
     );
-    await userEvent.click(canvas.getByRole('tab', { name: /show balance insights/i }));
-    await waitFor(() => {
-      expect(canvas.getByTestId('balances-chart-plot')).toBeVisible();
-    });
+    await expandBalanceInsights(canvas);
   },
 };
 

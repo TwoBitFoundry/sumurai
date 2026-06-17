@@ -3,6 +3,13 @@ import { FixedExpensesSection } from '@/features/fixed-expenses/components/Fixed
 import type { FixedExpenseSummary } from '@/types/api';
 import { setSessionBudgetsSectionExpanded } from '@/utils/sessionPreferences';
 
+jest.mock('@/features/transactions/hooks/useTransactionListLauncher', () => ({
+  useTransactionListLauncher: () => ({
+    openTransactionList: jest.fn(),
+    close: jest.fn(),
+  }),
+}));
+
 jest.mock('@/utils/sessionPreferences', () => {
   const actual = jest.requireActual(
     '@/utils/sessionPreferences'

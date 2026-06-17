@@ -8,13 +8,14 @@ import DashboardChartCard from '@/features/analytics/components/DashboardChartCa
 import { SpendingByCategoryChart } from '@/features/analytics/components/SpendingByCategoryChart';
 import { TopMerchantsList } from '@/features/analytics/components/TopMerchantsList';
 import { useChartContainerSize } from '@/features/analytics/hooks/useChartContainerSize';
+import CategoryInlinePill from '@/features/transactions/components/CategoryInlinePill';
 import { PageLayout } from '@/layouts/PageLayout';
 import {
   sampleDonutByCategory,
   sampleDonutTotal,
   sampleTopMerchants,
 } from '@/storybook/fixtures/analytics';
-import { cn, Pill } from '@/ui/primitives';
+import { cn } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
   border as semanticBorders,
@@ -186,12 +187,11 @@ export function DashboardScreenSlice(props: {
                             <div
                               className={cn('relative', 'z-10', dashboardCategoryCard.metricRow)}
                             >
-                              <Pill
-                                categoryName={cat.categoryKey}
+                              <CategoryInlinePill
+                                categoryKey={cat.categoryKey}
+                                label={cat.name}
                                 className={cn('min-w-0', 'truncate')}
-                              >
-                                {cat.name}
-                              </Pill>
+                              />
                               <div className={cn(dashboardCategoryCard.metricCluster)}>
                                 <span
                                   className={cn(
@@ -235,7 +235,7 @@ export function DashboardScreenSlice(props: {
 
             <DashboardChartCard
               className={cn('min-w-0')}
-              title="Income vs Expenses"
+              title="Income vs expenses over time"
               refreshingLabel="Tracing the flow..."
               isRefreshing={false}
             >
@@ -271,7 +271,7 @@ export function DashboardScreenSlice(props: {
 
             <DashboardChartCard
               className={cn('min-w-0')}
-              title="Budget vs reality"
+              title="Budget vs reality over time"
               refreshingLabel="Reviewing allowances..."
               isRefreshing={false}
             >

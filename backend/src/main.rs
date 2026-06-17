@@ -79,7 +79,7 @@ use crate::models::{
     },
     provider_connect::ProviderConnectRequest,
     transaction::{
-        ContextualInsightsResponse, PaginatedTransactionsResponse, SyncTransactionsResponse,
+        ContextualInsightsResponse, CursorTransactionsResponse, SyncTransactionsResponse,
         TransactionsInsightsResponse, TransactionsQuery,
     },
 };
@@ -1154,17 +1154,20 @@ async fn complete_user_onboarding(
 #[utoipa::path(
     get,
     path = "/api/transactions",
-    description = "Returns transactions with optional server-side pagination and filtering.",
-    params(("search" = Option<String>, Query, description = "Search transactions by merchant, category, or account"),
+    description = "Returns cursor-paginated transactions with optional filtering.",
+    params(("search" = Option<String>, Query, description = "Fuzzy search by merchant, category, or account"),
            ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs"),
-           ("page" = Option<i64>, Query, description = "Page number starting at 1"),
-           ("page_size" = Option<i64>, Query, description = "Results per page, clamped to 200"),
+           ("cursor" = Option<String>, Query, description = "Opaque cursor from next_cursor; omit for first page"),
+           ("limit" = Option<i64>, Query, description = "Page size, default 40, clamped 1..=100"),
+           ("merchant" = Option<String>, Query, description = "Exact normalized-merchant match"),
            ("start_date" = Option<String>, Query, description = "Start date in YYYY-MM-DD format"),
            ("end_date" = Option<String>, Query, description = "End date in YYYY-MM-DD format"),
-           ("category_primary" = Option<String>, Query, description = "Filter by primary category")),
+           ("category_primary" = Option<String>, Query, description = "Filter by effective primary category"),
+           ("sort" = Option<String>, Query, description = "Reserved – not implemented; default date"),
+           ("order" = Option<String>, Query, description = "Reserved – not implemented; default desc")),
     responses(
-        (status = 200, description = "Paginated list of transactions", body = PaginatedTransactionsResponse),
-        (status = 400, description = "Invalid account filter"),
+        (status = 200, description = "Cursor-paginated transactions", body = CursorTransactionsResponse),
+        (status = 400, description = "Invalid date range or account filter"),
         (status = 401, description = "Unauthorized"),
         (status = 403, description = "Account filter references another user"),
         (status = 500, description = "Internal server error"),
@@ -1179,35 +1182,31 @@ async fn get_authenticated_transactions(
         query,
         authorized_account_ids,
     }: AuthorizedQuery<TransactionsQuery>,
-) -> Result<Json<PaginatedTransactionsResponse>, StatusCode> {
+) -> Result<Json<CursorTransactionsResponse>, StatusCode> {
     let user_id = auth_context.user_id;
 
     let TransactionsQuery {
         search,
         account_ids: _,
-        page,
-        page_size,
+        cursor,
+        limit,
+        merchant,
         start_date,
         end_date,
         category_primary,
     } = query;
 
-    tracing::info!(
-        search = ?search,
-        page = ?page,
-        page_size = ?page_size,
-        "Transactions query params"
-    );
-
-    let page = page.unwrap_or(1).max(1);
-    let page_size = page_size.unwrap_or(50).clamp(1, 200);
-    let offset = (page - 1).saturating_mul(page_size);
+    let limit = limit.unwrap_or(40).clamp(1, 100);
 
     let search = search
         .as_deref()
         .map(str::trim)
         .filter(|value| !value.is_empty());
     let category_primary = category_primary
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+    let merchant = merchant
         .as_deref()
         .map(str::trim)
         .filter(|value| !value.is_empty());
@@ -1236,58 +1235,39 @@ async fn get_authenticated_transactions(
         .map(|ids| ids.iter().copied().collect());
     let account_ids_ref = account_ids.as_deref();
 
-    let transactions_future = state.db_repository.get_transactions_paginated(
-        &user_id,
-        page_size,
-        offset,
-        search,
-        account_ids_ref,
-        start_date,
-        end_date,
-        category_primary,
-    );
-    let count_future = state.db_repository.count_transactions(
-        &user_id,
-        search,
-        account_ids_ref,
-        start_date,
-        end_date,
-        category_primary,
+    tracing::info!(
+        search = ?search,
+        limit,
+        has_cursor = cursor.is_some(),
+        "Transactions keyset query params"
     );
 
-    let (transactions_result, total_result) = tokio::join!(transactions_future, count_future);
-
-    let transactions = match transactions_result {
-        Ok(transactions) => transactions,
-        Err(e) => {
-            tracing::error!(
-                "Failed to fetch paginated transactions for user {}: {}",
-                user_id,
-                e
-            );
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-
-    let total = match total_result {
-        Ok(total) => total,
-        Err(e) => {
-            tracing::error!("Failed to count transactions for user {}: {}", user_id, e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
+    let result = state
+        .db_repository
+        .get_transactions_keyset(
+            &user_id,
+            limit,
+            cursor.as_deref(),
+            search,
+            account_ids_ref,
+            start_date,
+            end_date,
+            category_primary,
+            merchant,
+        )
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch transactions for user {}: {}", user_id, e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     tracing::info!(
-        record_count = transactions.len(),
-        total,
+        record_count = result.transactions.len(),
+        has_more = result.has_more,
         "Data access: transactions"
     );
-    Ok(Json(PaginatedTransactionsResponse {
-        transactions,
-        total,
-        page,
-        page_size,
-    }))
+
+    Ok(Json(result))
 }
 
 #[utoipa::path(
@@ -1322,8 +1302,9 @@ async fn get_authenticated_transactions_insights(
     let TransactionsQuery {
         search,
         account_ids: _,
-        page: _,
-        page_size: _,
+        cursor: _,
+        limit: _,
+        merchant: _,
         start_date,
         end_date,
         category_primary,
@@ -1419,8 +1400,9 @@ async fn get_authenticated_transactions_contextual_insights(
     let TransactionsQuery {
         search,
         account_ids: _,
-        page: _,
-        page_size: _,
+        cursor: _,
+        limit: _,
+        merchant: _,
         start_date,
         end_date,
         category_primary,

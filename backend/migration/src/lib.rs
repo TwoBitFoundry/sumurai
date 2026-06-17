@@ -4,6 +4,7 @@ mod m20260528_000001_init;
 mod m20260528_000002_webauthn_credentials;
 mod m20260604_134107_merchant_normalization;
 mod m20260605_000003_transaction_normalization_cutover;
+mod m20260613_000006_transaction_keyset_index;
 pub mod merchant_alias_seeds;
 
 pub struct Migrator;
@@ -16,6 +17,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260528_000002_webauthn_credentials::Migration),
             Box::new(m20260604_134107_merchant_normalization::Migration),
             Box::new(m20260605_000003_transaction_normalization_cutover::Migration),
+            Box::new(m20260613_000006_transaction_keyset_index::Migration),
         ]
     }
 }

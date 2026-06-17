@@ -1,3 +1,9 @@
+import {
+  border as semanticBorders,
+  effect as uiEffectRecipes,
+  surface as uiSurfaceRecipes,
+} from '@/ui/recipes';
+
 export const transactionsRowRecipes = {
   shell: [
     'group relative rounded-md border-b border-slate-200/70 transition-[box-shadow,colors] duration-150 ease-out',
@@ -5,9 +11,7 @@ export const transactionsRowRecipes = {
     'hover:ring-2 hover:ring-inset hover:ring-emerald-400/60',
     'dark:hover:ring-emerald-400/50',
   ],
-  mainSurface: ['absolute', 'inset-0', 'z-0', 'rounded-md', 'bg-transparent'],
   mainSurfaceHost: ['relative', 'min-w-0', 'w-full'],
-  mainSurfaceContent: ['relative', 'z-10', 'pointer-events-none'],
   mobileAmount: [
     'pointer-events-none',
     'absolute',
@@ -17,7 +21,28 @@ export const transactionsRowRecipes = {
     'shrink-0',
     'tabular-nums',
   ],
-  mobileCategoryAnchor: ['absolute', 'bottom-2.5', 'right-3', 'z-20'],
+  mobileCategoryAnchor: ['absolute', 'bottom-2.5', 'right-3', 'z-20', 'w-fit', 'max-w-full'],
+  mobileAmountPage: [
+    'pointer-events-none',
+    'absolute',
+    'top-2.5',
+    'right-4',
+    'md:right-8',
+    'lg:right-8',
+    'z-10',
+    'shrink-0',
+    'tabular-nums',
+  ],
+  mobileCategoryAnchorPage: [
+    'absolute',
+    'bottom-2.5',
+    'right-4',
+    'md:right-8',
+    'lg:right-8',
+    'z-20',
+    'w-fit',
+    'max-w-full',
+  ],
   mobileMerchantLine: ['min-w-0', 'pr-28'],
   mobileMetaBlock: ['mt-1', 'min-w-0', 'pr-28'],
   placeholder: [
@@ -28,24 +53,41 @@ export const transactionsRowRecipes = {
     'dark:border-slate-700/50',
   ],
   placeholderDesktopHeight: ['h-[3.75rem]'],
-  placeholderMobileHeight: ['min-h-[5.25rem]'],
+  placeholderMobileHeight: ['min-h-[6rem]'],
   odd: [
     'bg-[color:color-mix(in_srgb,var(--color-surface-muted-chip)_40%,transparent)]',
     'dark:bg-slate-700/20',
   ],
   even: ['bg-transparent', 'dark:bg-transparent'],
   merchantEllipsis: ['min-w-0', 'overflow-hidden', 'text-ellipsis', 'whitespace-nowrap'],
-  merchantCell: ['max-w-0', 'overflow-hidden', 'text-ellipsis', 'whitespace-nowrap'],
+  merchantCell: ['min-w-0', 'overflow-hidden', 'text-ellipsis', 'whitespace-nowrap', 'text-left'],
   categoryPill: [
-    'w-full',
+    'w-fit',
+    'max-w-full',
     'min-w-0',
     '!justify-end',
     '!gap-0',
     '!px-0',
     '!py-0',
+    '!overflow-visible',
     'hover:!translate-y-0',
   ],
   categoryFilterPill: ['px-2', 'py-0'],
+  contextualFilterChipGlass: [
+    ...uiEffectRecipes.glassBackdrop,
+    'border',
+    ...uiSurfaceRecipes.floatingChromePanel,
+    ...semanticBorders.floatingChrome,
+  ],
+  contextualFilterScroll: ['w-full', 'max-w-full', 'py-1.5'],
   categoryLabel: ['min-w-0', 'flex-1', 'truncate', 'text-right'],
+  categoryLabelReadOnly: ['truncate', 'text-right'],
   categoryChevron: ['ml-1', 'shrink-0'],
+  desktopGridCols:
+    'grid-cols-[minmax(0,9rem)_minmax(0,1fr)_minmax(0,8rem)_minmax(0,12rem)_minmax(0,1fr)]',
+  desktopGridRow: ['grid', 'w-full', 'items-center'],
+  desktopGridHeader: ['grid', 'w-full', 'items-center', 'sticky', 'top-0', 'z-10'],
 } as const;
+
+export const DESKTOP_ROW_H = 60;
+export const MOBILE_ROW_H = 96;

@@ -8,6 +8,10 @@ import {
   setSessionCollapsibleExpanded,
 } from '@/utils/sessionPreferences';
 
+jest.mock('@/components/BalancesOverview', () => ({
+  BalancesOverviewChart: () => <div data-testid="balances-chart" />,
+}));
+
 const sampleOverall: Totals = {
   cash: 123642.1,
   credit: -4713.4,
@@ -181,15 +185,15 @@ describe('BalancesInsightsPanel', () => {
   it('renders income and expenses YTD when both props are provided', () => {
     render(<BalancesInsightsPanel overall={sampleOverall} incomeYtd={52300} expensesYtd={18400} />);
 
-    const summaryButton = screen.getByRole('button', { name: /balance insights/i });
+    const panel = screen.getByTestId('balances-insights-panel');
     const incomeBlock = screen.getByTestId('balances-ytd-income');
     const expensesBlock = screen.getByTestId('balances-ytd-expenses');
     expect(incomeBlock).toHaveClass('items-baseline');
     expect(expensesBlock).toHaveClass('items-baseline');
     expect(incomeBlock).toHaveTextContent('$52,300.00');
     expect(expensesBlock).toHaveTextContent('$18,400.00');
-    const incomeLabel = within(summaryButton).getByText('income');
-    const expensesLabel = within(summaryButton).getByText('expenses');
+    const incomeLabel = within(panel).getByText('income');
+    const expensesLabel = within(panel).getByText('expenses');
     expect(incomeLabel).toHaveClass('font-label');
     expect(incomeLabel).toHaveClass(semanticTextRecipes.label);
     expect(expensesLabel).toHaveClass('font-label');
@@ -235,6 +239,17 @@ describe('BalancesInsightsPanel', () => {
     expect(expensesValue).toHaveClass(uiStatusRecipes.danger.text[0]);
     expect(cashValue).toHaveClass(uiStatusRecipes.success.text[0]);
     expect(cashValue).not.toHaveClass('font-card-title');
+  });
+
+  it('shows the balances chart at the end of the expanded panel', async () => {
+    render(<BalancesInsightsPanel overall={sampleOverall} />);
+
+    expect(screen.queryByTestId('balances-insights-chart')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /balance insights/i }));
+
+    expect(screen.getByTestId('balances-insights-chart')).toBeInTheDocument();
+    expect(screen.getByTestId('balances-chart')).toBeInTheDocument();
   });
 
   it('resets flipped categories when resetKey changes', async () => {

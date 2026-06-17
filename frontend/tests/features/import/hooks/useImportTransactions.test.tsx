@@ -232,7 +232,9 @@ describe('useImportTransactions', () => {
       'account-1',
       validateResponse.suggested_csv_mapping
     );
-    expect(invalidateStaleCacheQueries).toHaveBeenCalledWith(queryClient, ['plaid', 'teller']);
+    expect(invalidateStaleCacheQueries).toHaveBeenCalledWith(queryClient, ['plaid', 'teller'], {
+      resetTransactions: 'reset',
+    });
     expect(result.current.status).toBe('success');
     expect(result.current.importResult).toBe(importResponse);
     expect(result.current.error).toBeNull();

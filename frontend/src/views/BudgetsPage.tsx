@@ -219,6 +219,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
                   drafts={drafts}
                   onDraftChange={onDraftChange}
                   onDelete={onDelete}
+                  period={{ startDate: range.start, endDate: range.end }}
                 />
               ) : (
                 <EmptyState

@@ -345,6 +345,27 @@ export const insightsPanel = {
     'border-[var(--color-border-strong)]',
     'dark:border-[var(--color-border-divider)]',
   ],
+  summarySectionPadding: ['pl-1.5', 'pr-3', 'py-1.5', 'md:pl-2', 'md:pr-4', 'md:py-2'],
+  summaryToggleGrid: [
+    'grid',
+    'w-full',
+    'grid-cols-[1rem_minmax(0,1fr)]',
+    'items-stretch',
+    'gap-x-1.5',
+  ],
+  summaryChevronColumn: ['flex', 'w-4', 'self-stretch', 'items-center', 'justify-start'],
+  summaryChevron: [
+    'h-4',
+    'w-4',
+    'shrink-0',
+    'transition-transform',
+    'duration-200',
+    'text-slate-500',
+    'dark:text-slate-500',
+  ],
+  summaryToggleShell: ['relative'],
+  summaryToggleOverlay: ['absolute', 'inset-0', 'z-0', 'cursor-pointer'],
+  summaryToggleContent: ['relative', 'z-10', 'pointer-events-none'],
 } as const;
 
 export const alert = {

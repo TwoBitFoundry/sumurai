@@ -1,4 +1,12 @@
 import '../mocks/framerMotionStub';
+
+jest.mock('@/features/transactions/hooks/useTransactionListLauncher', () => ({
+  useTransactionListLauncher: () => ({
+    openTransactionList: jest.fn(),
+    close: jest.fn(),
+  }),
+}));
+
 import { render, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type React from 'react';
@@ -192,7 +200,7 @@ describe('BankCard', () => {
   });
 
   it('renders bank name, status, expand toggle, and action buttons in the header', () => {
-    render(
+    const { container } = render(
       <BankCard
         bank={{
           id: 'bank-1',
@@ -210,6 +218,7 @@ describe('BankCard', () => {
     expect(screen.getByRole('heading', { name: 'Chase' })).toBeVisible();
     expect(screen.getByRole('status', { name: 'Connected' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Show accounts' })).toBeVisible();
+    expect(container.querySelector('.lucide-chevron-down')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Sync now' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Export institution data' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Disconnect' })).toBeVisible();

@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
 import { expect, fn, userEvent, within } from 'storybook/test';
-import { TransactionsToolbar } from './TransactionsToolbar';
+import { TransactionsFilters } from './TransactionsFilters';
 
 const meta = {
-  title: 'Features/Transactions/TransactionsToolbar',
-  component: TransactionsToolbar,
+  title: 'Features/Transactions/TransactionsFilters',
+  component: TransactionsFilters,
   tags: ['autodocs', 'test'],
   args: {
     search: '',
@@ -13,8 +13,12 @@ const meta = {
     categories: ['Food', 'Transit', 'Income'],
     selectedCategory: null,
     onSelectCategory: fn(),
+    showSearch: false,
+    showCategories: true,
+    showFilterLabel: true,
+    layout: 'stacked',
   },
-} satisfies Meta<typeof TransactionsToolbar>;
+} satisfies Meta<typeof TransactionsFilters>;
 
 export default meta;
 
@@ -22,15 +26,15 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: (args) => {
-    const [search, setSearch] = useState(args.search);
+    const [selectedCategory, setSelectedCategory] = useState(args.selectedCategory);
 
     return (
-      <TransactionsToolbar
+      <TransactionsFilters
         {...args}
-        search={search}
-        onSearch={(value) => {
-          setSearch(value);
-          args.onSearch(value);
+        selectedCategory={selectedCategory}
+        onSelectCategory={(value) => {
+          setSelectedCategory(value);
+          args.onSelectCategory(value);
         }}
       />
     );
@@ -42,10 +46,19 @@ export const Default: Story = {
   },
 };
 
+export const InlineContextBar: Story = {
+  args: {
+    showFilterLabel: false,
+    layout: 'inline',
+    selectedCategory: 'Food',
+  },
+};
+
 export const Filtered: Story = {
   args: {
     selectedCategory: 'Food',
     search: 'coffee',
+    showSearch: true,
   },
 };
 
@@ -74,5 +87,6 @@ export const LongSearchQuery: Story = {
     categories: ['Food', 'Transit', 'Income'],
     selectedCategory: null,
     search: 'international artisan wholesale collective quarterly adjustment',
+    showSearch: true,
   },
 };

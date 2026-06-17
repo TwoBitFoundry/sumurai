@@ -8,6 +8,13 @@ jest.mock('@/context/ThemeContext', () => ({
   useTheme: jest.fn(),
 }));
 
+jest.mock('@/features/transactions/hooks/useTransactionListLauncher', () => ({
+  useTransactionListLauncher: () => ({
+    openTransactionList: jest.fn(),
+    close: jest.fn(),
+  }),
+}));
+
 describe('TopMerchantsList', () => {
   beforeEach(() => {
     jest.mocked(useTheme).mockReturnValue({

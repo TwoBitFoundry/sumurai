@@ -1,10 +1,11 @@
 import { AlertTriangle, ReceiptText, RefreshCcw, TrendingUp } from 'lucide-react';
 import { useMemo } from 'react';
 import HeroStatCard from '@/components/widgets/HeroStatCard';
-import TransactionsTable from '@/features/transactions/components/TransactionsTable';
-import TransactionsToolbar from '@/features/transactions/components/TransactionsToolbar';
+import VirtualizedTransactionList from '@/features/transactions/components/VirtualizedTransactionList';
 import { PageLayout } from '@/layouts/PageLayout';
-import { denseLabelTransaction, transactionsTablePage } from '@/storybook/fixtures/transactions';
+import { transactionsTablePage } from '@/storybook/fixtures/transactions';
+import { jsonResponse, route, StoryApiScope } from '@/storybook/screens/user-journeys/storyApi';
+import type { CursorTransactionsResponse, Transaction } from '@/types/api';
 import { cn, GlassCard } from '@/ui/primitives';
 import { controlIconWell, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { heroAccents } from '@/ui/tokens';
@@ -13,10 +14,19 @@ import { fmtUSD } from '@/utils/format';
 
 export type TransactionsScreenSliceState = 'loaded' | 'loading' | 'empty' | 'error';
 
+function makeCursorResponse(items: Transaction[], hasMore = false): CursorTransactionsResponse {
+  const last = items.at(-1);
+  return {
+    transactions: items,
+    next_cursor: hasMore && last ? `cursor:${last.id}` : null,
+    prev_cursor: null,
+    has_more: hasMore,
+  };
+}
+
 export function TransactionsScreenSlice(props: {
   state: TransactionsScreenSliceState;
   errorMessage?: string;
-  tableVariant?: 'default' | 'denseMerchant';
 }) {
   const transactionsForStats = props.state === 'empty' ? [] : transactionsTablePage;
 
@@ -52,7 +62,7 @@ export function TransactionsScreenSlice(props: {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 2)
       .map(([name]) => name);
-    const warningSymbol = '\u26A0';
+    const warningSymbol = '⚠';
     const categoryDriver =
       topCategories.length > 0
         ? topCategories.length === 1
@@ -73,82 +83,102 @@ export function TransactionsScreenSlice(props: {
 
   const categories = ['Food', 'Transit', 'Income', 'Entertainment', 'Bills'];
 
-  const tableModel =
-    props.tableVariant === 'denseMerchant'
-      ? { items: [denseLabelTransaction] as typeof transactionsTablePage, total: 1, totalPages: 1 }
-      : { items: transactionsTablePage, total: 80, totalPages: 10 };
+  const handlers =
+    props.state === 'empty'
+      ? [
+          route('GET', '/transactions', () => jsonResponse(makeCursorResponse([]))),
+          route('GET', '/transactions/categories', () => jsonResponse(categories)),
+          route('GET', '/accounts', () => jsonResponse([])),
+        ]
+      : props.state === 'error'
+        ? [
+            route('GET', '/transactions', () =>
+              jsonResponse({ error: 'Server error' }, { status: 500 })
+            ),
+            route('GET', '/transactions/categories', () => jsonResponse(categories)),
+            route('GET', '/accounts', () => jsonResponse([])),
+          ]
+        : [
+            route('GET', '/transactions', () =>
+              jsonResponse(makeCursorResponse(transactionsTablePage))
+            ),
+            route('GET', '/transactions/categories', () => jsonResponse(categories)),
+            route('GET', '/accounts', () => jsonResponse([])),
+          ];
 
-  const currentPage = 1;
+  const filters = props.state === 'empty' ? { search: 'no results query' } : {};
 
   return (
-    <div data-testid="transactions-page">
-      <PageLayout
-        title="Transactions, fully accounted"
-        subtitle="Every transaction on the books. Search and filter your complete history."
-        error={
-          props.state === 'error' ? (props.errorMessage ?? 'Failed to load transactions.') : null
-        }
-        stats={
-          <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-4')}>
-            <HeroStatCard
-              index={1}
-              title="Total shown"
-              icon={<ReceiptText />}
-              value={stats.totalCount}
-              suffix={stats.totalCount === 1 ? 'item' : 'items'}
-              subtext={fmtUSD(stats.totalSpent)}
-            />
-            <HeroStatCard
-              index={2}
-              accent="emerald"
-              title="Average size"
-              icon={<TrendingUp />}
-              value={fmtUSD(stats.avgTransaction)}
-              subtext={stats.categoryDriver || undefined}
-            />
-            <HeroStatCard
-              index={3}
-              accent="emerald"
-              title="Largest size"
-              icon={<AlertTriangle />}
-              value={
-                stats.largestTransaction ? fmtUSD(Math.abs(stats.largestTransaction.amount)) : '$0'
-              }
-              pills={
-                stats.largestTransaction && stats.totalCount > 1
-                  ? [
-                      {
-                        label: stats.largestTransaction.name,
-                      },
-                    ]
-                  : []
-              }
-            />
-            <HeroStatCard
-              index={4}
-              title="Recurring"
-              icon={<RefreshCcw />}
-              value={stats.recurringCount}
-              suffix={stats.recurringCount === 1 ? 'merchant' : 'merchants'}
-              pills={stats.recurringMerchants.map((m) => ({ label: m }))}
-            />
-          </div>
-        }
-      >
-        <GlassCard
-          variant="accent"
-          rounded="lg"
-          padding="none"
-          withInnerEffects={false}
-          className={cn('relative', 'z-10')}
+    <StoryApiScope handlers={handlers}>
+      <div data-testid="transactions-page">
+        <PageLayout
+          title="Transactions, fully accounted"
+          subtitle="Every transaction on the books. Search and filter your complete history."
+          error={
+            props.state === 'error' ? (props.errorMessage ?? 'Failed to load transactions.') : null
+          }
+          stats={
+            <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-4')}>
+              <HeroStatCard
+                index={1}
+                title="Total shown"
+                icon={<ReceiptText />}
+                value={stats.totalCount}
+                suffix={stats.totalCount === 1 ? 'item' : 'items'}
+                subtext={fmtUSD(stats.totalSpent)}
+              />
+              <HeroStatCard
+                index={2}
+                accent="emerald"
+                title="Average size"
+                icon={<TrendingUp />}
+                value={fmtUSD(stats.avgTransaction)}
+                subtext={stats.categoryDriver || undefined}
+              />
+              <HeroStatCard
+                index={3}
+                accent="emerald"
+                title="Largest size"
+                icon={<AlertTriangle />}
+                value={
+                  stats.largestTransaction
+                    ? fmtUSD(Math.abs(stats.largestTransaction.amount))
+                    : '$0'
+                }
+                pills={
+                  stats.largestTransaction && stats.totalCount > 1
+                    ? [{ label: stats.largestTransaction.name }]
+                    : []
+                }
+              />
+              <HeroStatCard
+                index={4}
+                title="Recurring"
+                icon={<RefreshCcw />}
+                value={stats.recurringCount}
+                suffix={stats.recurringCount === 1 ? 'merchant' : 'merchants'}
+                pills={stats.recurringMerchants.map((m) => ({ label: m }))}
+              />
+            </div>
+          }
         >
-          <div className={cn('space-y-1', 'px-3', 'pt-6', 'md:px-6')}>
+          <GlassCard
+            variant="accent"
+            rounded="lg"
+            padding="none"
+            withInnerEffects={false}
+            containerClassName={cn('pt-4', 'md:pt-8', 'lg:pt-8')}
+            className={cn('space-y-4')}
+          >
             <h2
               className={cn(
                 'flex',
                 'min-w-0',
                 'items-center',
                 'gap-2',
+                'px-4',
+                'md:px-8',
+                'lg:px-8',
                 uiTypographyRecipes.sectionTitle,
                 uiTextRecipes.primary
               )}
@@ -161,24 +191,10 @@ export function TransactionsScreenSlice(props: {
               </span>
               Transactions
             </h2>
-          </div>
-          <TransactionsToolbar
-            search="coffee"
-            onSearch={() => {}}
-            categories={categories}
-            selectedCategory="Food"
-            onSelectCategory={() => {}}
-          />
-          <TransactionsTable
-            items={props.state === 'empty' ? [] : tableModel.items}
-            total={props.state === 'empty' ? 0 : tableModel.total}
-            currentPage={currentPage}
-            totalPages={props.state === 'empty' ? 1 : tableModel.totalPages}
-            pageSize={8}
-            isLoading={props.state === 'loading'}
-          />
-        </GlassCard>
-      </PageLayout>
-    </div>
+            <VirtualizedTransactionList filters={filters} variant="page" />
+          </GlassCard>
+        </PageLayout>
+      </div>
+    </StoryApiScope>
   );
 }

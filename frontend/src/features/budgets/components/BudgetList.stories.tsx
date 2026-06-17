@@ -13,6 +13,7 @@ const meta = {
     drafts: {},
     onDraftChange: fn(),
     onDelete: fn(),
+    period: { startDate: '2025-01-01', endDate: '2025-01-31' },
   },
 } satisfies Meta<typeof BudgetList>;
 
@@ -54,6 +55,7 @@ function EditingWrapper({
         onDraftChange(id, v);
       }}
       onDelete={onDelete}
+      period={{ startDate: '2025-01-01', endDate: '2025-01-31' }}
     />
   );
 }

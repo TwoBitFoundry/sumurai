@@ -187,7 +187,9 @@ describe('usePlaidLinkFlow', () => {
 
     expect(plaidServiceMock.exchangeToken).toHaveBeenCalledWith('public-token');
     expect(plaidConnectionsMock.refresh).toHaveBeenCalled();
-    expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(queryClient, ['plaid']);
+    expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(queryClient, ['plaid'], {
+      resetTransactions: 'remove',
+    });
     expect(plaidLinkFlowRef.current!.toast).toBe('Bank connected successfully!');
     expect(onError).toHaveBeenCalled();
     expect(onError.mock.calls.every((call) => call[0] === null)).toBe(true);
@@ -224,7 +226,9 @@ describe('usePlaidLinkFlow', () => {
     });
 
     expect(plaidServiceMock.syncTransactions).toHaveBeenCalledWith('conn-1');
-    expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(queryClient, ['plaid']);
+    expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(queryClient, ['plaid'], {
+      resetTransactions: 'remove',
+    });
     expect(plaidLinkFlowRef.current!.toast).toBe('Bank connected to Test Bank');
     expect(onError).toHaveBeenCalled();
     expect(onError.mock.calls.every((call) => call[0] === null)).toBe(true);
@@ -439,7 +443,9 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
     });
 
     expect(plaidServiceMock.syncTransactions).toHaveBeenCalledWith('bank-1');
-    expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(queryClient, ['plaid']);
+    expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(queryClient, ['plaid'], {
+      resetTransactions: 'reset',
+    });
   });
 
   it('should wrap syncAll callback with instrumentation', async () => {
@@ -498,7 +504,9 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
     });
 
     expect(plaidServiceMock.disconnect).toHaveBeenCalledWith('bank-1');
-    expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(queryClient, ['plaid']);
+    expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(queryClient, ['plaid'], {
+      resetTransactions: 'remove',
+    });
   });
 
   it('does not request link token until connect runs', async () => {

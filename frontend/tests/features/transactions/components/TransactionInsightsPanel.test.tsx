@@ -67,7 +67,7 @@ describe('TransactionInsightsPanel', () => {
     renderPanel({ insights: makeInsights(), isLoading: false, resetKey: 'k1' });
     const shell = screen.getByTestId('transaction-insights-shell');
     expect(shell).toBeInTheDocument();
-    expect(screen.getByText('All insights')).toBeInTheDocument();
+    expect(screen.getByText('Transaction insights')).toBeInTheDocument();
     expect(shell).toHaveClass('sticky');
     expect(shell).toHaveClass('z-30');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
@@ -322,8 +322,9 @@ describe('TransactionInsightsPanel', () => {
     setViewportWidth(390);
     renderPanel({ insights: makeInsights(), isLoading: false, resetKey: 'k1' });
     await expandTransactionInsights(user);
-    const shell = screen.getByTestId('transaction-insights-shell');
-    const cardContainer = shell.querySelector('.grid');
+    const cardContainer = screen
+      .getByTestId('transaction-insights-panel-body')
+      .querySelector('.grid');
     expect(cardContainer?.className).toContain('grid-cols-[auto_1fr_auto_auto_auto]');
   });
 
@@ -413,7 +414,7 @@ describe('TransactionInsightsPanel', () => {
       resetKey: 'k1',
     });
     expect(screen.getByText('Category insights')).toBeInTheDocument();
-    expect(screen.queryByText('All insights')).not.toBeInTheDocument();
+    expect(screen.queryByText('Transaction insights')).not.toBeInTheDocument();
   });
 
   it('renders the correct state label for Full filter (triple)', () => {

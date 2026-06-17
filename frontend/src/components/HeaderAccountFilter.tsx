@@ -1,14 +1,15 @@
-import { ChevronDown, ChevronRight, Filter } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Filter, Minus } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
-import { Button, cn } from '@/ui/primitives';
+import { Button, cn, modalDrawerSectionLabelClassName } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import {
   chromeBar,
   control,
   floatingChromeGlass,
   border as uiBorderRecipes,
+  checkboxControl as uiCheckboxControlRecipes,
   effect as uiEffectRecipes,
   radius as uiRadiusRecipes,
   surface as uiSurfaceRecipes,
@@ -17,6 +18,74 @@ import {
 } from '@/ui/recipes';
 
 const POPOVER_GAP_PX = 8;
+
+const accountFilterCheckboxIconClassName = cn(
+  'pointer-events-none',
+  'absolute',
+  'inset-0',
+  'm-auto',
+  'h-3',
+  'w-3',
+  'text-white'
+);
+
+function AccountFilterCheckbox({
+  id,
+  checked,
+  indeterminate = false,
+  onChange,
+}: {
+  id: string;
+  checked: boolean;
+  indeterminate?: boolean;
+  onChange: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const showCheck = checked && !indeterminate;
+  const showDash = indeterminate;
+
+  useLayoutEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.indeterminate = indeterminate;
+    }
+  }, [indeterminate]);
+
+  return (
+    <span className={cn(uiCheckboxControlRecipes.shell)}>
+      <input
+        ref={inputRef}
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        className={cn(
+          'peer',
+          'absolute',
+          'inset-0',
+          'z-10',
+          'h-full',
+          'w-full',
+          'cursor-pointer',
+          'opacity-0'
+        )}
+      />
+      <span
+        className={cn(
+          uiCheckboxControlRecipes.box,
+          'peer-indeterminate:border-[var(--color-brand-sky)]',
+          'peer-indeterminate:bg-[var(--color-brand-sky)]'
+        )}
+        aria-hidden="true"
+      />
+      {showCheck ? (
+        <Check className={accountFilterCheckboxIconClassName} aria-hidden="true" />
+      ) : null}
+      {showDash ? (
+        <Minus className={accountFilterCheckboxIconClassName} aria-hidden="true" />
+      ) : null}
+    </span>
+  );
+}
 
 interface HeaderAccountFilterProps {
   triggerStyle?: 'default' | 'icon-only';
@@ -157,7 +226,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
             type="button"
             onClick={() => setIsOpen(!isOpen)}
             onKeyDown={handleKeyDown}
-            variant={isOpen ? 'tabActive' : 'tab'}
+            variant={isOpen || (!isAllAccountsSelected && totalAccounts > 0) ? 'tabActive' : 'tab'}
             size="inherit"
             className={cn(
               ...appTitleBarRecipes.contextPillTab,
@@ -168,7 +237,9 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
               'w-full',
               'min-h-0',
               'p-0',
-              isOpen ? uiTextRecipes.inverse : uiTextRecipes.muted
+              isOpen || (!isAllAccountsSelected && totalAccounts > 0)
+                ? uiTextRecipes.inverse
+                : uiTextRecipes.muted
             )}
             aria-haspopup="dialog"
             aria-expanded={isOpen}
@@ -238,9 +309,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
               )}
             >
               <div className={cn('p-4', 'border-b', ...uiBorderRecipes.divider)}>
-                <div className={cn(uiTypographyRecipes.captionStrong, uiTextRecipes.primary)}>
-                  Filter by account
-                </div>
+                <div className={cn(modalDrawerSectionLabelClassName)}>Filter by account</div>
               </div>
 
               <div className={cn('overflow-y-auto', 'flex-1', 'p-4')}>
@@ -301,22 +370,11 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
                                 )}
                               />
                             </button>
-                            <input
-                              type="checkbox"
+                            <AccountFilterCheckbox
                               id={`bank-${bankName}`}
                               checked={allBankAccountsSelected}
-                              ref={(input) => {
-                                if (input)
-                                  input.indeterminate =
-                                    someBankAccountsSelected && !allBankAccountsSelected;
-                              }}
+                              indeterminate={someBankAccountsSelected && !allBankAccountsSelected}
                               onChange={() => toggleBank(bankName)}
-                              className={cn(
-                                'rounded',
-                                ...uiBorderRecipes.control,
-                                'text-primary-600',
-                                'focus:ring-primary-500'
-                              )}
                             />
                             <label
                               htmlFor={`bank-${bankName}`}
@@ -338,17 +396,10 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
                                   key={account.id}
                                   className={cn('flex', 'items-center', 'gap-2')}
                                 >
-                                  <input
-                                    type="checkbox"
+                                  <AccountFilterCheckbox
                                     id={`account-${account.id}`}
                                     checked={selectedAccountIds.includes(account.id)}
                                     onChange={() => toggleAccount(account.id)}
-                                    className={cn(
-                                      'rounded',
-                                      ...uiBorderRecipes.control,
-                                      'text-primary-600',
-                                      'focus:ring-primary-500'
-                                    )}
                                   />
                                   <label
                                     htmlFor={`account-${account.id}`}

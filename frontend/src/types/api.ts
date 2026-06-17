@@ -38,6 +38,7 @@ export interface Transaction {
   category: TransactionCategory;
   provider?: FinancialProvider;
   provider_account_id?: string | null;
+  account_id?: string;
   account_name?: string;
   account_type?: string;
   account_mask?: string;
@@ -50,6 +51,13 @@ export interface PaginatedTransactionsResponse {
   total: number;
   page: number;
   page_size: number;
+}
+
+export interface CursorTransactionsResponse {
+  transactions: Transaction[];
+  next_cursor: string | null;
+  prev_cursor: string | null;
+  has_more: boolean;
 }
 
 export interface LargestTransaction {
