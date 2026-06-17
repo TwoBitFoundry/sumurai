@@ -102,11 +102,16 @@ one-aggregator rule.
   conflict scan. Leave the aggregator-vs-aggregator conflict (line ~4058) unchanged.
 
 **Acceptance criteria**
-- [ ] `/api/providers/info` lists `diy` in `available_providers`.
-- [ ] `/api/providers/select` accepts `diy` even when an aggregator is connected.
-- [ ] Selecting an aggregator is not blocked by existing `diy` connections.
-- [ ] Switching between two aggregators is still blocked (rule preserved).
-- [ ] DIY connections are never synced (no credentials path).
+- [x] `/api/providers/info` lists `diy` in `available_providers`.
+- [x] `/api/providers/select` accepts `diy` even when an aggregator is connected.
+- [x] Selecting an aggregator is not blocked by existing `diy` connections.
+- [x] Switching between two aggregators is still blocked (rule preserved).
+- [x] DIY connections are never synced (no credentials path).
+
+**TDD log**
+- Red: added 4 boundary tests to `provider_selection_api_tests.rs` covering all criteria.
+- Green: created `backend/src/providers/diy_provider.rs` implementing `FinancialDataProvider`; registered in `build_provider_registry`; added `"diy"` to the provider iteration in `get_authenticated_provider_info`; updated conflict check in `select_authenticated_provider` to skip when `requested_provider == "diy"` and exclude DIY connections from the scan.
+- 679 backend tests pass; clippy clean.
 
 ---
 

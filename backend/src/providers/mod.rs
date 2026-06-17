@@ -1,4 +1,5 @@
 pub mod credential_resolver;
+pub mod diy_provider;
 pub mod plaid_credential_resolver;
 pub mod plaid_provider;
 pub mod registry;
@@ -9,6 +10,7 @@ pub mod teller_provider;
 pub mod trait_definition;
 
 pub use credential_resolver::ProviderCredentialResolver;
+pub use diy_provider::DiyProvider;
 pub use plaid_credential_resolver::PlaidCredentialResolver;
 pub use plaid_provider::PlaidProvider;
 pub use registry::ProviderRegistry;

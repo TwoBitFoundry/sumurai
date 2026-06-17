@@ -197,6 +197,10 @@ pub(crate) fn build_provider_registry(
     }
 
     provider_registry.register("simplefin", simplefin_provider);
+    provider_registry.register(
+        "diy",
+        Arc::new(providers::DiyProvider) as Arc<dyn providers::FinancialDataProvider>,
+    );
 
     provider_registry
 }
@@ -4103,7 +4107,7 @@ async fn get_authenticated_provider_info(
         })?;
 
     let mut available_providers = Vec::new();
-    for provider in ["plaid", "teller", "simplefin"] {
+    for provider in ["plaid", "teller", "simplefin", "diy"] {
         if state.provider_registry.get(provider).is_some() {
             available_providers.push(provider.to_string());
         }
@@ -4184,18 +4188,22 @@ async fn select_authenticated_provider(
         }
     };
 
-    if let Some(conflicting_provider) = connections.iter().find_map(|connection| {
-        (connection.is_connected && connection.provider != requested_provider)
-            .then_some(connection.provider.as_str())
-    }) {
-        return Err(ApiErrorResponse::new(
-            "CONFLICT",
-            &format!(
-                "Disconnect all {} accounts before switching",
-                conflicting_provider
-            ),
-        )
-        .into_response(StatusCode::CONFLICT));
+    if requested_provider != "diy" {
+        if let Some(conflicting_provider) = connections.iter().find_map(|connection| {
+            (connection.is_connected
+                && connection.provider != requested_provider
+                && connection.provider != "diy")
+                .then_some(connection.provider.as_str())
+        }) {
+            return Err(ApiErrorResponse::new(
+                "CONFLICT",
+                &format!(
+                    "Disconnect all {} accounts before switching",
+                    conflicting_provider
+                ),
+            )
+            .into_response(StatusCode::CONFLICT));
+        }
     }
 
     match state
