@@ -768,50 +768,138 @@ async fn given_transactions_when_filtering_server_side_then_filters_categories_a
 
     let repo = open_repository(pool.clone());
     let user = create_test_user(&repo).await;
-    let account = create_test_account(&repo, user.id).await;
+    let mut coffee_account = create_test_account(&repo, user.id).await;
+    coffee_account.name = "Coffee Account".to_string();
+    repo.upsert_account(&coffee_account).await.unwrap();
 
-    let transactions: Vec<Transaction> = (0..20)
+    let mut utilities_account = create_test_account(&repo, user.id).await;
+    utilities_account.name = "Utilities Account".to_string();
+    repo.upsert_account(&utilities_account).await.unwrap();
+
+    let coffee_transactions: Vec<Transaction> = (0..3)
         .map(|index| {
             let mut transaction = create_test_transaction(
                 user.id,
-                account.id,
-                format!("filter_txn_{index:03}"),
+                coffee_account.id,
+                format!("filter_coffee_{index:03}"),
                 -700 - index as i64,
                 NaiveDate::from_ymd_opt(2024, 2, 1)
                     .unwrap()
                     .checked_add_days(chrono::Days::new(index as u64))
                     .unwrap(),
             );
-            transaction.merchant_name = if index % 2 == 0 {
-                Some("Coffee House".to_string())
-            } else {
-                Some("Gas Station".to_string())
-            };
-            transaction.category_primary = if index % 2 == 0 {
-                "FOOD_AND_DRINK".to_string()
-            } else {
-                "TRANSPORTATION".to_string()
-            };
-            transaction.category_detailed = if index % 2 == 0 {
-                "Coffee Shop".to_string()
-            } else {
-                "Fuel".to_string()
-            };
+            transaction.merchant_name = Some("Coffee House".to_string());
+            transaction.category_primary = "FOOD_AND_DRINK".to_string();
+            transaction.category_detailed = "Coffee Shop".to_string();
             transaction.created_at = Some(Utc::now() + chrono::Duration::seconds(index as i64));
             transaction
         })
         .collect();
 
-    repo.upsert_transactions_batch(&transactions, &user.id)
-        .await
-        .unwrap();
+    let mut fuel_transaction = create_test_transaction(
+        user.id,
+        utilities_account.id,
+        "filter_fuel".to_string(),
+        -900,
+        NaiveDate::from_ymd_opt(2024, 2, 10).unwrap(),
+    );
+    fuel_transaction.merchant_name = Some("Gas Station".to_string());
+    fuel_transaction.category_primary = "SHOPPING".to_string();
+    fuel_transaction.category_detailed = "Fuel".to_string();
+    fuel_transaction.normalized_merchant = Some("gas_station".to_string());
+
+    let mut overridden_transaction = create_test_transaction(
+        user.id,
+        utilities_account.id,
+        "filter_override".to_string(),
+        -1100,
+        NaiveDate::from_ymd_opt(2024, 2, 11).unwrap(),
+    );
+    overridden_transaction.merchant_name = Some("Fuel Stop".to_string());
+    overridden_transaction.category_primary = "GENERAL_MERCHANDISE".to_string();
+    overridden_transaction.category_detailed = "Misc".to_string();
+    overridden_transaction.normalized_merchant = Some("fuel_stop".to_string());
+
+    repo.upsert_transactions_batch(
+        &[
+            coffee_transactions[0].clone(),
+            coffee_transactions[1].clone(),
+            coffee_transactions[2].clone(),
+            fuel_transaction.clone(),
+            overridden_transaction.clone(),
+        ],
+        &user.id,
+    )
+    .await
+    .unwrap();
+
+    db::query(
+        "INSERT INTO transaction_category_overrides (id, user_id, normalized_merchant, category_name, custom_category_id)
+         VALUES ($1, $2, $3, $4, $5)",
+    )
+    .bind(Uuid::new_v4())
+    .bind(user.id)
+    .bind("fuel_stop")
+    .bind("TRANSPORTATION")
+    .bind(Option::<Uuid>::None)
+    .execute(&pool)
+    .await
+    .unwrap();
 
     let search_results = repo
-        .get_transactions_paginated(&user.id, 50, 0, Some("coffee"), None, None, None, None)
+        .get_transactions_keyset(
+            &user.id,
+            50,
+            None,
+            Some("coffee"),
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
         .await
         .unwrap();
-    let search_count = repo
-        .count_transactions(&user.id, Some("coffee"), None, None, None, None)
+    let fuel_results = repo
+        .get_transactions_keyset(
+            &user.id,
+            50,
+            None,
+            Some("fuel"),
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+    let account_results = repo
+        .get_transactions_keyset(
+            &user.id,
+            50,
+            None,
+            Some("utilities account"),
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+    let effective_category_results = repo
+        .get_transactions_keyset(
+            &user.id,
+            50,
+            None,
+            Some("transportation"),
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
         .await
         .unwrap();
     let category_results = repo
@@ -836,13 +924,39 @@ async fn given_transactions_when_filtering_server_side_then_filters_categories_a
         .await
         .unwrap();
 
-    assert_eq!(search_results.len(), 10);
-    assert_eq!(search_count, 10);
-    assert_eq!(category_results.len(), 10);
-    assert_eq!(category_count, 10);
+    assert_eq!(search_results.transactions.len(), 3);
+    assert!(search_results
+        .transactions
+        .iter()
+        .all(|row| row.merchant_name.as_deref() == Some("Coffee House")));
+    assert_eq!(fuel_results.transactions.len(), 2);
+    assert!(fuel_results
+        .transactions
+        .iter()
+        .any(|row| row.id == fuel_transaction.id));
+    assert!(fuel_results
+        .transactions
+        .iter()
+        .any(|row| row.id == overridden_transaction.id));
+    assert_eq!(account_results.transactions.len(), 2);
+    assert!(account_results
+        .transactions
+        .iter()
+        .all(|row| row.account_name == "Utilities Account"));
+    assert_eq!(effective_category_results.transactions.len(), 1);
+    assert_eq!(
+        effective_category_results.transactions[0].id,
+        overridden_transaction.id
+    );
+    assert_eq!(category_results.len(), 1);
+    assert_eq!(category_count, 1);
     assert_eq!(
         categories,
-        vec!["FOOD_AND_DRINK".to_string(), "TRANSPORTATION".to_string()]
+        vec![
+            "FOOD_AND_DRINK".to_string(),
+            "SHOPPING".to_string(),
+            "TRANSPORTATION".to_string()
+        ]
     );
 }
 
@@ -1245,6 +1359,73 @@ async fn given_transactions_when_aggregating_insights_then_returns_largest_magni
 }
 
 #[tokio::test]
+async fn given_account_name_search_when_aggregating_insights_then_uses_shared_filters() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let mut coffee_account = create_test_account(&repo, user.id).await;
+    coffee_account.name = "Coffee Account".to_string();
+    repo.upsert_account(&coffee_account).await.unwrap();
+
+    let mut utilities_account = create_test_account(&repo, user.id).await;
+    utilities_account.name = "Utilities Account".to_string();
+    repo.upsert_account(&utilities_account).await.unwrap();
+
+    let mut coffee = create_test_transaction(
+        user.id,
+        coffee_account.id,
+        "insights_account_coffee".to_string(),
+        -1500,
+        NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
+    );
+    coffee.merchant_name = Some("Coffee House".to_string());
+    coffee.category_primary = "FOOD_AND_DRINK".to_string();
+    coffee.category_detailed = "Coffee Shop".to_string();
+
+    let mut utilities = create_test_transaction(
+        user.id,
+        utilities_account.id,
+        "insights_account_utilities".to_string(),
+        -2000,
+        NaiveDate::from_ymd_opt(2024, 3, 2).unwrap(),
+    );
+    utilities.merchant_name = Some("Gas Station".to_string());
+    utilities.category_primary = "SHOPPING".to_string();
+    utilities.category_detailed = "Fuel".to_string();
+
+    repo.upsert_transactions_batch(&[coffee, utilities], &user.id)
+        .await
+        .unwrap();
+
+    let insights = repo
+        .get_transactions_insights(
+            &user.id,
+            Some("utilities"),
+            None,
+            Some(NaiveDate::from_ymd_opt(2024, 3, 1).unwrap()),
+            Some(NaiveDate::from_ymd_opt(2024, 3, 31).unwrap()),
+            None,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(insights.total_count, 1);
+    assert!((insights.total_spent - 20.0).abs() < 0.0001);
+    assert!((insights.average_amount - 20.0).abs() < 0.0001);
+    assert_eq!(
+        insights.largest,
+        Some(crate::models::transaction::LargestTransaction {
+            amount: 20.0,
+            merchant: "Gas Station".to_string(),
+        })
+    );
+    assert_eq!(insights.top_categories, vec!["SHOPPING".to_string()]);
+}
+
+#[tokio::test]
 async fn given_transactions_when_aggregating_insights_for_empty_set_then_returns_zero_values() {
     let Some(pool) = connect_pool().await else {
         return;
@@ -1291,7 +1472,7 @@ async fn given_fresh_user_when_list_simplefin_hidden_orgs_then_returns_empty_set
         return;
     };
 
-    let repo = open_repository(pool);
+    let repo = open_repository(pool.clone());
     let user = create_test_user(&repo).await;
 
     let hidden = repo.list_simplefin_hidden_orgs(&user.id).await.unwrap();
@@ -1305,7 +1486,7 @@ async fn given_hidden_org_when_insert_twice_then_is_idempotent() {
         return;
     };
 
-    let repo = open_repository(pool);
+    let repo = open_repository(pool.clone());
     let user = create_test_user(&repo).await;
 
     repo.insert_simplefin_hidden_org(&user.id, "conn-abc", Some("Test Bank"))
@@ -1327,7 +1508,7 @@ async fn given_two_users_when_user_a_hides_org_then_user_b_cannot_see_it() {
         return;
     };
 
-    let repo = open_repository(pool);
+    let repo = open_repository(pool.clone());
     let user_a = create_test_user(&repo).await;
     let user_b = create_test_user(&repo).await;
 
@@ -1348,7 +1529,7 @@ async fn given_user_when_store_and_get_simplefin_root_credential_then_round_trip
         return;
     };
 
-    let repo = open_repository(pool);
+    let repo = open_repository(pool.clone());
     let user = create_test_user(&repo).await;
     let access_url = "https://user:pass@beta-bridge.simplefin.org/simplefin";
 
@@ -1788,6 +1969,62 @@ async fn given_normalized_merchant_search_when_getting_contextual_insights_then_
         spent
     );
     assert_eq!(result.card1.secondary, Some(2.0));
+}
+
+#[tokio::test]
+async fn given_effective_category_search_when_getting_contextual_insights_then_matches_override_category(
+) {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let acct = create_test_account(&repo, user.id).await;
+    let date = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+
+    let mut transaction = make_contextual_txn(
+        user.id,
+        acct.id,
+        "effective",
+        -1100,
+        date,
+        "GENERAL_MERCHANDISE",
+        Some("Fuel Stop"),
+        Some("fuel_stop"),
+    );
+    transaction.category_detailed = "Misc".to_string();
+    repo.upsert_transaction(&transaction).await.unwrap();
+
+    db::query(
+        "INSERT INTO transaction_category_overrides (id, user_id, normalized_merchant, category_name, custom_category_id)
+         VALUES ($1, $2, $3, $4, $5)",
+    )
+    .bind(Uuid::new_v4())
+    .bind(user.id)
+    .bind("fuel_stop")
+    .bind("TRANSPORTATION")
+    .bind(Option::<Uuid>::None)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let result = repo
+        .get_transactions_contextual_insights(
+            &user.id,
+            Some("transportation"),
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(result.state, InsightState::A);
+    let spent = result.card1.value.unwrap();
+    assert!((spent - 11.0).abs() < 0.01);
+    assert_eq!(result.card1.secondary, Some(1.0));
 }
 
 #[tokio::test]

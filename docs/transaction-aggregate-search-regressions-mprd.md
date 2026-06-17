@@ -322,14 +322,21 @@ Restore fuzzy `search` across merchant, **effective** category, detailed categor
 
 ### Acceptance Criteria
 
-- [ ] `search=fuel` matches `category_detailed = "Fuel"` on `GET /api/transactions`
-- [ ] `search` matching an account name returns that account's rows
-- [ ] A row with a category override is found by its effective-category name
-- [ ] Merchant search (`coffee` → "Coffee House") still works
-- [ ] `insights` and `contextual-insights` inherit the fix via `apply_transaction_filters`
-- [ ] Keyset-path search tests cover merchant, effective-category, detailed-category, and account branches
-- [ ] No OpenAPI regeneration required (docs already describe multi-field search)
-- [ ] `cargo test -p sumurai-backend --locked` passes
+- [x] `search=fuel` matches `category_detailed = "Fuel"` on `GET /api/transactions`
+- [x] `search` matching an account name returns that account's rows
+- [x] A row with a category override is found by its effective-category name
+- [x] Merchant search (`coffee` → "Coffee House") still works
+- [x] `insights` and `contextual-insights` inherit the fix via `apply_transaction_filters`
+- [x] Keyset-path search tests cover merchant, effective-category, detailed-category, and account branches
+- [x] No OpenAPI regeneration required (docs already describe multi-field search)
+- [x] `cargo test -p sumurai-backend --locked` passes
+
+### TDD Log
+
+- Red: extended the repository filter fixture to keyset-search merchant, detailed category, effective category, and account name, then added aggregate-path regressions for insights and contextual insights.
+- Green: updated `apply_transaction_filters` to OR across merchant, effective category, detailed category, and account name.
+- Refactor: kept the existing join shape, preserved the existing response models, and reused the same shared helper for paginated, keyset, and aggregate queries.
+- Verification: `cargo fmt`, `cargo test -p sumurai-backend --locked`.
 
 ---
 

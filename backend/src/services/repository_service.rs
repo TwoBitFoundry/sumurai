@@ -1025,12 +1025,36 @@ impl PostgresRepository {
             if !search.is_empty() {
                 let search = format!("%{}%", search.to_lowercase());
                 query = query.filter(
-                    Expr::expr(Func::lower(Func::coalesce([
-                        Expr::col((transactions::Entity, transactions::Column::MerchantName))
-                            .into(),
-                        Expr::val("").into(),
-                    ])))
-                    .like(search),
+                    Condition::any()
+                        .add(
+                            Expr::expr(Func::lower(Func::coalesce([
+                                Expr::col((
+                                    transactions::Entity,
+                                    transactions::Column::MerchantName,
+                                ))
+                                .into(),
+                                Expr::val("").into(),
+                            ])))
+                            .like(search.clone()),
+                        )
+                        .add(
+                            Expr::expr(Func::lower(Self::effective_category_expr()))
+                                .like(search.clone()),
+                        )
+                        .add(
+                            Expr::expr(Func::lower(Expr::col((
+                                transactions::Entity,
+                                transactions::Column::CategoryDetailed,
+                            ))))
+                            .like(search.clone()),
+                        )
+                        .add(
+                            Expr::expr(Func::lower(Expr::col((
+                                accounts::Entity,
+                                accounts::Column::Name,
+                            ))))
+                            .like(search),
+                        ),
                 );
             }
         }
