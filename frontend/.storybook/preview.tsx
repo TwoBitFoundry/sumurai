@@ -1,6 +1,7 @@
 import type { Preview } from '@storybook/nextjs-vite';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '../src/context/ThemeContext';
+import { TransactionListLauncherProvider } from '../src/features/transactions/components/TransactionListLauncherProvider';
 import { AccountFilterProvider } from '../src/hooks/useAccountFilter';
 import '../src/app/globals.css';
 
@@ -23,7 +24,9 @@ const preview: Preview = {
         <QueryClientProvider client={queryClient}>
           <ThemeProvider initialPreference={initialPreference}>
             <AccountFilterProvider>
-              <Story />
+              <TransactionListLauncherProvider>
+                <Story />
+              </TransactionListLauncherProvider>
             </AccountFilterProvider>
           </ThemeProvider>
         </QueryClientProvider>

@@ -25,6 +25,11 @@ function currentMonthKey(offsetMonths = 0): string {
 }
 
 function toBackendTransaction(transaction: Transaction, day: number): BackendTransaction {
+  const accountIdByTransactionId: Record<string, string> = {
+    'story-tx-2': 'story-account-2',
+    'story-tx-tb-2': 'story-account-2',
+  };
+
   return {
     id: transaction.id,
     date: storyDate(day),
@@ -38,6 +43,8 @@ function toBackendTransaction(transaction: Transaction, day: number): BackendTra
     account_name: transaction.account_name || 'Story Checking',
     account_type: transaction.account_type || 'depository',
     account_mask: transaction.account_mask,
+    account_id:
+      transaction.account_id ?? accountIdByTransactionId[transaction.id] ?? 'story-account-1',
     running_balance: transaction.running_balance,
     location: transaction.location,
   };
@@ -311,17 +318,7 @@ export function getPagedStoryTransactions(request: {
     Number.isFinite(request.pageSize ?? NaN) && (request.pageSize ?? 0) > 0
       ? Math.floor(request.pageSize ?? 8)
       : 8;
-  const search = request.search?.trim().toLowerCase();
-  const categoryPrimary = request.categoryPrimary?.trim().toLowerCase();
-
-  const filtered = storyTransactions.filter((transaction) => {
-    const haystack = `${transaction.merchant_name ?? ''} ${transaction.account_name}`.toLowerCase();
-    const matchesSearch = !search || haystack.includes(search);
-    const matchesCategory =
-      !categoryPrimary || transaction.category_primary?.toLowerCase() === categoryPrimary;
-
-    return matchesSearch && matchesCategory;
-  });
+  const filtered = filterStoryTransactions(request);
 
   const start = (normalizedPage - 1) * normalizedPageSize;
   const end = start + normalizedPageSize;
@@ -331,6 +328,83 @@ export function getPagedStoryTransactions(request: {
     total: filtered.length,
     page: normalizedPage,
     page_size: normalizedPageSize,
+  };
+}
+
+function filterStoryTransactions(request: {
+  search?: string | null;
+  categoryPrimary?: string | null;
+  merchant?: string | null;
+  accountIds?: string[];
+  startDate?: string | null;
+  endDate?: string | null;
+}) {
+  const search = request.search?.trim().toLowerCase();
+  const categoryPrimary = request.categoryPrimary?.trim().toLowerCase();
+  const merchant = request.merchant?.trim().toLowerCase();
+  const accountIds = request.accountIds?.filter(Boolean) ?? [];
+  const startDate = request.startDate?.trim();
+  const endDate = request.endDate?.trim();
+
+  return storyTransactions.filter((transaction) => {
+    const haystack = `${transaction.merchant_name ?? ''} ${transaction.account_name}`.toLowerCase();
+    const matchesSearch = !search || haystack.includes(search);
+    const matchesCategory =
+      !categoryPrimary || transaction.category_primary?.toLowerCase() === categoryPrimary;
+    const matchesMerchant =
+      !merchant || (transaction.merchant_name ?? '').toLowerCase() === merchant;
+    const matchesAccount =
+      accountIds.length === 0 ||
+      (transaction.account_id != null && accountIds.includes(transaction.account_id));
+    const txDate = transaction.date.slice(0, 10);
+    const matchesStart = !startDate || txDate >= startDate;
+    const matchesEnd = !endDate || txDate <= endDate;
+
+    return (
+      matchesSearch &&
+      matchesCategory &&
+      matchesMerchant &&
+      matchesAccount &&
+      matchesStart &&
+      matchesEnd
+    );
+  });
+}
+
+export function getCursorStoryTransactions(request: {
+  search?: string | null;
+  categoryPrimary?: string | null;
+  merchant?: string | null;
+  accountIds?: string[];
+  startDate?: string | null;
+  endDate?: string | null;
+  cursor?: string | null;
+  limit?: number | null;
+}): {
+  transactions: typeof storyTransactions;
+  next_cursor: string | null;
+  prev_cursor: string | null;
+  has_more: boolean;
+} {
+  const normalizedLimit =
+    Number.isFinite(request.limit ?? NaN) && (request.limit ?? 0) > 0
+      ? Math.floor(request.limit ?? 40)
+      : 40;
+  const filtered = filterStoryTransactions(request);
+  const cursor = request.cursor;
+  const startIndex =
+    cursor?.startsWith('cursor:') === true
+      ? filtered.findIndex((transaction) => transaction.id === cursor.slice(7)) + 1
+      : 0;
+  const page = filtered.slice(startIndex, startIndex + normalizedLimit);
+  const last = page.at(-1);
+  const hasMore = startIndex + normalizedLimit < filtered.length;
+
+  return {
+    transactions: page,
+    next_cursor: hasMore && last ? `cursor:${last.id}` : null,
+    prev_cursor: page[0] ? `cursor:${page[0].id}` : null,
+    has_more: hasMore,
   };
 }
 
