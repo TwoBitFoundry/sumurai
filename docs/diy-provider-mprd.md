@@ -76,8 +76,11 @@ Import flow all work with zero changes.
 - Write `docs/diy-provider-mprd.md` mirroring the approved plan.
 
 **Acceptance criteria**
-- [ ] `docs/diy-provider-mprd.md` exists with all phases, goals, tasks, and acceptance
+- [x] `docs/diy-provider-mprd.md` exists with all phases, goals, tasks, and acceptance
       criteria.
+
+**TDD log**
+- File verified to exist with all phases and criteria. No code changes required.
 
 ---
 
