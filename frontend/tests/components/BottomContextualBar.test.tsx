@@ -18,9 +18,11 @@ describe('BottomContextualBar', () => {
     const children = Array.from(controls.children);
 
     expect(controls.className).toContain('gap-3');
+    expect(controls.className).toContain('w-fit');
+    expect(controls.className).toContain('mx-auto');
     expect(children[0]).toHaveClass('shrink-0');
     expect(children[0]).toContainElement(screen.getByTestId('header-account-filter'));
-    expect(children[1]).toHaveClass('min-w-0', 'flex-1');
+    expect(children[1]).toHaveClass('min-w-0', 'shrink-0');
     expect(children[1]).toContainElement(screen.getByTestId('contextual-menu'));
     expect(bar).toContainElement(controls);
   });
@@ -34,7 +36,8 @@ describe('BottomContextualBar', () => {
 
     const topRow = screen.getByTestId('bottom-contextual-bar-top');
     expect(topRow.className).toContain('w-full');
-    expect(topRow.className).not.toContain('overflow-hidden');
+    expect(topRow.className).toContain('overflow-hidden');
+    expect(topRow.className).not.toContain('justify-center');
     expect(topRow).toContainElement(screen.getByTestId('top-content'));
   });
 });

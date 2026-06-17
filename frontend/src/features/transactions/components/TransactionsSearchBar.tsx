@@ -18,7 +18,7 @@ export function TransactionsSearchBar({ search, onSearch }: TransactionsSearchBa
 
   return (
     <div
-      className={cn('flex', 'w-full', 'min-w-0', 'max-w-full', 'items-center', 'gap-2')}
+      className={cn('flex', 'w-64', 'max-w-full', 'min-w-0', 'items-center', 'gap-2')}
       data-no-swipe
       data-testid="transactions-search-bar"
     >

@@ -91,8 +91,6 @@ export function AppLayout({
             <div
               className={cn(
                 'flex',
-                'w-full',
-                'min-w-0',
                 'min-h-[3.25rem]',
                 'justify-center',
                 'pointer-events-none',

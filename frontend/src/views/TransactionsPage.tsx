@@ -150,6 +150,7 @@ const TransactionsPage: React.FC<{
               'gap-3',
               'px-3',
               'pt-6',
+              'pb-4',
               'md:px-6'
             )}
           >

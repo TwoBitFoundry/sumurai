@@ -53,6 +53,7 @@ export const DesktopTransactionRow: React.FC<Props> = ({
         transactionsRowRecipes.desktopGridRow,
         transactionsRowRecipes.shell,
         index % 2 ? transactionsRowRecipes.odd : transactionsRowRecipes.even,
+        'h-full',
         onMerchantSearch && 'cursor-pointer'
       )}
     >

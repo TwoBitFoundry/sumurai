@@ -43,6 +43,9 @@ describe('DesktopTransactionRow', () => {
       />
     );
 
+    expect(screen.getByRole('row').className).toContain(
+      'grid-cols-[minmax(0,9rem)_minmax(0,30%)_minmax(0,8rem)'
+    );
     fireEvent.click(screen.getByRole('row'));
 
     expect(onMerchantSearch).toHaveBeenCalledWith('Transfer');

@@ -126,9 +126,10 @@ describe('TransactionsFilters', () => {
     const scrollContainer = container.querySelector('[data-no-swipe]');
     const billsButton = screen.getByRole('button', { name: 'Bills' });
 
-    expect(filters.className).not.toContain('overflow-hidden');
+    expect(filters.className).toContain('overflow-hidden');
     expect(scrollContainer?.className).toContain('overflow-x-auto');
     expect(scrollContainer?.className).toContain('w-full');
+    expect(scrollContainer?.className).toContain('max-w-full');
     expect(scrollContainer?.className).toContain('py-1.5');
     expect(billsButton.className).toContain('backdrop-blur-md');
     expect(billsButton.className).toContain('backdrop-saturate-[150%]');

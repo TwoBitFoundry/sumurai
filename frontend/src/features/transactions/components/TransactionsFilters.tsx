@@ -133,7 +133,7 @@ export const TransactionsFilters: React.FC<Props> = ({
             'min-w-0',
             'max-w-full',
             isInline
-              ? ['items-center']
+              ? ['items-center', 'overflow-hidden']
               : ['flex-col', 'gap-2', 'md:flex-row', 'md:items-center', 'md:gap-3']
           )}
         >
@@ -155,7 +155,8 @@ export const TransactionsFilters: React.FC<Props> = ({
               'relative',
               'min-w-0',
               'w-full',
-              isInline ? 'flex-1' : ['overflow-hidden', 'md:flex-1']
+              'max-w-full',
+              isInline ? ['flex-1', 'overflow-hidden'] : ['overflow-hidden', 'md:flex-1']
             )}
           >
             <div

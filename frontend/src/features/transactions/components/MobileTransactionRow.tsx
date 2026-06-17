@@ -78,7 +78,7 @@ export const MobileTransactionRow: React.FC<Props> = ({
       className={cn(
         transactionsRowRecipes.shell,
         index % 2 ? transactionsRowRecipes.odd : transactionsRowRecipes.even,
-        'relative px-3 py-2.5',
+        'relative h-full px-3 py-2.5',
         onMerchantSearch && 'cursor-pointer'
       )}
     >

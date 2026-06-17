@@ -42,8 +42,9 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
   onMerchantSearch,
   onAccountFilter,
 }) => {
-  const { isDesktop, breakpoint } = useViewportBreakpoint();
+  const { isDesktop } = useViewportBreakpoint();
   const showDesktopLayout = isDesktop && variant === 'page';
+  const layoutKey = showDesktopLayout ? 'desktop' : 'mobile';
   const rowH = showDesktopLayout ? DESKTOP_ROW_H : MOBILE_ROW_H;
 
   const { rows, hasNextPage, isFetchingNextPage, fetchNextPage, isInitialLoading, filterKey } =
@@ -130,12 +131,15 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
     [openRowIndex]
   );
 
+  const isContextual = variant === 'contextual';
+  const canVirtualize = !isContextual || containerHeight > 0;
+
   const virtualizer = useVirtualizer({
-    count: variant === 'contextual' || containerHeight > 0 ? totalCount : 0,
+    count: canVirtualize ? totalCount : 0,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => rowH,
+    getItemKey: (index) => `${layoutKey}-${index}`,
     overscan: OVERSCAN,
-    directDomUpdates: true,
     rangeExtractor,
   });
 
@@ -154,14 +158,20 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally only fires on filter change, not on every virtualizer update
   useEffect(() => {
-    if (containerHeight > 0) {
+    if (canVirtualize) {
       virtualizerRef.current.scrollToIndex(0);
     }
-  }, [filterKey]);
+  }, [filterKey, canVirtualize]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: remeasure after layout switch so row heights match mobile/desktop chrome
+  useEffect(() => {
+    if (!canVirtualize) return;
+    virtualizerRef.current.measure();
+    virtualizerRef.current.scrollToIndex(0);
+  }, [layoutKey, canVirtualize]);
 
   const isEmpty = !isInitialLoading && rows.length === 0 && !hasNextPage;
   const readOnly = variant === 'contextual';
-  const isContextual = variant === 'contextual';
   const merchantSearchHandler = variant === 'page' ? onMerchantSearch : undefined;
   const accountFilterHandler = variant === 'page' ? onAccountFilter : undefined;
 
@@ -243,13 +253,20 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
             )}
           </div>
         ) : (
-          <div ref={virtualizer.containerRef} style={{ position: 'relative', width: '100%' }}>
+          <div
+            style={{
+              height: virtualizer.getTotalSize(),
+              position: 'relative',
+              width: '100%',
+            }}
+          >
             {virtualItems.map((item) => {
               const isSentinel = item.index >= rows.length;
               const row = rows[item.index];
               const itemStyle: React.CSSProperties = {
                 ...virtualItemShellStyle,
                 height: `${item.size}px`,
+                transform: `translateY(${item.start}px)`,
               };
 
               if (isSentinel) {

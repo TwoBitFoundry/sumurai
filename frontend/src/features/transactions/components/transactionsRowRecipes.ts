@@ -34,14 +34,14 @@ export const transactionsRowRecipes = {
     'dark:border-slate-700/50',
   ],
   placeholderDesktopHeight: ['h-[3.75rem]'],
-  placeholderMobileHeight: ['min-h-[5.25rem]'],
+  placeholderMobileHeight: ['min-h-[6rem]'],
   odd: [
     'bg-[color:color-mix(in_srgb,var(--color-surface-muted-chip)_40%,transparent)]',
     'dark:bg-slate-700/20',
   ],
   even: ['bg-transparent', 'dark:bg-transparent'],
   merchantEllipsis: ['min-w-0', 'overflow-hidden', 'text-ellipsis', 'whitespace-nowrap'],
-  merchantCell: ['min-w-0', 'overflow-hidden', 'text-ellipsis', 'whitespace-nowrap'],
+  merchantCell: ['min-w-0', 'overflow-hidden', 'text-ellipsis', 'whitespace-nowrap', 'text-left'],
   categoryPill: [
     'w-full',
     'min-w-0',
@@ -59,15 +59,15 @@ export const transactionsRowRecipes = {
     ...uiSurfaceRecipes.floatingChromePanel,
     ...semanticBorders.floatingChrome,
   ],
-  contextualFilterScroll: ['py-1.5'],
+  contextualFilterScroll: ['w-full', 'max-w-full', 'py-1.5'],
   categoryLabel: ['min-w-0', 'flex-1', 'truncate', 'text-right'],
   categoryLabelReadOnly: ['truncate', 'text-right'],
   categoryChevron: ['ml-1', 'shrink-0'],
   desktopGridCols:
-    'grid-cols-[minmax(0,9rem)_minmax(0,1fr)_minmax(0,8rem)_minmax(0,12rem)_minmax(0,12rem)]',
-  desktopGridRow: ['grid', 'items-center'],
-  desktopGridHeader: ['grid', 'items-center', 'sticky', 'top-0', 'z-10'],
+    'grid-cols-[minmax(0,9rem)_minmax(0,30%)_minmax(0,8rem)_minmax(0,12rem)_minmax(12rem,20%)]',
+  desktopGridRow: ['grid', 'w-full', 'items-center'],
+  desktopGridHeader: ['grid', 'w-full', 'items-center', 'sticky', 'top-0', 'z-10'],
 } as const;
 
 export const DESKTOP_ROW_H = 60;
-export const MOBILE_ROW_H = 84;
+export const MOBILE_ROW_H = 96;
