@@ -959,10 +959,9 @@ async fn given_authenticated_user_when_get_spending_with_foreign_account_ids_the
 #[tokio::test]
 async fn given_authenticated_user_when_get_categories_with_account_ids_then_returns_filtered_categories(
 ) {
+    use crate::models::analytics::{CategoryAggregate, CategorySpending};
     use crate::models::plaid::ProviderConnection;
-    use crate::models::transaction::Transaction;
     use crate::services::repository_service::MockDatabaseRepository;
-    use chrono::NaiveDate;
     use rust_decimal_macros::dec;
     use uuid::Uuid;
 
@@ -1014,49 +1013,23 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
     });
 
     mock_db
-        .expect_get_spending_transactions_for_user()
-        .returning(move |_, _| {
-            let transactions = vec![
-                Transaction {
-                    id: Uuid::new_v4(),
-                    account_id: account_id_1,
-                    user_id: Some(user_id),
-                    provider_account_id: Some("plaid_acc_1".to_string()),
-                    provider_transaction_id: Some("txn_001".to_string()),
-                    amount: dec!(-50.00),
-                    date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
-                    merchant_name: Some("Test Merchant 1".to_string()),
-                    category_primary: "Food and Drink".to_string(),
-                    category_detailed: "Restaurant".to_string(),
-                    category_confidence: "HIGH".to_string(),
-                    payment_channel: Some("in_store".to_string()),
-                    pending: false,
-                    created_at: Some(chrono::Utc::now()),
-                    original_merchant_name: None,
-                    normalized_merchant: None,
-                    normalization_source: None,
+        .expect_get_category_aggregates_for_date_range()
+        .returning(move |_, _, _, _| {
+            let grid = vec![
+                CategoryAggregate {
+                    category: "Food and Drink".to_string(),
+                    income: dec!(0),
+                    expense: dec!(50.00),
+                    count: 1,
                 },
-                Transaction {
-                    id: Uuid::new_v4(),
-                    account_id: account_id_2,
-                    user_id: Some(user_id),
-                    provider_account_id: Some("plaid_acc_2".to_string()),
-                    provider_transaction_id: Some("txn_002".to_string()),
-                    amount: dec!(-25.00),
-                    date: NaiveDate::from_ymd_opt(2024, 1, 16).unwrap(),
-                    merchant_name: Some("Test Merchant 2".to_string()),
-                    category_primary: "Transportation".to_string(),
-                    category_detailed: "Gas".to_string(),
-                    category_confidence: "HIGH".to_string(),
-                    payment_channel: Some("in_store".to_string()),
-                    pending: false,
-                    created_at: Some(chrono::Utc::now()),
-                    original_merchant_name: None,
-                    normalized_merchant: None,
-                    normalization_source: None,
+                CategoryAggregate {
+                    category: "Transportation".to_string(),
+                    income: dec!(0),
+                    expense: dec!(25.00),
+                    count: 1,
                 },
             ];
-            Box::pin(async { Ok(transactions) })
+            Box::pin(async move { Ok(grid) })
         });
 
     mock_db
@@ -1085,6 +1058,150 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
 
     let response = app.oneshot(request).await.unwrap();
     assert_eq!(response.status(), 200);
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let categories: Vec<CategorySpending> = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        categories,
+        vec![
+            CategorySpending {
+                name: "Food and Drink".to_string(),
+                value: dec!(50.00),
+            },
+            CategorySpending {
+                name: "Transportation".to_string(),
+                value: dec!(25.00),
+            },
+        ]
+    );
+}
+
+#[tokio::test]
+async fn given_authenticated_user_when_get_income_expense_totals_then_returns_full_range_totals() {
+    use crate::models::analytics::{CategoryAggregate, IncomeExpenseTotals};
+    use crate::services::repository_service::MockDatabaseRepository;
+    use rust_decimal_macros::dec;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    mock_db
+        .expect_get_category_aggregates_for_date_range()
+        .returning(move |_, _, _, _| {
+            let grid = vec![
+                CategoryAggregate {
+                    category: "INCOME".to_string(),
+                    income: dec!(5000.00),
+                    expense: dec!(0),
+                    count: 2,
+                },
+                CategoryAggregate {
+                    category: "FOOD_AND_DRINK".to_string(),
+                    income: dec!(0),
+                    expense: dec!(120.00),
+                    count: 1,
+                },
+                CategoryAggregate {
+                    category: "TRANSFER_OUT".to_string(),
+                    income: dec!(0),
+                    expense: dec!(200.00),
+                    count: 1,
+                },
+            ];
+            Box::pin(async move { Ok(grid) })
+        });
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request = TestFixtures::create_authenticated_get_request(
+        "/api/analytics/income-expense-totals?start_date=2026-01-01&end_date=2026-06-15",
+        &token,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let totals: IncomeExpenseTotals = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        totals,
+        IncomeExpenseTotals {
+            income: dec!(5000.00),
+            expenses: dec!(120.00),
+        }
+    );
+}
+
+#[tokio::test]
+async fn given_authenticated_user_when_get_budget_summary_then_returns_category_spending() {
+    use crate::models::analytics::{BudgetSummary, CategoryAggregate, CategorySpending};
+    use crate::services::repository_service::MockDatabaseRepository;
+    use rust_decimal_macros::dec;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    mock_db
+        .expect_get_category_aggregates_for_date_range()
+        .returning(move |_, _, _, _| {
+            let grid = vec![
+                CategoryAggregate {
+                    category: "INCOME".to_string(),
+                    income: dec!(5000.00),
+                    expense: dec!(0),
+                    count: 2,
+                },
+                CategoryAggregate {
+                    category: "FOOD_AND_DRINK".to_string(),
+                    income: dec!(0),
+                    expense: dec!(420.00),
+                    count: 3,
+                },
+                CategoryAggregate {
+                    category: "TRANSFER_OUT".to_string(),
+                    income: dec!(0),
+                    expense: dec!(200.00),
+                    count: 1,
+                },
+            ];
+            Box::pin(async move { Ok(grid) })
+        });
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request = TestFixtures::create_authenticated_get_request(
+        "/api/analytics/budget-summary?start_date=2026-06-01&end_date=2026-06-30",
+        &token,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let summary: BudgetSummary = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        summary,
+        BudgetSummary {
+            income: dec!(5000.00),
+            category_spending: vec![
+                CategorySpending {
+                    name: "FOOD_AND_DRINK".to_string(),
+                    value: dec!(420.00),
+                },
+                CategorySpending {
+                    name: "TRANSFER_OUT".to_string(),
+                    value: dec!(200.00),
+                },
+            ],
+        }
+    );
 }
 
 #[tokio::test]

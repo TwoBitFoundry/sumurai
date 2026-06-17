@@ -352,7 +352,7 @@ const DashboardPage: React.FC<{
               className={cn('min-w-0')}
               title="Budget vs reality over time"
               refreshingLabel="Reviewing allowances..."
-              isRefreshing={budgets.transactionsLoading}
+              isRefreshing={budgets.summaryLoading}
             >
               <ChartFadePresence
                 stateKey={

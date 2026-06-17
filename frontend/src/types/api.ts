@@ -46,13 +46,6 @@ export interface Transaction {
   location?: TransactionLocation;
 }
 
-export interface PaginatedTransactionsResponse {
-  transactions: Transaction[];
-  total: number;
-  page: number;
-  page_size: number;
-}
-
 export interface CursorTransactionsResponse {
   transactions: Transaction[];
   next_cursor: string | null;
@@ -71,6 +64,21 @@ export interface TransactionsInsightsResponse {
   average_amount: number;
   largest: LargestTransaction | null;
   top_categories: string[];
+}
+
+export interface IncomeExpenseTotalsResponse {
+  income: number;
+  expenses: number;
+}
+
+export interface BudgetCategorySpendingResponse {
+  name: string;
+  value: number;
+}
+
+export interface BudgetSummaryResponse {
+  income: number;
+  category_spending: BudgetCategorySpendingResponse[];
 }
 
 export type InsightFormat = 'currency' | 'count' | 'days' | 'percent' | 'ratio';

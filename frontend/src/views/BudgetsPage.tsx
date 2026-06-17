@@ -23,7 +23,7 @@ interface BudgetsPageProps {
 export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
   const {
     isLoading,
-    transactionsLoading,
+    summaryLoading,
     error,
     validationError,
     add,
@@ -36,7 +36,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
     availableCategoryOptions,
     month,
     range,
-    transactions,
+    income,
   } = useBudgets(monthControl);
   const { accentIndexByName } = useCategories();
   const addButtonRef = useRef<HTMLButtonElement>(null);
@@ -110,14 +110,13 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
         stats,
         month,
         referenceDate: new Date(),
-        transactions,
-        range,
+        income,
         computedBudgets,
       }),
-    [stats, month, transactions, range, computedBudgets]
+    [stats, month, income, computedBudgets]
   );
 
-  const budgetsLoading = isLoading || transactionsLoading;
+  const budgetsLoading = isLoading || summaryLoading;
   const hasBudgets = computedBudgets.length > 0;
 
   const heroStats = (

@@ -1,9 +1,9 @@
 //! Aggregated analytics queries for dashboards.
 
 use crate::models::analytics::{
-    BalanceCategory, CashFlowPoint, CategorySpending, DailySpending, MonthlyCashFlowAggregate,
-    MonthlySpending, SankeyLink, SankeyNode, SankeyNodeKind, SankeyResponse, SankeySummary,
-    TopMerchant,
+    BalanceCategory, BudgetSummary, CashFlowPoint, CategoryAggregate, CategorySpending,
+    DailySpending, IncomeExpenseTotals, MonthlyCashFlowAggregate, MonthlySpending, SankeyLink,
+    SankeyNode, SankeyNodeKind, SankeyResponse, SankeySummary, TopMerchant,
 };
 use crate::models::transaction::Transaction;
 use crate::services::repository_service::{
@@ -87,6 +87,66 @@ impl AnalyticsService {
         Self
     }
 
+    pub fn ytd_income_expense_totals(&self, grid: &[CategoryAggregate]) -> IncomeExpenseTotals {
+        let mut income = Decimal::ZERO;
+        let mut expenses = Decimal::ZERO;
+
+        for row in grid {
+            if is_transfer_category(&row.category) {
+                continue;
+            }
+            income += row.income;
+            expenses += row.expense;
+        }
+
+        IncomeExpenseTotals {
+            income: Self::round_amount(income),
+            expenses: Self::round_amount(expenses),
+        }
+    }
+
+    pub fn budget_summary(&self, grid: &[CategoryAggregate]) -> BudgetSummary {
+        let income = grid
+            .iter()
+            .filter(|row| row.category != "TRANSFER_IN")
+            .map(|row| row.income)
+            .sum::<Decimal>();
+
+        let category_spending = grid
+            .iter()
+            .filter(|row| row.expense > Decimal::ZERO)
+            .map(|row| CategorySpending {
+                name: row.category.clone(),
+                value: Self::round_amount(row.expense),
+            })
+            .collect::<Vec<_>>();
+
+        let mut category_spending = category_spending;
+        category_spending.sort_by(|a, b| a.name.cmp(&b.name));
+
+        BudgetSummary {
+            income: Self::round_amount(income),
+            category_spending,
+        }
+    }
+
+    pub fn category_spending_chart(&self, grid: &[CategoryAggregate]) -> Vec<CategorySpending> {
+        grid.iter()
+            .filter(|row| {
+                row.expense > Decimal::ZERO
+                    && !EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES.contains(&row.category.as_str())
+            })
+            .map(|row| CategorySpending {
+                name: if row.category.is_empty() {
+                    "Uncategorized".to_string()
+                } else {
+                    row.category.clone()
+                },
+                value: Self::round_amount(row.expense),
+            })
+            .collect()
+    }
+
     pub async fn load_spending_transactions(
         &self,
         repository: &dyn DatabaseRepository,
@@ -110,6 +170,72 @@ impl AnalyticsService {
                     .await
             }
         }
+    }
+
+    pub async fn get_income_expense_totals(
+        &self,
+        repository: &dyn DatabaseRepository,
+        user_id: &Uuid,
+        query: SpendingTransactionQuery<'_>,
+    ) -> Result<IncomeExpenseTotals> {
+        let today = chrono::Utc::now().naive_utc().date();
+        let year = today.year();
+        let start_date = query
+            .start_date
+            .unwrap_or_else(|| chrono::NaiveDate::from_ymd_opt(year, 1, 1).unwrap());
+        let end_date = query.end_date.unwrap_or(today);
+        let grid = repository
+            .get_category_aggregates_for_date_range(
+                user_id,
+                start_date,
+                end_date,
+                query.account_ids,
+            )
+            .await?;
+
+        Ok(self.ytd_income_expense_totals(&grid))
+    }
+
+    pub async fn get_budget_summary(
+        &self,
+        repository: &dyn DatabaseRepository,
+        user_id: &Uuid,
+        query: SpendingTransactionQuery<'_>,
+    ) -> Result<BudgetSummary> {
+        let (default_start, default_end) = self.current_month_date_range();
+        let start_date = query.start_date.unwrap_or(default_start);
+        let end_date = query.end_date.unwrap_or(default_end);
+        let grid = repository
+            .get_category_aggregates_for_date_range(
+                user_id,
+                start_date,
+                end_date,
+                query.account_ids,
+            )
+            .await?;
+
+        Ok(self.budget_summary(&grid))
+    }
+
+    pub async fn get_category_spending(
+        &self,
+        repository: &dyn DatabaseRepository,
+        user_id: &Uuid,
+        query: SpendingTransactionQuery<'_>,
+    ) -> Result<Vec<CategorySpending>> {
+        let (default_start, default_end) = self.current_month_date_range();
+        let start_date = query.start_date.unwrap_or(default_start);
+        let end_date = query.end_date.unwrap_or(default_end);
+        let grid = repository
+            .get_category_aggregates_for_date_range(
+                user_id,
+                start_date,
+                end_date,
+                query.account_ids,
+            )
+            .await?;
+
+        Ok(self.category_spending_chart(&grid))
     }
 
     pub fn current_month_date_range(&self) -> (chrono::NaiveDate, chrono::NaiveDate) {

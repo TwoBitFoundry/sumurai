@@ -4,6 +4,8 @@ import type {
   AnalyticsCategoryResponse,
   AnalyticsMonthlyTotalsResponse,
   AnalyticsTopMerchantsResponse,
+  BudgetSummaryResponse,
+  IncomeExpenseTotalsResponse,
 } from '@/types/api';
 
 jest.mock('@/services/ApiClient', () => ({
@@ -105,6 +107,80 @@ describe('AnalyticsService (date-range endpoints)', () => {
         `/analytics/categories?start_date=${start}&end_date=${end}&account_ids%5B%5D=acc_1&account_ids%5B%5D=acc_2`
       );
       expect(result).toEqual(mockCategories);
+    });
+  });
+
+  describe('getIncomeExpenseTotals', () => {
+    it('calls backend with date range for income and expense totals', async () => {
+      const start = '2024-01-01';
+      const end = '2024-12-31';
+      const mockTotals: IncomeExpenseTotalsResponse = {
+        income: 5000,
+        expenses: 1200,
+      };
+      jest.mocked(ApiClient.get).mockResolvedValue(mockTotals);
+
+      const result = await AnalyticsService.getIncomeExpenseTotals(start, end);
+
+      expect(ApiClient.get).toHaveBeenCalledWith(
+        `/analytics/income-expense-totals?start_date=${start}&end_date=${end}`
+      );
+      expect(result).toEqual(mockTotals);
+    });
+
+    it('serializes account_ids parameter when provided', async () => {
+      const start = '2024-01-01';
+      const end = '2024-12-31';
+      const accountIds = ['acc_1', 'acc_2'];
+      const mockTotals: IncomeExpenseTotalsResponse = {
+        income: 5000,
+        expenses: 1200,
+      };
+      jest.mocked(ApiClient.get).mockResolvedValue(mockTotals);
+
+      const result = await AnalyticsService.getIncomeExpenseTotals(start, end, accountIds);
+
+      expect(ApiClient.get).toHaveBeenCalledWith(
+        `/analytics/income-expense-totals?start_date=${start}&end_date=${end}&account_ids%5B%5D=acc_1&account_ids%5B%5D=acc_2`
+      );
+      expect(result).toEqual(mockTotals);
+    });
+  });
+
+  describe('getBudgetSummary', () => {
+    it('calls backend with date range for budget summary', async () => {
+      const start = '2024-01-01';
+      const end = '2024-01-31';
+      const mockSummary: BudgetSummaryResponse = {
+        income: 5000,
+        category_spending: [{ name: 'FOOD_AND_DRINK', value: 125.5 }],
+      };
+      jest.mocked(ApiClient.get).mockResolvedValue(mockSummary);
+
+      const result = await AnalyticsService.getBudgetSummary(start, end);
+
+      expect(ApiClient.get).toHaveBeenCalledWith(
+        `/analytics/budget-summary?start_date=${start}&end_date=${end}`
+      );
+      expect(result).toEqual(mockSummary);
+    });
+
+    it('serializes account_ids parameter when provided', async () => {
+      const start = '2024-01-01';
+      const end = '2024-01-31';
+      const accountIds = ['acc_1', 'acc_2'];
+      const mockSummary: BudgetSummaryResponse = {
+        income: 5000,
+        category_spending: [{ name: 'FOOD_AND_DRINK', value: 125.5 }],
+      };
+      jest.mocked(ApiClient.get).mockResolvedValue(mockSummary);
+
+      const result = await AnalyticsService.getBudgetSummary(start, end, accountIds);
+
+      expect(ApiClient.get).toHaveBeenCalledWith(
+        `/analytics/budget-summary?start_date=${start}&end_date=${end}&account_ids%5B%5D=acc_1&account_ids%5B%5D=acc_2`
+      );
+      expect(result).toEqual(mockSummary);
     });
   });
 

@@ -1,6 +1,9 @@
+import { describe, expect, it, jest } from 'bun:test';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import React from 'react';
 import { TransactionsFilters } from '@/features/transactions/components/TransactionsFilters';
+import { HORIZONTAL_SCROLL_RAIL_STEP_PX } from '@/hooks/useHorizontalScrollRail';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 
 jest.mock('@/hooks/useViewportBreakpoint', () => ({
@@ -112,6 +115,15 @@ describe('TransactionsFilters', () => {
     expect(entertainmentButton.className).not.toContain('!bg-emerald-500/50');
   });
 
+  it('centers inline category filters when they fit within the container', () => {
+    const { container } = render(
+      <TransactionsFilters {...filterProps} layout="inline" showFilterLabel={false} />
+    );
+
+    const scrollContainer = container.querySelector('[data-no-swipe]');
+    expect(scrollContainer?.className).toContain('justify-center');
+  });
+
   it('keeps inline category filters in a bounded scroll container', () => {
     const { container } = render(
       <TransactionsFilters
@@ -126,13 +138,68 @@ describe('TransactionsFilters', () => {
     const scrollContainer = container.querySelector('[data-no-swipe]');
     const billsButton = screen.getByRole('button', { name: 'Bills' });
 
-    expect(filters.className).toContain('overflow-hidden');
+    expect(filters.className).toContain('min-w-0');
     expect(scrollContainer?.className).toContain('overflow-x-auto');
     expect(scrollContainer?.className).toContain('w-full');
     expect(scrollContainer?.className).toContain('max-w-full');
     expect(scrollContainer?.className).toContain('py-1.5');
     expect(billsButton.className).toContain('backdrop-blur-md');
     expect(billsButton.className).toContain('backdrop-saturate-[150%]');
+  });
+
+  it('shows scroll arrows when category filters overflow and scrolls on tap', async () => {
+    const scrollWidthDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'scrollWidth'
+    );
+    const clientWidthDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'clientWidth'
+    );
+    const scrollBy = jest.spyOn(HTMLElement.prototype, 'scrollBy');
+
+    Object.defineProperty(HTMLElement.prototype, 'scrollWidth', {
+      configurable: true,
+      get() {
+        return 1200;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get() {
+        return 400;
+      },
+    });
+
+    const user = userEvent.setup();
+    render(
+      <TransactionsFilters
+        {...filterProps}
+        categories={['food_and_drink', 'entertainment', 'Bills', 'Subscriptions', 'Travel']}
+        layout="inline"
+        showFilterLabel={false}
+      />
+    );
+
+    expect(
+      screen.queryByRole('button', { name: 'Scroll categories left' })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Scroll categories right' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Scroll categories right' }));
+
+    expect(scrollBy).toHaveBeenCalledWith({
+      left: HORIZONTAL_SCROLL_RAIL_STEP_PX,
+      behavior: 'smooth',
+    });
+
+    scrollBy.mockRestore();
+    if (scrollWidthDescriptor) {
+      Object.defineProperty(HTMLElement.prototype, 'scrollWidth', scrollWidthDescriptor);
+    }
+    if (clientWidthDescriptor) {
+      Object.defineProperty(HTMLElement.prototype, 'clientWidth', clientWidthDescriptor);
+    }
   });
 
   it('shows a delete affordance for custom categories without toggling the filter', async () => {

@@ -43,6 +43,7 @@ describe('InlineCategoryCell', () => {
 
     if (dense) {
       expect(slot.style.width).toBe(expectedWidth);
+      expect(slot.className).toContain('justify-end');
     } else {
       expect(slot.style.maxWidth).toBe(expectedWidth);
       expect(slot.className).toContain('ml-auto');

@@ -2,6 +2,7 @@
  * Transforms analytics API results into chart-ready series.
  */
 
+import { sankeyChartSizing } from '@/ui/recipes';
 import type {
   AnalyticsTopMerchantsResponse,
   SankeyLink,
@@ -53,9 +54,17 @@ export function normalizeMerchants(items: AnalyticsTopMerchantsResponse[]): Merc
   return (items || []).slice().sort((a, b) => Number(b.amount) - Number(a.amount));
 }
 
+export type SankeyPercentContext =
+  | 'expenseFunding'
+  | 'income'
+  | 'expenses'
+  | 'fixedExpenses'
+  | 'freeSpending';
+
 export type SankeyChartNode = SankeyNode & {
   name: string;
   percentOfExpenses: number | null;
+  percentContext: SankeyPercentContext | null;
 };
 
 export type SankeyChartLink = {
@@ -65,6 +74,7 @@ export type SankeyChartLink = {
   targetId: string;
   value: number;
   percentOfExpenses: number | null;
+  percentContext: SankeyPercentContext | null;
 };
 
 export type SankeyChartData = {
@@ -77,10 +87,10 @@ export type SankeyLayoutMetrics = {
   nodePadding: number;
 };
 
-const SANKEY_MIN_HEIGHT = 280;
-const SANKEY_MAX_HEIGHT = 560;
-const SANKEY_ROW_HEIGHT = 38;
-const SANKEY_HEIGHT_PADDING = 40;
+const SANKEY_MIN_HEIGHT = sankeyChartSizing.baseMinHeightPx * sankeyChartSizing.defaultScale;
+const SANKEY_MAX_HEIGHT = sankeyChartSizing.baseMaxHeightPx * sankeyChartSizing.defaultScale;
+const SANKEY_ROW_HEIGHT = 38 * sankeyChartSizing.defaultScale;
+const SANKEY_HEIGHT_PADDING = 40 * sankeyChartSizing.defaultScale;
 const SANKEY_MIN_NODE_PADDING = 6;
 const SANKEY_MAX_NODE_PADDING = 14;
 
@@ -126,6 +136,148 @@ const toNumericLinkValue = (value: number | string | null | undefined) => {
   return Number.isFinite(numeric) ? numeric : 0;
 };
 
+type SankeySummaryTotals = {
+  income: number;
+  expenses: number;
+  covered: number;
+  deficit: number;
+  surplus: number;
+  fixedTotal: number;
+  freeTotal: number;
+};
+
+const resolveSankeySummaryTotals = (response: SankeyResponse): SankeySummaryTotals => {
+  const links = response.links ?? [];
+  const fixedTotal = links
+    .filter((link) => link.source === 'fixed_expenses')
+    .reduce((sum, link) => sum + toNumericLinkValue(link.value), 0);
+  const freeTotal = links
+    .filter((link) => link.source === 'free_spending')
+    .reduce((sum, link) => sum + toNumericLinkValue(link.value), 0);
+
+  return {
+    income: toNumericLinkValue(response.summary.income),
+    expenses: toNumericLinkValue(response.summary.expenses),
+    covered: toNumericLinkValue(response.summary.covered),
+    deficit: toNumericLinkValue(response.summary.deficit),
+    surplus: toNumericLinkValue(response.summary.surplus),
+    fixedTotal,
+    freeTotal,
+  };
+};
+
+const sharePercent = (value: number, total: number) => (total > 0 ? (value / total) * 100 : null);
+
+const resolveNodePercent = (
+  node: SankeyNode,
+  response: SankeyResponse,
+  totals: SankeySummaryTotals
+): Pick<SankeyChartNode, 'percentOfExpenses' | 'percentContext'> => {
+  switch (node.kind) {
+    case 'Income':
+      return {
+        percentOfExpenses: sharePercent(totals.covered, totals.expenses),
+        percentContext: 'expenseFunding',
+      };
+    case 'Deficit':
+      return {
+        percentOfExpenses: sharePercent(totals.deficit, totals.expenses),
+        percentContext: 'expenseFunding',
+      };
+    case 'Expenses':
+      return {
+        percentOfExpenses: sharePercent(totals.covered, totals.income),
+        percentContext: 'income',
+      };
+    case 'Savings':
+      return {
+        percentOfExpenses: sharePercent(totals.surplus, totals.income),
+        percentContext: 'income',
+      };
+    case 'FixedExpenses':
+      return {
+        percentOfExpenses: sharePercent(totals.fixedTotal, totals.expenses),
+        percentContext: 'expenses',
+      };
+    case 'FreeSpending':
+      return {
+        percentOfExpenses: sharePercent(totals.freeTotal, totals.expenses),
+        percentContext: 'expenses',
+      };
+    case 'Category': {
+      const nodeValue = resolveNodeValue(node, response);
+      const parentLink = (response.links ?? []).find((link) => link.target === node.id);
+      if (parentLink?.source === 'fixed_expenses') {
+        return {
+          percentOfExpenses: sharePercent(nodeValue, totals.fixedTotal),
+          percentContext: 'fixedExpenses',
+        };
+      }
+      if (parentLink?.source === 'free_spending') {
+        return {
+          percentOfExpenses: sharePercent(nodeValue, totals.freeTotal),
+          percentContext: 'freeSpending',
+        };
+      }
+      return { percentOfExpenses: null, percentContext: null };
+    }
+    default:
+      return { percentOfExpenses: null, percentContext: null };
+  }
+};
+
+const resolveLinkPercent = (
+  link: SankeyLink,
+  totals: SankeySummaryTotals
+): Pick<SankeyChartLink, 'percentOfExpenses' | 'percentContext'> => {
+  const value = toNumericLinkValue(link.value);
+
+  if (link.source === 'income' && link.target === 'expenses') {
+    return {
+      percentOfExpenses: sharePercent(value, totals.income),
+      percentContext: 'income',
+    };
+  }
+  if (link.source === 'income' && link.target === 'savings') {
+    return {
+      percentOfExpenses: sharePercent(value, totals.income),
+      percentContext: 'income',
+    };
+  }
+  if ((link.source === 'deficit' || link.source === 'debt') && link.target === 'expenses') {
+    return {
+      percentOfExpenses: sharePercent(value, totals.expenses),
+      percentContext: 'expenseFunding',
+    };
+  }
+  if (link.source === 'expenses' && link.target === 'fixed_expenses') {
+    return {
+      percentOfExpenses: sharePercent(value, totals.expenses),
+      percentContext: 'expenses',
+    };
+  }
+  if (link.source === 'expenses' && link.target === 'free_spending') {
+    return {
+      percentOfExpenses: sharePercent(value, totals.expenses),
+      percentContext: 'expenses',
+    };
+  }
+  if (link.source === 'fixed_expenses') {
+    return {
+      percentOfExpenses: sharePercent(value, totals.fixedTotal),
+      percentContext: 'fixedExpenses',
+    };
+  }
+  if (link.source === 'free_spending') {
+    return {
+      percentOfExpenses: sharePercent(value, totals.freeTotal),
+      percentContext: 'freeSpending',
+    };
+  }
+
+  return { percentOfExpenses: null, percentContext: null };
+};
+
 const resolveNodeValue = (node: SankeyNode, response: SankeyResponse) => {
   switch (node.kind) {
     case 'Income':
@@ -151,15 +303,25 @@ const resolveNodeValue = (node: SankeyNode, response: SankeyResponse) => {
 };
 
 export function sankeyResponseToChartData(response?: SankeyResponse | null): SankeyChartData {
-  const expenses = toNumericLinkValue(response?.summary?.expenses);
   const sourceResponse = response ?? null;
+  const totals =
+    sourceResponse != null
+      ? resolveSankeySummaryTotals(sourceResponse)
+      : {
+          income: 0,
+          expenses: 0,
+          covered: 0,
+          deficit: 0,
+          surplus: 0,
+          fixedTotal: 0,
+          freeTotal: 0,
+        };
   const nodes = (response?.nodes ?? []).map((node) => ({
     ...node,
     name: node.label || formatCategoryName(node.id),
-    percentOfExpenses:
-      expenses > 0 && sourceResponse
-        ? (resolveNodeValue(node, sourceResponse) / expenses) * 100
-        : null,
+    ...(sourceResponse != null
+      ? resolveNodePercent(node, sourceResponse, totals)
+      : { percentOfExpenses: null, percentContext: null }),
   }));
   const indexById = new Map(nodes.map((node, index) => [node.id, index] as const));
   const links = (response?.links ?? [])
@@ -176,7 +338,7 @@ export function sankeyResponseToChartData(response?: SankeyResponse | null): San
         sourceId: link.source,
         targetId: link.target,
         value,
-        percentOfExpenses: expenses > 0 ? (value / expenses) * 100 : null,
+        ...resolveLinkPercent(link, totals),
       };
     })
     .filter((link): link is SankeyChartLink => link != null);
@@ -185,4 +347,117 @@ export function sankeyResponseToChartData(response?: SankeyResponse | null): San
     nodes,
     links,
   };
+}
+
+export type SankeyTooltipMetadata = {
+  percentOfExpenses: number | null;
+  percentContext: SankeyPercentContext | null;
+  kind: SankeyChartNode['kind'] | null;
+};
+
+const normalizeSankeyTooltipKey = (value: string | null | undefined) =>
+  value?.trim().toLowerCase().replace(/\s+/g, ' ') ?? '';
+
+const findSankeyNodeByHint = (chartData: SankeyChartData, hint: string) => {
+  const normalizedHint = normalizeSankeyTooltipKey(hint);
+  if (!normalizedHint) {
+    return undefined;
+  }
+
+  return chartData.nodes.find((node) => {
+    const candidates = [node.id, node.name, node.label ?? ''].map((candidate) =>
+      normalizeSankeyTooltipKey(candidate.replace(/_/g, ' '))
+    );
+    return candidates.some(
+      (candidate) =>
+        candidate === normalizedHint ||
+        normalizedHint.includes(candidate) ||
+        candidate.includes(normalizedHint)
+    );
+  });
+};
+
+const findSankeyLinkFromEntry = (chartData: SankeyChartData, entry: Record<string, unknown>) => {
+  const sourceId =
+    typeof entry.sourceId === 'string'
+      ? entry.sourceId
+      : entry.source != null &&
+          typeof entry.source === 'object' &&
+          'id' in entry.source &&
+          typeof entry.source.id === 'string'
+        ? entry.source.id
+        : null;
+  const targetId =
+    typeof entry.targetId === 'string'
+      ? entry.targetId
+      : entry.target != null &&
+          typeof entry.target === 'object' &&
+          'id' in entry.target &&
+          typeof entry.target.id === 'string'
+        ? entry.target.id
+        : null;
+
+  if (sourceId && targetId) {
+    return chartData.links.find((link) => link.sourceId === sourceId && link.targetId === targetId);
+  }
+
+  if (typeof entry.source === 'number' && typeof entry.target === 'number') {
+    return chartData.links.find(
+      (link) => link.source === entry.source && link.target === entry.target
+    );
+  }
+
+  return undefined;
+};
+
+export function resolveSankeyTooltipMetadata(
+  chartData: SankeyChartData,
+  entry: unknown,
+  tooltipName?: string | null
+): SankeyTooltipMetadata | null {
+  if (entry != null && typeof entry === 'object') {
+    const record = entry as Record<string, unknown>;
+    const link = findSankeyLinkFromEntry(chartData, record);
+    if (link) {
+      const targetNode = chartData.nodes[link.target];
+      return {
+        percentOfExpenses: link.percentOfExpenses,
+        percentContext: link.percentContext,
+        kind: targetNode?.kind ?? null,
+      };
+    }
+
+    if (typeof record.id === 'string') {
+      const node = chartData.nodes.find((candidate) => candidate.id === record.id);
+      if (node) {
+        return {
+          percentOfExpenses: node.percentOfExpenses,
+          percentContext: node.percentContext,
+          kind: node.kind,
+        };
+      }
+    }
+
+    if (typeof record.kind === 'string' && record.kind !== 'Category') {
+      const node = chartData.nodes.find((candidate) => candidate.kind === record.kind);
+      if (node) {
+        return {
+          percentOfExpenses: node.percentOfExpenses,
+          percentContext: node.percentContext,
+          kind: node.kind,
+        };
+      }
+    }
+  }
+
+  const hintedNode = findSankeyNodeByHint(chartData, tooltipName ?? '');
+  if (hintedNode) {
+    return {
+      percentOfExpenses: hintedNode.percentOfExpenses,
+      percentContext: hintedNode.percentContext,
+      kind: hintedNode.kind,
+    };
+  }
+
+  return null;
 }

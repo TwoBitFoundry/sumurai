@@ -3,6 +3,7 @@ import { expect, waitFor, within } from 'storybook/test';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import { sampleSankeySurplus } from '@/storybook/fixtures/analytics';
 import {
+  getCursorStoryTransactions,
   storyCategoryList,
   storyDashboardFixtures,
   storyProviderAccounts,
@@ -18,12 +19,14 @@ const handlers = [
   ),
   route('GET', '/analytics/sankey', () => jsonResponse(sampleSankeySurplus)),
   route('GET', '/transactions', (request) =>
-    jsonResponse({
-      transactions: [],
-      total: 0,
-      page: Number(request.query.get('page') ?? '1'),
-      page_size: Number(request.query.get('page_size') ?? '8'),
-    })
+    jsonResponse(
+      getCursorStoryTransactions({
+        cursor: request.query.get('cursor'),
+        limit: Number(request.query.get('limit') ?? '100'),
+        search: request.query.get('search'),
+        categoryPrimary: request.query.get('category_primary'),
+      })
+    )
   ),
 ];
 
