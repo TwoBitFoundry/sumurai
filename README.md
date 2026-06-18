@@ -76,25 +76,84 @@ Sumurai normalizes transactions into these primary category buckets:
 
 ## Quick Start
 
-Set the required secrets in `[.env.example](.env.example)`, then choose one provider path.
+Install Docker, configure secrets from `[.env.example](.env.example)`, then pick one provider path.
 
-### 1. Generate Shared Secrets
+### 1. Install Docker
+
+#### macOS
+
+1. Download [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop/).
+2. Open the downloaded file and drag Docker to **Applications**.
+3. Launch Docker Desktop and follow the setup prompts.
+4. Wait until Docker shows as running.
+
+Verify:
+
+```bash
+docker --version
+docker compose version
+```
+
+#### Windows
+
+1. Install WSL2 (recommended) by opening PowerShell as Administrator:
+
+```powershell
+wsl --install
+```
+
+2. Restart your computer if prompted.
+3. Download [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/).
+4. Run the installer and accept the default options.
+5. Start Docker Desktop and wait until it is running.
+
+Verify:
+
+```powershell
+docker --version
+docker compose version
+```
+
+#### Linux (Ubuntu/Debian)
+
+1. Install Docker:
+
+```bash
+curl -fsSL https://get.docker.com | sh
+```
+
+2. Add your user to the Docker group:
+
+```bash
+sudo usermod -aG docker $USER
+```
+
+3. Log out and back in, then verify:
+
+```bash
+docker --version
+docker compose version
+```
+
+### 2. Configure Secrets
 
 ```bash
 cp .env.example .env
 ```
 
-Generate a secret for each of these values:
+Generate a value for each secret with `openssl rand -hex 32` and set:
 
 - `JWT_SECRET`
 - `ENCRYPTION_KEY`
 - `POSTGRES_PASSWORD`
 
-```bash
-openssl rand -hex 32
-```
+### 3. Choose a BYOK Financial Provider
 
-### 2. SimpleFIN (Bring your own token)
+Pick one path below.
+
+#### SimpleFin (Private)
+
+Privacy-first option for US and Canada. Bring your own SimpleFIN token (~$1.50/mo).
 
 1. Open the [SimpleFIN Bridge](https://bridge.simplefin.org/) and create a bridge (or use the beta developer bridge for local trials).
 2. Start the app:
@@ -103,12 +162,14 @@ openssl rand -hex 32
 docker compose -f docker-compose.dev.yml up -d --build
 ```
 
-1. Sign in, choose SimpleFIN in the provider picker, and paste your setup token when prompted.
+3. Open [http://localhost:8080](http://localhost:8080), sign in, choose SimpleFIN in the provider picker, and paste your setup token when prompted.
 
-### 3. Teller (Recommended)
+#### Teller (Recommended)
+
+Free for US banks. Best balance of cost, setup, and coverage for most self-hosters.
 
 1. Follow the [Teller Quickstart](https://teller.io/docs/guides/quickstart).
-2. Set `TELLER_APPLICATION_ID`.
+2. Set `TELLER_APPLICATION_ID` in `.env`.
 3. Download your Teller client certificate and private key from the Teller dashboard, then place them at `.certs/teller/certificate.pem` and `.certs/teller/private_key.pem`.
 4. Start the app:
 
@@ -116,10 +177,14 @@ docker compose -f docker-compose.dev.yml up -d --build
 docker compose up -d --build
 ```
 
-### 4. Plaid (Challenging)
+5. Open [http://localhost:8080](http://localhost:8080).
+
+#### Plaid (Organization)
+
+Broadest regional coverage. Best when you already have a company Plaid account and can pass production review.
 
 1. Follow the [Plaid Quickstart](https://plaid.com/docs/quickstart/).
-2. Set `PLAID_CLIENT_ID` and `PLAID_SECRET`.
+2. Set `PLAID_CLIENT_ID` and `PLAID_SECRET` in `.env`.
 3. Use Plaid Sandbox for local testing. Plaid has no development environment, and production keys require Plaid review of your company, use case, and security process before real data access is granted.
 4. Start the app:
 
@@ -127,7 +192,7 @@ docker compose up -d --build
 docker compose up -d --build
 ```
 
-Open [http://localhost:8080](http://localhost:8080).
+5. Open [http://localhost:8080](http://localhost:8080).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, validation, workflow details, and local demo or sandbox credentials.
 
