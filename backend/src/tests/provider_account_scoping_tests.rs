@@ -73,7 +73,9 @@ mod tests {
             });
         mock_db
             .expect_get_all_provider_connections_by_user()
-            .with(mockall::predicate::eq(user_id))
+            .returning(|_| Box::pin(async { Ok(vec![]) }));
+        mock_db
+            .expect_get_accounts_for_user()
             .returning(|_| Box::pin(async { Ok(vec![]) }));
 
         let db: Arc<dyn crate::services::repository_service::DatabaseRepository> =

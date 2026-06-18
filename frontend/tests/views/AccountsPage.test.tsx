@@ -19,6 +19,7 @@ import {
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { usePlaidConnections } from '@/hooks/usePlaidConnections';
 import { useProviderCatalog } from '@/hooks/useProviderCatalog';
+import { DiyService } from '@/services/DiyService';
 import { PlaidService } from '@/services/PlaidService';
 import { TellerService } from '@/services/TellerService';
 import type { ProviderCatalogue } from '@/types/providerCatalog';
@@ -101,26 +102,42 @@ jest.mock('@/features/plaid/components/ProviderSelectionPanel', () => ({
   ProviderSelectionPanel: ({
     availableProviders,
     footerContent,
+    onClose,
     onSelectProvider,
+    visibleProviders,
   }: {
     availableProviders: Array<'plaid' | 'teller' | 'simplefin' | 'diy'>;
     footerContent?: unknown;
+    onClose?: () => void;
     onSelectProvider: (provider: 'plaid' | 'teller' | 'simplefin' | 'diy') => void;
-  }) => (
-    <div data-testid="provider-selection-panel">
-      {(['teller', 'simplefin', 'plaid', 'diy'] as const).map((provider) => (
-        <button
-          key={provider}
-          type="button"
-          disabled={!availableProviders.includes(provider)}
-          onClick={() => onSelectProvider(provider)}
-        >
-          Connect
-        </button>
-      ))}
-      {footerContent}
-    </div>
-  ),
+    visibleProviders?: Array<'plaid' | 'teller' | 'simplefin' | 'diy'>;
+  }) => {
+    const providers = visibleProviders ?? (['diy', 'simplefin', 'teller', 'plaid'] as const);
+    return (
+      <div data-testid="provider-selection-panel">
+        {onClose ? (
+          <button type="button" aria-label="Close provider picker" onClick={onClose}>
+            Close picker
+          </button>
+        ) : null}
+        {providers.map((provider) => (
+          <button
+            key={provider}
+            type="button"
+            disabled={
+              provider !== 'diy' &&
+              provider !== 'simplefin' &&
+              !availableProviders.includes(provider)
+            }
+            onClick={() => onSelectProvider(provider)}
+          >
+            Connect
+          </button>
+        ))}
+        {footerContent}
+      </div>
+    );
+  },
 }));
 
 jest.mock('@/hooks/useFinancialConnection', () => ({
@@ -137,6 +154,14 @@ jest.mock('@/hooks/useExport', () => ({
 
 jest.mock('@/hooks/usePlaidConnections', () => ({
   usePlaidConnections: jest.fn(),
+}));
+
+jest.mock('@/services/DiyService', () => ({
+  DiyService: {
+    createInstitution: jest.fn(),
+    createAccount: jest.fn(),
+    disconnectInstitution: jest.fn(),
+  },
 }));
 
 jest.mock('@/services/PlaidService', () => ({
@@ -664,6 +689,59 @@ describe('AccountsPage', () => {
     setQueryDataSpy.mockRestore();
   });
 
+  it('disconnects a diy institution through the diy disconnect endpoint', async () => {
+    const user = userEvent.setup();
+    const removeAccountsByIds = jest.fn();
+    jest.mocked(DiyService.disconnectInstitution).mockResolvedValue({
+      success: true,
+      message: 'Disconnected',
+      data_cleared: {
+        transactions: 1,
+        accounts: 1,
+        cache_keys: [],
+      },
+    });
+
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid', 'teller', 'diy'],
+        user_provider: 'diy',
+      })
+    );
+    jest.mocked(useAccountFilter).mockReturnValue(
+      makeTellerAccountFilter({
+        removeAccountsByIds,
+        accountsByBank: {
+          'My Cash': [
+            {
+              id: 'acc_diy_1',
+              name: 'Checking',
+              account_type: 'checking',
+              balance_ledger: 100,
+              balance_available: 100,
+              mask: '1234',
+              provider: 'diy',
+              institution_name: 'My Cash',
+              connection_id: 'conn_diy_1',
+              transaction_count: 0,
+            },
+          ],
+        },
+      })
+    );
+
+    renderAccountsPage();
+
+    await user.click(screen.getByRole('button', { name: 'Disconnect' }));
+    await user.click(screen.getByRole('button', { name: /^disconnect$/i }));
+
+    expect(DiyService.disconnectInstitution).toHaveBeenCalledWith('conn_diy_1');
+    expect(PlaidService.disconnect).not.toHaveBeenCalled();
+    expect(TellerService.disconnect).not.toHaveBeenCalled();
+    expect(removeAccountsByIds).toHaveBeenCalledWith(['acc_diy_1']);
+  });
+
   it('opens the SimpleFIN modal from the connect action once an institution is connected', async () => {
     const user = userEvent.setup();
 
@@ -705,45 +783,40 @@ describe('AccountsPage', () => {
 
     await user.click(screen.getByRole('button', { name: /^link account$/i }));
 
+    expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: 'Connect' })[1]);
+
     expect(
       screen.getByRole('dialog', { name: /connect your simplefin bridge/i })
     ).toBeInTheDocument();
   });
 
-  it('opens the DIY institution modal from the page-level custom institution button', async () => {
+  it('opens the DIY institution modal from the provider picker when no institutions exist', async () => {
     const user = userEvent.setup();
 
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
         available_providers: ['plaid', 'teller', 'diy'],
-        user_provider: 'diy',
+        user_provider: null,
       })
     );
-    jest.mocked(useAccountFilter).mockReturnValue(
-      makeTellerAccountFilter({
-        accountsByBank: {
-          'DIY Bank': [
-            {
-              id: 'acc_diy_1',
-              name: 'Checking',
-              account_type: 'checking',
-              balance_ledger: 100,
-              balance_available: 100,
-              mask: '1234',
-              provider: 'diy',
-              institution_name: 'DIY Bank',
-              connection_id: 'conn_diy_1',
-              transaction_count: 0,
-            },
-          ],
-        },
-      })
-    );
+    jest.mocked(useAccountFilter).mockReturnValue({
+      selectedAccountIds: [],
+      allAccountIds: [],
+      isAllAccountsSelected: false,
+      accountsByBank: {},
+      loading: false,
+      setSelectedAccountIds: jest.fn(),
+      toggleBank: jest.fn(),
+      toggleAccount: jest.fn(),
+      removeAccountsByIds: jest.fn(),
+    });
 
     renderAccountsPage();
 
-    await user.click(screen.getByRole('button', { name: /add custom institution/i }));
+    expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: 'Connect' })[0]);
 
     const modal = screen.getByTestId('diy-institution-modal');
     expect(modal).toBeInTheDocument();
@@ -979,8 +1052,8 @@ describe('AccountsPage', () => {
     ).toHaveAttribute('src', '/plaid.webp');
   });
 
-  describe('provider picker fallback', () => {
-    it('shows the provider picker when user has no active provider', () => {
+  describe('diy default state', () => {
+    it('shows the provider picker when user has no active provider and no institutions', () => {
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
@@ -994,9 +1067,56 @@ describe('AccountsPage', () => {
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       expect(
         screen.queryByRole('heading', {
-          name: /unite your accounts/i,
+          name: /unite your financial allies with self-managed/i,
         })
       ).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^link account$/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /add custom institution/i })
+      ).not.toBeInTheDocument();
+    });
+
+    it('shows connect actions in the provider picker when user has no institutions', () => {
+      jest.mocked(useOnlineStatus).mockReturnValue(true);
+      jest.mocked(useProviderCatalog).mockReturnValue(
+        makeProviderCatalogMock({
+          available_providers: ['teller', 'simplefin', 'plaid'],
+          user_provider: null,
+          teller_application_id: 'app_123',
+        })
+      );
+
+      renderAccountsPage();
+
+      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+      const connectButtons = screen.getAllByRole('button', { name: /^connect$/i });
+      expect(connectButtons).toHaveLength(4);
+      expect(connectButtons.every((button) => button.disabled === false)).toBe(true);
+    });
+
+    it('keeps the provider picker open if the simplefin modal is closed before selection completes', async () => {
+      const user = userEvent.setup();
+
+      jest.mocked(useOnlineStatus).mockReturnValue(true);
+      jest.mocked(useProviderCatalog).mockReturnValue(
+        makeProviderCatalogMock({
+          available_providers: ['teller', 'simplefin', 'plaid'],
+          user_provider: null,
+          teller_application_id: 'app_123',
+        })
+      );
+
+      renderAccountsPage();
+
+      await user.click(screen.getAllByRole('button', { name: /^connect$/i })[1]);
+
+      expect(
+        screen.getByRole('dialog', { name: /connect your simplefin bridge/i })
+      ).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: /close modal/i }));
+
+      expect(screen.queryByRole('dialog', { name: /connect your simplefin bridge/i })).toBeNull();
+      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
     });
 
     it('shows the provider picker when user has a provider but no active connections', () => {
@@ -1032,13 +1152,10 @@ describe('AccountsPage', () => {
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       expect(
         screen.queryByRole('heading', {
-          name: /unite your accounts/i,
+          name: /unite your financial allies with self-managed/i,
         })
       ).not.toBeInTheDocument();
-      const connectButtons = screen.getAllByRole('button', { name: /^connect$/i });
-      expect(connectButtons).toHaveLength(4);
-      expect(connectButtons.slice(0, 3).every((button) => button.disabled === false)).toBe(true);
-      expect(connectButtons[3]).toBeDisabled();
+      expect(screen.queryByRole('button', { name: /^link account$/i })).not.toBeInTheDocument();
     });
 
     it('does not show the picker when active connections exist', () => {
@@ -1087,53 +1204,46 @@ describe('AccountsPage', () => {
       ).toBeInTheDocument();
     });
 
-    it('shows teller branding when connected without a persisted user provider', () => {
+    it('opens a restricted provider picker from link account when an aggregator is active', async () => {
+      const user = userEvent.setup();
+
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
-          available_providers: ['plaid', 'teller'],
-          user_provider: null,
+          available_providers: ['teller', 'simplefin', 'plaid', 'diy'],
+          user_provider: 'teller',
           teller_application_id: 'app_123',
         })
       );
-      jest.mocked(useAccountFilter).mockReturnValue({
-        selectedAccountIds: ['acc_1'],
-        allAccountIds: ['acc_1'],
-        isAllAccountsSelected: true,
-        accountsByBank: {
-          'Demo Bank': [
-            {
-              id: 'acc_1',
-              name: 'Checking',
-              account_type: 'depository',
-              balance_ledger: 100,
-              balance_available: 100,
-              mask: '1234',
-              provider: 'teller',
-              institution_name: 'Demo Bank',
-              connection_id: 'conn_1',
-              transaction_count: 0,
-            },
-          ],
-        },
-        loading: false,
-        setSelectedAccountIds: jest.fn(),
-        toggleBank: jest.fn(),
-        toggleAccount: jest.fn(),
-        removeAccountsByIds: jest.fn(),
-      });
+      jest.mocked(useAccountFilter).mockReturnValue(
+        makeTellerAccountFilter({
+          accountsByBank: {
+            'Demo Bank': [
+              {
+                id: 'acc_1',
+                name: 'Checking',
+                account_type: 'depository',
+                balance_ledger: 100,
+                balance_available: 100,
+                mask: '1234',
+                provider: 'teller',
+                institution_name: 'Demo Bank',
+                connection_id: 'conn_1',
+                transaction_count: 0,
+              },
+            ],
+          },
+        })
+      );
 
       renderAccountsPage();
 
       expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
-      expect(
-        screen.getByRole('heading', {
-          name: /unite your accounts with teller/i,
-        })
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: /^link account$/i }).querySelector('img')
-      ).toHaveAttribute('src', '/teller.webp');
+
+      await user.click(screen.getByRole('button', { name: /^link account$/i }));
+
+      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: /^connect$/i })).toHaveLength(2);
     });
 
     it('starts Teller connect from the picker click instead of only selecting the provider', async () => {
@@ -1164,10 +1274,73 @@ describe('AccountsPage', () => {
 
       renderAccountsPage();
 
-      await user.click(screen.getAllByRole('button', { name: 'Connect' })[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Connect' })[2]);
 
       expect(tellerInitiateConnection).toHaveBeenCalledTimes(1);
       expect(chooseProvider).not.toHaveBeenCalled();
+    });
+
+    it('opens the diy institution modal when diy is selected from the provider picker', async () => {
+      const user = userEvent.setup();
+
+      jest.mocked(useOnlineStatus).mockReturnValue(true);
+      jest.mocked(useProviderCatalog).mockReturnValue(
+        makeProviderCatalogMock({
+          available_providers: ['teller', 'simplefin', 'plaid', 'diy'],
+          user_provider: null,
+        })
+      );
+
+      renderAccountsPage();
+
+      await user.click(screen.getAllByRole('button', { name: 'Connect' })[0]);
+
+      expect(screen.getByTestId('diy-institution-modal')).toBeInTheDocument();
+    });
+
+    it('opens the provider picker from link account when only diy institutions exist', async () => {
+      const user = userEvent.setup();
+
+      jest.mocked(useOnlineStatus).mockReturnValue(true);
+      jest.mocked(useProviderCatalog).mockReturnValue(
+        makeProviderCatalogMock({
+          available_providers: ['plaid', 'teller', 'diy'],
+          user_provider: 'diy',
+        })
+      );
+      jest.mocked(useAccountFilter).mockReturnValue(
+        makeTellerAccountFilter({
+          accountsByBank: {
+            'DIY Bank': [
+              {
+                id: 'acc_diy_1',
+                name: 'Checking',
+                account_type: 'checking',
+                balance_ledger: 100,
+                balance_available: 100,
+                mask: '1234',
+                provider: 'diy',
+                institution_name: 'DIY Bank',
+                connection_id: 'conn_diy_1',
+                transaction_count: 0,
+              },
+            ],
+          },
+        })
+      );
+
+      renderAccountsPage();
+
+      await user.click(screen.getByRole('button', { name: /^link account$/i }));
+
+      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'DIY Bank' })).not.toBeInTheDocument();
+      expect(screen.queryByTestId('diy-institution-modal')).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Close provider picker' }));
+
+      expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'DIY Bank' })).toBeInTheDocument();
     });
   });
 

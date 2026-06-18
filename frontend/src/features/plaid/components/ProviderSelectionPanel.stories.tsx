@@ -21,7 +21,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Provider picker with the Self-Hosted eyebrow, pricing and privacy sections, and enabled or disabled provider states.',
+          'Provider picker with pricing and privacy sections, and enabled or disabled provider states.',
       },
     },
   },

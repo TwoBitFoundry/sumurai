@@ -1,7 +1,8 @@
+import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { FinancialProvider } from '@/types/api';
 import type { ProviderCatalogue } from '@/types/providerCatalog';
-import { Badge, cn } from '@/ui/primitives';
+import { cn, IconButton } from '@/ui/primitives';
 import {
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
@@ -22,6 +23,8 @@ interface ProviderSelectionPanelProps {
   providerReadyState?: Partial<Record<FinancialProvider, boolean>>;
   connectingProvider?: FinancialProvider | null;
   onSelectProvider: (provider: FinancialProvider) => void | Promise<void>;
+  onClose?: () => void;
+  visibleProviders?: FinancialProvider[];
   footerContent?: ReactNode;
 }
 
@@ -49,6 +52,8 @@ export const ProviderSelectionPanel = ({
   providerReadyState,
   connectingProvider,
   onSelectProvider,
+  onClose,
+  visibleProviders,
   footerContent,
 }: ProviderSelectionPanelProps) => {
   const currentConnectingProvider = connectingProvider ?? null;
@@ -95,18 +100,35 @@ export const ProviderSelectionPanel = ({
     user_provider: null,
     teller_application_id: tellerApplicationId ?? undefined,
   };
+  const providersToRender = (visibleProviders ?? PROVIDER_PRICE_ORDER).filter((provider) =>
+    PROVIDER_PRICE_ORDER.includes(provider)
+  );
 
   return (
     <section className={panelClasses} data-testid="provider-selection-panel">
+      {onClose ? (
+        <IconButton
+          type="button"
+          variant="ghost"
+          size="sm"
+          aria-label="Close provider picker"
+          onClick={onClose}
+          className={cn(
+            'absolute',
+            'right-3',
+            'top-3',
+            'z-20',
+            'sm:right-4',
+            'sm:top-4',
+            'md:right-8',
+            'md:top-8'
+          )}
+        >
+          <X aria-hidden />
+        </IconButton>
+      ) : null}
       <div className={cn('relative', 'z-10', 'flex', 'flex-col', 'gap-8')}>
-        <div className={cn('w-full', 'max-w-4xl', 'space-y-3', 'text-left')}>
-          <Badge
-            variant="default"
-            size="lg"
-            className={cn('px-4', 'uppercase', 'tracking-[0.14em]')}
-          >
-            Self-Hosted
-          </Badge>
+        <div className={cn('w-full', 'max-w-4xl', 'space-y-3', 'text-left', onClose && 'pr-10')}>
           <h1
             className={cn(
               uiTypographyRecipes.pageTitle,
@@ -122,7 +144,7 @@ export const ProviderSelectionPanel = ({
         </div>
 
         <div className={cn('grid', 'gap-6', 'md:grid-cols-2', 'lg:grid-cols-3', 'lg:gap-4')}>
-          {PROVIDER_PRICE_ORDER.map((provider) => (
+          {providersToRender.map((provider) => (
             <ProviderSelectionCard
               key={provider}
               provider={provider}

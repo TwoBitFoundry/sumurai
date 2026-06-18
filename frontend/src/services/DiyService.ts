@@ -3,6 +3,7 @@ import type {
   CreateDiyAccountResponse,
   CreateDiyInstitutionRequest,
   CreateDiyInstitutionResponse,
+  DisconnectResponse,
 } from '@/types/api';
 import { ApiClient } from './ApiClient';
 
@@ -20,5 +21,9 @@ export class DiyService {
       `/diy/institutions/${connectionId}/accounts`,
       request
     );
+  }
+
+  static async disconnectInstitution(connectionId: string): Promise<DisconnectResponse> {
+    return ApiClient.delete<DisconnectResponse>(`/diy/institutions/${connectionId}`);
   }
 }

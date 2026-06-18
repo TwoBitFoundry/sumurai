@@ -38,6 +38,7 @@ import {
 
 export interface UseFinancialConnectionOptions {
   provider: SyncProvider;
+  mountKey?: string;
   onConnectionSuccess?: (institutionName: string) => void;
   onError?: (error: string) => void;
   onSimpleFinAuthRequired?: (institutions: SimpleFinInstitutionAuthRequired[]) => void;
@@ -63,6 +64,7 @@ export function useFinancialConnection(
 ): UseFinancialConnectionReturn {
   const {
     provider,
+    mountKey,
     onConnectionSuccess,
     onError,
     onSimpleFinAuthRequired,
@@ -132,7 +134,7 @@ export function useFinancialConnection(
 
   const connectionMount = useMemo(() => {
     const bridge = createElement(FinancialConnectionStrategyBridge, {
-      key: provider,
+      key: `${provider}-${mountKey ?? 'default'}`,
       provider,
       context: strategyContext,
       strategyRef,
@@ -149,7 +151,7 @@ export function useFinancialConnection(
       }),
       bridge,
     ]);
-  }, [provider, sdkLaunchBackdropActive, strategyContext]);
+  }, [mountKey, provider, sdkLaunchBackdropActive, strategyContext]);
 
   const waitForSdkReady = useCallback(async (timeoutMs: number) => {
     await new Promise((r) => setTimeout(r, 0));

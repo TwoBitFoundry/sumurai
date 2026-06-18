@@ -169,6 +169,7 @@ use utoipa::OpenApi;
         crate::select_authenticated_provider,
         crate::create_diy_institution,
         crate::create_diy_account,
+        crate::disconnect_diy_institution,
         crate::connect_authenticated_provider,
         crate::get_authenticated_provider_status,
         crate::get_authenticated_simplefin_ignored_institutions,

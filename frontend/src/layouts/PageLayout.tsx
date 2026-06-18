@@ -96,6 +96,7 @@ interface PageLayoutProps {
   error?: string | null;
   children?: ReactNode;
   className?: string;
+  hideHero?: boolean;
 }
 
 export function PageLayout({
@@ -107,6 +108,7 @@ export function PageLayout({
   error,
   children,
   className,
+  hideHero = false,
 }: PageLayoutProps) {
   const statsHostRef = useRef<HTMLDivElement>(null);
   const [statsHeight, setStatsHeight] = useState(0);
@@ -141,72 +143,76 @@ export function PageLayout({
 
   return (
     <div className={cn('flex', 'flex-col', 'gap-6', 'md:gap-8', className)} style={layoutStyle}>
-      <section className={cn(...pageLayoutRecipes.shell)}>
-        <div className={cn(pageLayoutRecipes.shellSurface)}>
-          <div className={cn(pageLayoutRecipes.innerRing)} />
-          <div className={cn(pageLayoutRecipes.innerGradient)} />
-        </div>
-
-        <div className={cn('relative', 'z-10', 'flex', 'flex-col', 'gap-5')}>
-          <div
-            className={cn(
-              'flex',
-              'flex-col',
-              'gap-5',
-              'lg:flex-row',
-              'lg:items-start',
-              'lg:justify-between'
-            )}
-          >
-            <div className={cn('max-w-2xl', 'space-y-3')}>
-              {badge && <span className={cn(pageLayoutRecipes.badge)}>{badge}</span>}
-              <div className="space-y-2">
-                <div className={cn(...pageLayoutRecipes.titleInlineHost)}>
-                  <h1 className={cn(pageLayoutRecipes.titleInlineHeading)}>{title}</h1>
-                  {subtitle ? (
-                    <>
-                      {' '}
-                      <HeroSubtitleInfo pageTitle={title} subtitle={subtitle} />
-                    </>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            {actions && (
-              <div className={cn('flex', 'flex-wrap', 'items-center', 'justify-between', 'gap-3')}>
-                {actions}
-              </div>
-            )}
+      {!hideHero ? (
+        <section className={cn(...pageLayoutRecipes.shell)}>
+          <div className={cn(pageLayoutRecipes.shellSurface)}>
+            <div className={cn(pageLayoutRecipes.innerRing)} />
+            <div className={cn(pageLayoutRecipes.innerGradient)} />
           </div>
 
-          {error && (
-            <div className={cn(pageLayoutRecipes.error)}>
-              <div className={cn(pageLayoutRecipes.errorText)}>Error: {error}</div>
-            </div>
-          )}
-
-          {stats ? (
+          <div className={cn('relative', 'z-10', 'flex', 'flex-col', 'gap-5')}>
             <div
-              aria-hidden
-              data-testid="page-layout-stats-placeholder"
-              className={cn('pointer-events-none', 'invisible')}
-              style={{ height: 'var(--page-layout-stats-height, 0px)' }}
-            />
-          ) : null}
-        </div>
-      </section>
+              className={cn(
+                'flex',
+                'flex-col',
+                'gap-5',
+                'lg:flex-row',
+                'lg:items-start',
+                'lg:justify-between'
+              )}
+            >
+              <div className={cn('max-w-2xl', 'space-y-3')}>
+                {badge && <span className={cn(pageLayoutRecipes.badge)}>{badge}</span>}
+                <div className="space-y-2">
+                  <div className={cn(...pageLayoutRecipes.titleInlineHost)}>
+                    <h1 className={cn(pageLayoutRecipes.titleInlineHeading)}>{title}</h1>
+                    {subtitle ? (
+                      <>
+                        {' '}
+                        <HeroSubtitleInfo pageTitle={title} subtitle={subtitle} />
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
 
-      {stats || children ? (
+              {actions && (
+                <div
+                  className={cn('flex', 'flex-wrap', 'items-center', 'justify-between', 'gap-3')}
+                >
+                  {actions}
+                </div>
+              )}
+            </div>
+
+            {error && (
+              <div className={cn(pageLayoutRecipes.error)}>
+                <div className={cn(pageLayoutRecipes.errorText)}>Error: {error}</div>
+              </div>
+            )}
+
+            {stats ? (
+              <div
+                aria-hidden
+                data-testid="page-layout-stats-placeholder"
+                className={cn('pointer-events-none', 'invisible')}
+                style={{ height: 'var(--page-layout-stats-height, 0px)' }}
+              />
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
+      {(!hideHero && stats) || children ? (
         <div
           className={cn(
             ...pageLayoutRecipes.stickyScope,
-            stats && pageLayoutRecipes.stickyStatsOverlap,
-            stats && pageLayoutRecipes.stickyStatsInset
+            !hideHero && stats && pageLayoutRecipes.stickyStatsOverlap,
+            !hideHero && stats && pageLayoutRecipes.stickyStatsInset
           )}
           data-testid="page-layout-sticky-scope"
         >
-          {stats ? (
+          {!hideHero && stats ? (
             <div ref={statsHostRef} className={cn('contents')} data-page-layout-stats-host>
               {stats}
             </div>
@@ -217,7 +223,7 @@ export function PageLayout({
                 'w-full',
                 'min-w-0',
                 'max-w-full',
-                stats && pageLayoutRecipes.stickyContentGap
+                !hideHero && stats && pageLayoutRecipes.stickyContentGap
               )}
             >
               {children}

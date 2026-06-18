@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { Link } from 'lucide-react';
 import type { ButtonHTMLAttributes } from 'react';
 import { Button, cn } from '@/ui/primitives';
 import { control } from '@/ui/recipes';
@@ -37,7 +37,7 @@ const ConnectButton = ({
           )}
         />
       ) : (
-        <Plus className={control.glyph[size]} />
+        <Link aria-hidden className={control.glyph[size]} />
       )}
       <span>{children ?? 'Add ally account'}</span>
     </Button>

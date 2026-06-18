@@ -102,6 +102,38 @@ describe('BankCard', () => {
     expect(screen.getByRole('button', { name: 'Show accounts' })).toBeVisible();
   });
 
+  it('hides the sync action for DIY banks', () => {
+    render(
+      <BankCard
+        bank={{
+          id: 'bank-1',
+          name: 'My Bank',
+          short: 'MB',
+          status: 'connected',
+          provider: 'diy',
+          accounts: [],
+        }}
+        onSync={jest.fn()}
+        onDisconnect={jest.fn()}
+        onAddAccount={jest.fn()}
+        isOnline
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Sync now' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add account' })).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Add account' }).querySelector('svg.lucide-plus')
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Add account' }).querySelector('svg.lucide-plus')
+        ?.parentElement?.className
+    ).toContain(control.glyph.md);
+    expect(
+      screen.getByRole('status', { name: 'Connected' }).querySelector('svg.lucide-shield')
+    ).toBeTruthy();
+  });
+
   it('renders an export menu in the header and exports the institution', async () => {
     const user = userEvent.setup();
     const onExport = jest.fn().mockResolvedValue(undefined);

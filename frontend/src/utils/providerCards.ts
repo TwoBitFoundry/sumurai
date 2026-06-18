@@ -6,6 +6,7 @@ import {
   Fingerprint,
   Landmark,
   RefreshCw,
+  Shield,
   ShieldCheck,
   Sparkles,
   Zap,
@@ -14,6 +15,7 @@ import type { FinancialProvider } from '@/types/api';
 import { cn } from '@/ui/primitives';
 import { status as uiStatusRecipes } from '@/ui/recipes';
 import { featurePalettes } from '@/ui/tokens';
+import type { SyncProvider } from '@/utils/queryInvalidation';
 
 export type ProviderCardSection = {
   icon: LucideIcon;
@@ -34,11 +36,24 @@ export type ProviderCardConfig = {
   badge: string;
   region: string;
   sections: ProviderCardSection[];
-  privacyHref: string;
+  privacyHref?: string;
   logoSrc?: string;
+  logoIcon?: LucideIcon;
 };
 
-export const PROVIDER_PRICE_ORDER: FinancialProvider[] = ['teller', 'simplefin', 'plaid', 'diy'];
+export const PROVIDER_PRICE_ORDER: FinancialProvider[] = ['diy', 'simplefin', 'teller', 'plaid'];
+
+export function resolvePickerVisibleProviders(
+  activeAggregator: SyncProvider | null
+): FinancialProvider[] {
+  if (activeAggregator) {
+    return PROVIDER_PRICE_ORDER.filter(
+      (provider) => provider === 'diy' || provider === activeAggregator
+    );
+  }
+
+  return [...PROVIDER_PRICE_ORDER];
+}
 
 export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig> = {
   plaid: {
@@ -84,7 +99,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       {
         icon: RefreshCw,
         label: 'Sync',
-        value: 'Automatic',
+        value: 'On-demand',
         synced: true,
       },
     ],
@@ -132,7 +147,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       {
         icon: RefreshCw,
         label: 'Sync',
-        value: 'Automatic',
+        value: 'On-demand',
         synced: true,
       },
     ],
@@ -157,7 +172,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       {
         icon: ShieldCheck,
         label: 'Privacy',
-        value: 'Strongest',
+        value: 'Strong',
         privacyDetails: [
           {
             label: 'How it connects',
@@ -180,16 +195,16 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       {
         icon: RefreshCw,
         label: 'Sync',
-        value: 'Automatic',
+        value: 'On-demand',
         synced: true,
       },
     ],
   },
   diy: {
-    title: 'DIY',
-    badge: 'Self-Hosted',
-    region: 'Unlimited',
-    privacyHref: '#',
+    title: 'Self-Managed',
+    badge: 'DIY',
+    region: 'Any (USD)',
+    logoIcon: Shield,
     sections: [
       {
         icon: CircleDollarSign,

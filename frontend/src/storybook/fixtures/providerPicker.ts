@@ -5,8 +5,8 @@ export const STORY_TELLER_APPLICATION_ID = 'story-teller-app';
 export const STORY_ALL_PROVIDERS = ['plaid', 'teller', 'simplefin'] as FinancialProvider[];
 
 export const STORY_PROVIDER_PICKER_CONNECT_ORDER = [
-  'teller',
   'simplefin',
+  'teller',
   'plaid',
 ] as FinancialProvider[];
 

@@ -2042,9 +2042,9 @@ async fn given_last_simplefin_org_connection_when_disconnect_then_clears_root_an
         )
         .times(1)
         .returning(|_, _| Box::pin(async { Ok(true) }));
-    mock_db.expect_delete_provider_connection().times(0);
-    mock_db.expect_delete_provider_transactions().times(0);
-    mock_db.expect_delete_provider_accounts().times(0);
+    mock_db
+        .expect_disconnect_provider_connection_cascade()
+        .times(0);
     mock_db.expect_insert_simplefin_hidden_org().times(0);
     mock_db
         .expect_update_user_provider()
@@ -2105,9 +2105,9 @@ async fn given_simplefin_connection_remaining_when_disconnect_then_keeps_root_cr
     mock_db.expect_delete_simplefin_root_credential().times(0);
     mock_db.expect_list_simplefin_hidden_orgs().times(0);
     mock_db.expect_remove_simplefin_hidden_org().times(0);
-    mock_db.expect_delete_provider_connection().times(0);
-    mock_db.expect_delete_provider_transactions().times(0);
-    mock_db.expect_delete_provider_accounts().times(0);
+    mock_db
+        .expect_disconnect_provider_connection_cascade()
+        .times(0);
     mock_db.expect_insert_simplefin_hidden_org().times(0);
     mock_db.expect_update_user_provider().times(0);
 
@@ -2150,17 +2150,8 @@ async fn given_teller_connection_when_disconnect_then_does_not_call_simplefin_di
     mock_db.expect_disconnect_simplefin_org().times(0);
     mock_db.expect_insert_simplefin_hidden_org().times(0);
     mock_db
-        .expect_delete_provider_transactions()
-        .returning(|_| Box::pin(async { Ok(0) }));
-    mock_db
-        .expect_delete_provider_accounts()
-        .returning(|_| Box::pin(async { Ok(0) }));
-    mock_db
-        .expect_delete_provider_credentials()
-        .returning(|_| Box::pin(async { Ok(()) }));
-    mock_db
-        .expect_delete_provider_connection()
-        .returning(|_, _| Box::pin(async { Ok(()) }));
+        .expect_disconnect_provider_connection_cascade()
+        .returning(|_, _| Box::pin(async { Ok((0, 0)) }));
     mock_db
         .expect_get_all_provider_connections_by_user()
         .with(mockall::predicate::eq(user_id))

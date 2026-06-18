@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, Download, RefreshCw, Unlink } from 'lucide-react';
+import { ChevronDown, Download, Plus, RefreshCw, Unlink } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { getSessionBankExpanded, setSessionBankExpanded } from '@/utils/sessionPreferences';
@@ -79,7 +79,7 @@ export const BankCard: React.FC<BankCardProps> = ({
   const syncStartRef = useRef<number | null>(null);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [disconnectLoading, setDisconnectLoading] = useState(false);
-  const showSyncButton = bank.provider !== 'simplefin';
+  const showSyncButton = bank.provider !== 'simplefin' && bank.provider !== 'diy';
 
   useEffect(() => {
     if (!loading) {
@@ -195,15 +195,17 @@ export const BankCard: React.FC<BankCardProps> = ({
 
   const addAccountControl =
     bank.provider === 'diy' && onAddAccount ? (
-      <Button
+      <IconButton
         type="button"
-        variant="secondary"
+        variant="ghost"
         size="md"
         onClick={() => onAddAccount(bank.id)}
-        className={cn('shrink-0', 'normal-case')}
+        aria-label="Add account"
+        title="Add account"
+        className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
       >
-        Add account
-      </Button>
+        <Plus />
+      </IconButton>
     ) : null;
 
   const renderGroup = (group: AccountGroupKey, accounts: Account[]) => (
@@ -297,7 +299,7 @@ export const BankCard: React.FC<BankCardProps> = ({
                     'shrink-0'
                   )}
                 >
-                  <StatusPill status={bank.status} />
+                  <StatusPill status={bank.status} provider={bank.provider} />
                 </div>
                 <h3
                   title={bank.name}

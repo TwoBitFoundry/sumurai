@@ -57,6 +57,6 @@ Run focused checks based on the change:
 
 - `bun --cwd=frontend run design:lint`
 - `bun --cwd=frontend run design:guard` when `DESIGN.md` or token generation is involved
-- `bun --cwd=frontend test`
+- `bun --cwd=frontend run test`
 - `bun --cwd=frontend run typecheck`
 - `bun --cwd=frontend run build`

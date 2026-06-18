@@ -2089,24 +2089,9 @@ async fn given_owned_connection_id_when_disconnect_then_returns_200() {
         });
 
     mock_db
-        .expect_delete_provider_transactions()
+        .expect_disconnect_provider_connection_cascade()
         .times(1)
-        .returning(|_| Box::pin(async { Ok(10) }));
-
-    mock_db
-        .expect_delete_provider_accounts()
-        .times(1)
-        .returning(|_| Box::pin(async { Ok(2) }));
-
-    mock_db
-        .expect_delete_provider_credentials()
-        .times(1)
-        .returning(|_| Box::pin(async { Ok(()) }));
-
-    mock_db
-        .expect_delete_provider_connection()
-        .times(1)
-        .returning(|_, _| Box::pin(async { Ok(()) }));
+        .returning(|_, _| Box::pin(async { Ok((10, 2)) }));
     mock_db
         .expect_get_all_provider_connections_by_user()
         .with(mockall::predicate::eq(user.id))

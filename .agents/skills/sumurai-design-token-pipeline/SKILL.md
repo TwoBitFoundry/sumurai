@@ -42,5 +42,5 @@ Before token pipeline work, read:
 - `bun --cwd=frontend run design:lint`
 - `bun --cwd=frontend run design:export:dtcg`
 - `bun --cwd=frontend run design:export:tailwind`
-- `bun --cwd=frontend test -- --runTestsByPath tests/ui/tokens/runtime.test.ts`
+- `bun --cwd=frontend run test -- --runTestsByPath tests/ui/tokens/runtime.test.ts`
 - `bun --cwd=frontend run typecheck`

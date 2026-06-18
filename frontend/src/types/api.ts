@@ -204,7 +204,7 @@ export interface CreateDiyAccountRequest {
   name: string;
   account_type: string;
   mask?: string | null;
-  balance?: string | null;
+  balance: string;
 }
 
 export interface CreateDiyAccountResponse {
@@ -264,11 +264,13 @@ export interface DataCleared {
   cache_keys: string[];
 }
 
-export interface PlaidDisconnectResponse {
+export interface DisconnectResponse {
   success: boolean;
   message: string;
   data_cleared: DataCleared;
 }
+
+export type PlaidDisconnectResponse = DisconnectResponse;
 
 export interface AnalyticsSpendingResponse {
   total: number;

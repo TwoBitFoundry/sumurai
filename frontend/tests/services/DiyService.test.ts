@@ -4,14 +4,17 @@ import { DiyService } from '@/services/DiyService';
 
 describe('DiyService', () => {
   let postSpy: jest.SpiedFunction<typeof ApiClient.post>;
+  let deleteSpy: jest.SpiedFunction<typeof ApiClient.delete>;
 
   beforeEach(() => {
     jest.clearAllMocks();
     postSpy = jest.spyOn(ApiClient, 'post');
+    deleteSpy = jest.spyOn(ApiClient, 'delete');
   });
 
   afterEach(() => {
     postSpy.mockRestore();
+    deleteSpy.mockRestore();
   });
 
   it('creates a DIY institution through the dedicated endpoint', async () => {
@@ -42,5 +45,19 @@ describe('DiyService', () => {
       balance: '1000.00',
     });
     expect(result).toEqual({ id: 'acc-1', name: 'Checking', account_type: 'checking' });
+  });
+
+  it('disconnects a DIY institution through the dedicated endpoint', async () => {
+    deleteSpy.mockResolvedValue({
+      success: true,
+      message: 'Disconnected',
+      data_cleared: { transactions: 2, accounts: 1, cache_keys: [] },
+    } as never);
+
+    const result = await DiyService.disconnectInstitution('conn-1');
+
+    expect(ApiClient.delete).toHaveBeenCalledWith('/diy/institutions/conn-1');
+    expect(result.success).toBe(true);
+    expect(result.data_cleared.accounts).toBe(1);
   });
 });
