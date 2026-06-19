@@ -16,4 +16,6 @@ pub use simplefin_credential_resolver::SimpleFinCredentialResolver;
 pub use simplefin_provider::SimpleFinProvider;
 pub use teller_credential_resolver::TellerCredentialResolver;
 pub use teller_provider::TellerProvider;
+#[cfg(test)]
+pub use trait_definition::MockFinancialDataProvider;
 pub use trait_definition::{FinancialDataProvider, InstitutionInfo, ProviderCredentials};

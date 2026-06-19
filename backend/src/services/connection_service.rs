@@ -215,6 +215,12 @@ impl ConnectionService {
         self.provider_registry.get(provider)
     }
 
+    async fn set_user_provider(&self, user_id: &Uuid, provider: &str) -> Result<()> {
+        self.db_repository
+            .update_user_provider(user_id, provider)
+            .await
+    }
+
     #[tracing::instrument(
         skip(self),
         fields(connection_id = %connection_id)
@@ -450,6 +456,14 @@ impl ConnectionService {
             }
         }
 
+        if let Err(error) = self.set_user_provider(user_id, "teller").await {
+            tracing::warn!(
+                "Failed to persist active provider after Teller connect for user {}: {}",
+                user_id,
+                error
+            );
+        }
+
         Ok(ProviderConnectResponse {
             connection_id: connection.id.to_string(),
             institution_name,
@@ -557,7 +571,15 @@ impl ConnectionService {
         request: &ProviderConnectRequest,
     ) -> Result<ProviderConnectResponse, SimpleFinConnectError> {
         if let Some(service) = self.simplefin_connection_service.as_ref() {
-            return service.connect(user_id, jwt_id, request).await;
+            let response = service.connect(user_id, jwt_id, request).await?;
+            if let Err(error) = self.set_user_provider(user_id, "simplefin").await {
+                tracing::warn!(
+                    "Failed to persist active provider after SimpleFIN connect for user {}: {}",
+                    user_id,
+                    error
+                );
+            }
+            return Ok(response);
         }
 
         if request.provider.as_str() != "simplefin" {
@@ -646,6 +668,14 @@ impl ConnectionService {
         let connection_id = first_connection_id
             .expect("institution_count > 0 implies a persisted connection id")
             .to_string();
+
+        if let Err(error) = self.set_user_provider(user_id, "simplefin").await {
+            tracing::warn!(
+                "Failed to persist active provider after SimpleFIN connect for user {}: {}",
+                user_id,
+                error
+            );
+        }
 
         Ok(ProviderConnectResponse {
             connection_id,
@@ -859,6 +889,18 @@ impl ConnectionService {
             institution_name = %connection.institution_name.as_deref().unwrap_or("Unknown Bank"),
             "Provider connection established"
         );
+
+        if let Err(error) = self
+            .set_user_provider(user_id, provider.provider_name())
+            .await
+        {
+            tracing::warn!(
+                "Failed to persist active provider after {} token exchange for user {}: {}",
+                provider.provider_name(),
+                user_id,
+                error
+            );
+        }
 
         Ok(ExchangeTokenResponse {
             access_token: credentials.access_token,

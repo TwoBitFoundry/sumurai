@@ -61,10 +61,7 @@ describe('useTellerLinkFlow', () => {
         provider: 'plaid',
         connections: [],
       },
-      'GET /api/providers/accounts': errJson(404, {
-        message: 'not found',
-      }),
-      'GET /api/plaid/accounts': [
+      'GET /api/providers/accounts': [
         {
           id: 'acc_1',
           name: 'Everyday Checking',
@@ -126,6 +123,7 @@ describe('useTellerLinkFlow', () => {
         provider: 'teller',
         connections: [
           {
+            provider: 'teller',
             connection_id: 'conn_1',
             institution_name: 'First Platypus Bank',
             is_connected: true,
@@ -136,10 +134,7 @@ describe('useTellerLinkFlow', () => {
           },
         ],
       },
-      'GET /api/providers/accounts': errJson(404, {
-        message: 'not found',
-      }),
-      'GET /api/plaid/accounts': [
+      'GET /api/providers/accounts': [
         {
           id: 'acc_1',
           name: 'Everyday Checking',
@@ -223,7 +218,7 @@ describe('useTellerLinkFlow', () => {
     expect(first.result.current.connections).toHaveLength(1);
 
     const statusCallsBefore = getFetchCount('/providers/status');
-    const accountsCallsBefore = getFetchCount('/plaid/accounts');
+    const accountsCallsBefore = getFetchCount('/providers/accounts');
 
     first.unmount();
 
@@ -240,7 +235,7 @@ describe('useTellerLinkFlow', () => {
     expect(second.result.current.loading).toBe(false);
     expect(second.result.current.connections).toHaveLength(1);
     expect(getFetchCount('/providers/status')).toBe(statusCallsBefore);
-    expect(getFetchCount('/plaid/accounts')).toBe(accountsCallsBefore);
+    expect(getFetchCount('/providers/accounts')).toBe(accountsCallsBefore);
   });
 
   it('does not surface a load error when there are no Teller connections', async () => {

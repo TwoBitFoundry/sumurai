@@ -126,7 +126,7 @@ export const usePlaidConnections = (
       const allAccounts = normalizeAccounts(backendAccounts);
 
       const statusConnections: PlaidConnection[] = statusArray
-        .filter((connStatus) => connStatus.is_connected)
+        .filter((connStatus) => connStatus.is_connected && connStatus.provider === 'plaid')
         .map((connStatus) => {
           const connectionId = connStatus.connection_id ? String(connStatus.connection_id) : null;
           let matchingAccounts: NormalizedAccount[];

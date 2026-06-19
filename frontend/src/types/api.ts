@@ -180,6 +180,7 @@ export interface ProviderConnectionStatus {
   institution_name: string | null;
   connection_id: string | null;
   item_id?: string | null;
+  provider: string;
   transaction_count: number;
   account_count: number;
   sync_in_progress: boolean;

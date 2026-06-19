@@ -59,6 +59,7 @@ describe('SimpleFinService', () => {
         provider: 'simplefin',
         connections: [
           {
+            provider: 'simplefin',
             is_connected: true,
             last_sync_at: '2024-01-15T10:30:00Z',
             institution_name: 'Bank A',
@@ -118,6 +119,7 @@ describe('SimpleFinService', () => {
         provider: 'simplefin',
         connections: [
           {
+            provider: 'simplefin',
             is_connected: true,
             last_sync_at: null,
             institution_name: 'Bank B',
@@ -176,6 +178,7 @@ describe('SimpleFinService', () => {
         provider: 'simplefin',
         connections: [
           {
+            provider: 'simplefin',
             is_connected: true,
             last_sync_at: null,
             institution_name: 'Bank A',
@@ -213,6 +216,7 @@ describe('SimpleFinService', () => {
         provider: 'simplefin',
         connections: [
           {
+            provider: 'simplefin',
             is_connected: true,
             last_sync_at: null,
             institution_name: 'Bank A',
@@ -261,6 +265,7 @@ describe('SimpleFinService', () => {
         provider: 'simplefin',
         connections: [
           {
+            provider: 'simplefin',
             is_connected: true,
             last_sync_at: null,
             institution_name: 'SimpleFIN Demo',

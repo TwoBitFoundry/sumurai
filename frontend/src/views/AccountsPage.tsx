@@ -84,13 +84,35 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const isOnline = useOnlineStatus();
   const accountFilter = useAccountFilter();
   const providerCatalog = useProviderCatalog();
+  const connectedProviders = useMemo(() => {
+    const providers = new Set<FinancialProvider>();
+    for (const accounts of Object.values(accountFilter.accountsByBank)) {
+      for (const account of accounts) {
+        if (account.provider) {
+          providers.add(account.provider);
+        }
+      }
+    }
+    return providers;
+  }, [accountFilter.accountsByBank]);
   const primaryProvider = useMemo(() => {
-    const preferred = providerCatalog.userProvider ?? providerCatalog.availableProviders[0];
+    if (providerCatalog.userProvider) {
+      return providerCatalog.resolveConnectProvider(providerCatalog.userProvider);
+    }
+
+    const providerOrder: FinancialProvider[] = ['teller', 'simplefin', 'plaid'];
+    for (const provider of providerOrder) {
+      if (connectedProviders.has(provider)) {
+        return providerCatalog.resolveConnectProvider(provider);
+      }
+    }
+
+    const preferred = providerCatalog.availableProviders[0];
     if (!preferred) {
       return 'simplefin' as const;
     }
     return providerCatalog.resolveConnectProvider(preferred);
-  }, [providerCatalog]);
+  }, [connectedProviders, providerCatalog]);
   const primaryProviderCard = getProviderCardConfig(primaryProvider);
   const providerLabel = primaryProviderCard.title;
   const connectAccountLabel = 'Link Account';
@@ -225,12 +247,12 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     null
   );
   const pickerPrevInProgressRef = useRef(false);
+  const primaryConnectionPrevInProgressRef = useRef(false);
   const [restoringIgnoredOrgConnId, setRestoringIgnoredOrgConnId] = useState<string | null>(null);
   const accountsDataLoading = providerCatalog.loading || accountFilter.loading;
   const hasActiveConnections = banks.some((bank) => bank.connectionId != null);
 
-  const needsProviderPick =
-    !accountsDataLoading && (providerCatalog.userProvider == null || !hasActiveConnections);
+  const needsProviderPick = !accountsDataLoading && !hasActiveConnections;
   const prevNeedsProviderPickRef = useRef(needsProviderPick);
   const pickerConnectionFlow =
     pickerConnectingProvider === 'plaid'
@@ -336,6 +358,49 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
     void connectionFlow.initiateConnection();
   }, [connectionFlow, openConnectModal, primaryProvider]);
+
+  useEffect(() => {
+    if (
+      accountsDataLoading ||
+      providerCatalog.userProvider != null ||
+      connectedProviders.size !== 1
+    ) {
+      return;
+    }
+
+    const [provider] = connectedProviders;
+    void providerCatalog.chooseProvider(provider).catch(() => undefined);
+  }, [accountsDataLoading, connectedProviders, providerCatalog]);
+
+  useEffect(() => {
+    if (needsProviderPick) {
+      primaryConnectionPrevInProgressRef.current = false;
+      return;
+    }
+
+    const wasInProgress = primaryConnectionPrevInProgressRef.current;
+    primaryConnectionPrevInProgressRef.current = connectionFlow.connectionInProgress;
+
+    if (
+      providerCatalog.userProvider == null &&
+      wasInProgress &&
+      !connectionFlow.connectionInProgress &&
+      connectionFlow.isConnected &&
+      !connectionFlow.isSyncing
+    ) {
+      void providerCatalog
+        .chooseProvider(primaryProvider)
+        .catch(() => pushAccountsToast('Unable to select provider right now', 'error'));
+    }
+  }, [
+    connectionFlow.connectionInProgress,
+    connectionFlow.isConnected,
+    connectionFlow.isSyncing,
+    needsProviderPick,
+    primaryProvider,
+    providerCatalog,
+    pushAccountsToast,
+  ]);
 
   useEffect(() => {
     if (prevNeedsProviderPickRef.current === needsProviderPick) {

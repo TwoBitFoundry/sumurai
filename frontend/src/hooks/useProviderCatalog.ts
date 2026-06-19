@@ -3,7 +3,7 @@
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ProviderCatalogue, ProviderSelectionResult } from '@/types/providerCatalog';
 import {
   getConnectBlockedReason,
@@ -51,6 +51,9 @@ export interface ProviderCatalogState {
 
 const emptyProviders: FinancialProvider[] = [];
 
+const isSupportedFinancialProvider = (value: string): value is FinancialProvider =>
+  value === 'plaid' || value === 'teller' || value === 'simplefin';
+
 export function useProviderCatalog(options: UseProviderCatalogOptions = {}): ProviderCatalogState {
   const gateway = options.gateway ?? apiGateway;
   const queryClient = useQueryClient();
@@ -61,6 +64,14 @@ export function useProviderCatalog(options: UseProviderCatalogOptions = {}): Pro
     staleTime: 5 * 60 * 1000,
   });
   const catalogue = query.data ?? null;
+  const availableProviders = useMemo(
+    () => (catalogue?.available_providers ?? []).filter(isSupportedFinancialProvider),
+    [catalogue]
+  );
+  const userProvider = useMemo(() => {
+    const provider = catalogue?.user_provider;
+    return provider && isSupportedFinancialProvider(provider) ? provider : null;
+  }, [catalogue]);
 
   const chooseProvider = useCallback(
     async (provider: FinancialProvider) => {
@@ -124,8 +135,8 @@ export function useProviderCatalog(options: UseProviderCatalogOptions = {}): Pro
   return {
     loading: query.isPending,
     error: mutationError ?? query.error?.message ?? null,
-    availableProviders: catalogue?.available_providers ?? emptyProviders,
-    userProvider: catalogue?.user_provider ?? null,
+    availableProviders: availableProviders.length > 0 ? availableProviders : emptyProviders,
+    userProvider,
     tellerApplicationId: catalogue?.teller_application_id ?? null,
     tellerEnvironment,
     isProviderAvailable,

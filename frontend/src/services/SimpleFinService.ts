@@ -56,9 +56,7 @@ export class SimpleFinService {
     const status = await ApiClient.get<ProviderStatusResponse>('/providers/status');
 
     return status.connections.filter(
-      (connection) =>
-        connection.is_connected &&
-        (connection.item_id?.startsWith('simplefin_') ?? status.provider === 'simplefin')
+      (connection) => connection.is_connected && connection.provider === 'simplefin'
     );
   }
 

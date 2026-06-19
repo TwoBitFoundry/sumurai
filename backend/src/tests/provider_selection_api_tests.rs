@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use anyhow::Result;
-use async_trait::async_trait;
 use axum::body::to_bytes;
 use serde_json::json;
 use tower::ServiceExt;
@@ -11,11 +9,8 @@ use crate::config::MockEnvironment;
 use crate::models::account::Account;
 use crate::models::auth::User;
 use crate::models::plaid::ProviderConnection;
-use crate::models::transaction::ProviderTransactionsResult;
 use crate::openapi::init_openapi;
-use crate::providers::{
-    FinancialDataProvider, InstitutionInfo, ProviderCredentials, ProviderRegistry,
-};
+use crate::providers::{FinancialDataProvider, MockFinancialDataProvider, ProviderRegistry};
 use crate::services::cache_service::MockCacheService;
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::sync_service::SyncService;
@@ -32,65 +27,13 @@ use crate::test_fixtures::{
 };
 use crate::{create_app, AppState, Config, Router};
 
-struct MockProvider {
-    name: &'static str,
-}
-
-#[async_trait]
-impl FinancialDataProvider for MockProvider {
-    fn provider_name(&self) -> &str {
-        self.name
-    }
-
-    async fn create_link_token(&self, _user_id: &Uuid) -> Result<String> {
-        Ok(format!("{}_link_token", self.name))
-    }
-
-    async fn exchange_public_token(&self, _public_token: &str) -> Result<ProviderCredentials> {
-        Ok(ProviderCredentials {
-            provider: self.name.to_string(),
-            access_token: format!("{}_access_token", self.name),
-            item_id: format!("{}_item", self.name),
-            certificate: None,
-            private_key: None,
-        })
-    }
-
-    async fn get_accounts(&self, _credentials: &ProviderCredentials) -> Result<Vec<Account>> {
-        Ok(vec![])
-    }
-
-    async fn get_transactions(
-        &self,
-        _credentials: &ProviderCredentials,
-        _start_date: chrono::NaiveDate,
-        _end_date: chrono::NaiveDate,
-    ) -> Result<ProviderTransactionsResult> {
-        Ok(ProviderTransactionsResult {
-            transactions: vec![],
-            page_count: 0,
-        })
-    }
-
-    async fn get_institution_info(
-        &self,
-        _credentials: &ProviderCredentials,
-    ) -> Result<InstitutionInfo> {
-        Ok(InstitutionInfo {
-            institution_id: format!("{}_institution", self.name),
-            name: format!("{} Bank", self.name),
-            logo: None,
-            color: None,
-        })
-    }
-}
-
 fn provider_registry(names: &[&'static str]) -> Arc<ProviderRegistry> {
     let providers = names.iter().map(|name| {
-        (
-            *name,
-            Arc::new(MockProvider { name }) as Arc<dyn FinancialDataProvider>,
-        )
+        let mut provider = MockFinancialDataProvider::new();
+        provider
+            .expect_provider_name()
+            .return_const((*name).to_string());
+        (*name, Arc::new(provider) as Arc<dyn FinancialDataProvider>)
     });
 
     Arc::new(ProviderRegistry::from_providers(providers))
@@ -709,6 +652,45 @@ async fn given_empty_provider_when_fetching_provider_info_then_returns_null_user
     assert_eq!(
         payload["available_providers"],
         json!(vec!["simplefin".to_string()])
+    );
+}
+
+#[tokio::test]
+async fn given_unregistered_stored_provider_when_fetching_provider_info_then_returns_null_user_provider(
+) {
+    let (user, token) = crate::test_fixtures::TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+    let mut mock_db = MockDatabaseRepository::new();
+
+    mock_db
+        .expect_get_user_by_id()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let user = User {
+                provider: "diy".to_string(),
+                ..user.clone()
+            };
+            Box::pin(async move { Ok(Some(user)) })
+        });
+
+    let app = build_test_app(mock_db, provider_registry(&["plaid", "teller"])).await;
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::GET)
+        .uri("/api/providers/info")
+        .header("Cookie", format!("auth_token={}", token))
+        .body(axum::body::Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(payload["user_provider"], serde_json::Value::Null);
+    assert_eq!(
+        payload["available_providers"],
+        json!(vec!["plaid".to_string(), "teller".to_string()])
     );
 }
 

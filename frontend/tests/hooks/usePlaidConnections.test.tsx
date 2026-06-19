@@ -83,6 +83,63 @@ describe('usePlaidConnections', () => {
     expect(result.current.connections[0].accounts).toHaveLength(2);
   });
 
+  it('ignores non-plaid connections from provider status', async () => {
+    fetchMock = installFetchRoutes({
+      'GET /api/providers/status': {
+        provider: '',
+        connections: [
+          {
+            provider: 'teller',
+            connection_id: 'conn_teller',
+            institution_name: 'Teller Bank',
+            last_sync_at: '2026-06-18T12:00:00Z',
+            transaction_count: 10,
+            account_count: 1,
+            is_connected: true,
+            sync_in_progress: false,
+          },
+          {
+            provider: 'plaid',
+            connection_id: 'conn_plaid',
+            institution_name: 'First Platypus Bank',
+            last_sync_at: '2026-06-18T12:00:00Z',
+            transaction_count: 2,
+            account_count: 2,
+            is_connected: true,
+            sync_in_progress: false,
+          },
+        ],
+      },
+      'GET /api/providers/accounts': errJson(404, {
+        message: 'not found',
+      }),
+      'GET /api/plaid/accounts': [
+        {
+          id: 'acc_1',
+          name: 'Everyday Checking',
+          account_type: 'depository',
+          balance_current: 1250.5,
+          mask: '0000',
+          provider_connection_id: 'conn_plaid',
+          institution_name: 'First Platypus Bank',
+        },
+      ],
+    });
+
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => usePlaidConnections(), { wrapper });
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    await waitFor(() => {
+      expect(result.current.connections).toHaveLength(1);
+    });
+    expect(result.current.connections[0].connectionId).toBe('conn_plaid');
+    expect(result.current.connections[0].institutionName).toBe('First Platypus Bank');
+  });
+
   it('keeps connection updates in the shared query cache across remounts', async () => {
     const wrapper = createWrapper();
     const first = renderHook(() => usePlaidConnections(), { wrapper });

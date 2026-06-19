@@ -35,8 +35,10 @@ async fn given_authenticated_user_when_get_connection_status_then_returns_array(
     let user_id = user.id;
 
     let mut conn1 = ProviderConnection::new(user_id, "item_1");
+    conn1.provider = "plaid".to_string();
     conn1.mark_connected("Bank A");
     let mut conn2 = ProviderConnection::new(user_id, "item_2");
+    conn2.provider = "plaid".to_string();
     conn2.mark_connected("Bank B");
 
     mock_db
@@ -85,12 +87,14 @@ async fn given_authenticated_user_when_get_connection_status_then_returns_array(
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let statuses: ProviderStatusResponse = serde_json::from_slice(&body).unwrap();
 
-    assert!(!statuses.provider.is_empty());
+    assert!(statuses.provider.is_empty());
     assert_eq!(statuses.connections.len(), 2);
+    assert_eq!(statuses.connections[0].provider, "plaid".to_string());
     assert_eq!(
         statuses.connections[0].institution_name,
         Some("Bank A".to_string())
     );
+    assert_eq!(statuses.connections[1].provider, "plaid".to_string());
     assert_eq!(
         statuses.connections[1].institution_name,
         Some("Bank B".to_string())
@@ -718,15 +722,32 @@ async fn given_unauthenticated_request_when_get_transaction_insights_then_return
 #[tokio::test]
 async fn given_authenticated_user_when_get_transaction_insights_with_foreign_account_ids_then_returns_403(
 ) {
+    use crate::models::plaid::ProviderConnection;
     use crate::services::repository_service::MockDatabaseRepository;
     use uuid::Uuid;
 
     let mut mock_db = MockDatabaseRepository::new();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
 
     let owned_account_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440001").unwrap();
     let foreign_account_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440999").unwrap();
-    let user_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+    let user_id = user.id;
+    let connection_id = Uuid::new_v4();
+
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let u = user.clone();
+        Box::pin(async move { Ok(Some(u)) })
+    });
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(move |_| {
+            let mut connection = ProviderConnection::new(user_id, "item_1");
+            connection.id = connection_id;
+            connection.provider = "teller".to_string();
+            connection.mark_connected("Test Bank");
+            Box::pin(async move { Ok(vec![connection]) })
+        });
 
     mock_db.expect_get_accounts_for_user().returning(move |_| {
         use crate::models::account::Account;
@@ -734,7 +755,7 @@ async fn given_authenticated_user_when_get_transaction_insights_with_foreign_acc
             id: owned_account_id,
             user_id: Some(user_id),
             provider_account_id: Some("plaid_acc_1".to_string()),
-            provider_connection_id: Some(Uuid::new_v4()),
+            provider_connection_id: Some(connection_id),
             name: "Test Account 1".to_string(),
             account_type: "checking".to_string(),
             balance_current: Some(rust_decimal_macros::dec!(1000.00)),
@@ -761,12 +782,20 @@ async fn given_authenticated_user_when_get_transaction_insights_with_foreign_acc
 #[tokio::test]
 async fn given_authenticated_user_when_get_transaction_insights_with_invalid_date_range_then_returns_400(
 ) {
-    let app = TestFixtures::create_test_app_with_db(
-        crate::services::repository_service::MockDatabaseRepository::new(),
-    )
-    .await
-    .unwrap();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let mut mock_db = crate::services::repository_service::MockDatabaseRepository::new();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let u = user.clone();
+        Box::pin(async move { Ok(Some(u)) })
+    });
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
 
     let request = TestFixtures::create_authenticated_get_request(
         "/api/transactions/insights?start_date=2024-03-31&end_date=2024-03-01",
@@ -1084,7 +1113,15 @@ async fn given_authenticated_user_when_get_income_expense_totals_then_returns_fu
     use rust_decimal_macros::dec;
 
     let mut mock_db = MockDatabaseRepository::new();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let u = user.clone();
+        Box::pin(async move { Ok(Some(u)) })
+    });
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
         .expect_get_category_aggregates_for_date_range()
@@ -1143,7 +1180,15 @@ async fn given_authenticated_user_when_get_budget_summary_then_returns_category_
     use rust_decimal_macros::dec;
 
     let mut mock_db = MockDatabaseRepository::new();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let u = user.clone();
+        Box::pin(async move { Ok(Some(u)) })
+    });
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
         .expect_get_category_aggregates_for_date_range()
