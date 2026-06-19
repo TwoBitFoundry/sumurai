@@ -3,6 +3,7 @@ import type { ProviderConnectionStatus, ProviderStatusResponse } from '@/types/a
 export const createProviderConnection = (
   overrides: Partial<ProviderConnectionStatus> = {}
 ): ProviderConnectionStatus => ({
+  provider: 'plaid',
   is_connected: false,
   last_sync_at: null,
   institution_name: null,

@@ -169,7 +169,7 @@ const DashboardPage: React.FC<{
   return (
     <div data-testid="dashboard-page">
       <PageLayout
-        title="Appraise the Treasury"
+        title="Assess your Financial Health"
         subtitle="Track your total balances and net worth across accounts."
         stats={<BalancesOverviewSummary />}
       >
@@ -190,102 +190,6 @@ const DashboardPage: React.FC<{
               'items-stretch'
             )}
           >
-            <DashboardChartCard
-              className={cn('min-w-0', 'col-span-1')}
-              title="Spending over time"
-              refreshingLabel="Reading the field..."
-              isRefreshing={!analyticsLoading && analyticsRefreshing}
-            >
-              <ChartFadePresence stateKey={byCat.length === 0 ? 'empty' : 'chart'}>
-                {analyticsLoading && (
-                  <div className={cn('mb-2', uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                    Fetching analytics
-                  </div>
-                )}
-                {byCat.length === 0 ? (
-                  <div
-                    className={cn('flex-1', 'min-h-0', 'flex', 'items-center', 'justify-center')}
-                  >
-                    <SpendingByCategoryChart
-                      data={byCat}
-                      total={monthSpend}
-                      hoveredCategory={hoveredCategory}
-                      setHoveredCategory={setHoveredCategory}
-                    />
-                  </div>
-                ) : (
-                  <div
-                    className={cn(
-                      'grid',
-                      'grid-cols-[repeat(auto-fit,minmax(180px,1fr))]',
-                      'flex-1',
-                      'min-h-0',
-                      'gap-4',
-                      'overflow-hidden'
-                    )}
-                  >
-                    <div
-                      className={cn('min-w-0', 'min-h-0', 'flex', 'items-center', 'justify-center')}
-                    >
-                      <SpendingByCategoryChart
-                        data={byCat}
-                        total={monthSpend}
-                        hoveredCategory={hoveredCategory}
-                        setHoveredCategory={setHoveredCategory}
-                      />
-                    </div>
-                    <div
-                      className={cn(
-                        'flex-1',
-                        'min-w-0',
-                        'self-center',
-                        'flex',
-                        'flex-col',
-                        'gap-[length:var(--spacing-compact-gap)]'
-                      )}
-                    >
-                      {(() => {
-                        const categorySum = byCat.reduce(
-                          (sum, c) => sum + (Number.isFinite(c.value) ? c.value : 0),
-                          0
-                        );
-                        const top = byCat.slice(0, 5);
-                        return top.map((cat) => {
-                          const percentage =
-                            categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
-                          return (
-                            <CategoryCard
-                              key={`topcard-${cat.name}`}
-                              cat={cat}
-                              percentage={percentage}
-                              isHovered={hoveredCategory === cat.name}
-                              accentIndexByName={accentIndexByName}
-                              onHover={handleCategoryHover}
-                            />
-                          );
-                        });
-                      })()}
-                    </div>
-                  </div>
-                )}
-              </ChartFadePresence>
-            </DashboardChartCard>
-
-            <DashboardChartCard
-              className={cn('min-w-0')}
-              title="Top merchants over time"
-              refreshingLabel="Reading the field..."
-              isRefreshing={!analyticsLoading && analyticsRefreshing}
-              bodyClassName={cn('overflow-hidden')}
-            >
-              <div className={cn('h-full', 'overflow-hidden')}>
-                <TopMerchantsList
-                  merchants={analytics.topMerchants}
-                  className={cn('h-full', 'overflow-y-auto')}
-                />
-              </div>
-            </DashboardChartCard>
-
             <DashboardChartCard
               className={cn('min-w-0')}
               title="Income vs expenses over time"
@@ -403,6 +307,102 @@ const DashboardPage: React.FC<{
                   </div>
                 )}
               </ChartFadePresence>
+            </DashboardChartCard>
+
+            <DashboardChartCard
+              className={cn('min-w-0', 'col-span-1')}
+              title="Spending over time"
+              refreshingLabel="Reading the field..."
+              isRefreshing={!analyticsLoading && analyticsRefreshing}
+            >
+              <ChartFadePresence stateKey={byCat.length === 0 ? 'empty' : 'chart'}>
+                {analyticsLoading && (
+                  <div className={cn('mb-2', uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+                    Fetching analytics
+                  </div>
+                )}
+                {byCat.length === 0 ? (
+                  <div
+                    className={cn('flex-1', 'min-h-0', 'flex', 'items-center', 'justify-center')}
+                  >
+                    <SpendingByCategoryChart
+                      data={byCat}
+                      total={monthSpend}
+                      hoveredCategory={hoveredCategory}
+                      setHoveredCategory={setHoveredCategory}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className={cn(
+                      'grid',
+                      'grid-cols-[repeat(auto-fit,minmax(180px,1fr))]',
+                      'flex-1',
+                      'min-h-0',
+                      'gap-4',
+                      'overflow-hidden'
+                    )}
+                  >
+                    <div
+                      className={cn('min-w-0', 'min-h-0', 'flex', 'items-center', 'justify-center')}
+                    >
+                      <SpendingByCategoryChart
+                        data={byCat}
+                        total={monthSpend}
+                        hoveredCategory={hoveredCategory}
+                        setHoveredCategory={setHoveredCategory}
+                      />
+                    </div>
+                    <div
+                      className={cn(
+                        'flex-1',
+                        'min-w-0',
+                        'self-center',
+                        'flex',
+                        'flex-col',
+                        'gap-[length:var(--spacing-compact-gap)]'
+                      )}
+                    >
+                      {(() => {
+                        const categorySum = byCat.reduce(
+                          (sum, c) => sum + (Number.isFinite(c.value) ? c.value : 0),
+                          0
+                        );
+                        const top = byCat.slice(0, 5);
+                        return top.map((cat) => {
+                          const percentage =
+                            categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
+                          return (
+                            <CategoryCard
+                              key={`topcard-${cat.name}`}
+                              cat={cat}
+                              percentage={percentage}
+                              isHovered={hoveredCategory === cat.name}
+                              accentIndexByName={accentIndexByName}
+                              onHover={handleCategoryHover}
+                            />
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+                )}
+              </ChartFadePresence>
+            </DashboardChartCard>
+
+            <DashboardChartCard
+              className={cn('min-w-0')}
+              title="Top merchants over time"
+              refreshingLabel="Reading the field..."
+              isRefreshing={!analyticsLoading && analyticsRefreshing}
+              bodyClassName={cn('overflow-hidden')}
+            >
+              <div className={cn('h-full', 'overflow-hidden')}>
+                <TopMerchantsList
+                  merchants={analytics.topMerchants}
+                  className={cn('h-full', 'overflow-y-auto')}
+                />
+              </div>
             </DashboardChartCard>
           </div>
         </div>

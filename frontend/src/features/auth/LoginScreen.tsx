@@ -5,8 +5,9 @@ import { AuthService } from '@/services/authService';
 import { AuthenticationError } from '@/services/boundaries';
 import { PasskeyService } from '@/services/passkeyService';
 import type { AuthResponse } from '@/types/api';
-import { Alert, Badge, Button, cn, FormLabel, Input } from '@/ui/primitives';
+import { Alert, Button, cn, FormLabel, Input } from '@/ui/primitives';
 import { authLayout, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { getCategoryAccentByIndex } from '@/ui/tokens';
 import {
   type CreationChallengeResponseJSON,
   getPasskeyCredential,
@@ -193,7 +194,7 @@ export function LoginScreen({
       <AuthFormLayout>
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
-            <Badge size="md">Rejoin the Path</Badge>
+            <span className={getCategoryAccentByIndex(0).inlineLabel}>Rejoin the Path</span>
             <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
               Sign in to Sumurai
             </h2>

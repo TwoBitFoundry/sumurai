@@ -19,7 +19,9 @@ describe('Footer', () => {
 
     const actionButtons = getByRole('link', { name: /contribute/i }).parentElement;
     expect(actionButtons).toHaveClass('flex-row');
-    expect(actionButtons).toHaveClass('flex-nowrap');
+    expect(actionButtons).toHaveClass('flex-wrap');
+    expect(actionButtons).toHaveClass('overflow-visible');
+    expect(actionButtons).toHaveClass('md:flex-nowrap');
     expect(actionButtons).not.toHaveClass('flex-col');
     expect(getByRole('link', { name: /^github$/i })).toBeTruthy();
     expect(getByRole('link', { name: /contribute/i }).className).toContain(

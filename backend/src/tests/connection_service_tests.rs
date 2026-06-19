@@ -1,76 +1,19 @@
 use crate::models::{
     account::Account,
     plaid::ProviderConnection,
+    provider_connect::ProviderConnectRequest,
     transaction::{ProviderTransactionsResult, Transaction},
 };
-use crate::providers::{
-    FinancialDataProvider, InstitutionInfo, ProviderCredentials, ProviderRegistry,
-};
+use crate::providers::{FinancialDataProvider, MockFinancialDataProvider, ProviderRegistry};
 use crate::services::cache_service::MockCacheService;
 use crate::services::connection_service::{ConnectionService, SyncConnectionParams};
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::sync_service::SyncService;
 use crate::test_fixtures::{build_credential_resolvers, noop_categorizer};
-use anyhow::Result;
-use async_trait::async_trait;
 use chrono::{NaiveDate, Utc};
 use rust_decimal::Decimal;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
-
-struct MockProvider {
-    accounts: Vec<Account>,
-    transactions: Vec<Transaction>,
-}
-
-#[async_trait]
-impl FinancialDataProvider for MockProvider {
-    fn provider_name(&self) -> &str {
-        "plaid"
-    }
-
-    async fn create_link_token(&self, _user_id: &Uuid) -> Result<String> {
-        Ok("mock_link_token".to_string())
-    }
-
-    async fn exchange_public_token(&self, _public_token: &str) -> Result<ProviderCredentials> {
-        Ok(ProviderCredentials {
-            provider: "plaid".to_string(),
-            access_token: "mock_access_token".to_string(),
-            item_id: "item_123".to_string(),
-            certificate: None,
-            private_key: None,
-        })
-    }
-
-    async fn get_accounts(&self, _credentials: &ProviderCredentials) -> Result<Vec<Account>> {
-        Ok(self.accounts.clone())
-    }
-
-    async fn get_transactions(
-        &self,
-        _credentials: &ProviderCredentials,
-        _start_date: NaiveDate,
-        _end_date: NaiveDate,
-    ) -> Result<ProviderTransactionsResult> {
-        Ok(ProviderTransactionsResult {
-            transactions: self.transactions.clone(),
-            page_count: 1,
-        })
-    }
-
-    async fn get_institution_info(
-        &self,
-        _credentials: &ProviderCredentials,
-    ) -> Result<InstitutionInfo> {
-        Ok(InstitutionInfo {
-            institution_id: "ins_123".to_string(),
-            name: "Test Bank".to_string(),
-            logo: None,
-            color: None,
-        })
-    }
-}
 
 fn build_transactions(account_id: Uuid, user_id: Uuid) -> Vec<Transaction> {
     (0..600)
@@ -94,6 +37,74 @@ fn build_transactions(account_id: Uuid, user_id: Uuid) -> Vec<Transaction> {
             normalization_source: Some("sumurai_engine".to_string()),
         })
         .collect()
+}
+
+fn build_provider_mock(
+    provider_name: &'static str,
+    accounts: Vec<Account>,
+    transactions: Vec<Transaction>,
+) -> Arc<dyn FinancialDataProvider> {
+    let access_token = "mock_access_token".to_string();
+    let item_id = if provider_name == "teller" {
+        "teller_enroll_123".to_string()
+    } else {
+        "item_123".to_string()
+    };
+    let institution_id = if provider_name == "teller" {
+        "teller".to_string()
+    } else {
+        "ins_123".to_string()
+    };
+    let institution_name = if provider_name == "teller" {
+        "Teller Demo Bank".to_string()
+    } else {
+        "Test Bank".to_string()
+    };
+
+    let mut provider = MockFinancialDataProvider::new();
+    provider
+        .expect_provider_name()
+        .return_const(provider_name.to_string());
+    provider
+        .expect_create_link_token()
+        .returning(|_| Ok("mock_link_token".to_string()));
+    provider.expect_exchange_public_token().returning(move |_| {
+        let provider = provider_name.to_string();
+        let access_token = access_token.clone();
+        let item_id = item_id.clone();
+        Ok(crate::providers::ProviderCredentials {
+            provider,
+            access_token,
+            item_id,
+            certificate: None,
+            private_key: None,
+        })
+    });
+    provider.expect_get_accounts().returning(move |_| {
+        let accounts = accounts.clone();
+        Ok(accounts)
+    });
+    provider
+        .expect_get_transactions()
+        .returning(move |_, _, _| {
+            let transactions = transactions.clone();
+            Ok(ProviderTransactionsResult {
+                transactions,
+                page_count: 1,
+            })
+        });
+    provider.expect_get_institution_info().returning(move |_| {
+        let institution_id = institution_id.clone();
+        let institution_name = institution_name.clone();
+        Ok(crate::providers::InstitutionInfo {
+            institution_id,
+            name: institution_name,
+            logo: None,
+            color: None,
+        })
+    });
+
+    Arc::new(provider)
 }
 
 #[tokio::test]
@@ -123,10 +134,7 @@ async fn given_plaid_sync_with_many_transactions_when_persisting_then_batches_wr
     }];
 
     let transactions = build_transactions(account_id, user_id);
-    let provider: Arc<dyn FinancialDataProvider> = Arc::new(MockProvider {
-        accounts: accounts.clone(),
-        transactions: transactions.clone(),
-    });
+    let provider = build_provider_mock("plaid", accounts.clone(), transactions.clone());
     let provider_registry = Arc::new(ProviderRegistry::from_providers([(
         "plaid",
         Arc::clone(&provider),
@@ -313,10 +321,7 @@ async fn given_provider_sync_with_raw_only_merchant_when_persisting_then_normali
         normalized_merchant: None,
         normalization_source: None,
     }];
-    let provider: Arc<dyn FinancialDataProvider> = Arc::new(MockProvider {
-        accounts: accounts.clone(),
-        transactions,
-    });
+    let provider = build_provider_mock("plaid", accounts.clone(), transactions);
     let provider_registry = Arc::new(ProviderRegistry::from_providers([(
         "plaid",
         Arc::clone(&provider),
@@ -467,4 +472,61 @@ async fn given_provider_sync_with_raw_only_merchant_when_persisting_then_normali
         .await;
 
     assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn given_existing_user_provider_when_connecting_teller_then_overwrites_active_provider() {
+    let user_id = Uuid::new_v4();
+    let connection_id = Uuid::new_v4();
+    let accounts = vec![];
+
+    let teller_provider = build_provider_mock("teller", accounts.clone(), vec![]);
+    let provider_registry = Arc::new(ProviderRegistry::from_providers([(
+        "teller",
+        teller_provider,
+    )]));
+
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_update_user_provider()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq("teller"),
+        )
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_store_provider_credentials_for_user()
+        .returning(|_, _, _| Box::pin(async { Ok(Uuid::new_v4()) }));
+    mock_db
+        .expect_save_provider_connection()
+        .returning(move |_| Box::pin(async move { Ok(connection_id) }));
+
+    let db_repository = Arc::new(mock_db);
+    let credential_resolvers = build_credential_resolvers(db_repository.clone());
+    let connection_service = ConnectionService::new(
+        db_repository,
+        Arc::new(MockCacheService::new()),
+        provider_registry,
+        noop_categorizer(),
+        credential_resolvers,
+    );
+
+    let response = connection_service
+        .connect_teller_provider(
+            &user_id,
+            "jwt_123",
+            &ProviderConnectRequest {
+                provider: "teller".to_string(),
+                access_token: "access-sandbox-xyz".to_string(),
+                enrollment_id: "enroll-123".to_string(),
+                institution_name: Some("Teller Demo Bank".to_string()),
+                simplefin: Default::default(),
+            },
+        )
+        .await
+        .expect("teller connect should succeed");
+
+    assert_eq!(response.institution_name, "Teller Demo Bank");
+    assert!(!response.connection_id.is_empty());
 }

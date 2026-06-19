@@ -22,7 +22,7 @@ import { resolveAccountFilterToggle } from '../features/transactions/utils/resol
 import { resolveMerchantSearchToggle } from '../features/transactions/utils/resolveMerchantSearchToggle';
 import { useAccountFilter } from '../hooks/useAccountFilter';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { PageLayout } from '../layouts/PageLayout';
+import { PageLayout, pageLayoutRecipes } from '../layouts/PageLayout';
 
 const TransactionsPage: React.FC<{
   filterControl: TransactionFilterControl;
@@ -71,26 +71,18 @@ const TransactionsPage: React.FC<{
     [allAccountIds, selectedAccountIds, setSelectedAccountIds]
   );
 
+  const categorizeLabel = autoCategorization.isActive ? 'Cancel' : 'Categorize';
+
   const categorizeActions = (
-    <div
-      className={cn(
-        'flex',
-        'w-full',
-        'items-center',
-        'justify-between',
-        'gap-3',
-        'lg:w-auto',
-        'lg:justify-start'
-      )}
-    >
+    <div className={cn('flex', 'shrink-0', 'items-center', 'gap-3')}>
       <IconButton
         ref={addCategoryButtonRef}
         type="button"
         onClick={() => setIsCategoryCatalogOpen((open) => !open)}
         variant="ghost"
         size="md"
-        aria-label="Categories"
-        title="Categories"
+        aria-label="Manage categories"
+        title="Manage categories"
         aria-expanded={isCategoryCatalogOpen}
         aria-haspopup="dialog"
         className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
@@ -103,7 +95,15 @@ const TransactionsPage: React.FC<{
         disabled={!isOnline || autoCategorization.isPending}
         variant={autoCategorization.isActive ? 'danger' : 'primary'}
         size="md"
-        className={cn('shrink-0', 'normal-case')}
+        aria-label={categorizeLabel}
+        className={cn(
+          'shrink-0',
+          'normal-case',
+          'max-md:aspect-square',
+          'max-md:w-11',
+          'max-md:gap-0',
+          'max-md:px-0'
+        )}
         title={
           !isOnline ? 'Unavailable while offline' : (autoCategorization.progressLabel ?? undefined)
         }
@@ -113,7 +113,7 @@ const TransactionsPage: React.FC<{
         ) : (
           <WandSparkles className={cn(control.glyph.md)} />
         )}
-        {autoCategorization.isActive ? 'Cancel' : 'Categorize'}
+        <span className="hidden md:inline">{categorizeLabel}</span>
       </Button>
     </div>
   );
@@ -121,10 +121,10 @@ const TransactionsPage: React.FC<{
   return (
     <div data-testid="transactions-page">
       <PageLayout
-        title="Tally the ledgers across financial allies"
+        title="Explore your ledger"
         subtitle="Review, categorize, and track transactions from all your connected bank accounts."
-        actions={categorizeActions}
         error={error}
+        className={cn(...pageLayoutRecipes.floatingChromeTail)}
         stats={
           <TransactionInsightsPanel
             insights={insights}
@@ -142,27 +142,39 @@ const TransactionsPage: React.FC<{
           containerClassName={cn('pt-4', 'md:pt-8', 'lg:pt-8')}
           className={cn('space-y-4')}
         >
-          <h2
+          <div
             className={cn(
               'flex',
               'min-w-0',
+              'flex-wrap',
               'items-center',
-              'gap-2',
+              'justify-between',
+              'gap-3',
               'px-4',
               'md:px-8',
-              'lg:px-8',
-              uiTypographyRecipes.sectionTitle,
-              uiTextRecipes.primary
+              'lg:px-8'
             )}
           >
-            <span
-              className={cn(...controlIconWell.lg, heroAccents.emerald.icon)}
-              aria-hidden="true"
+            <h2
+              className={cn(
+                'flex',
+                'min-w-0',
+                'items-center',
+                'gap-2',
+                uiTypographyRecipes.sectionTitle,
+                uiTextRecipes.primary
+              )}
             >
-              <ReceiptText />
-            </span>
-            Transactions
-          </h2>
+              <span
+                className={cn(...controlIconWell.lg, heroAccents.emerald.icon)}
+                aria-hidden="true"
+              >
+                <ReceiptText />
+              </span>
+              Transactions
+            </h2>
+            {categorizeActions}
+          </div>
           <CategoryCatalogPicker
             open={isCategoryCatalogOpen}
             anchorRef={addCategoryButtonRef}

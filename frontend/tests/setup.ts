@@ -3,8 +3,30 @@ import { afterEach, beforeEach, jest, mock } from 'bun:test';
 import { webcrypto } from 'node:crypto';
 import { TextDecoder, TextEncoder } from 'node:util';
 import { cleanup } from '@testing-library/react';
+import React from 'react';
 import { AuthService } from '@/services/authService';
 import { BrowserStorageAdapter } from '@/services/boundaries';
+import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
+
+mock.module('@testing-library/react', () => {
+  const actual = require('@testing-library/react') as typeof import('@testing-library/react');
+
+  return {
+    ...actual,
+    render: (ui: React.ReactElement, options?: Parameters<typeof actual.render>[1]) => {
+      const { wrapper: Wrapper, ...rest } = options ?? {};
+      return actual.render(ui, {
+        ...rest,
+        wrapper: ({ children }) =>
+          React.createElement(
+            ControlTooltipProvider,
+            null,
+            Wrapper ? React.createElement(Wrapper, null, children) : children
+          ),
+      });
+    },
+  };
+});
 
 (globalThis as any).crypto = webcrypto as unknown as Crypto;
 

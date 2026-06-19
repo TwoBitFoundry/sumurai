@@ -71,7 +71,7 @@ describe('useBalancesOverview', () => {
         mixedCurrency: false,
       },
       'GET /api/providers/status': connectedStatus,
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
     });
   });
 
@@ -99,7 +99,7 @@ describe('useBalancesOverview', () => {
     fetchMock = installFetchRoutes({
       'GET /api/analytics/balances/overview': mock,
       'GET /api/providers/status': connectedStatus,
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
     });
 
     const { result } = renderHook(() => useBalancesOverview(), { wrapper: TestWrapper });
@@ -137,7 +137,6 @@ describe('useBalancesOverview', () => {
       'GET /api/analytics/balances/overview': overview,
       'GET /api/providers/status': connectedStatus,
       'GET /api/providers/accounts': () => accounts,
-      'GET /api/plaid/accounts': () => accounts,
     });
 
     const { result } = renderHook(() => useBalancesOverview(), { wrapper: TestWrapper });
@@ -204,7 +203,7 @@ describe('useBalancesOverview', () => {
         throw new Error('Boom');
       },
       'GET /api/providers/status': connectedStatus,
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
     });
 
     const { result } = renderHook(() => useBalancesOverview(), { wrapper: TestWrapper });
@@ -262,7 +261,7 @@ describe('useBalancesOverview', () => {
         return callCount === 1 ? mock1 : mock2;
       },
       'GET /api/providers/status': connectedStatus,
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
     });
 
     const { result } = renderHook(() => useBalancesOverview(), { wrapper: TestWrapper });
@@ -404,7 +403,7 @@ describe('useBalancesOverview', () => {
         return deferred.promise;
       },
       'GET /api/providers/status': connectedStatus,
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
     });
 
     let accountFilterHook: ReturnType<typeof useAccountFilter>;

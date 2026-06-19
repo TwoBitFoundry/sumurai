@@ -7,7 +7,7 @@ import { Toast } from '@/components/Toast';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { BudgetToolbar } from '@/features/budgets/components/BudgetToolbar';
 import { SessionExpiryModal } from '@/SessionManager';
-import { text as uiTextRecipes } from '@/ui/recipes';
+import { appLayout, text as uiTextRecipes } from '@/ui/recipes';
 
 describe('shared shell text surfaces', () => {
   it('uses semantic text roles in the password checklist', () => {
@@ -59,7 +59,7 @@ describe('shared shell text surfaces', () => {
     const toast = screen.getByRole('status');
     expect(toast.parentElement).toBe(document.body);
     expect(toast).toHaveClass('z-[60]');
-    expect(toast).toHaveClass('bottom-[calc(5.75rem+env(safe-area-inset-bottom))]');
+    expect(toast).toHaveClass(appLayout.toastMobileBottom);
     expect(toast).toHaveClass('md:bottom-6');
   });
 

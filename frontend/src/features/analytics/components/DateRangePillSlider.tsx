@@ -7,13 +7,13 @@ import {
 } from '@/ui/recipes';
 import { type DateRangeKey as DateRange, formatDateRangeLabel } from '@/utils/dateRanges';
 
-const options: Array<{ key: DateRange; label: string }> = [
-  { key: 'current-month', label: '1M' },
-  { key: 'past-2-months', label: '2M' },
-  { key: 'past-3-months', label: '3M' },
-  { key: 'past-6-months', label: '6M' },
-  { key: 'past-year', label: '1Y' },
-  { key: 'all-time', label: '5Y' },
+const options: Array<{ key: DateRange; label: string; hoverLabel: string }> = [
+  { key: 'current-month', label: '1M', hoverLabel: '1 month' },
+  { key: 'past-2-months', label: '2M', hoverLabel: '2 month' },
+  { key: 'past-3-months', label: '3M', hoverLabel: '3 month' },
+  { key: 'past-6-months', label: '6M', hoverLabel: '6 month' },
+  { key: 'past-year', label: '1Y', hoverLabel: '1 year' },
+  { key: 'all-time', label: '5Y', hoverLabel: '5 year' },
 ];
 
 export function DateRangeLabelPill({ dateRange }: { dateRange: DateRange }) {
@@ -62,6 +62,9 @@ export function DateRangePillSlider({
             onClick={() => onChange(option.key)}
             variant={isActive ? 'tabActive' : 'tab'}
             size="inherit"
+            title={option.hoverLabel}
+            aria-label={option.hoverLabel}
+            aria-pressed={isActive}
             className={cn(
               ...appTitleBarRecipes.contextPillTab,
               'shrink-0',
@@ -74,7 +77,6 @@ export function DateRangePillSlider({
                     uiTextRecipes.primary,
                   ]
             )}
-            aria-pressed={isActive}
           >
             <span className={cn('relative z-10', uiTypographyRecipes.bodyStrong)}>
               {option.label}

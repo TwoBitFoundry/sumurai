@@ -85,9 +85,7 @@ export const Journey: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await waitFor(() => {
-      expect(
-        canvas.getByRole('heading', { name: /tally the ledgers across financial allies/i })
-      ).toBeVisible();
+      expect(canvas.getByRole('heading', { name: /explore your ledger/i })).toBeVisible();
     });
 
     const page = within(canvas.getByTestId('transactions-page'));

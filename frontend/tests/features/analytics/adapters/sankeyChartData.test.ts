@@ -176,8 +176,8 @@ describe('sankeyResponseToChartData', () => {
         {
           sourceId: 'income',
           targetId: 'expenses',
-          percentOfExpenses: 93.75,
-          percentContext: 'income',
+          percentOfExpenses: 100,
+          percentContext: 'expenses',
         },
         {
           sourceId: 'expenses',
@@ -264,8 +264,8 @@ describe('sankeyResponseToChartData', () => {
       {
         sourceId: 'income',
         targetId: 'expenses',
-        percentOfExpenses: 20.3112,
-        percentContext: 'income',
+        percentOfExpenses: 100,
+        percentContext: 'expenses',
       },
       {
         sourceId: 'income',

@@ -114,12 +114,12 @@ export const Journey: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await waitFor(() => {
-      expect(canvas.getByText(/provision the coffers/i)).toBeVisible();
+      expect(canvas.getByText(/track your expenses/i)).toBeVisible();
     });
     await expandBudgetInsights(canvas);
 
     await userEvent.click(canvas.getByRole('button', { name: /show budgets/i }));
-    const addBudget = canvas.getByRole('button', { name: /^budget$/i });
+    const addBudget = canvas.getByRole('button', { name: /add budget/i });
     await userEvent.click(addBudget);
     const picker = await screen.findByTestId('add-budget-picker-content');
     await userEvent.click(within(picker).getByRole('button', { name: /bills and utilities/i }));

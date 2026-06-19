@@ -379,7 +379,7 @@ describe('BankCard', () => {
     expect((await screen.findByText('tx')).parentElement).toHaveTextContent('7tx');
     const importBtn = screen.getByRole('button', { name: 'Import transactions' });
     expect(importBtn).toBeVisible();
-    expect(importBtn).toHaveAttribute('title', 'Import transactions');
+    expect(importBtn).not.toHaveAttribute('title');
   });
 
   it('disables account import buttons while offline', async () => {

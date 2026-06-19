@@ -1,5 +1,6 @@
 import type { ViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import { cn } from '@/ui/primitives/utils';
+import { appLayout } from '@/ui/recipes';
 
 export function getToastStackLayoutClassName(breakpoint: ViewportBreakpoint): string {
   switch (breakpoint) {
@@ -9,7 +10,7 @@ export function getToastStackLayoutClassName(breakpoint: ViewportBreakpoint): st
         'z-[60]',
         'left-[calc(1rem+env(safe-area-inset-left))]',
         'right-[calc(1rem+env(safe-area-inset-right))]',
-        'bottom-[calc(5.75rem+env(safe-area-inset-bottom))]',
+        appLayout.toastMobileBottom,
         'flex',
         'w-auto',
         'max-w-none',
@@ -22,7 +23,7 @@ export function getToastStackLayoutClassName(breakpoint: ViewportBreakpoint): st
         'fixed',
         'z-[60]',
         'right-[calc(1rem+env(safe-area-inset-right))]',
-        'bottom-[calc(4.75rem+env(safe-area-inset-bottom))]',
+        appLayout.toastTabletBottom,
         'flex',
         'w-[min(100%,28rem)]',
         'max-w-md',

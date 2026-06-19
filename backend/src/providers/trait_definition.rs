@@ -9,6 +9,7 @@ use crate::models::{
     account::Account, simplefin::SimpleFinAccountsResponse, transaction::ProviderTransactionsResult,
 };
 
+#[cfg_attr(test, mockall::automock)]
 #[async_trait]
 pub trait FinancialDataProvider: Send + Sync {
     fn provider_name(&self) -> &str;

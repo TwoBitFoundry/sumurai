@@ -7,6 +7,7 @@ export type { BadgeProps } from './Badge';
 export { Badge } from './Badge';
 export type { ButtonProps } from './Button';
 export { Button } from './Button';
+export { ControlHoverLabel, ControlTooltipProvider } from './ControlHoverLabel';
 export type { EmptyStateProps } from './EmptyState';
 export { EmptyState } from './EmptyState';
 export type { FinanceValueProps } from './FinanceValue';

@@ -4,8 +4,9 @@ import { ToastStack } from '@/components/toastStack/ToastStack';
 import { AuthService } from '@/services/authService';
 import { PasskeyService } from '@/services/passkeyService';
 import type { AuthResponse } from '@/types/api';
-import { Alert, Badge, Button, cn, FormLabel, Input } from '@/ui/primitives';
+import { Alert, Button, cn, FormLabel, Input } from '@/ui/primitives';
 import { authLayout, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { getCategoryAccentByIndex } from '@/ui/tokens';
 import {
   type CreationChallengeResponseJSON,
   createPasskeyCredential,
@@ -109,7 +110,7 @@ export function RegisterScreen({
       <AuthFormLayout>
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
-            <Badge size="md">Begin the path</Badge>
+            <span className={getCategoryAccentByIndex(0).inlineLabel}>Begin the path</span>
             <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
               Sign up for Sumurai
             </h2>

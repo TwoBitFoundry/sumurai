@@ -2,6 +2,15 @@ import { render, screen } from '@testing-library/react';
 import { LoginScreen, RegisterScreen } from '@/Auth';
 
 describe('Auth screens', () => {
+  it('renders login badge with inline category sky styling', () => {
+    render(<LoginScreen onNavigateToRegister={jest.fn()} />);
+    const badge = screen.getByText(/rejoin the path/i);
+    expect(badge.tagName).toBe('SPAN');
+    expect(badge.className).toContain('font-label');
+    expect(badge.className).toContain('text-sky-500');
+    expect(badge.className).toContain('dark:text-sky-300');
+  });
+
   it('renders email step without password fields', () => {
     render(<LoginScreen onNavigateToRegister={jest.fn()} />);
     expect(screen.getByLabelText(/^email$/i)).toBeTruthy();
@@ -81,6 +90,15 @@ describe('Auth screens', () => {
     expect(screen.getByRole('button', { name: /sign in with password/i })).toBeTruthy();
   });
 
+  it('renders register badge with inline category sky styling', () => {
+    render(<RegisterScreen onNavigateToLogin={jest.fn()} />);
+    const badge = screen.getByText(/begin the path/i);
+    expect(badge.tagName).toBe('SPAN');
+    expect(badge.className).toContain('font-label');
+    expect(badge.className).toContain('text-sky-500');
+    expect(badge.className).toContain('dark:text-sky-300');
+  });
+
   it('renders register without password fields', () => {
     render(<RegisterScreen onNavigateToLogin={jest.fn()} />);
     expect(screen.getByLabelText(/^email$/i)).toBeTruthy();
@@ -93,6 +111,16 @@ describe('Auth screens', () => {
     const { container } = render(<LoginScreen onNavigateToRegister={jest.fn()} />);
     expect(container.querySelector('.md\\:px-6')).toBeTruthy();
     expect(container.querySelector('.lg\\:max-w-lg')).toBeTruthy();
+  });
+
+  it('renders the samurai backdrop outside the auth card shell', () => {
+    const { container } = render(<LoginScreen onNavigateToRegister={jest.fn()} />);
+    const brandBackdrop = container.querySelector('[aria-hidden="true"]');
+    expect(brandBackdrop).toBeTruthy();
+    expect(brandBackdrop).toHaveClass('items-end');
+    expect(brandBackdrop).toHaveClass('justify-center');
+    expect(brandBackdrop?.querySelector('img')).toBeTruthy();
+    expect(container.querySelector('.lg\\:max-w-lg')?.querySelector('img')).toBeNull();
   });
 
   it('starts legacy password migration enrollment after password sign-in', async () => {

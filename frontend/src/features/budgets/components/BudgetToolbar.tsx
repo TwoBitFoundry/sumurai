@@ -66,9 +66,10 @@ export const BudgetToolbar = ({
               onClick={onStartEdit}
               variant="secondary"
               size="md"
+              shape="square"
               aria-label="Edit budgets"
               title="Edit budgets"
-              className={budgetActionButtonClasses}
+              className={cn(budgetActionButtonClasses, 'shrink-0')}
             >
               <Pencil className={control.glyph.md} />
             </Button>
@@ -79,12 +80,21 @@ export const BudgetToolbar = ({
             onClick={onAddBudget}
             variant="primary"
             size="md"
-            aria-label="Budget"
+            aria-label="Add budget"
+            title="Add budget"
             aria-expanded={isPickerOpen}
             aria-haspopup="dialog"
-            className={budgetActionButtonClasses}
+            className={cn(
+              budgetActionButtonClasses,
+              'normal-case',
+              'max-md:aspect-square',
+              'max-md:w-11',
+              'max-md:gap-0',
+              'max-md:px-0'
+            )}
           >
             <Plus className={control.glyph.md} />
+            <span className="hidden md:inline">Budget</span>
           </Button>
         </>
       )}

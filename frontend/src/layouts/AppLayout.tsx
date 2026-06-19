@@ -29,8 +29,8 @@ export function AppLayout({
   bottomBarContent,
 }: AppLayoutProps) {
   const mainBottomPadding = bottomBarContent
-    ? 'pb-[calc(8.75rem_+_env(safe-area-inset-bottom))] md:pb-[calc(6rem_+_env(safe-area-inset-bottom))]'
-    : 'pb-[calc(3.75rem_+_env(safe-area-inset-bottom))]';
+    ? cn(appLayout.mainBottomPaddingStackedMobile, appLayout.mainBottomPaddingStackedTablet)
+    : appLayout.mainBottomPaddingTabOnly;
   const scrolled = useScrollDetection();
   const showFooter = currentTab === 'dashboard';
   const showBottomChromeRow = Boolean(bottomBarContent);
@@ -74,14 +74,14 @@ export function AppLayout({
           data-floating-chrome
           className={cn(
             'fixed',
-            'bottom-4',
+            appLayout.floatingChromeBottom,
             'left-0',
             'right-0',
             'z-50',
             'flex',
             'flex-col',
             'pointer-events-none',
-            'pb-[env(safe-area-inset-bottom)]',
+            appLayout.floatingChromeSafeArea,
             'transition-opacity',
             'duration-200',
             floatingVisible ? 'opacity-100' : 'opacity-0'
@@ -102,18 +102,13 @@ export function AppLayout({
           ) : null}
 
           <div
-            aria-hidden
-            className={cn('hidden', 'md:block', 'h-[2rem]', 'pointer-events-none')}
-          />
-
-          <div
             className={cn(
               'flex',
               'justify-center',
               'pointer-events-none',
               ...appTitleBarRecipes.floatingChromeGutter,
               'pt-1',
-              'pb-2',
+              'pb-0',
               'md:hidden'
             )}
           >
@@ -135,6 +130,7 @@ export function AppLayout({
                   variant={currentTab === key ? 'tabActive' : 'tab'}
                   size="inherit"
                   aria-label={label}
+                  title={label}
                   aria-current={currentTab === key ? 'page' : undefined}
                   className={cn(
                     ...appTitleBarRecipes.contextPillTab,

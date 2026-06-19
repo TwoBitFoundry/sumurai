@@ -1,9 +1,9 @@
 import { cva } from 'class-variance-authority';
 import {
-  ArrowLeftRight,
   Building2,
   LayoutDashboard,
   LogOut,
+  ReceiptText,
   Settings,
   Target,
   Wifi,
@@ -26,6 +26,7 @@ import {
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { Button } from './Button';
+import { ControlHoverLabel } from './ControlHoverLabel';
 import { IconButton } from './IconButton';
 import { cn } from './utils';
 
@@ -159,7 +160,7 @@ export const TABS: Array<{
   icon: React.ComponentType<{ className?: string }>;
 }> = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { key: 'transactions', label: 'Transactions', icon: ArrowLeftRight },
+  { key: 'transactions', label: 'Transactions', icon: ReceiptText },
   { key: 'budgets', label: 'Budgets', icon: Target },
   { key: 'accounts', label: 'Accounts', icon: Building2 },
 ];
@@ -221,6 +222,7 @@ export const AppTitleBar = ({
             variant={currentTab === key ? 'tabActive' : 'tab'}
             size="inherit"
             aria-label={label}
+            title={label}
             aria-current={currentTab === key ? 'page' : undefined}
             className={cn(
               ...appTitleBarRecipes.contextPillTab,
@@ -289,20 +291,22 @@ export const AppTitleBar = ({
           {primaryTabs}
 
           <div className={cn(...appTitleBarRecipes.actions)}>
-            <span
-              className={cn(...appTitleBarRecipes.statusFrame)}
-              role="status"
-              aria-live="polite"
-              title={isOnline ? 'Online' : 'Offline'}
-            >
-              <span className={cn(...appTitleBarRecipes.statusWell)}>
-                {isOnline ? (
-                  <Wifi className={cn(...semanticStatus.success.icon)} />
-                ) : (
-                  <WifiOff className={cn(...semanticStatus.warning.icon)} />
-                )}
+            <ControlHoverLabel label={isOnline ? 'Online' : 'Offline'}>
+              <span
+                className={cn(...appTitleBarRecipes.statusFrame)}
+                role="status"
+                aria-live="polite"
+                aria-label={isOnline ? 'Online' : 'Offline'}
+              >
+                <span className={cn(...appTitleBarRecipes.statusWell)}>
+                  {isOnline ? (
+                    <Wifi className={cn(...semanticStatus.success.icon)} />
+                  ) : (
+                    <WifiOff className={cn(...semanticStatus.warning.icon)} />
+                  )}
+                </span>
               </span>
-            </span>
+            </ControlHoverLabel>
 
             {state === 'authenticated' && onTabChange && (
               <IconButton

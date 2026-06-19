@@ -8,6 +8,7 @@ export interface ModalDrawerHeaderProps {
   children: React.ReactNode;
   onClose: () => void;
   closeLabel?: string;
+  closeDisabled?: boolean;
   closeWithDialog?: boolean;
 }
 
@@ -15,6 +16,7 @@ export function ModalDrawerHeader({
   children,
   onClose,
   closeLabel = 'Close',
+  closeDisabled = false,
   closeWithDialog = false,
 }: ModalDrawerHeaderProps) {
   const closeButton = (
@@ -24,6 +26,8 @@ export function ModalDrawerHeader({
       shape="square"
       size="sm"
       aria-label={closeLabel}
+      title="Close"
+      disabled={closeDisabled}
       onClick={closeWithDialog ? undefined : onClose}
       className={cn('shrink-0')}
     >

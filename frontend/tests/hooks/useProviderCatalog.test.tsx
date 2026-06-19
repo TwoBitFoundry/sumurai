@@ -77,4 +77,23 @@ describe('useProviderCatalog', () => {
     expect(second.result.current.userProvider).toBe('teller');
     expect(gateway.fetchInfo).toHaveBeenCalledTimes(1);
   });
+
+  it('treats unsupported stored providers as null', async () => {
+    const gateway: ProviderCatalogGateway = {
+      fetchInfo: jest.fn().mockResolvedValue({
+        available_providers: ['plaid', 'teller'],
+        user_provider: 'diy',
+      }),
+      selectProvider: jest.fn().mockResolvedValue({
+        user_provider: 'teller',
+      }),
+    };
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useProviderCatalog({ gateway }), { wrapper });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.availableProviders).toEqual(['plaid', 'teller']);
+    expect(result.current.userProvider).toBeNull();
+  });
 });

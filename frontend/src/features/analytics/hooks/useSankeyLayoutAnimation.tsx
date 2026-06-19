@@ -130,6 +130,9 @@ export function SankeyAnimationProvider({ children }: { children: ReactNode }) {
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(step);
       } else {
+        for (const [entityId, toFrame] of toFrames) {
+          displayRef.current.set(entityId, { ...toFrame });
+        }
         animatingRef.current = false;
       }
     };

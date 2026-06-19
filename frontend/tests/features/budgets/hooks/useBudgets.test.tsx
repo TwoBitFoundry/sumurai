@@ -104,7 +104,7 @@ describe('useBudgets', () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': asOverview([]),
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
   });
@@ -117,7 +117,7 @@ describe('useBudgets', () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': asOverview([]),
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -148,7 +148,7 @@ describe('useBudgets', () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': asOverview([]),
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -168,7 +168,7 @@ describe('useBudgets', () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': asOverview([]),
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -192,7 +192,7 @@ describe('useBudgets', () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': asOverview([asBudget('1', 'FOOD_AND_DRINK', 100)]),
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -210,7 +210,7 @@ describe('useBudgets', () => {
       'GET /api/analytics/budget-summary*': asBudgetSummary(5000, [
         { name: 'groceries', value: 50 },
       ]),
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -240,7 +240,7 @@ describe('useBudgets', () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': asOverview([asBudget('1', 'FOOD_AND_DRINK', 100)]),
       'GET /api/analytics/budget-summary*': asBudgetSummary(5000, summaryEntries),
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -260,7 +260,7 @@ describe('useBudgets', () => {
       'GET /api/analytics/budget-summary*': asBudgetSummary(5000, [
         { name: 'groceries', value: 50 },
       ]),
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -308,7 +308,7 @@ describe('useBudgets', () => {
         return created;
       },
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -332,7 +332,7 @@ describe('useBudgets', () => {
       'GET /api/budgets/overview': asOverview([]),
       'POST /api/budgets': () => new Response('fail', { status: 500 }),
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -400,7 +400,7 @@ describe('useBudgets', () => {
         throw Object.assign(new Error('fail'), { status: 500 });
       },
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -430,7 +430,7 @@ describe('useBudgets', () => {
         return new Response(null, { status: 204 });
       },
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -461,7 +461,7 @@ describe('useBudgets', () => {
         throw Object.assign(new Error('fail'), { status: 500 });
       },
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -505,7 +505,7 @@ describe('useBudgets', () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': asOverview([asBudget('1', 'groceries', 100)]),
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -539,7 +539,7 @@ describe('useBudgets', () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': asOverview([asBudget('1', 'groceries', 100)]),
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -580,7 +580,7 @@ describe('useBudgets', () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': asOverview([], [makeSubscription('Spotify', '9.99')]),
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -603,7 +603,7 @@ describe('useBudgets', () => {
         return created;
       },
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -631,7 +631,7 @@ describe('useBudgets', () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': () => asOverview([], subscriptions),
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -667,7 +667,7 @@ describe('useBudgets', () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': () => asOverview([], subscriptions),
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': twoAccounts,
+      'GET /api/providers/accounts': twoAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -717,7 +717,7 @@ describe('useBudgets', () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': () => asOverview([], subscriptions),
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': twoAccounts,
+      'GET /api/providers/accounts': twoAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 
@@ -760,7 +760,7 @@ describe('useBudgets', () => {
     fetchMock = installFetchRoutes({
       'GET /api/budgets/overview': () => asOverview([], fixedExpenses),
       'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
     });
 

@@ -4,67 +4,56 @@ use crate::models::{
     transaction::{ProviderTransactionsResult, Transaction},
 };
 use crate::providers::{
-    FinancialDataProvider, InstitutionInfo, ProviderCredentials, ProviderRegistry,
+    FinancialDataProvider, MockFinancialDataProvider, ProviderCredentials, ProviderRegistry,
 };
 use crate::services::sync_service::SyncService;
-use anyhow::Result;
-use async_trait::async_trait;
 use chrono::{NaiveDate, Utc};
 use std::sync::Arc;
 use uuid::Uuid;
 
-struct MockProvider {
-    transactions: Vec<Transaction>,
+fn build_provider_mock(
     accounts: Vec<Account>,
-}
-
-#[async_trait]
-impl FinancialDataProvider for MockProvider {
-    fn provider_name(&self) -> &str {
-        "mock"
-    }
-
-    async fn create_link_token(&self, _user_id: &Uuid) -> Result<String> {
-        Ok("mock_link_token".to_string())
-    }
-
-    async fn exchange_public_token(&self, _public_token: &str) -> Result<ProviderCredentials> {
-        Ok(ProviderCredentials {
+    transactions: Vec<Transaction>,
+) -> Arc<dyn FinancialDataProvider> {
+    let mut provider = MockFinancialDataProvider::new();
+    provider
+        .expect_provider_name()
+        .return_const("mock".to_string());
+    provider
+        .expect_create_link_token()
+        .returning(|_| Ok("mock_link_token".to_string()));
+    provider.expect_exchange_public_token().returning(|_| {
+        Ok(crate::providers::ProviderCredentials {
             provider: "mock".to_string(),
             access_token: "mock_access_token".to_string(),
             item_id: "mock_item_id".to_string(),
             certificate: None,
             private_key: None,
         })
-    }
-
-    async fn get_accounts(&self, _credentials: &ProviderCredentials) -> Result<Vec<Account>> {
-        Ok(self.accounts.clone())
-    }
-
-    async fn get_transactions(
-        &self,
-        _credentials: &ProviderCredentials,
-        _start_date: NaiveDate,
-        _end_date: NaiveDate,
-    ) -> Result<ProviderTransactionsResult> {
-        Ok(ProviderTransactionsResult {
-            transactions: self.transactions.clone(),
-            page_count: 1,
-        })
-    }
-
-    async fn get_institution_info(
-        &self,
-        _credentials: &ProviderCredentials,
-    ) -> Result<InstitutionInfo> {
-        Ok(InstitutionInfo {
+    });
+    provider.expect_get_accounts().returning(move |_| {
+        let accounts = accounts.clone();
+        Ok(accounts)
+    });
+    provider
+        .expect_get_transactions()
+        .returning(move |_, _, _| {
+            let transactions = transactions.clone();
+            Ok(ProviderTransactionsResult {
+                transactions,
+                page_count: 1,
+            })
+        });
+    provider.expect_get_institution_info().returning(|_| {
+        Ok(crate::providers::InstitutionInfo {
             institution_id: "mock_inst".to_string(),
             name: "Mock Bank".to_string(),
             logo: None,
             color: None,
         })
-    }
+    });
+
+    Arc::new(provider)
 }
 
 #[tokio::test]
@@ -105,10 +94,7 @@ async fn given_sync_service_with_provider_when_sync_then_maps_accounts_correctly
         normalization_source: None,
     };
 
-    let provider: Arc<dyn FinancialDataProvider> = Arc::new(MockProvider {
-        transactions: vec![transaction.clone()],
-        accounts: accounts.clone(),
-    });
+    let provider = build_provider_mock(accounts.clone(), vec![transaction.clone()]);
     let registry = Arc::new(ProviderRegistry::from_providers([(
         "mock",
         Arc::clone(&provider),

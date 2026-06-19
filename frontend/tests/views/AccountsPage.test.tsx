@@ -227,7 +227,7 @@ describe('AccountsPage', () => {
     expect(screen.getByTestId('accounts-page')).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {
-        name: /unite your financial allies with teller/i,
+        name: /unite your accounts with teller/i,
       })
     ).toBeVisible();
     expect(screen.getByText('Unavailable while offline')).toBeVisible();
@@ -349,7 +349,7 @@ describe('AccountsPage', () => {
 
     const heroSection = screen
       .getByRole('heading', {
-        name: /unite your financial allies with teller/i,
+        name: /unite your accounts with teller/i,
       })
       .closest('section');
     expect(heroSection).toBeTruthy();
@@ -840,7 +840,7 @@ describe('AccountsPage', () => {
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       expect(
         screen.queryByRole('heading', {
-          name: /unite your financial allies/i,
+          name: /unite your accounts/i,
         })
       ).not.toBeInTheDocument();
     });
@@ -878,7 +878,7 @@ describe('AccountsPage', () => {
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       expect(
         screen.queryByRole('heading', {
-          name: /unite your financial allies/i,
+          name: /unite your accounts/i,
         })
       ).not.toBeInTheDocument();
       for (const button of screen.getAllByRole('button', { name: /^connect$/i })) {
@@ -927,9 +927,58 @@ describe('AccountsPage', () => {
       expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
       expect(
         screen.getByRole('heading', {
-          name: /unite your financial allies/i,
+          name: /unite your accounts/i,
         })
       ).toBeInTheDocument();
+    });
+
+    it('shows teller branding when connected without a persisted user provider', () => {
+      jest.mocked(useOnlineStatus).mockReturnValue(true);
+      jest.mocked(useProviderCatalog).mockReturnValue(
+        makeProviderCatalogMock({
+          available_providers: ['plaid', 'teller'],
+          user_provider: null,
+          teller_application_id: 'app_123',
+        })
+      );
+      jest.mocked(useAccountFilter).mockReturnValue({
+        selectedAccountIds: ['acc_1'],
+        allAccountIds: ['acc_1'],
+        isAllAccountsSelected: true,
+        accountsByBank: {
+          'Demo Bank': [
+            {
+              id: 'acc_1',
+              name: 'Checking',
+              account_type: 'depository',
+              balance_ledger: 100,
+              balance_available: 100,
+              mask: '1234',
+              provider: 'teller',
+              institution_name: 'Demo Bank',
+              connection_id: 'conn_1',
+              transaction_count: 0,
+            },
+          ],
+        },
+        loading: false,
+        setSelectedAccountIds: jest.fn(),
+        toggleBank: jest.fn(),
+        toggleAccount: jest.fn(),
+        removeAccountsByIds: jest.fn(),
+      });
+
+      renderAccountsPage();
+
+      expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', {
+          name: /unite your accounts with teller/i,
+        })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /^link account$/i }).querySelector('img')
+      ).toHaveAttribute('src', '/teller.webp');
     });
 
     it('starts Teller connect from the picker click instead of only selecting the provider', async () => {

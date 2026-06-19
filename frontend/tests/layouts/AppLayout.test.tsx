@@ -1,6 +1,12 @@
 import { render } from '@testing-library/react';
+import type React from 'react';
 import { AppLayout } from '@/layouts/AppLayout';
+import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
 import { appLayout } from '@/ui/recipes';
+
+function renderAppLayout(ui: React.ReactElement) {
+  return render(<ControlTooltipProvider>{ui}</ControlTooltipProvider>);
+}
 
 jest.mock('@/ui/primitives/AppTitleBar', () => {
   const actual = jest.requireActual<typeof import('@/ui/primitives/AppTitleBar')>(
@@ -27,7 +33,7 @@ jest.mock('@/hooks/useScrollDetection', () => ({
 
 describe('AppLayout', () => {
   it('keeps the authenticated shell full height so the footer stays below the initial viewport', () => {
-    const { container } = render(
+    const { container } = renderAppLayout(
       <AppLayout currentTab="dashboard" onTabChange={jest.fn()} onLogout={jest.fn()} isOnline>
         <div>Content</div>
       </AppLayout>
@@ -53,7 +59,7 @@ describe('AppLayout', () => {
   });
 
   it('shows the footer on the dashboard tab only', () => {
-    const { rerender, queryByTestId } = render(
+    const { rerender, queryByTestId } = renderAppLayout(
       <AppLayout currentTab="dashboard" onTabChange={jest.fn()} onLogout={jest.fn()} isOnline>
         <div>Content</div>
       </AppLayout>
@@ -63,9 +69,11 @@ describe('AppLayout', () => {
     expect(queryByTestId('footer-intersection-sentinel')).toBeInTheDocument();
 
     rerender(
-      <AppLayout currentTab="transactions" onTabChange={jest.fn()} onLogout={jest.fn()} isOnline>
-        <div>Content</div>
-      </AppLayout>
+      <ControlTooltipProvider>
+        <AppLayout currentTab="transactions" onTabChange={jest.fn()} onLogout={jest.fn()} isOnline>
+          <div>Content</div>
+        </AppLayout>
+      </ControlTooltipProvider>
     );
 
     expect(queryByTestId('app-footer')).not.toBeInTheDocument();
@@ -73,7 +81,7 @@ describe('AppLayout', () => {
   });
 
   it('uses stacked bottom padding when contextual content is present', () => {
-    const { container } = render(
+    const { container } = renderAppLayout(
       <AppLayout
         currentTab="budgets"
         onTabChange={jest.fn()}
@@ -85,27 +93,26 @@ describe('AppLayout', () => {
       </AppLayout>
     );
 
-    expect(container.querySelector('main')).toHaveClass(
-      'pb-[calc(8.75rem_+_env(safe-area-inset-bottom))]'
-    );
-    expect(container.querySelector('main')).toHaveClass(
-      'md:pb-[calc(6rem_+_env(safe-area-inset-bottom))]'
-    );
+    expect(container.querySelector('main')).toHaveClass(appLayout.mainBottomPaddingStackedMobile);
+    expect(container.querySelector('main')).toHaveClass(appLayout.mainBottomPaddingStackedTablet);
   });
 
   it('always renders the floating primary tab bar', () => {
-    const { container } = render(
+    const { container } = renderAppLayout(
       <AppLayout currentTab="dashboard" onTabChange={jest.fn()} onLogout={jest.fn()} isOnline>
         <div>Content</div>
       </AppLayout>
     );
 
     expect(container.querySelector('nav[aria-label="Primary"]')).toBeTruthy();
-    expect(container.querySelector('.fixed.bottom-4')).toBeTruthy();
+    expect(container.querySelector('.fixed.bottom-0')).toBeTruthy();
+    expect(container.querySelector('.fixed.bottom-0')).toHaveClass(
+      appLayout.floatingChromeSafeArea
+    );
   });
 
   it('centers bottom contextual content', () => {
-    const { container } = render(
+    const { container } = renderAppLayout(
       <AppLayout
         currentTab="dashboard"
         onTabChange={jest.fn()}
@@ -122,7 +129,7 @@ describe('AppLayout', () => {
   });
 
   it('lets clicks pass through the floating chrome shell outside control bounds', () => {
-    const { container } = render(
+    const { container } = renderAppLayout(
       <AppLayout
         currentTab="dashboard"
         onTabChange={jest.fn()}
@@ -134,7 +141,7 @@ describe('AppLayout', () => {
       </AppLayout>
     );
 
-    const shell = container.querySelector('.fixed.bottom-4');
+    const shell = container.querySelector('.fixed.bottom-0');
     const contextualRow = container.querySelector('.min-h-\\[3\\.25rem\\]');
     const contextualControls = container.querySelector(
       '[data-testid="contextual-menu"]'
@@ -147,8 +154,8 @@ describe('AppLayout', () => {
     expect(mobileNav).toHaveClass('pointer-events-auto');
   });
 
-  it('reserves the mobile tab stack height on tablet and desktop', () => {
-    const { container } = render(
+  it('omits the mobile tab spacer when the tab bar is hidden from md upward', () => {
+    const { container } = renderAppLayout(
       <AppLayout
         currentTab="dashboard"
         onTabChange={jest.fn()}
@@ -160,13 +167,11 @@ describe('AppLayout', () => {
       </AppLayout>
     );
 
-    const spacer = container.querySelector('[aria-hidden].hidden.md\\:block');
-    expect(spacer).toBeInTheDocument();
-    expect(spacer).toHaveClass('h-[2rem]');
+    expect(container.querySelector('[aria-hidden].hidden.md\\:block')).not.toBeInTheDocument();
   });
 
   it('omits stacked bottom chrome row on accounts when there is no contextual content', () => {
-    const { container, queryByTestId } = render(
+    const { container, queryByTestId } = renderAppLayout(
       <AppLayout currentTab="accounts" onTabChange={jest.fn()} onLogout={jest.fn()} isOnline>
         <div>Content</div>
       </AppLayout>

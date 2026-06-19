@@ -19,12 +19,14 @@ export function interpolateNumbers(
   return result;
 }
 
+const LAYOUT_EPSILON = 0.5;
+
 export function numbersMatch(
   left: Readonly<Record<string, number>>,
   right: Readonly<Record<string, number>>,
   keys: readonly string[]
 ) {
-  return keys.every((key) => left[key] === right[key]);
+  return keys.every((key) => Math.abs(left[key] - right[key]) < LAYOUT_EPSILON);
 }
 
 export const sankeyNodeAnimationKeys = ['x', 'y', 'width', 'height'] as const;

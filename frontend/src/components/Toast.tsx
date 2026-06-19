@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 
 import { Button, GlassCard } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { appLayout, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
 interface ToastProps {
   message: string;
@@ -39,7 +39,7 @@ export const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
         'z-[60]',
         'max-w-sm',
         'right-[calc(1rem+env(safe-area-inset-right))]',
-        'bottom-[calc(5.75rem+env(safe-area-inset-bottom))]',
+        appLayout.toastMobileBottom,
         'md:right-6',
         'md:bottom-6'
       )}

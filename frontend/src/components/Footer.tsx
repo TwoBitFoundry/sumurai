@@ -55,6 +55,18 @@ const footerSkyCtaLink = [
   ...buttonCta.glow,
 ] as const;
 
+const footerActionRow = [
+  'flex',
+  'w-full',
+  'flex-row',
+  'flex-wrap',
+  'gap-2',
+  'overflow-visible',
+  'md:w-auto',
+  'md:flex-nowrap',
+  'lg:gap-3',
+] as const;
+
 const footerCoffeeCtaLink = [
   uiTextRecipes.inverse,
   'bg-[var(--color-brand-amber)]',
@@ -85,18 +97,22 @@ export function Footer() {
           ...appLayout.contentShell,
           'pl-[calc(1rem_+_env(safe-area-inset-left))] pr-[calc(1rem_+_env(safe-area-inset-right))]',
           'md:pl-[calc(2rem_+_env(safe-area-inset-left))] md:pr-[calc(2rem_+_env(safe-area-inset-right))]',
-          'py-8'
+          'py-4',
+          'md:py-5'
         )}
       >
         <div
           className={cn(
             'flex',
             'flex-col',
+            'overflow-visible',
             'md:flex-row',
-            'md:items-start',
+            'md:items-center',
             'md:justify-between',
-            'gap-6',
-            'mb-6'
+            'gap-3',
+            'md:gap-4',
+            'mb-3',
+            'md:mb-4'
           )}
         >
           <div className={cn('flex', 'flex-col', 'gap-2', 'items-start')}>
@@ -106,23 +122,7 @@ export function Footer() {
             </p>
           </div>
 
-          <div
-            className={cn(
-              'flex',
-              'min-w-0',
-              'max-w-full',
-              'flex-row',
-              'flex-nowrap',
-              'gap-2',
-              'overflow-x-auto',
-              'overflow-y-visible',
-              'p-3',
-              '-m-3',
-              'md:w-auto',
-              'md:overflow-visible',
-              'lg:gap-3'
-            )}
-          >
+          <div className={cn(footerActionRow)}>
             <a
               href="https://github.com/TwoBitFoundry/sumurai/blob/main/CONTRIBUTING.md"
               target="_blank"
@@ -168,7 +168,8 @@ export function Footer() {
             'items-center',
             'justify-between',
             'gap-4',
-            'pt-5',
+            'pt-2',
+            'md:pt-3',
             'border-t',
             ...uiBorderRecipes.divider
           )}

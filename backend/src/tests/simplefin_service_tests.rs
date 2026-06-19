@@ -282,6 +282,9 @@ fn build_simplefin_connection_service(
             let hidden = hidden_orgs.clone();
             Box::pin(async move { Ok(hidden) })
         });
+    mock_db
+        .expect_update_user_provider()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
 
     let saved_item_ids_clone = Arc::clone(&saved_item_ids);
     mock_db
@@ -373,6 +376,9 @@ fn build_simplefin_connect_normalization_service(
     mock_db
         .expect_list_simplefin_hidden_orgs()
         .returning(|_| Box::pin(async { Ok(HashSet::new()) }));
+    mock_db
+        .expect_update_user_provider()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
     mock_db
         .expect_save_provider_connection()
         .returning(|connection| {
@@ -940,6 +946,10 @@ async fn build_simplefin_handler_app(
         .returning(|_| Box::pin(async { Ok(()) }));
 
     crate::test_fixtures::apply_passkey_enrollment_mock_defaults(&mut mock_db);
+    mock_db
+        .expect_update_user_provider()
+        .times(0..)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
 
     let mut mock_cache = MockCacheService::new();
     mock_cache

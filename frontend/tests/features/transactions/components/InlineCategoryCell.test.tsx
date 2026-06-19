@@ -67,5 +67,7 @@ describe('InlineCategoryCell', () => {
     const button = screen.getByRole('button', { name: 'Merchandise' });
     expect(button.querySelector('[aria-hidden="true"]')).toBeNull();
     expect(button.className).toContain('!w-fit');
+    expect((button.parentElement as HTMLElement).className).toContain('ml-auto');
+    expect((button.parentElement as HTMLElement).className).toContain('justify-end');
   });
 });

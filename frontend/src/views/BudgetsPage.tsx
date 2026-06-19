@@ -2,6 +2,7 @@ import { Check, Loader2, Pencil, Plus, Target } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { Button, cn, EmptyState, GlassCard } from '@/ui/primitives';
+import { control } from '@/ui/recipes';
 import { heroAccents } from '@/ui/tokens';
 import { BudgetCalculator } from '../domain/BudgetCalculator';
 import { computeBudgetInsights } from '../domain/BudgetInsightsCalculator';
@@ -135,7 +136,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
   return (
     <div data-testid="budgets-page">
       <PageLayout
-        title="Provision the coffers"
+        title="Track your expenses"
         subtitle="Review subscriptions and manage monthly budgets categories from all your connected bank accounts."
         error={errorMessage}
         stats={heroStats}
@@ -174,7 +175,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
                       title="Edit budgets"
                       className={cn('shrink-0')}
                     >
-                      <Pencil />
+                      <Pencil className={cn(control.glyph.md)} />
                     </Button>
                   ) : null}
                 </div>
@@ -200,13 +201,21 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
                     onClick={toggleAddPicker}
                     variant="primary"
                     size="md"
-                    shape="square"
-                    aria-label="Budget"
+                    aria-label="Add budget"
+                    title="Add budget"
                     aria-expanded={isAdding}
                     aria-haspopup="dialog"
-                    className={cn('shrink-0')}
+                    className={cn(
+                      'shrink-0',
+                      'normal-case',
+                      'max-md:aspect-square',
+                      'max-md:w-11',
+                      'max-md:gap-0',
+                      'max-md:px-0'
+                    )}
                   >
-                    <Plus />
+                    <Plus className={cn(control.glyph.md)} />
+                    <span className="hidden md:inline">Budget</span>
                   </Button>
                 )
               }

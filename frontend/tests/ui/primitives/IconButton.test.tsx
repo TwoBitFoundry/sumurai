@@ -1,11 +1,16 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
+import type React from 'react';
+import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
 import { IconButton } from '@/ui/primitives/IconButton';
 import { chromeBar, control } from '@/ui/recipes';
 
+function renderIconButton(ui: React.ReactElement) {
+  return render(<ControlTooltipProvider>{ui}</ControlTooltipProvider>);
+}
+
 describe('IconButton', () => {
   it('defaults to the md control square', () => {
-    render(
+    renderIconButton(
       <IconButton aria-label="Settings">
         <span aria-hidden="true">S</span>
       </IconButton>
@@ -14,7 +19,7 @@ describe('IconButton', () => {
     const button = screen.getByRole('button', { name: 'Settings' });
     expect(button.className).toContain(control.square.md);
     expect(button.querySelector('span')).not.toBeNull();
-    expect(button).toHaveAttribute('title', 'Settings');
+    expect(button).not.toHaveAttribute('title');
   });
 
   it.each([
@@ -22,7 +27,7 @@ describe('IconButton', () => {
     ['md', control.square.md, control.glyph.md],
     ['lg', control.square.lg, control.glyph.lg],
   ] as const)('renders the %s control size', (size, shell, glyph) => {
-    render(
+    renderIconButton(
       <IconButton aria-label="Action" size={size}>
         <span aria-hidden="true">A</span>
       </IconButton>
@@ -38,7 +43,7 @@ describe('IconButton', () => {
   });
 
   it('uses flat brand sky for the primary variant', () => {
-    render(
+    renderIconButton(
       <IconButton variant="primary" aria-label="Add">
         <span aria-hidden="true">+</span>
       </IconButton>
@@ -51,7 +56,7 @@ describe('IconButton', () => {
   });
 
   it('renders the chrome bar size for title bar icon actions', () => {
-    render(
+    renderIconButton(
       <IconButton aria-label="Settings" size="bar">
         <span aria-hidden="true">S</span>
       </IconButton>

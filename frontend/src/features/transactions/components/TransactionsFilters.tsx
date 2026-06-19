@@ -3,7 +3,7 @@ import type React from 'react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useHorizontalScrollRail } from '@/hooks/useHorizontalScrollRail';
 import type { CustomCategory } from '@/types/api';
-import { Button, cn, IconButton, Input } from '@/ui/primitives';
+import { Button, cn, Input } from '@/ui/primitives';
 import { buildPillScrollMask, pillScrollFadeRecipes } from '@/ui/primitives/Pill';
 import {
   control,
@@ -98,6 +98,7 @@ export const TransactionsFilters: React.FC<Props> = ({
 
   const scrollMask = buildPillScrollMask(showLeftFade, showRightFade);
   const isInline = layout === 'inline';
+  const categoryScrollMask = isInline ? undefined : scrollMask;
 
   const handleDeleteSuccess = () => {
     if (deleteTarget && selectedCategory === deleteTarget.display_name) {
@@ -170,13 +171,16 @@ export const TransactionsFilters: React.FC<Props> = ({
             )}
           >
             {showLeftFade ? (
-              <IconButton
-                variant="toolbar"
+              <Button
+                type="button"
+                variant="secondary"
                 size="sm"
+                shape="square"
                 aria-label="Scroll categories left"
+                title="Scroll categories left"
                 className={cn(
-                  ...pillScrollFadeRecipes.scrollArrowRail.left,
-                  ...pillScrollFadeRecipes.scrollArrowButton
+                  ...transactionsRowRecipes.contextualFilterScrollArrow,
+                  ...transactionsRowRecipes.contextualFilterScrollArrowLeft
                 )}
                 onMouseEnter={() => startHoverScroll(-1)}
                 onMouseLeave={stopHoverScroll}
@@ -184,16 +188,19 @@ export const TransactionsFilters: React.FC<Props> = ({
                 onClick={() => scrollByAmount(-1)}
               >
                 <ChevronLeft aria-hidden="true" />
-              </IconButton>
+              </Button>
             ) : null}
             {showRightFade ? (
-              <IconButton
-                variant="toolbar"
+              <Button
+                type="button"
+                variant="secondary"
                 size="sm"
+                shape="square"
                 aria-label="Scroll categories right"
+                title="Scroll categories right"
                 className={cn(
-                  ...pillScrollFadeRecipes.scrollArrowRail.right,
-                  ...pillScrollFadeRecipes.scrollArrowButton
+                  ...transactionsRowRecipes.contextualFilterScrollArrow,
+                  ...transactionsRowRecipes.contextualFilterScrollArrowRight
                 )}
                 onMouseEnter={() => startHoverScroll(1)}
                 onMouseLeave={stopHoverScroll}
@@ -201,15 +208,19 @@ export const TransactionsFilters: React.FC<Props> = ({
                 onClick={() => scrollByAmount(1)}
               >
                 <ChevronRight aria-hidden="true" />
-              </IconButton>
+              </Button>
             ) : null}
             <div
-              className={cn(...pillScrollFadeRecipes.maskViewport)}
+              className={cn(
+                ...(isInline
+                  ? transactionsRowRecipes.contextualFilterMaskViewport
+                  : pillScrollFadeRecipes.maskViewport)
+              )}
               style={
-                scrollMask
+                categoryScrollMask
                   ? {
-                      maskImage: scrollMask,
-                      WebkitMaskImage: scrollMask,
+                      maskImage: categoryScrollMask,
+                      WebkitMaskImage: categoryScrollMask,
                     }
                   : undefined
               }

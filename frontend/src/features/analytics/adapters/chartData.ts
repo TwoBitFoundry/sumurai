@@ -63,6 +63,7 @@ export type SankeyPercentContext =
 
 export type SankeyChartNode = SankeyNode & {
   name: string;
+  value: number;
   percentOfExpenses: number | null;
   percentContext: SankeyPercentContext | null;
 };
@@ -234,8 +235,8 @@ const resolveLinkPercent = (
 
   if (link.source === 'income' && link.target === 'expenses') {
     return {
-      percentOfExpenses: sharePercent(value, totals.income),
-      percentContext: 'income',
+      percentOfExpenses: sharePercent(value, totals.expenses),
+      percentContext: 'expenses',
     };
   }
   if (link.source === 'income' && link.target === 'savings') {
@@ -319,6 +320,7 @@ export function sankeyResponseToChartData(response?: SankeyResponse | null): San
   const nodes = (response?.nodes ?? []).map((node) => ({
     ...node,
     name: node.label || formatCategoryName(node.id),
+    value: sourceResponse != null ? resolveNodeValue(node, sourceResponse) : 0,
     ...(sourceResponse != null
       ? resolveNodePercent(node, sourceResponse, totals)
       : { percentOfExpenses: null, percentContext: null }),
@@ -355,26 +357,86 @@ export type SankeyTooltipMetadata = {
   kind: SankeyChartNode['kind'] | null;
 };
 
+export type SankeyTooltipTarget =
+  | {
+      type: 'node';
+      node: SankeyChartNode;
+    }
+  | {
+      type: 'link';
+      link: SankeyChartLink;
+      sourceNode: SankeyChartNode;
+      targetNode: SankeyChartNode;
+    };
+
 const normalizeSankeyTooltipKey = (value: string | null | undefined) =>
   value?.trim().toLowerCase().replace(/\s+/g, ' ') ?? '';
 
+const stripSankeyTooltipAffixes = (value: string | null | undefined) =>
+  (value ?? '')
+    .replace(/^(?:expenses|fixed expenses|free spending)\s*[-–—:→]\s*/i, '')
+    .replace(/^(?:expenses|fixed expenses|free spending)\s+→\s*/i, '')
+    .replace(/\s*[-–—:→]\s*(?:expenses|fixed expenses|free spending)$/i, '')
+    .trim();
+
 const findSankeyNodeByHint = (chartData: SankeyChartData, hint: string) => {
-  const normalizedHint = normalizeSankeyTooltipKey(hint);
-  if (!normalizedHint) {
+  const normalizedHints = [
+    normalizeSankeyTooltipKey(hint),
+    normalizeSankeyTooltipKey(stripSankeyTooltipAffixes(hint)),
+  ].filter(Boolean);
+
+  if (normalizedHints.length === 0) {
     return undefined;
   }
 
-  return chartData.nodes.find((node) => {
-    const candidates = [node.id, node.name, node.label ?? ''].map((candidate) =>
-      normalizeSankeyTooltipKey(candidate.replace(/_/g, ' '))
-    );
-    return candidates.some(
-      (candidate) =>
-        candidate === normalizedHint ||
-        normalizedHint.includes(candidate) ||
-        candidate.includes(normalizedHint)
-    );
-  });
+  const scored = chartData.nodes
+    .map((node) => {
+      const candidates = [node.id, node.name, node.label ?? '']
+        .flatMap((candidate) => [
+          normalizeSankeyTooltipKey(candidate.replace(/_/g, ' ')),
+          normalizeSankeyTooltipKey(stripSankeyTooltipAffixes(candidate.replace(/_/g, ' '))),
+        ])
+        .filter(Boolean);
+
+      let score = -1;
+      let length = -1;
+
+      for (const normalizedHint of normalizedHints) {
+        for (const candidate of candidates) {
+          if (candidate === normalizedHint) {
+            score = Math.max(score, 4);
+            length = Math.max(length, candidate.length);
+            continue;
+          }
+
+          if (candidate.length > normalizedHint.length && candidate.includes(normalizedHint)) {
+            score = Math.max(score, 3);
+            length = Math.max(length, candidate.length);
+            continue;
+          }
+
+          if (
+            normalizedHint.length > candidate.length &&
+            normalizedHint.includes(candidate) &&
+            candidate.length > 4
+          ) {
+            score = Math.max(score, 2);
+            length = Math.max(length, candidate.length);
+          }
+        }
+      }
+
+      return { node, score, length };
+    })
+    .filter((match) => match.score >= 0)
+    .sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+      return right.length - left.length;
+    });
+
+  return scored[0]?.node;
 };
 
 const findSankeyLinkFromEntry = (chartData: SankeyChartData, entry: Record<string, unknown>) => {
@@ -415,15 +477,55 @@ export function resolveSankeyTooltipMetadata(
   entry: unknown,
   tooltipName?: string | null
 ): SankeyTooltipMetadata | null {
+  const target = resolveSankeyTooltipTarget(chartData, entry, tooltipName);
+  if (!target) {
+    return null;
+  }
+
+  if (target.type === 'node') {
+    return {
+      percentOfExpenses: target.node.percentOfExpenses,
+      percentContext: target.node.percentContext,
+      kind: target.node.kind,
+    };
+  }
+
+  return {
+    percentOfExpenses: target.link.percentOfExpenses,
+    percentContext: target.link.percentContext,
+    kind:
+      target.link.percentContext === 'expenseFunding'
+        ? target.sourceNode.kind
+        : target.targetNode.kind,
+  };
+}
+
+export function resolveSankeyTooltipTarget(
+  chartData: SankeyChartData,
+  entry: unknown,
+  tooltipName?: string | null
+): SankeyTooltipTarget | null {
   if (entry != null && typeof entry === 'object') {
     const record = entry as Record<string, unknown>;
     const link = findSankeyLinkFromEntry(chartData, record);
     if (link) {
+      const sourceNode = chartData.nodes[link.source];
       const targetNode = chartData.nodes[link.target];
+      if (sourceNode && targetNode) {
+        return {
+          type: 'link',
+          link,
+          sourceNode,
+          targetNode,
+        };
+      }
+    }
+
+    const hintedNode = findSankeyNodeByHint(chartData, tooltipName ?? '');
+    if (hintedNode) {
       return {
-        percentOfExpenses: link.percentOfExpenses,
-        percentContext: link.percentContext,
-        kind: targetNode?.kind ?? null,
+        type: 'node',
+        node: hintedNode,
       };
     }
 
@@ -431,9 +533,8 @@ export function resolveSankeyTooltipMetadata(
       const node = chartData.nodes.find((candidate) => candidate.id === record.id);
       if (node) {
         return {
-          percentOfExpenses: node.percentOfExpenses,
-          percentContext: node.percentContext,
-          kind: node.kind,
+          type: 'node',
+          node,
         };
       }
     }
@@ -442,9 +543,8 @@ export function resolveSankeyTooltipMetadata(
       const node = chartData.nodes.find((candidate) => candidate.kind === record.kind);
       if (node) {
         return {
-          percentOfExpenses: node.percentOfExpenses,
-          percentContext: node.percentContext,
-          kind: node.kind,
+          type: 'node',
+          node,
         };
       }
     }
@@ -453,9 +553,8 @@ export function resolveSankeyTooltipMetadata(
   const hintedNode = findSankeyNodeByHint(chartData, tooltipName ?? '');
   if (hintedNode) {
     return {
-      percentOfExpenses: hintedNode.percentOfExpenses,
-      percentContext: hintedNode.percentContext,
-      kind: hintedNode.kind,
+      type: 'node',
+      node: hintedNode,
     };
   }
 

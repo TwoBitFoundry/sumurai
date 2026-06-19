@@ -2,8 +2,15 @@ import { AlertTriangle } from 'lucide-react';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import { PasskeySecuritySection } from '@/features/settings/PasskeySecuritySection';
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
-import { Alert, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
-import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
+import {
+  Alert,
+  Button,
+  FormLabel,
+  GlassCard,
+  Input,
+  Modal,
+  ModalDrawerHeader,
+} from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import {
   settingsSecurityLayout,
@@ -117,18 +124,20 @@ export function SettingsScreenSlice(props: {
         size="md"
       >
         <GlassCard variant="auth" padding="lg">
-          <h2
-            id={`delete-account-modal-title-${key}`}
-            className={cn(uiTypographyRecipes.cardTitle, 'mb-4', uiTextRecipes.primary)}
-          >
-            Delete Account?
-          </h2>
+          <ModalDrawerHeader onClose={() => {}} closeLabel="Close delete account dialog">
+            <h2
+              id={`delete-account-modal-title-${key}`}
+              className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}
+            >
+              Delete Account?
+            </h2>
+          </ModalDrawerHeader>
 
           <Alert
             variant="error"
             title="All to be severed:"
             icon={<AlertTriangle className={cn('h-5', 'w-5')} />}
-            className={cn('mb-6')}
+            className={cn('mb-6', 'mt-4')}
           >
             <ul className={cn('space-y-1', uiTypographyRecipes.caption)}>
               <li>• All bank connections</li>
@@ -158,21 +167,8 @@ export function SettingsScreenSlice(props: {
             />
           </div>
 
-          <div className={cn('flex', 'gap-3')}>
-            <Button
-              type="button"
-              variant="ghost"
-              className={cn(appTitleBarRecipes.settingsIdle, 'flex-1', 'normal-case')}
-            >
-              Exit
-            </Button>
-            <Button
-              type="button"
-              variant="danger"
-              size="md"
-              disabled={confirmText !== 'DELETE'}
-              className={cn('flex-1')}
-            >
+          <div className={cn('flex', 'justify-center')}>
+            <Button type="button" variant="danger" size="md" disabled={confirmText !== 'DELETE'}>
               Delete forever
             </Button>
           </div>

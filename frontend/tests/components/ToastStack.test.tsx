@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { ToastStack } from '@/components/toastStack/ToastStack';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
+import { appLayout } from '@/ui/recipes';
 
 jest.mock('@/hooks/useViewportBreakpoint', () => ({
   useViewportBreakpoint: jest.fn(),
@@ -62,7 +63,7 @@ describe('ToastStack', () => {
 
     const stack = screen.getByTestId('toast-stack');
     expect(stack).toHaveAttribute('data-breakpoint', 'mobile');
-    expect(stack).toHaveClass('bottom-[calc(5.75rem+env(safe-area-inset-bottom))]');
+    expect(stack).toHaveClass(appLayout.toastMobileBottom);
     expect(stack).toHaveClass('left-[calc(1rem+env(safe-area-inset-left))]');
   });
 
@@ -85,7 +86,7 @@ describe('ToastStack', () => {
 
     const stack = screen.getByTestId('toast-stack');
     expect(stack).toHaveAttribute('data-breakpoint', 'tablet');
-    expect(stack).toHaveClass('bottom-[calc(4.75rem+env(safe-area-inset-bottom))]');
+    expect(stack).toHaveClass(appLayout.toastTabletBottom);
     expect(stack).toHaveClass('max-w-md');
   });
 

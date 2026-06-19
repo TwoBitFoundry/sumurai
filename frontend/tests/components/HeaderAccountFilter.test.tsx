@@ -1,6 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import type React from 'react';
 import { HeaderAccountFilter } from '@/components/HeaderAccountFilter';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
+import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
+
+function renderHeaderAccountFilter(ui: React.ReactElement) {
+  return render(<ControlTooltipProvider>{ui}</ControlTooltipProvider>);
+}
 
 jest.mock('@/hooks/useAccountFilter', () => ({
   useAccountFilter: jest.fn(),
@@ -37,7 +43,7 @@ describe('HeaderAccountFilter', () => {
   });
 
   it('keeps the trigger size fixed when scrolled changes', () => {
-    const { rerender } = render(<HeaderAccountFilter />);
+    const { rerender } = renderHeaderAccountFilter(<HeaderAccountFilter />);
     const initialClassName = screen.getByRole('button', { name: 'Filter' }).className;
 
     rerender(<HeaderAccountFilter />);
@@ -49,7 +55,7 @@ describe('HeaderAccountFilter', () => {
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 900 });
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
 
-    render(<HeaderAccountFilter triggerStyle="icon-only" />);
+    renderHeaderAccountFilter(<HeaderAccountFilter triggerStyle="icon-only" />);
 
     const trigger = screen.getByRole('button', { name: 'Filter accounts' });
     expect(trigger.parentElement?.className).toContain('h-12');

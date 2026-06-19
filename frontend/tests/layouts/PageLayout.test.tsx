@@ -1,4 +1,6 @@
-import { pageLayoutRecipes } from '@/layouts/PageLayout';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { PageLayout, pageLayoutRecipes } from '@/layouts/PageLayout';
 
 describe('PageLayout', () => {
   it('keeps the shell spacing on the base, md, and lg tiers', () => {
@@ -17,5 +19,29 @@ describe('PageLayout', () => {
 
     expect(shellSurface).toContain('shadow-[0_8px_32px');
     expect(shellSurface).not.toContain('drop-shadow-[');
+  });
+
+  it('renders hero subtitles behind an info popover trigger', async () => {
+    const user = userEvent.setup();
+    const subtitle = 'Track your total balances and net worth across accounts.';
+
+    render(<PageLayout title="Assess your financial health" subtitle={subtitle} />);
+
+    expect(screen.queryByText(subtitle)).not.toBeInTheDocument();
+
+    const heading = screen.getByRole('heading', { level: 1 });
+    const titleHost = heading.parentElement;
+    expect(titleHost?.className).toContain('inline');
+    expect(titleHost?.className).not.toContain('inline-flex');
+    expect(titleHost?.className).toContain('text-[2rem]');
+    expect(titleHost?.className).toContain('leading-[1.1]');
+    expect(heading.className).toContain('inline');
+    expect(heading.className).not.toContain('text-[2rem]');
+    expect(heading).toHaveTextContent('Assess your financial health');
+    await user.click(
+      screen.getByRole('button', { name: 'Show details for Assess your financial health' })
+    );
+
+    expect(screen.getByText(subtitle)).toBeInTheDocument();
   });
 });

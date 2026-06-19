@@ -3280,6 +3280,7 @@ async fn load_connection_statuses(
             institution_name: conn.institution_name,
             connection_id: Some(conn.id.to_string()),
             item_id: Some(conn.item_id),
+            provider: conn.provider,
             transaction_count: conn.transaction_count,
             account_count: conn.account_count,
             sync_in_progress: false,
@@ -3563,7 +3564,13 @@ async fn get_authenticated_provider_status(
     let user_id = auth_context.user_id;
 
     let provider = match state.db_repository.get_user_by_id(&user_id).await {
-        Ok(Some(user)) => user.provider,
+        Ok(Some(user)) => {
+            if state.provider_registry.get(&user.provider).is_some() {
+                user.provider
+            } else {
+                String::new()
+            }
+        }
         Ok(None) => String::new(),
         Err(e) => {
             tracing::error!("Failed to load user {} for provider status: {}", user_id, e);
@@ -4102,11 +4109,10 @@ async fn get_authenticated_provider_info(
         }
     }
 
-    let user_provider = if user.provider.is_empty() {
-        None
-    } else {
-        Some(user.provider)
-    };
+    let user_provider = user
+        .active_provider()
+        .filter(|provider| state.provider_registry.get(provider).is_some())
+        .map(str::to_string);
 
     Ok(Json(ProviderInfoResponse {
         available_providers,

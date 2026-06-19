@@ -1,16 +1,17 @@
 import { motion } from 'framer-motion';
+import { type LucideIcon, Monitor, Moon, Sun } from 'lucide-react';
 import type { ThemePreference } from '@/context/ThemeContext';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { Button } from '@/ui/primitives/Button';
 import { cn } from '@/ui/primitives/utils';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { text as uiTextRecipes } from '@/ui/recipes';
 
 export const THEME_MODE_SELECTOR_ACTIVE_PILL_LAYOUT_ID = 'theme-mode-selector-pill-active';
 
-const themeModes: Array<{ value: ThemePreference; label: string }> = [
-  { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
+const themeModes: Array<{ value: ThemePreference; label: string; icon: LucideIcon }> = [
+  { value: 'system', label: 'System', icon: Monitor },
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
 ];
 
 interface ThemeModeSelectorProps {
@@ -34,7 +35,7 @@ export function ThemeModeSelector({ value, onChange }: ThemeModeSelectorProps) {
       role="radiogroup"
       aria-label="Theme"
     >
-      {themeModes.map(({ value: option, label }) => {
+      {themeModes.map(({ value: option, label, icon: Icon }) => {
         const active = option === value;
 
         return (
@@ -46,6 +47,8 @@ export function ThemeModeSelector({ value, onChange }: ThemeModeSelectorProps) {
             size="inherit"
             role="radio"
             aria-checked={active}
+            aria-label={label}
+            title={label}
             className={cn(
               ...appTitleBarRecipes.contextPillTab,
               ...appTitleBarRecipes.contextPillTabSize,
@@ -64,7 +67,11 @@ export function ThemeModeSelector({ value, onChange }: ThemeModeSelectorProps) {
                 transition={{ type: 'spring', stiffness: 400, damping: 35 }}
               />
             ) : null}
-            <span className={cn('relative', 'z-10', uiTypographyRecipes.bodyStrong)}>{label}</span>
+            <span
+              className={cn('relative', 'z-10', 'shrink-0', ...appTitleBarRecipes.pillTabIconWell)}
+            >
+              <Icon className={cn(...appTitleBarRecipes.pillTabIcon)} aria-hidden="true" />
+            </span>
           </Button>
         );
       })}

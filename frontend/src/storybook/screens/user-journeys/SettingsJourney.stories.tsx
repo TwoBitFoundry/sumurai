@@ -79,7 +79,7 @@ export const DeleteAccountCancel: Story = {
 
     await userEvent.click(canvas.getByRole('button', { name: /delete account/i }));
     await expect(body.getByRole('heading', { name: /delete account/i })).toBeVisible();
-    await userEvent.click(body.getByRole('button', { name: /^exit$/i }));
+    await userEvent.click(body.getByRole('button', { name: /close delete account dialog/i }));
     await waitFor(() => {
       expect(body.queryByRole('heading', { name: /delete account/i })).not.toBeInTheDocument();
     });
@@ -116,10 +116,10 @@ export const DeleteAccountValidation: Story = {
     await expect(confirm).toHaveAttribute('data-variant', 'invalid');
     await expect(deleteForever).toBeDisabled();
 
-    await userEvent.clear(confirm);
-    await userEvent.type(confirm, 'DELETE');
+    await userEvent.type(confirm, 'ETE');
     await expect(confirm).toHaveAttribute('data-variant', 'default');
-    await expect(deleteForever).toBeEnabled();
+    await expect(confirm).toHaveValue('DELETE');
+    await expect(body.getByRole('button', { name: /delete forever/i })).toBeEnabled();
   },
 };
 

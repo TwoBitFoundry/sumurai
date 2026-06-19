@@ -1,3 +1,4 @@
+import { jest } from 'bun:test';
 import type { ProviderCatalogState } from '@/hooks/useProviderCatalog';
 import type { FinancialProvider } from '@/types/api';
 import type { ProviderCatalogue } from '@/types/providerCatalog';
@@ -27,7 +28,7 @@ export function makeProviderCatalogMock(
     resolveConnectProvider: (preferred: FinancialProvider) =>
       resolveConnectProvider(catalogue, preferred),
     refresh: createMockFunction(),
-    chooseProvider: createMockFunction(),
+    chooseProvider: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }

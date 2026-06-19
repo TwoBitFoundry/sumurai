@@ -1,35 +1,47 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import type React from 'react';
 import {
   DateRangeLabelPill,
   DateRangePillSlider,
 } from '@/features/analytics/components/DateRangePillSlider';
+import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
 import { formatDateRangeLabel } from '@/utils/dateRanges';
+
+function renderDateRangePillSlider(ui: React.ReactElement) {
+  return render(<ControlTooltipProvider>{ui}</ControlTooltipProvider>);
+}
 
 describe('DateRangePillSlider', () => {
   it('renders compact labels and calls onChange with the selected range', () => {
     const onChange = jest.fn();
 
-    render(<DateRangePillSlider dateRange="current-month" onChange={onChange} />);
+    renderDateRangePillSlider(
+      <DateRangePillSlider dateRange="current-month" onChange={onChange} />
+    );
 
-    fireEvent.click(screen.getByRole('button', { name: '1Y' }));
+    fireEvent.click(screen.getByRole('button', { name: '1 year' }));
 
-    expect(screen.getByRole('button', { name: '1M' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '5Y' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '1 month' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '5 year' })).toBeInTheDocument();
     expect(onChange).toHaveBeenCalledWith('past-year');
   });
 
   it('uses stronger body text for the range labels', () => {
-    render(<DateRangePillSlider dateRange="current-month" onChange={jest.fn()} />);
+    renderDateRangePillSlider(
+      <DateRangePillSlider dateRange="current-month" onChange={jest.fn()} />
+    );
 
     expect(
-      screen.getByRole('button', { name: '1M' }).querySelector('.font-body-strong')
+      screen.getByRole('button', { name: '1 month' }).querySelector('.font-body-strong')
     ).not.toBeNull();
   });
 
   it('renders compact context pill tabs with a smaller corner radius', () => {
-    render(<DateRangePillSlider dateRange="current-month" onChange={jest.fn()} />);
+    renderDateRangePillSlider(
+      <DateRangePillSlider dateRange="current-month" onChange={jest.fn()} />
+    );
 
-    const activeButton = screen.getByRole('button', { name: '1M' });
+    const activeButton = screen.getByRole('button', { name: '1 month' });
     expect(activeButton.className).toContain('rounded-lg');
     expect(activeButton.className).not.toContain('flex-1');
     expect(activeButton.className).not.toContain('aspect-square');
@@ -37,7 +49,9 @@ describe('DateRangePillSlider', () => {
   });
 
   it('constrains the pill shell so it can shrink beside the account filter', () => {
-    render(<DateRangePillSlider dateRange="current-month" onChange={jest.fn()} />);
+    renderDateRangePillSlider(
+      <DateRangePillSlider dateRange="current-month" onChange={jest.fn()} />
+    );
 
     const shell = screen.getByTestId('date-range-pill-slider');
     expect(shell.className).toContain('min-w-0');

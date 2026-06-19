@@ -120,6 +120,19 @@ export const effect = {
   glassBackdrop: ['backdrop-blur-md', 'backdrop-saturate-[150%]'],
 } as const;
 
+export const scroll = {
+  visibleWhenOverflow: [
+    '[scrollbar-gutter:stable]',
+    '[scrollbar-width:thin]',
+    '[scrollbar-color:color-mix(in_srgb,var(--color-border-strong)_72%,transparent)_transparent]',
+    '[&::-webkit-scrollbar]:w-2',
+    '[&::-webkit-scrollbar-track]:bg-transparent',
+    '[&::-webkit-scrollbar-thumb]:rounded-full',
+    '[&::-webkit-scrollbar-thumb]:bg-[color:color-mix(in_srgb,var(--color-border-strong)_72%,transparent)]',
+    'dark:[&::-webkit-scrollbar-thumb]:bg-[color:color-mix(in_srgb,var(--color-border-glass)_60%,transparent)]',
+  ],
+} as const;
+
 export const buttonCta = {
   gradient: ['bg-[var(--color-brand-sky)]'],
   glow: [...effect.accentOutlineGlowCta],
@@ -488,6 +501,35 @@ export const chartTooltip = {
   row: [font.captionStrong, text.body],
 } as const;
 
+export const infoPopoverShell = {
+  sideOffset: 10,
+  collisionPadding: 12,
+  shell: [
+    'rounded-lg',
+    'border',
+    ...border.glass,
+    ...surface.glassPanel,
+    ...effect.glassDropShadow,
+    ...effect.glassBackdrop,
+  ],
+} as const;
+
+export const controlHoverLabel = {
+  delayMs: 150,
+  content: [
+    'z-[70]',
+    'max-w-[16rem]',
+    ...infoPopoverShell.shell,
+    'px-2.5',
+    'py-1',
+    font.body,
+    text.primary,
+    'pointer-events-none',
+    'select-none',
+    'whitespace-nowrap',
+  ],
+} as const;
+
 export const budgetRealityChart = {
   curveGlow: {
     blurStdDeviation: 4,
@@ -500,7 +542,7 @@ export const budgetRealityChart = {
 export const sankeyChartSizing = {
   baseMinHeightPx: 280,
   baseMaxHeightPx: 560,
-  defaultScale: 1.5,
+  defaultScale: 1.1,
 } as const;
 
 const sankeyDefaultMinHeightClass =
@@ -580,6 +622,12 @@ export const dashboardStatsCarousel = {
 
 export const transactionsTable = {
   chromeBar: [...surface.glassPanel, ...effect.glassBackdrop],
+  listViewport: [
+    'relative',
+    'overflow-y-auto',
+    'overscroll-contain',
+    ...scroll.visibleWhenOverflow,
+  ],
   footer: [
     'border-t px-4 py-4 transition-colors duration-500',
     ...border.subtle,
@@ -689,6 +737,20 @@ export const floatingChromeSearch = {
   label: control.label.md,
 } as const;
 
+export const heroSubtitleInfoIconWell = [
+  'inline-flex',
+  'shrink-0',
+  'items-center',
+  'justify-center',
+  'align-middle',
+  'h-[0.625em]',
+  'w-[0.625em]',
+  '[transform:translateY(-0.06em)]',
+  '[&_svg]:block',
+  '[&_svg]:h-full',
+  '[&_svg]:w-full',
+] as const;
+
 export const controlIconWell = {
   sm: [
     'inline-flex',
@@ -762,6 +824,13 @@ export const appLayout = {
     'lg:px-8',
   ],
   mainSafeArea: ['pl-[env(safe-area-inset-left)]', 'pr-[env(safe-area-inset-right)]'],
+  floatingChromeBottom: 'bottom-0',
+  floatingChromeSafeArea: 'pb-[calc(0.75rem+env(safe-area-inset-bottom))]',
+  mainBottomPaddingTabOnly: 'pb-[calc(3.75rem_+_env(safe-area-inset-bottom))]',
+  mainBottomPaddingStackedMobile: 'pb-[calc(9.875rem_+_env(safe-area-inset-bottom))]',
+  mainBottomPaddingStackedTablet: 'md:pb-[calc(6.625rem_+_env(safe-area-inset-bottom))]',
+  toastMobileBottom: 'bottom-[calc(5rem+env(safe-area-inset-bottom))]',
+  toastTabletBottom: 'bottom-[calc(6.625rem+env(safe-area-inset-bottom))]',
 } as const;
 
 export const authLayout = {
@@ -780,20 +849,18 @@ export const authLayout = {
     'lg:max-w-lg',
     'lg:py-12',
   ],
-  brandAside: [
-    'hidden',
-    'lg:flex',
+  brandBackdrop: [
     'pointer-events-none',
     'fixed',
-    'right-0',
-    'top-0',
-    'bottom-0',
     'z-0',
-    'w-1/2',
+    'flex',
+    'inset-x-0',
+    'top-14',
+    'bottom-0',
     'items-end',
-    'justify-end',
+    'justify-center',
   ],
-  brandAsideImage: ['h-full', 'w-full', 'object-contain', 'object-right-bottom'],
+  brandBackdropImage: ['h-full', 'w-auto', 'max-w-full', 'object-contain', 'object-bottom'],
   card: ['relative', 'z-10', 'w-full'],
   stackedActions: ['flex', 'flex-col', 'items-stretch', 'gap-3', 'md:gap-3', 'lg:items-center'],
   primaryAction: ['w-full', 'md:w-full', 'lg:w-auto', 'lg:min-w-[220px]'],

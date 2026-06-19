@@ -8,6 +8,7 @@ import { PageLayout } from '@/layouts/PageLayout';
 import { sampleBudgetProgressEntries } from '@/storybook/fixtures/budgets';
 import { sampleFixedExpenses, storyFixedExpenseMonth } from '@/storybook/fixtures/fixed-expenses';
 import { Button, cn, EmptyState, GlassCard } from '@/ui/primitives';
+import { control } from '@/ui/recipes';
 import { heroAccents } from '@/ui/tokens';
 
 export type BudgetsScreenSliceState = 'loaded' | 'empty' | 'error' | 'adding';
@@ -38,7 +39,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
   return (
     <div data-testid="budgets-page">
       <PageLayout
-        title="Provision the coffers"
+        title="Track your expenses"
         subtitle="Review subscriptions and manage monthly budgets categories from all your connected bank accounts."
         error={errorMessage}
         stats={heroStats}
@@ -72,7 +73,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
                     className={cn('shrink-0')}
                     onClick={() => {}}
                   >
-                    <Pencil />
+                    <Pencil className={cn(control.glyph.md)} />
                   </Button>
                 ) : undefined
               }
@@ -82,14 +83,22 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
                     type="button"
                     variant="primary"
                     size="md"
-                    shape="square"
-                    aria-label="Budget"
+                    aria-label="Add budget"
+                    title="Add budget"
                     aria-expanded={props.state === 'adding'}
                     aria-haspopup="dialog"
-                    className={cn('shrink-0')}
+                    className={cn(
+                      'shrink-0',
+                      'normal-case',
+                      'max-md:aspect-square',
+                      'max-md:w-11',
+                      'max-md:gap-0',
+                      'max-md:px-0'
+                    )}
                     onClick={() => {}}
                   >
-                    <Plus />
+                    <Plus className={cn(control.glyph.md)} />
+                    <span className="hidden md:inline">Budget</span>
                   </Button>
                 ) : undefined
               }

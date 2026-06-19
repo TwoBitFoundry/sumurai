@@ -67,7 +67,11 @@ export function InlineCategoryCell({
         'min-w-0',
         'max-w-full',
         'items-center',
-        readOnly ? 'w-fit' : _dense ? 'shrink-0 justify-end' : 'ml-auto w-fit max-w-full'
+        readOnly
+          ? 'ml-auto w-fit shrink-0 justify-end'
+          : _dense
+            ? 'shrink-0 justify-end'
+            : 'ml-auto w-fit max-w-full'
       )}
       style={categoryChipStyle}
     >

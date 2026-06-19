@@ -149,7 +149,8 @@ export function AddBudgetPicker({
                     className={cn(
                       categoryOptionButtonClasses,
                       theme.tag,
-                      selected && 'ring-2 ring-inset ring-[var(--color-border-focus-active)]'
+                      selected && theme.chipSurfaceSelected,
+                      selected && ['ring-2', 'ring-inset', theme.ring]
                     )}
                   >
                     <span className="whitespace-nowrap">{label}</span>

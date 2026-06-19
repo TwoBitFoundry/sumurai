@@ -1,8 +1,14 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import type React from 'react';
 import {
   BudgetMonthLabelPill,
   BudgetMonthPillSlider,
 } from '@/features/budgets/components/BudgetMonthPillSlider';
+import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
+
+function renderBudgetMonthPillSlider(ui: React.ReactElement) {
+  return render(<ControlTooltipProvider>{ui}</ControlTooltipProvider>);
+}
 
 describe('BudgetMonthPillSlider', () => {
   it('renders month navigation and calls handlers', () => {
@@ -10,7 +16,7 @@ describe('BudgetMonthPillSlider', () => {
     const onNextMonth = jest.fn();
     const onCurrentMonth = jest.fn();
 
-    render(
+    renderBudgetMonthPillSlider(
       <BudgetMonthPillSlider
         onPreviousMonth={onPreviousMonth}
         onNextMonth={onNextMonth}

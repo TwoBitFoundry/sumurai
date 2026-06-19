@@ -82,7 +82,7 @@ export function AccountsConnectedScreenSlice(props: {
   return (
     <div data-testid="accounts-page">
       <PageLayout
-        title="Unite your financial allies with Plaid"
+        title="Unite your accounts with Plaid"
         subtitle="Securely link and sync accounts on-demand, view balances, and import or export your data any time."
         actions={actions}
         stats={statsGrid}
