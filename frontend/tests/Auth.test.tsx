@@ -90,6 +90,15 @@ describe('Auth screens', () => {
     expect(screen.getByRole('button', { name: /sign in with password/i })).toBeTruthy();
   });
 
+  it('renders register badge with inline category sky styling', () => {
+    render(<RegisterScreen onNavigateToLogin={jest.fn()} />);
+    const badge = screen.getByText(/begin the path/i);
+    expect(badge.tagName).toBe('SPAN');
+    expect(badge.className).toContain('font-label');
+    expect(badge.className).toContain('text-sky-500');
+    expect(badge.className).toContain('dark:text-sky-300');
+  });
+
   it('renders register without password fields', () => {
     render(<RegisterScreen onNavigateToLogin={jest.fn()} />);
     expect(screen.getByLabelText(/^email$/i)).toBeTruthy();
