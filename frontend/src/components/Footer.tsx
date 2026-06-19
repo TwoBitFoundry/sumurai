@@ -97,8 +97,8 @@ export function Footer() {
           ...appLayout.contentShell,
           'pl-[calc(1rem_+_env(safe-area-inset-left))] pr-[calc(1rem_+_env(safe-area-inset-right))]',
           'md:pl-[calc(2rem_+_env(safe-area-inset-left))] md:pr-[calc(2rem_+_env(safe-area-inset-right))]',
-          'py-5',
-          'md:py-6'
+          'py-4',
+          'md:py-5'
         )}
       >
         <div
@@ -109,10 +109,10 @@ export function Footer() {
             'md:flex-row',
             'md:items-center',
             'md:justify-between',
-            'gap-4',
-            'md:gap-5',
-            'mb-4',
-            'md:mb-5'
+            'gap-3',
+            'md:gap-4',
+            'mb-3',
+            'md:mb-4'
           )}
         >
           <div className={cn('flex', 'flex-col', 'gap-2', 'items-start')}>
@@ -168,8 +168,8 @@ export function Footer() {
             'items-center',
             'justify-between',
             'gap-4',
-            'pt-3',
-            'md:pt-4',
+            'pt-2',
+            'md:pt-3',
             'border-t',
             ...uiBorderRecipes.divider
           )}

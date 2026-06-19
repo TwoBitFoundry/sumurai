@@ -190,38 +190,22 @@ describe('AppTitleBar', () => {
       expect(screen.getByText('Sumurai')).toBeInTheDocument();
     });
 
-    it('centers the logo on tablet and mobile', () => {
+    it('keeps the logo left-aligned in the title bar grid', () => {
       render(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
 
       const logoSlot = screen.getByAltText('Sumurai Logo').closest('.col-start-1');
-      expect(logoSlot?.className).toContain('max-lg:absolute');
-      expect(logoSlot?.className).toContain('max-lg:inset-x-0');
-      expect(logoSlot?.className).toContain('max-lg:justify-center');
+      expect(logoSlot?.className).toContain('col-start-1');
+      expect(logoSlot?.className).not.toContain('max-lg:absolute');
+      expect(logoSlot?.className).not.toContain('max-lg:justify-center');
     });
 
-    it('scopes logo centering to tablet and mobile breakpoints', () => {
-      render(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
-
-      const logoSlot = screen.getByAltText('Sumurai Logo').closest('.col-start-1');
-      const classes = logoSlot?.className.split(/\s+/) ?? [];
-      expect(classes).toContain('max-lg:justify-center');
-      expect(classes).not.toContain('lg:justify-center');
-    });
-
-    it('keeps the connectivity indicator above the centered logo layer', () => {
+    it('anchors the connectivity indicator to the right on tablet and mobile', () => {
       render(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
 
       const actions = screen.getByTitle('Online').closest('div');
-      expect(actions?.className).toContain('max-lg:relative');
-      expect(actions?.className).toContain('max-lg:z-10');
-    });
-
-    it('does not apply auth centering recipes to authenticated users', () => {
-      render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
-
-      const logoSlot = screen.getByAltText('Sumurai Logo').closest('.col-start-1');
-      expect(logoSlot?.className).not.toContain('max-lg:absolute');
-      expect(logoSlot?.className).not.toContain('max-lg:justify-center');
+      expect(actions?.className).toContain('col-start-2');
+      expect(actions?.className).toContain('justify-end');
+      expect(actions?.className).not.toContain('max-lg:z-10');
     });
   });
 

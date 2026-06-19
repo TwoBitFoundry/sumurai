@@ -65,15 +65,6 @@ export const appTitleBarRecipes = {
     'md:gap-4',
   ],
   titleBarRow: ['flex', 'h-full', 'min-h-0', 'items-center'],
-  unauthenticatedTitleBarGrid: ['max-lg:relative'],
-  unauthenticatedLogoSlot: [
-    'max-lg:absolute',
-    'max-lg:inset-x-0',
-    'max-lg:flex',
-    'max-lg:justify-center',
-    'max-lg:pointer-events-none',
-  ],
-  unauthenticatedActions: ['max-lg:relative', 'max-lg:z-10'],
   pillContainer: [
     `flex items-center gap-1 ${uiRadiusRecipes.standard} border`,
     ...floatingChromeGlass.backdrop,
@@ -260,20 +251,9 @@ export const AppTitleBar = ({
   return (
     <header ref={ref} className={titleBarVariants({ state })}>
       <div className={cn(...appLayout.contentShellWithGutter)}>
-        <div
-          className={cn(
-            ...appTitleBarRecipes.titleBarGrid,
-            state === 'unauthenticated' && appTitleBarRecipes.unauthenticatedTitleBarGrid
-          )}
-        >
+        <div className={cn(...appTitleBarRecipes.titleBarGrid)}>
           <div
-            className={cn(
-              'col-start-1',
-              'row-start-1',
-              ...appTitleBarRecipes.titleBarRow,
-              'gap-6',
-              state === 'unauthenticated' && appTitleBarRecipes.unauthenticatedLogoSlot
-            )}
+            className={cn('col-start-1', 'row-start-1', ...appTitleBarRecipes.titleBarRow, 'gap-6')}
           >
             {canGoToDashboard ? (
               <button
@@ -308,12 +288,7 @@ export const AppTitleBar = ({
 
           {primaryTabs}
 
-          <div
-            className={cn(
-              ...appTitleBarRecipes.actions,
-              state === 'unauthenticated' && appTitleBarRecipes.unauthenticatedActions
-            )}
-          >
+          <div className={cn(...appTitleBarRecipes.actions)}>
             <span
               className={cn(...appTitleBarRecipes.statusFrame)}
               role="status"
