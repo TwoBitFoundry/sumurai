@@ -113,6 +113,13 @@ describe('Auth screens', () => {
     expect(container.querySelector('.lg\\:max-w-lg')).toBeTruthy();
   });
 
+  it('renders the brand logo in auth form layout on desktop', () => {
+    const { container } = render(<LoginScreen onNavigateToRegister={jest.fn()} />);
+    const brandAside = container.querySelector('.lg\\:flex');
+    expect(brandAside).toBeTruthy();
+    expect(brandAside?.querySelector('img[alt="Sumurai"]')).toBeTruthy();
+  });
+
   it('starts legacy password migration enrollment after password sign-in', async () => {
     const { userEvent } = await import('@testing-library/user-event');
     const { PasskeyService } = await import('@/services/passkeyService');

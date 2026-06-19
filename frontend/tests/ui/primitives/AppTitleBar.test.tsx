@@ -182,6 +182,49 @@ describe('AppTitleBar', () => {
     expect(onTabChange).toHaveBeenCalledWith('dashboard');
   });
 
+  describe('unauthenticated auth layout', () => {
+    it('always renders the Sumurai logo and wordmark', () => {
+      render(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
+
+      expect(screen.getByAltText('Sumurai Logo')).toBeInTheDocument();
+      expect(screen.getByText('Sumurai')).toBeInTheDocument();
+    });
+
+    it('centers the logo on tablet and mobile', () => {
+      render(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
+
+      const logoSlot = screen.getByAltText('Sumurai Logo').closest('.col-start-1');
+      expect(logoSlot?.className).toContain('max-lg:absolute');
+      expect(logoSlot?.className).toContain('max-lg:inset-x-0');
+      expect(logoSlot?.className).toContain('max-lg:justify-center');
+    });
+
+    it('scopes logo centering to tablet and mobile breakpoints', () => {
+      render(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
+
+      const logoSlot = screen.getByAltText('Sumurai Logo').closest('.col-start-1');
+      const classes = logoSlot?.className.split(/\s+/) ?? [];
+      expect(classes).toContain('max-lg:justify-center');
+      expect(classes).not.toContain('lg:justify-center');
+    });
+
+    it('keeps the connectivity indicator above the centered logo layer', () => {
+      render(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
+
+      const actions = screen.getByTitle('Online').closest('div');
+      expect(actions?.className).toContain('max-lg:relative');
+      expect(actions?.className).toContain('max-lg:z-10');
+    });
+
+    it('does not apply auth centering recipes to authenticated users', () => {
+      render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+
+      const logoSlot = screen.getByAltText('Sumurai Logo').closest('.col-start-1');
+      expect(logoSlot?.className).not.toContain('max-lg:absolute');
+      expect(logoSlot?.className).not.toContain('max-lg:justify-center');
+    });
+  });
+
   describe('mobile layout', () => {
     const mobileProps = {
       state: 'authenticated' as const,
