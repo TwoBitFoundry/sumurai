@@ -145,6 +145,76 @@ describe('TransactionsFilters', () => {
     expect(scrollContainer?.className).toContain('py-1.5');
     expect(billsButton.className).toContain('backdrop-blur-md');
     expect(billsButton.className).toContain('backdrop-saturate-[150%]');
+    expect(billsButton.className).not.toContain('linear-gradient');
+  });
+
+  it('uses category styling for selected inline category filters', () => {
+    render(
+      <TransactionsFilters
+        {...filterProps}
+        categories={['entertainment']}
+        selectedCategory="entertainment"
+        layout="inline"
+        showFilterLabel={false}
+      />
+    );
+
+    const entertainmentButton = screen.getByRole('button', { name: 'Entertainment' });
+    expect(entertainmentButton.className).toContain('text-emerald-500');
+    expect(entertainmentButton.className).toContain('ring-emerald-400');
+    expect(entertainmentButton.className).toContain('!border-emerald-500');
+    expect(entertainmentButton.className).not.toContain('linear-gradient');
+  });
+
+  it('does not apply scroll fade masks to inline contextual category filters', () => {
+    const scrollWidthDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'scrollWidth'
+    );
+    const clientWidthDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'clientWidth'
+    );
+
+    Object.defineProperty(HTMLElement.prototype, 'scrollWidth', {
+      configurable: true,
+      get() {
+        return 1200;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get() {
+        return 400;
+      },
+    });
+
+    const { container } = render(
+      <TransactionsFilters
+        {...filterProps}
+        categories={['food_and_drink', 'entertainment', 'Bills', 'Subscriptions', 'Travel']}
+        layout="inline"
+        showFilterLabel={false}
+      />
+    );
+
+    const maskViewport = container.querySelector('[data-no-swipe]')?.parentElement;
+    expect(maskViewport?.style.maskImage || '').toBe('');
+    expect(maskViewport?.style.webkitMaskImage || '').toBe('');
+    expect(maskViewport?.className).not.toContain('[mask-mode:alpha]');
+    expect(screen.queryByTestId('contextual-filter-fade-left')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('contextual-filter-fade-right')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Scroll categories right' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Scroll categories right' }).className).toContain(
+      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]'
+    );
+
+    if (scrollWidthDescriptor) {
+      Object.defineProperty(HTMLElement.prototype, 'scrollWidth', scrollWidthDescriptor);
+    }
+    if (clientWidthDescriptor) {
+      Object.defineProperty(HTMLElement.prototype, 'clientWidth', clientWidthDescriptor);
+    }
   });
 
   it('shows scroll arrows when category filters overflow and scrolls on tap', async () => {
@@ -185,6 +255,9 @@ describe('TransactionsFilters', () => {
       screen.queryByRole('button', { name: 'Scroll categories left' })
     ).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Scroll categories right' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Scroll categories right' }).className).toContain(
+      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]'
+    );
 
     await user.click(screen.getByRole('button', { name: 'Scroll categories right' }));
 
