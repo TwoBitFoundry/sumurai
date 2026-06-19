@@ -185,18 +185,22 @@ describe('MoneyFlowSankeyChart', () => {
     expect(await screen.findByTestId('sankey-node-income')).toBeVisible();
     expect(screen.getByText('20%')).toBeVisible();
     expect(screen.getByText('80%')).toBeVisible();
-    expect(screen.getAllByText('100%')).toHaveLength(1);
+    expect(screen.getAllByText('100%')).toHaveLength(3);
     const savingsNode = screen.getByTestId('sankey-node-savings');
     const savingsRect = savingsNode.querySelector('rect');
     const savingsLabel = savingsNode.querySelector('text:first-of-type');
     const savingsAmount = savingsNode.querySelector('text:nth-of-type(2)');
+    const savingsPercent = savingsNode.querySelector('text:last-of-type');
     expect(savingsLabel).toHaveTextContent('Savings');
     expect(savingsLabel).toHaveClass('font-label');
     expect(savingsAmount).toHaveClass('font-card-title');
-    expect(Number(savingsLabel?.getAttribute('y'))).toBeLessThan(
-      Number(savingsRect?.getAttribute('y'))
+    expect(Number(savingsLabel?.getAttribute('y'))).toBeGreaterThan(
+      Number(savingsRect?.getAttribute('y')) + Number(savingsRect?.getAttribute('height'))
     );
-    expect(savingsNode.querySelector('text:last-of-type')).not.toHaveAttribute('transform');
+    expect(savingsPercent).toHaveAttribute('transform', 'rotate(270 230 104)');
+    expect(Number(savingsPercent?.getAttribute('x'))).toBeLessThan(
+      Number(savingsNode.querySelector('rect')?.getAttribute('x'))
+    );
     const incomeNode = screen.getByTestId('sankey-node-income');
     const percentLabel = incomeNode.querySelector('text:last-of-type');
     expect(percentLabel).toHaveAttribute('transform', 'rotate(270 -10 40)');
@@ -265,7 +269,170 @@ describe('MoneyFlowSankeyChart', () => {
       />
     );
 
-    expect(screen.queryByText('100%')).toBeNull();
+    expect(screen.getAllByText('100%')).toHaveLength(3);
+  });
+
+  it('keeps labels visible for small hub nodes', () => {
+    mockNodeHeight = 12;
+
+    render(
+      <MoneyFlowSankeyChart
+        data={{
+          nodes: [
+            { id: 'income', label: 'Income', kind: 'Income' },
+            { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+            { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' },
+            { id: 'fixed_expenses', label: 'Fixed Expenses', kind: 'FixedExpenses' },
+            { id: 'category_travel', label: 'TRAVEL', kind: 'Category' },
+            { id: 'category_bills', label: 'BILLS', kind: 'Category' },
+          ],
+          links: [
+            { source: 'income', target: 'expenses', value: 500 },
+            { source: 'expenses', target: 'free_spending', value: 300 },
+            { source: 'expenses', target: 'fixed_expenses', value: 200 },
+            { source: 'free_spending', target: 'category_travel', value: 300 },
+            { source: 'fixed_expenses', target: 'category_bills', value: 200 },
+          ],
+          currency: 'USD',
+          summary: {
+            income: 500,
+            expenses: 500,
+            covered: 500,
+            deficit: 0,
+            surplus: 0,
+            coverage_ratio: 1,
+          },
+        }}
+      />
+    );
+
+    expect(screen.getByTestId('sankey-node-free_spending')).toHaveTextContent('Free Spending');
+    expect(screen.getByTestId('sankey-node-fixed_expenses')).toHaveTextContent('Fixed Expenses');
+  });
+
+  it('keeps the debt label visible when the debt node is small', () => {
+    mockNodeHeight = 12;
+
+    render(
+      <MoneyFlowSankeyChart
+        data={{
+          nodes: [
+            { id: 'income', label: 'Income', kind: 'Income' },
+            { id: 'debt', label: 'Debt', kind: 'Deficit' },
+            { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+            { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' },
+            { id: 'category_travel', label: 'TRAVEL', kind: 'Category' },
+          ],
+          links: [
+            { source: 'income', target: 'expenses', value: 400 },
+            { source: 'debt', target: 'expenses', value: 100 },
+            { source: 'expenses', target: 'free_spending', value: 500 },
+            { source: 'free_spending', target: 'category_travel', value: 500 },
+          ],
+          currency: 'USD',
+          summary: {
+            income: 400,
+            expenses: 500,
+            covered: 400,
+            deficit: 100,
+            surplus: 0,
+            coverage_ratio: 0.8,
+          },
+        }}
+      />
+    );
+
+    expect(screen.getByTestId('sankey-node-debt')).toHaveTextContent('Debt');
+    expect(screen.getByTestId('sankey-node-debt')).toHaveTextContent('$100.00');
+    expect(screen.getByText('20%')).toBeVisible();
+  });
+
+  it('places the larger funding source above and the smaller below', async () => {
+    mockNodeHeight = 40;
+
+    render(
+      <MoneyFlowSankeyChart
+        data={{
+          nodes: [
+            { id: 'income', label: 'Income', kind: 'Income' },
+            { id: 'debt', label: 'Debt', kind: 'Deficit' },
+            { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+            { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' },
+            { id: 'category_travel', label: 'TRAVEL', kind: 'Category' },
+          ],
+          links: [
+            { source: 'income', target: 'expenses', value: 400 },
+            { source: 'debt', target: 'expenses', value: 100 },
+            { source: 'expenses', target: 'free_spending', value: 500 },
+            { source: 'free_spending', target: 'category_travel', value: 500 },
+          ],
+          currency: 'USD',
+          summary: {
+            income: 400,
+            expenses: 500,
+            covered: 400,
+            deficit: 100,
+            surplus: 0,
+            coverage_ratio: 0.8,
+          },
+        }}
+      />
+    );
+
+    expect(await screen.findByTestId('sankey-node-income')).toBeVisible();
+
+    const incomeNode = screen.getByTestId('sankey-node-income');
+    const debtNode = screen.getByTestId('sankey-node-debt');
+
+    expect(Number(incomeNode.querySelector('text:first-of-type')?.getAttribute('y'))).toBeLessThan(
+      Number(incomeNode.querySelector('rect')?.getAttribute('y'))
+    );
+    expect(Number(debtNode.querySelector('text:first-of-type')?.getAttribute('y'))).toBeGreaterThan(
+      Number(debtNode.querySelector('rect')?.getAttribute('y')) +
+        Number(debtNode.querySelector('rect')?.getAttribute('height'))
+    );
+  });
+
+  it('places a lone expenses hub above the node', async () => {
+    mockNodeHeight = 40;
+
+    render(
+      <MoneyFlowSankeyChart
+        data={{
+          nodes: [
+            { id: 'income', label: 'Income', kind: 'Income' },
+            { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+            { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' },
+            { id: 'fixed_expenses', label: 'Fixed Expenses', kind: 'FixedExpenses' },
+            { id: 'category_travel', label: 'TRAVEL', kind: 'Category' },
+            { id: 'category_bills', label: 'BILLS', kind: 'Category' },
+          ],
+          links: [
+            { source: 'income', target: 'expenses', value: 2624.29 },
+            { source: 'expenses', target: 'free_spending', value: 1970.08 },
+            { source: 'expenses', target: 'fixed_expenses', value: 766.15 },
+            { source: 'free_spending', target: 'category_travel', value: 1970.08 },
+            { source: 'fixed_expenses', target: 'category_bills', value: 766.15 },
+          ],
+          currency: 'USD',
+          summary: {
+            income: 2624.29,
+            expenses: 2736.23,
+            covered: 2624.29,
+            deficit: 111.94,
+            surplus: 0,
+            coverage_ratio: 0.959090169905967,
+          },
+        }}
+      />
+    );
+
+    expect(await screen.findByTestId('sankey-node-expenses')).toBeVisible();
+
+    const expensesNode = screen.getByTestId('sankey-node-expenses');
+    expect(
+      Number(expensesNode.querySelector('text:first-of-type')?.getAttribute('y'))
+    ).toBeLessThan(Number(expensesNode.querySelector('rect')?.getAttribute('y')));
   });
 
   it('shows savings label and amount when the savings node is short', () => {
@@ -304,6 +471,69 @@ describe('MoneyFlowSankeyChart', () => {
     expect(savingsNode.querySelector('text:first-of-type')).toHaveTextContent('Savings');
     expect(savingsNode.querySelector('text:nth-of-type(2)')).toHaveTextContent('$50.00');
     expect(screen.queryByText('5.3%')).toBeNull();
+  });
+
+  it('places the larger hub label above and the smaller below', async () => {
+    mockNodeHeight = 40;
+
+    render(
+      <MoneyFlowSankeyChart
+        data={{
+          nodes: [
+            { id: 'savings', label: 'Savings', kind: 'Savings' },
+            { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+            { id: 'income', label: 'Income', kind: 'Income' },
+            { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' },
+            { id: 'fixed_expenses', label: 'Fixed Expenses', kind: 'FixedExpenses' },
+            { id: 'category_travel', label: 'TRAVEL', kind: 'Category' },
+            { id: 'category_bills', label: 'BILLS', kind: 'Category' },
+          ],
+          links: [
+            { source: 'income', target: 'expenses', value: 800 },
+            { source: 'income', target: 'savings', value: 200 },
+            { source: 'expenses', target: 'free_spending', value: 500 },
+            { source: 'expenses', target: 'fixed_expenses', value: 300 },
+            { source: 'free_spending', target: 'category_travel', value: 500 },
+            { source: 'fixed_expenses', target: 'category_bills', value: 300 },
+          ],
+          currency: 'USD',
+          summary: {
+            income: 1000,
+            expenses: 800,
+            covered: 800,
+            deficit: 0,
+            surplus: 200,
+            coverage_ratio: 1,
+          },
+        }}
+      />
+    );
+
+    expect(await screen.findByTestId('sankey-node-savings')).toBeVisible();
+
+    const savingsNode = screen.getByTestId('sankey-node-savings');
+    const expensesNode = screen.getByTestId('sankey-node-expenses');
+    const freeSpendingNode = screen.getByTestId('sankey-node-free_spending');
+    const fixedExpensesNode = screen.getByTestId('sankey-node-fixed_expenses');
+
+    expect(
+      Number(savingsNode.querySelector('text:first-of-type')?.getAttribute('y'))
+    ).toBeGreaterThan(
+      Number(savingsNode.querySelector('rect')?.getAttribute('y')) +
+        Number(savingsNode.querySelector('rect')?.getAttribute('height'))
+    );
+    expect(
+      Number(expensesNode.querySelector('text:first-of-type')?.getAttribute('y'))
+    ).toBeLessThan(Number(expensesNode.querySelector('rect')?.getAttribute('y')));
+    expect(
+      Number(freeSpendingNode.querySelector('text:first-of-type')?.getAttribute('y'))
+    ).toBeLessThan(Number(freeSpendingNode.querySelector('rect')?.getAttribute('y')));
+    expect(
+      Number(fixedExpensesNode.querySelector('text:first-of-type')?.getAttribute('y'))
+    ).toBeGreaterThan(
+      Number(fixedExpensesNode.querySelector('rect')?.getAttribute('y')) +
+        Number(fixedExpensesNode.querySelector('rect')?.getAttribute('height'))
+    );
   });
 
   it('uses dark theme tokens for node and link colors', async () => {
@@ -562,7 +792,7 @@ describe('MoneyFlowSankeyChart', () => {
 
     expect(screen.getByText('Income')).toBeVisible();
     expect(screen.getByText('$2,500.00')).toBeVisible();
-    expect(screen.getByText('492.3% of expenses')).toBeVisible();
+    expect(screen.getByText('100% of expenses')).toBeVisible();
   });
 
   it('shows free spending tooltip percent as a share of expenses when the payload is underspecified', () => {

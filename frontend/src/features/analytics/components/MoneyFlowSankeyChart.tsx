@@ -85,6 +85,8 @@ type SankeyHoverState = {
   x: number;
   y: number;
 };
+
+type SankeyHubLabelPlacement = 'top' | 'bottom';
 type SankeyTooltipContentProps = Partial<TooltipContentProps<number, string>> & {
   summary?: SankeyTooltipSummary | null;
   chartData?: SankeyChartData | null;
@@ -206,7 +208,7 @@ function resolveTooltipPercentValue(
     return summary.income > 0 ? (summary.covered / summary.income) * 100 : null;
   }
   if (kind === 'Income') {
-    return summary.expenses > 0 ? (summary.income / summary.expenses) * 100 : null;
+    return summary.expenses > 0 ? (summary.covered / summary.expenses) * 100 : null;
   }
   if (kind === 'Deficit') {
     return summary.expenses > 0 ? (summary.deficit / summary.expenses) * 100 : null;
@@ -337,6 +339,40 @@ function resolveTooltipTargetPercent(target: SankeyTooltipTarget) {
   return target.type === 'node' ? target.node.percentOfExpenses : target.link.percentOfExpenses;
 }
 
+function resolveHubLabelPlacementById(nodes: SankeyChartNode[]) {
+  const placements = new Map<string, SankeyHubLabelPlacement>();
+  const pairs = [
+    ['income', 'debt'],
+    ['savings', 'expenses'],
+    ['free_spending', 'fixed_expenses'],
+  ] as const;
+
+  for (const [firstId, secondId] of pairs) {
+    const firstNode = nodes.find((node) => node.id === firstId);
+    const secondNode = nodes.find((node) => node.id === secondId);
+
+    if (firstNode && secondNode) {
+      if (firstNode.value >= secondNode.value) {
+        placements.set(firstNode.id, 'top');
+        placements.set(secondNode.id, 'bottom');
+      } else {
+        placements.set(secondNode.id, 'top');
+        placements.set(firstNode.id, 'bottom');
+      }
+      continue;
+    }
+
+    if (firstNode) {
+      placements.set(firstNode.id, 'top');
+    }
+    if (secondNode) {
+      placements.set(secondNode.id, 'top');
+    }
+  }
+
+  return placements;
+}
+
 function resolveNodeLabelFill(
   payload: SankeyNodePayload,
   colors: ReturnType<typeof useTheme>['colors'],
@@ -414,6 +450,7 @@ function SankeyNodeShape({
   colors,
   mode,
   accentIndexByName,
+  hubLabelPlacement,
   onHover,
   onLeave,
 }: SankeyNodeProps & {
@@ -422,6 +459,7 @@ function SankeyNodeShape({
   colors: ReturnType<typeof useTheme>['colors'];
   mode: ThemeMode;
   accentIndexByName: ReadonlyMap<string, number>;
+  hubLabelPlacement?: SankeyHubLabelPlacement;
   onHover?: (payload: SankeyNodePayload, event: ReactMouseEvent<SVGGElement>) => void;
   onLeave?: () => void;
 }) {
@@ -433,19 +471,26 @@ function SankeyNodeShape({
   const fill = resolveNodeFill(payload, colors, accentIndexByName);
   const label = resolveNodeLabel(payload);
   const amount = fmtUSD(normalizeAmount(value ?? payload.value));
-  const isTopHub = payload.kind === 'Savings' || payload.kind === 'FreeSpending';
-  const isBottomHub = payload.kind === 'Expenses' || payload.kind === 'FixedExpenses';
-  const isHubNode = isTopHub || isBottomHub;
-  const showLabel = isHubNode || height >= 18;
+  const isFundingSourceNode = payload.kind === 'Income' || payload.kind === 'Deficit';
+  const isHubKind =
+    payload.kind === 'Savings' ||
+    payload.kind === 'Expenses' ||
+    payload.kind === 'FreeSpending' ||
+    payload.kind === 'FixedExpenses';
+  const effectiveHubLabelPlacement = hubLabelPlacement ?? (isHubKind ? 'top' : undefined);
+  const isTopHub = effectiveHubLabelPlacement === 'top';
+  const isBottomHub = effectiveHubLabelPlacement === 'bottom';
+  const isHubNode = isHubKind;
+  const showLabel = isHubNode || isFundingSourceNode || height >= 18;
   const showCategoryPercent =
     payload.kind === 'Category' && height >= 16 && payload.percentOfExpenses != null;
   const showSourcePercent =
-    (payload.kind === 'Income' || payload.kind === 'Deficit') &&
-    height >= 16 &&
-    payload.percentOfExpenses != null;
-  const showIncomeSplitPercent =
-    (payload.kind === 'Expenses' || payload.kind === 'Savings') &&
-    height >= 16 &&
+    (payload.kind === 'Income' ||
+      payload.kind === 'Deficit' ||
+      payload.kind === 'Savings' ||
+      payload.kind === 'Expenses' ||
+      payload.kind === 'FreeSpending' ||
+      payload.kind === 'FixedExpenses') &&
     payload.percentOfExpenses != null;
   const centerY = nodeY + nodeHeight / 2;
   const percentX = payload.kind === 'Category' ? nodeX + nodeWidth + 10 : nodeX - 10;
@@ -457,7 +502,6 @@ function SankeyNodeShape({
       : nodeX + nodeWidth + 10;
   const labelY = isTopHub ? nodeY - 26 : isBottomHub ? nodeY + nodeHeight + 14 : centerY - 6;
   const valueY = isTopHub ? nodeY - 10 : isBottomHub ? nodeY + nodeHeight + 30 : centerY + 14;
-  const hubPercentY = isTopHub ? nodeY - 42 : nodeY + nodeHeight + 46;
   const percentTransform = `rotate(270 ${percentX} ${centerY})`;
 
   return (
@@ -524,16 +568,6 @@ function SankeyNodeShape({
           textAnchor="middle"
           dominantBaseline="middle"
           transform={percentTransform}
-          className={cn(...sankeyChart.nodePercent)}
-        >
-          {formatSankeyPercent(payload.percentOfExpenses)}
-        </text>
-      ) : null}
-      {showIncomeSplitPercent ? (
-        <text
-          x={labelX}
-          y={hubPercentY}
-          textAnchor="middle"
           className={cn(...sankeyChart.nodePercent)}
         >
           {formatSankeyPercent(payload.percentOfExpenses)}
@@ -688,6 +722,10 @@ function MoneyFlowSankeyChartContent({
   const { ref: chartContainerRef, width: measuredWidth, remeasure } = useChartContainerSize();
   const chartData = useMemo<SankeyChartData>(() => sankeyResponseToChartData(data), [data]);
   const [hoverState, setHoverState] = useState<SankeyHoverState | null>(null);
+  const hubLabelPlacementById = useMemo(
+    () => resolveHubLabelPlacementById(chartData.nodes),
+    [chartData.nodes]
+  );
   const categoryNodes = chartData.nodes.filter((node) => node.kind === 'Category');
   const chartMargin = sankeyChart.margin;
   const layoutWidth = containerSize?.width ?? measuredWidth;
@@ -734,26 +772,31 @@ function MoneyFlowSankeyChartContent({
   }, []);
 
   const renderNode = useCallback(
-    (props: SankeyNodeProps) => (
-      <SankeyNodeShape
-        {...props}
-        payload={props.payload as unknown as SankeyNodePayload}
-        colors={colors}
-        mode={mode}
-        accentIndexByName={accentIndexByName}
-        onHover={(payload, event) =>
-          updateHoverState(
-            {
-              type: 'node',
-              node: payload,
-            },
-            event
-          )
-        }
-        onLeave={clearHoverState}
-      />
-    ),
-    [colors, mode, accentIndexByName, updateHoverState, clearHoverState]
+    (props: SankeyNodeProps) => {
+      const payload = props.payload as unknown as SankeyNodePayload;
+
+      return (
+        <SankeyNodeShape
+          {...props}
+          payload={payload}
+          colors={colors}
+          mode={mode}
+          accentIndexByName={accentIndexByName}
+          hubLabelPlacement={hubLabelPlacementById.get(payload.id)}
+          onHover={(hoveredPayload, event) =>
+            updateHoverState(
+              {
+                type: 'node',
+                node: hoveredPayload,
+              },
+              event
+            )
+          }
+          onLeave={clearHoverState}
+        />
+      );
+    },
+    [colors, mode, accentIndexByName, hubLabelPlacementById, updateHoverState, clearHoverState]
   );
 
   const renderLink = useCallback(

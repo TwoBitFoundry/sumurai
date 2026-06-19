@@ -177,7 +177,7 @@ const resolveNodePercent = (
   switch (node.kind) {
     case 'Income':
       return {
-        percentOfExpenses: sharePercent(totals.income, totals.expenses),
+        percentOfExpenses: sharePercent(totals.covered, totals.expenses),
         percentContext: 'expenseFunding',
       };
     case 'Deficit':
