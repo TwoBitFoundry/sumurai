@@ -55,6 +55,18 @@ const footerSkyCtaLink = [
   ...buttonCta.glow,
 ] as const;
 
+const footerActionRow = [
+  'flex',
+  'w-full',
+  'flex-row',
+  'flex-wrap',
+  'gap-2',
+  'overflow-visible',
+  'md:w-auto',
+  'md:flex-nowrap',
+  'lg:gap-3',
+] as const;
+
 const footerCoffeeCtaLink = [
   uiTextRecipes.inverse,
   'bg-[var(--color-brand-amber)]',
@@ -92,6 +104,7 @@ export function Footer() {
           className={cn(
             'flex',
             'flex-col',
+            'overflow-visible',
             'md:flex-row',
             'md:items-start',
             'md:justify-between',
@@ -106,23 +119,7 @@ export function Footer() {
             </p>
           </div>
 
-          <div
-            className={cn(
-              'flex',
-              'min-w-0',
-              'max-w-full',
-              'flex-row',
-              'flex-nowrap',
-              'gap-2',
-              'overflow-x-auto',
-              'overflow-y-visible',
-              'p-3',
-              '-m-3',
-              'md:w-auto',
-              'md:overflow-visible',
-              'lg:gap-3'
-            )}
-          >
+          <div className={cn(footerActionRow)}>
             <a
               href="https://github.com/TwoBitFoundry/sumurai/blob/main/CONTRIBUTING.md"
               target="_blank"
