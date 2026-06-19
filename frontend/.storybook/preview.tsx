@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { TransactionListLauncherProvider } from '../src/features/transactions/components/TransactionListLauncherProvider';
 import { AccountFilterProvider } from '../src/hooks/useAccountFilter';
+import { ControlTooltipProvider } from '../src/ui/primitives/ControlHoverLabel';
 import '../src/app/globals.css';
 
 const queryClient = new QueryClient({
@@ -23,11 +24,13 @@ const preview: Preview = {
       return (
         <QueryClientProvider client={queryClient}>
           <ThemeProvider initialPreference={initialPreference}>
-            <AccountFilterProvider>
-              <TransactionListLauncherProvider>
-                <Story />
-              </TransactionListLauncherProvider>
-            </AccountFilterProvider>
+            <ControlTooltipProvider>
+              <AccountFilterProvider>
+                <TransactionListLauncherProvider>
+                  <Story />
+                </TransactionListLauncherProvider>
+              </AccountFilterProvider>
+            </ControlTooltipProvider>
           </ThemeProvider>
         </QueryClientProvider>
       );
