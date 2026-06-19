@@ -542,7 +542,7 @@ export const budgetRealityChart = {
 export const sankeyChartSizing = {
   baseMinHeightPx: 280,
   baseMaxHeightPx: 560,
-  defaultScale: 1.5,
+  defaultScale: 1.1,
 } as const;
 
 const sankeyDefaultMinHeightClass =

@@ -12,15 +12,8 @@ type DashboardStatsCarouselProps = {
 };
 
 export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsCarouselProps) {
-  const {
-    ref: panelStackRef,
-    width: panelStackWidth,
-    height: panelStackHeight,
-  } = useChartContainerSize();
-  const sankeyContainerSizeRaw =
-    panelStackWidth > 0 && panelStackHeight > 0
-      ? { width: panelStackWidth, height: panelStackHeight }
-      : undefined;
+  const { ref: panelStackRef, width: panelStackWidth } = useChartContainerSize();
+  const sankeyContainerSizeRaw = panelStackWidth > 0 ? { width: panelStackWidth } : undefined;
   const sankeyContainerSize = useDebouncedChartRecalc(sankeyContainerSizeRaw);
 
   return (

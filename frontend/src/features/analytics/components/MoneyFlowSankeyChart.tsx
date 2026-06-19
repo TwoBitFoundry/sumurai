@@ -39,14 +39,14 @@ type MoneyFlowSankeyChartProps = {
   data?: SankeyResponse | null;
   accentIndexByName?: ReadonlyMap<string, number>;
   className?: string;
-  containerSize?: { width: number; height: number };
+  containerSize?: { width: number; height?: number };
 };
 
 type MoneyFlowSankeyChartContentProps = {
   data: SankeyResponse | null;
   accentIndexByName: ReadonlyMap<string, number>;
   className?: string;
-  containerSize?: { width: number; height: number };
+  containerSize?: { width: number; height?: number };
   loading?: boolean;
   error?: string | null;
 };
