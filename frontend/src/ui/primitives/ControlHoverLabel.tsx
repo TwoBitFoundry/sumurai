@@ -2,7 +2,7 @@
 
 import * as Tooltip from '@radix-ui/react-tooltip';
 import type { ReactElement, ReactNode } from 'react';
-import { controlHoverLabel } from '@/ui/recipes';
+import { controlHoverLabel, infoPopoverShell } from '@/ui/recipes';
 import { cn } from './utils';
 
 export function ControlTooltipProvider({ children }: { children: ReactNode }) {
@@ -37,8 +37,8 @@ export function ControlHoverLabel({ label, disabled, children }: ControlHoverLab
         <Tooltip.Content
           side="top"
           align="center"
-          sideOffset={6}
-          collisionPadding={8}
+          sideOffset={infoPopoverShell.sideOffset}
+          collisionPadding={infoPopoverShell.collisionPadding}
           className={cn(...controlHoverLabel.content)}
         >
           {label}

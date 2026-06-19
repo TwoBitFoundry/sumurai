@@ -3,10 +3,8 @@ import { Info } from 'lucide-react';
 import { cn } from '@/ui/primitives';
 import {
   heroSubtitleInfoIconWell,
-  border as uiBorderRecipes,
-  effect as uiEffectRecipes,
+  infoPopoverShell,
   focus as uiFocusRecipes,
-  surface as uiSurfaceRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
@@ -46,19 +44,14 @@ export function HeroSubtitleInfo({ pageTitle, subtitle }: HeroSubtitleInfoProps)
         <Popover.Content
           side="bottom"
           align="start"
-          sideOffset={10}
-          collisionPadding={12}
+          sideOffset={infoPopoverShell.sideOffset}
+          collisionPadding={infoPopoverShell.collisionPadding}
           className={cn(
             'z-50',
             'w-[min(20rem,calc(100vw-1rem))]',
             'max-w-[20rem]',
-            'rounded-lg',
-            'border',
-            ...uiBorderRecipes.glass,
-            ...uiSurfaceRecipes.glassPanel,
-            ...uiEffectRecipes.glassDropShadow,
-            'p-3',
-            ...uiEffectRecipes.glassBackdrop
+            ...infoPopoverShell.shell,
+            'p-3'
           )}
         >
           <div className={cn('space-y-1.5')}>

@@ -31,7 +31,7 @@ describe('AppTitleBar', () => {
   it('shows the online indicator when connected', () => {
     renderAppTitleBar(<AppTitleBar {...baseProps} isOnline />);
 
-    const indicator = screen.getByTitle('Online');
+    const indicator = screen.getByRole('status', { name: 'Online' });
     expect(indicator).toBeInTheDocument();
     expect(indicator.querySelector('svg')).not.toBeNull();
   });
@@ -39,7 +39,7 @@ describe('AppTitleBar', () => {
   it('shows the offline indicator when disconnected', () => {
     renderAppTitleBar(<AppTitleBar {...baseProps} isOnline={false} />);
 
-    const indicator = screen.getByTitle('Offline');
+    const indicator = screen.getByRole('status', { name: 'Offline' });
     expect(indicator).toBeInTheDocument();
     expect(indicator.querySelector('svg')).not.toBeNull();
   });
@@ -86,7 +86,7 @@ describe('AppTitleBar', () => {
   it('anchors the action cluster to the right on tablet and desktop', () => {
     renderAppTitleBar(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
-    const actions = screen.getByTitle('Online').closest('div');
+    const actions = screen.getByRole('status', { name: 'Online' }).closest('div');
     expect(actions?.className).toContain('md:col-start-3');
     expect(actions?.className).toContain('md:justify-self-end');
   });
@@ -217,7 +217,7 @@ describe('AppTitleBar', () => {
     it('anchors the connectivity indicator to the right on tablet and mobile', () => {
       renderAppTitleBar(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
 
-      const actions = screen.getByTitle('Online').closest('div');
+      const actions = screen.getByRole('status', { name: 'Online' }).closest('div');
       expect(actions?.className).toContain('col-start-2');
       expect(actions?.className).toContain('justify-end');
       expect(actions?.className).not.toContain('max-lg:z-10');
@@ -241,7 +241,7 @@ describe('AppTitleBar', () => {
 
     it('online connectivity icon is always present (no responsive hiding)', () => {
       renderAppTitleBar(<AppTitleBar {...mobileProps} />);
-      const indicator = screen.getByTitle('Online');
+      const indicator = screen.getByRole('status', { name: 'Online' });
       expect(indicator).toBeInTheDocument();
       expect(indicator.className).not.toContain('hidden');
     });
@@ -249,7 +249,7 @@ describe('AppTitleBar', () => {
     it('sizes the connectivity indicator to match action icon buttons', () => {
       renderAppTitleBar(<AppTitleBar {...mobileProps} />);
 
-      const indicator = screen.getByTitle('Online');
+      const indicator = screen.getByRole('status', { name: 'Online' });
       expect(indicator.className).toContain(control.square.md);
       expect(indicator.querySelector('span')?.className).toContain(control.glyph.md);
 

@@ -501,19 +501,28 @@ export const chartTooltip = {
   row: [font.captionStrong, text.body],
 } as const;
 
+export const infoPopoverShell = {
+  sideOffset: 10,
+  collisionPadding: 12,
+  shell: [
+    'rounded-lg',
+    'border',
+    ...border.glass,
+    ...surface.glassPanel,
+    ...effect.glassDropShadow,
+    ...effect.glassBackdrop,
+  ],
+} as const;
+
 export const controlHoverLabel = {
   delayMs: 150,
   content: [
     'z-[70]',
     'max-w-[16rem]',
-    'rounded-md',
-    'border',
-    ...border.glass,
-    ...surface.glassPanel,
-    ...effect.glassDropShadow,
+    ...infoPopoverShell.shell,
     'px-2.5',
     'py-1',
-    font.captionStrong,
+    font.body,
     text.primary,
     'pointer-events-none',
     'select-none',
