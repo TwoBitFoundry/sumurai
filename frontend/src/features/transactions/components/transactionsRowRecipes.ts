@@ -21,7 +21,17 @@ export const transactionsRowRecipes = {
     'shrink-0',
     'tabular-nums',
   ],
-  mobileCategoryAnchor: ['absolute', 'bottom-2.5', 'right-3', 'z-20', 'w-fit', 'max-w-full'],
+  mobileCategoryAnchor: [
+    'absolute',
+    'bottom-2.5',
+    'right-3',
+    'left-3',
+    'z-20',
+    'flex',
+    'min-w-0',
+    'items-center',
+    'justify-end',
+  ],
   mobileAmountPage: [
     'pointer-events-none',
     'absolute',

@@ -10,6 +10,7 @@ import {
   radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
+import { HeroSubtitleInfo } from './HeroSubtitleInfo';
 
 export const pageLayoutRecipes = {
   shell: ['relative', 'p-4', 'md:p-8', 'lg:p-8'],
@@ -52,6 +53,17 @@ export const pageLayoutRecipes = {
   ],
   badge: `${uiTypographyRecipes.badge} inline-flex items-center justify-center rounded-full ${semanticSurfaces.mutedChip.join(' ')} px-3 py-1 ${semanticTextRecipes.label} ${semanticEffects.glassDropShadow[0]} dark:text-slate-200`,
   title: `${uiTypographyRecipes.pageTitle} ${semanticTextRecipes.primary} transition-colors duration-300 ease-out`,
+  titleInlineHost: [
+    'inline',
+    'min-w-0',
+    'max-w-full',
+    uiTypographyRecipes.pageTitle,
+    semanticTextRecipes.primary,
+    'transition-colors',
+    'duration-300',
+    'ease-out',
+  ],
+  titleInlineHeading: 'inline',
   subtitle: `${uiTypographyRecipes.body} ${semanticTextRecipes.body} transition-colors duration-300 ease-out`,
   error: [
     uiRadiusRecipes.standard,
@@ -148,8 +160,15 @@ export function PageLayout({
             <div className={cn('max-w-2xl', 'space-y-3')}>
               {badge && <span className={cn(pageLayoutRecipes.badge)}>{badge}</span>}
               <div className="space-y-2">
-                <h1 className={cn(pageLayoutRecipes.title)}>{title}</h1>
-                {subtitle && <p className={cn(pageLayoutRecipes.subtitle)}>{subtitle}</p>}
+                <div className={cn(...pageLayoutRecipes.titleInlineHost)}>
+                  <h1 className={cn(pageLayoutRecipes.titleInlineHeading)}>{title}</h1>
+                  {subtitle ? (
+                    <>
+                      {' '}
+                      <HeroSubtitleInfo pageTitle={title} subtitle={subtitle} />
+                    </>
+                  ) : null}
+                </div>
               </div>
             </div>
 

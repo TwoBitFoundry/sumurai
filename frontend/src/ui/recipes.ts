@@ -501,6 +501,26 @@ export const chartTooltip = {
   row: [font.captionStrong, text.body],
 } as const;
 
+export const controlHoverLabel = {
+  delayMs: 150,
+  content: [
+    'z-[70]',
+    'max-w-[16rem]',
+    'rounded-md',
+    'border',
+    ...border.glass,
+    ...surface.glassPanel,
+    ...effect.glassDropShadow,
+    'px-2.5',
+    'py-1',
+    font.captionStrong,
+    text.primary,
+    'pointer-events-none',
+    'select-none',
+    'whitespace-nowrap',
+  ],
+} as const;
+
 export const budgetRealityChart = {
   curveGlow: {
     blurStdDeviation: 4,
@@ -708,6 +728,20 @@ export const floatingChromeSearch = {
   label: control.label.md,
 } as const;
 
+export const heroSubtitleInfoIconWell = [
+  'inline-flex',
+  'shrink-0',
+  'items-center',
+  'justify-center',
+  'align-middle',
+  'h-[0.625em]',
+  'w-[0.625em]',
+  '[transform:translateY(-0.06em)]',
+  '[&_svg]:block',
+  '[&_svg]:h-full',
+  '[&_svg]:w-full',
+] as const;
+
 export const controlIconWell = {
   sm: [
     'inline-flex',
@@ -781,6 +815,13 @@ export const appLayout = {
     'lg:px-8',
   ],
   mainSafeArea: ['pl-[env(safe-area-inset-left)]', 'pr-[env(safe-area-inset-right)]'],
+  floatingChromeBottom: 'bottom-0',
+  floatingChromeSafeArea: 'pb-[calc(0.75rem+env(safe-area-inset-bottom))]',
+  mainBottomPaddingTabOnly: 'pb-[calc(3.75rem_+_env(safe-area-inset-bottom))]',
+  mainBottomPaddingStackedMobile: 'pb-[calc(9.875rem_+_env(safe-area-inset-bottom))]',
+  mainBottomPaddingStackedTablet: 'md:pb-[calc(6.625rem_+_env(safe-area-inset-bottom))]',
+  toastMobileBottom: 'bottom-[calc(5rem+env(safe-area-inset-bottom))]',
+  toastTabletBottom: 'bottom-[calc(6.625rem+env(safe-area-inset-bottom))]',
 } as const;
 
 export const authLayout = {

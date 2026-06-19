@@ -79,7 +79,7 @@ export function DashboardScreenSlice(props: {
   return (
     <div data-testid="dashboard-page">
       <PageLayout
-        title="Appraise the Treasury"
+        title="Assess your Financial Health"
         subtitle="Track your total balances and net worth across accounts."
         stats={<BalancesOverviewSummary />}
       >

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useTheme } from '@/context/ThemeContext';
+import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
 import SettingsPage from '@/views/SettingsPage';
 
 jest.mock('@/context/ThemeContext', () => ({
@@ -26,7 +27,9 @@ describe('SettingsPage', () => {
     const queryClient = new QueryClient();
     const { container } = render(
       <QueryClientProvider client={queryClient}>
-        <SettingsPage />
+        <ControlTooltipProvider>
+          <SettingsPage />
+        </ControlTooltipProvider>
       </QueryClientProvider>
     );
 

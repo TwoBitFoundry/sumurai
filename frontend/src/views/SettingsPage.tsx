@@ -7,8 +7,15 @@ import { PasskeySecuritySection } from '@/features/settings/PasskeySecuritySecti
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
 import { AuthService } from '@/services/authService';
 import { SettingsService } from '@/services/SettingsService';
-import { Alert, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
-import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
+import {
+  Alert,
+  Button,
+  FormLabel,
+  GlassCard,
+  Input,
+  Modal,
+  ModalDrawerHeader,
+} from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import {
   settingsSecurityLayout,
@@ -138,18 +145,24 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         preventCloseOnBackdrop={isDeleting}
       >
         <GlassCard variant="auth" padding="lg">
-          <h2
-            id="delete-account-modal-title"
-            className={cn(uiTypographyRecipes.cardTitle, 'mb-4', uiTextRecipes.primary)}
+          <ModalDrawerHeader
+            onClose={closeDeleteModal}
+            closeLabel="Close delete account dialog"
+            closeDisabled={isDeleting}
           >
-            Delete Account?
-          </h2>
+            <h2
+              id="delete-account-modal-title"
+              className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}
+            >
+              Delete Account?
+            </h2>
+          </ModalDrawerHeader>
 
           <Alert
             variant="error"
             title="All to be severed:"
             icon={<AlertTriangle className={cn('h-5', 'w-5')} />}
-            className={cn('mb-6')}
+            className={cn('mb-6', 'mt-4')}
           >
             <ul className={cn('space-y-1', uiTypographyRecipes.caption)}>
               <li>• All bank connections</li>
@@ -180,23 +193,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
             />
           </div>
 
-          <div className={cn('flex', 'gap-3')}>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={closeDeleteModal}
-              disabled={isDeleting}
-              className={cn(appTitleBarRecipes.settingsIdle, 'flex-1', 'normal-case')}
-            >
-              Exit
-            </Button>
+          <div className={cn('flex', 'justify-center')}>
             <Button
               type="button"
               variant="danger"
               size="md"
               onClick={handleDeleteAccount}
               disabled={confirmText !== 'DELETE' || isDeleting}
-              className={cn('flex-1')}
             >
               {isDeleting ? 'Deleting...' : 'Delete forever'}
             </Button>

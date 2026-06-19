@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 import { BudgetToolbar } from '@/features/budgets/components/BudgetToolbar';
+import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
 import { control } from '@/ui/recipes';
 
 describe('BudgetToolbar', () => {
@@ -8,15 +9,17 @@ describe('BudgetToolbar', () => {
     const addButtonRef = createRef<HTMLButtonElement>();
 
     render(
-      <BudgetToolbar
-        loading={false}
-        isPickerOpen={false}
-        addButtonRef={addButtonRef}
-        onAddBudget={jest.fn()}
-      />
+      <ControlTooltipProvider>
+        <BudgetToolbar
+          loading={false}
+          isPickerOpen={false}
+          addButtonRef={addButtonRef}
+          onAddBudget={jest.fn()}
+        />
+      </ControlTooltipProvider>
     );
 
-    const addBudgetButton = screen.getByRole('button', { name: 'Budget' });
+    const addBudgetButton = screen.getByRole('button', { name: 'Add budget' });
     expect(addBudgetButton.className).toContain(control.height.md);
     expect(addBudgetButton.className).not.toContain(control.height.lg);
     expect(addBudgetButton).toHaveAttribute('aria-expanded', 'false');

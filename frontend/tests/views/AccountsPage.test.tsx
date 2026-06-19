@@ -227,7 +227,7 @@ describe('AccountsPage', () => {
     expect(screen.getByTestId('accounts-page')).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {
-        name: /unite your financial allies with teller/i,
+        name: /unite your accounts with teller/i,
       })
     ).toBeVisible();
     expect(screen.getByText('Unavailable while offline')).toBeVisible();
@@ -349,7 +349,7 @@ describe('AccountsPage', () => {
 
     const heroSection = screen
       .getByRole('heading', {
-        name: /unite your financial allies with teller/i,
+        name: /unite your accounts with teller/i,
       })
       .closest('section');
     expect(heroSection).toBeTruthy();
@@ -840,7 +840,7 @@ describe('AccountsPage', () => {
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       expect(
         screen.queryByRole('heading', {
-          name: /unite your financial allies/i,
+          name: /unite your accounts/i,
         })
       ).not.toBeInTheDocument();
     });
@@ -878,7 +878,7 @@ describe('AccountsPage', () => {
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       expect(
         screen.queryByRole('heading', {
-          name: /unite your financial allies/i,
+          name: /unite your accounts/i,
         })
       ).not.toBeInTheDocument();
       for (const button of screen.getAllByRole('button', { name: /^connect$/i })) {
@@ -927,7 +927,7 @@ describe('AccountsPage', () => {
       expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
       expect(
         screen.getByRole('heading', {
-          name: /unite your financial allies/i,
+          name: /unite your accounts/i,
         })
       ).toBeInTheDocument();
     });
@@ -973,7 +973,7 @@ describe('AccountsPage', () => {
       expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
       expect(
         screen.getByRole('heading', {
-          name: /unite your financial allies with teller/i,
+          name: /unite your accounts with teller/i,
         })
       ).toBeInTheDocument();
       expect(

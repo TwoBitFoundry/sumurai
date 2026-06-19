@@ -114,7 +114,7 @@ export const Journey: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await waitFor(() => {
-      expect(canvas.getByText(/provision the coffers/i)).toBeVisible();
+      expect(canvas.getByText(/track your expenses/i)).toBeVisible();
     });
     await expandBudgetInsights(canvas);
 

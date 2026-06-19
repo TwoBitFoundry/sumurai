@@ -11,6 +11,7 @@ import {
   radius as uiRadiusRecipes,
 } from '@/ui/recipes';
 import { buttonRecipes } from './Button';
+import { ControlHoverLabel, resolveControlHoverLabel } from './ControlHoverLabel';
 import { cn } from './utils';
 
 export const iconButtonRecipes = {
@@ -102,16 +103,13 @@ export function IconButton({
   className,
   children,
   ref,
+  title,
+  disabled,
   ...props
 }: IconButtonProps & { ref?: React.RefObject<HTMLButtonElement | null> }) {
   const resolvedSize = size ?? 'md';
-  const resolvedTitle =
-    props.title ??
-    (typeof props['aria-label'] === 'string'
-      ? props['aria-label']
-      : typeof children === 'string' || typeof children === 'number'
-        ? String(children)
-        : undefined);
+  const resolvedTitle = resolveControlHoverLabel(title, props['aria-label'], children);
+  const isDisabled = Boolean(disabled);
   const glyphShellClass =
     resolvedSize === 'bar'
       ? cn(chromeBar.glyphWell, '[&_svg]:block', '[&_svg]:h-full', '[&_svg]:w-full')
@@ -126,17 +124,27 @@ export function IconButton({
           '[&_svg]:w-full'
         );
 
-  return (
+  const button = (
     <button
       ref={ref}
       type="button"
       className={cn(iconButtonVariants({ variant, size }), className)}
+      disabled={isDisabled}
       {...props}
-      title={resolvedTitle}
     >
       <span className={glyphShellClass}>{children}</span>
     </button>
   );
+
+  if (resolvedTitle) {
+    return (
+      <ControlHoverLabel label={resolvedTitle} disabled={isDisabled}>
+        {button}
+      </ControlHoverLabel>
+    );
+  }
+
+  return button;
 }
 
 export default IconButton;

@@ -2,11 +2,16 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type React from 'react';
 import { useBudgets } from '@/features/budgets/hooks/useBudgets';
+import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
 import {
   setSessionBudgetsSectionExpanded,
   setSessionCollapsibleExpanded,
 } from '@/utils/sessionPreferences';
 import BudgetsPage from '@/views/BudgetsPage';
+
+function renderBudgetsPage(ui: React.ReactElement) {
+  return render(<ControlTooltipProvider>{ui}</ControlTooltipProvider>);
+}
 
 jest.mock('@/features/budgets/hooks/useBudgets', () => ({
   useBudgets: jest.fn(),
@@ -111,7 +116,7 @@ describe('BudgetsPage', () => {
   });
 
   it('renders four insight cards replacing the old hero cards', () => {
-    render(<BudgetsPage monthControl={monthControl} />);
+    renderBudgetsPage(<BudgetsPage monthControl={monthControl} />);
 
     expect(screen.getByTestId('budget-insights-shell')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /budget insights/i })).toHaveAttribute(
@@ -129,7 +134,7 @@ describe('BudgetsPage', () => {
 
   it('shows budget and fixed expense glass cards with budgets first', async () => {
     jest.mocked(useBudgets).mockReturnValue({ ...baseUseBudgetsMock, computedBudgets: [] } as any);
-    render(<BudgetsPage monthControl={monthControl} />);
+    renderBudgetsPage(<BudgetsPage monthControl={monthControl} />);
 
     await waitFor(() => {
       expect(screen.getByTestId('budgets-empty-state')).toBeInTheDocument();
@@ -153,7 +158,7 @@ describe('BudgetsPage', () => {
   });
 
   it('keeps the insight shell visible in the page stats area', () => {
-    render(<BudgetsPage monthControl={monthControl} />);
+    renderBudgetsPage(<BudgetsPage monthControl={monthControl} />);
 
     expect(screen.getByTestId('budget-insights-shell')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /budget insights/i })).toBeInTheDocument();
@@ -161,16 +166,16 @@ describe('BudgetsPage', () => {
 
   it('moves save to the add button slot and hides edit while editing', async () => {
     const user = userEvent.setup();
-    render(<BudgetsPage monthControl={monthControl} />);
+    renderBudgetsPage(<BudgetsPage monthControl={monthControl} />);
 
     expect(screen.getByRole('button', { name: 'Edit budgets' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Budget' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add budget' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save budgets' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Edit budgets' }));
 
     expect(screen.queryByRole('button', { name: 'Edit budgets' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Budget' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add budget' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save budgets' })).toBeInTheDocument();
   });
 
@@ -182,7 +187,7 @@ describe('BudgetsPage', () => {
     } as any);
 
     const user = userEvent.setup();
-    render(<BudgetsPage monthControl={monthControl} />);
+    renderBudgetsPage(<BudgetsPage monthControl={monthControl} />);
 
     expect(screen.getByRole('button', { name: 'Show budgets' })).toHaveAttribute(
       'aria-expanded',
@@ -190,7 +195,7 @@ describe('BudgetsPage', () => {
     );
     expect(screen.queryByText('Spent')).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Budget' }));
+    await user.click(screen.getByRole('button', { name: 'Add budget' }));
 
     await waitFor(() => {
       expect(screen.getByTestId('add-budget-picker-content')).toBeInTheDocument();
@@ -204,7 +209,7 @@ describe('BudgetsPage', () => {
   it('expands the budgets section when edit is selected while collapsed', async () => {
     setSessionCollapsibleExpanded('budgets', false);
     const user = userEvent.setup();
-    render(<BudgetsPage monthControl={monthControl} />);
+    renderBudgetsPage(<BudgetsPage monthControl={monthControl} />);
 
     expect(screen.getByRole('button', { name: 'Show budgets' })).toHaveAttribute(
       'aria-expanded',

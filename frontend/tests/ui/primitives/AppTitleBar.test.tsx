@@ -2,7 +2,12 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { AppTitleBar } from '@/ui/primitives/AppTitleBar';
+import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
 import { chromeBar, control } from '@/ui/recipes';
+
+function renderAppTitleBar(ui: React.ReactElement) {
+  return render(<ControlTooltipProvider>{ui}</ControlTooltipProvider>);
+}
 
 jest.mock('next/image', () => ({
   __esModule: true,
@@ -24,7 +29,7 @@ describe('AppTitleBar', () => {
   };
 
   it('shows the online indicator when connected', () => {
-    render(<AppTitleBar {...baseProps} isOnline />);
+    renderAppTitleBar(<AppTitleBar {...baseProps} isOnline />);
 
     const indicator = screen.getByTitle('Online');
     expect(indicator).toBeInTheDocument();
@@ -32,7 +37,7 @@ describe('AppTitleBar', () => {
   });
 
   it('shows the offline indicator when disconnected', () => {
-    render(<AppTitleBar {...baseProps} isOnline={false} />);
+    renderAppTitleBar(<AppTitleBar {...baseProps} isOnline={false} />);
 
     const indicator = screen.getByTitle('Offline');
     expect(indicator).toBeInTheDocument();
@@ -40,7 +45,9 @@ describe('AppTitleBar', () => {
   });
 
   it('keeps the title bar chrome fixed when scrolled changes', () => {
-    const { rerender } = render(<AppTitleBar {...baseProps} isOnline scrolled={false} />);
+    const { rerender } = renderAppTitleBar(
+      <AppTitleBar {...baseProps} isOnline scrolled={false} />
+    );
 
     const initialState = {
       headerClassName: screen.getByRole('banner').className,
@@ -48,7 +55,11 @@ describe('AppTitleBar', () => {
       logoHeight: screen.getByAltText('Sumurai Logo').getAttribute('data-height'),
     };
 
-    rerender(<AppTitleBar {...baseProps} isOnline scrolled={true} />);
+    rerender(
+      <ControlTooltipProvider>
+        <AppTitleBar {...baseProps} isOnline scrolled={true} />
+      </ControlTooltipProvider>
+    );
 
     expect({
       headerClassName: screen.getByRole('banner').className,
@@ -58,13 +69,13 @@ describe('AppTitleBar', () => {
   });
 
   it('does not render the theme toggle in the title bar', () => {
-    render(<AppTitleBar {...baseProps} isOnline />);
+    renderAppTitleBar(<AppTitleBar {...baseProps} isOnline />);
 
     expect(screen.queryByRole('button', { name: 'Toggle theme' })).not.toBeInTheDocument();
   });
 
   it('renders primary tab navigation in the title bar for tablet and desktop', () => {
-    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+    renderAppTitleBar(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
     const primaryNav = screen.getByRole('navigation', { name: 'Primary' });
     expect(primaryNav).toBeInTheDocument();
@@ -73,7 +84,7 @@ describe('AppTitleBar', () => {
   });
 
   it('anchors the action cluster to the right on tablet and desktop', () => {
-    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+    renderAppTitleBar(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
     const actions = screen.getByTitle('Online').closest('div');
     expect(actions?.className).toContain('md:col-start-3');
@@ -81,7 +92,7 @@ describe('AppTitleBar', () => {
   });
 
   it('uses a single-row title bar grid on tablet and desktop', () => {
-    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+    renderAppTitleBar(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
     const grid = screen.getByRole('banner').querySelector('.grid');
     expect(grid?.className).toContain('grid-rows-1');
@@ -90,7 +101,7 @@ describe('AppTitleBar', () => {
   });
 
   it('sizes the logo to fill the title bar chrome on each breakpoint', () => {
-    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+    renderAppTitleBar(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
     const logoFrame = screen.getByAltText('Sumurai Logo').parentElement;
     expect(logoFrame?.className).toContain('h-12');
@@ -99,7 +110,7 @@ describe('AppTitleBar', () => {
   });
 
   it('uses context pill tabs for the desktop tab switcher', () => {
-    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+    renderAppTitleBar(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
     const primaryNav = screen.getByRole('navigation', { name: 'Primary' });
     const settingsTab = screen.getByRole('button', { name: 'Dashboard' });
@@ -113,14 +124,14 @@ describe('AppTitleBar', () => {
   });
 
   it('uses stronger body text for the primary tab labels', () => {
-    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+    renderAppTitleBar(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
     const primaryNav = screen.getByRole('navigation', { name: 'Primary' });
     expect(primaryNav.querySelector('.font-body-strong')).not.toBeNull();
   });
 
   it('uses md control sizing for the settings and logout actions', () => {
-    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+    renderAppTitleBar(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
     const settingsButton = screen.getByRole('button', { name: 'Settings' });
     expect(settingsButton.className).toContain(control.square.md);
@@ -133,7 +144,9 @@ describe('AppTitleBar', () => {
   });
 
   it('uses tab active styling when the settings tab is selected', () => {
-    render(<AppTitleBar {...baseProps} isOnline currentTab="settings" onLogout={jest.fn()} />);
+    renderAppTitleBar(
+      <AppTitleBar {...baseProps} isOnline currentTab="settings" onLogout={jest.fn()} />
+    );
 
     const settingsButton = screen.getByRole('button', { name: 'Settings' });
     expect(settingsButton.className).toContain('bg-[var(--color-brand-sky)]');
@@ -144,7 +157,7 @@ describe('AppTitleBar', () => {
   });
 
   it('uses toolbar styling when the settings tab is not selected', () => {
-    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+    renderAppTitleBar(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
     const settingsButton = screen.getByRole('button', { name: 'Settings' });
     expect(settingsButton.className).toContain('bg-transparent');
@@ -155,7 +168,9 @@ describe('AppTitleBar', () => {
     const onTabChange = jest.fn();
     const user = userEvent.setup();
 
-    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} onTabChange={onTabChange} />);
+    renderAppTitleBar(
+      <AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} onTabChange={onTabChange} />
+    );
 
     expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Log off' })).toHaveLength(1);
@@ -168,7 +183,7 @@ describe('AppTitleBar', () => {
     const onTabChange = jest.fn();
     const user = userEvent.setup();
 
-    render(
+    renderAppTitleBar(
       <AppTitleBar
         {...baseProps}
         isOnline
@@ -184,14 +199,14 @@ describe('AppTitleBar', () => {
 
   describe('unauthenticated auth layout', () => {
     it('always renders the Sumurai logo and wordmark', () => {
-      render(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
+      renderAppTitleBar(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
 
       expect(screen.getByAltText('Sumurai Logo')).toBeInTheDocument();
       expect(screen.getByText('Sumurai')).toBeInTheDocument();
     });
 
     it('keeps the logo left-aligned in the title bar grid', () => {
-      render(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
+      renderAppTitleBar(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
 
       const logoSlot = screen.getByAltText('Sumurai Logo').closest('.col-start-1');
       expect(logoSlot?.className).toContain('col-start-1');
@@ -200,7 +215,7 @@ describe('AppTitleBar', () => {
     });
 
     it('anchors the connectivity indicator to the right on tablet and mobile', () => {
-      render(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
+      renderAppTitleBar(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
 
       const actions = screen.getByTitle('Online').closest('div');
       expect(actions?.className).toContain('col-start-2');
@@ -220,19 +235,19 @@ describe('AppTitleBar', () => {
     };
 
     it('header has safe-area-inset-top padding for notch/camera cutout', () => {
-      render(<AppTitleBar {...mobileProps} />);
+      renderAppTitleBar(<AppTitleBar {...mobileProps} />);
       expect(screen.getByRole('banner').className).toContain('pt-[env(safe-area-inset-top)]');
     });
 
     it('online connectivity icon is always present (no responsive hiding)', () => {
-      render(<AppTitleBar {...mobileProps} />);
+      renderAppTitleBar(<AppTitleBar {...mobileProps} />);
       const indicator = screen.getByTitle('Online');
       expect(indicator).toBeInTheDocument();
       expect(indicator.className).not.toContain('hidden');
     });
 
     it('sizes the connectivity indicator to match action icon buttons', () => {
-      render(<AppTitleBar {...mobileProps} />);
+      renderAppTitleBar(<AppTitleBar {...mobileProps} />);
 
       const indicator = screen.getByTitle('Online');
       expect(indicator.className).toContain(control.square.md);
@@ -244,7 +259,7 @@ describe('AppTitleBar', () => {
     });
 
     it('uses a single-row title bar grid on mobile', () => {
-      render(<AppTitleBar {...mobileProps} />);
+      renderAppTitleBar(<AppTitleBar {...mobileProps} />);
 
       const grid = screen.getByRole('banner').querySelector('.grid');
       expect(grid?.className).toContain('grid-rows-1');
@@ -252,7 +267,7 @@ describe('AppTitleBar', () => {
     });
 
     it('renders a single icon-only logout action on mobile', () => {
-      render(<AppTitleBar {...mobileProps} />);
+      renderAppTitleBar(<AppTitleBar {...mobileProps} />);
 
       const logoutButton = screen.getByRole('button', { name: 'Log off' });
       expect(logoutButton.className).toContain('aspect-square');

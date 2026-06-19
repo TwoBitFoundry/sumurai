@@ -244,6 +244,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
             aria-haspopup="dialog"
             aria-expanded={isOpen}
             aria-label="Filter accounts"
+            title="Filter accounts"
           >
             <span className={cn('relative', 'z-10', ...chromeBar.glyphWell)}>
               <Filter className={chromeBar.glyph} />

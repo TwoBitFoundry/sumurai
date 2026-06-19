@@ -20,6 +20,7 @@ import { AuthenticationError } from './services/ApiClient';
 import { AuthService } from './services/authService';
 import { BrowserStorageAdapter } from './services/boundaries';
 import { AppFooter, AppTitleBar, GlassCard, GradientShell } from './ui/primitives';
+import { ControlTooltipProvider } from './ui/primitives/ControlHoverLabel';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from './ui/recipes';
 
 AuthService.configure({
@@ -284,7 +285,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <TelemetryProvider service={telemetryService}>{children}</TelemetryProvider>
+        <ControlTooltipProvider>
+          <TelemetryProvider service={telemetryService}>{children}</TelemetryProvider>
+        </ControlTooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

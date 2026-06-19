@@ -13,6 +13,11 @@ import {
   radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
+import {
+  ControlHoverLabel,
+  resolveControlHoverLabel,
+  shouldShowButtonHoverLabel,
+} from './ControlHoverLabel';
 import { cn } from './utils';
 
 export const buttonTypographySizes = {
@@ -228,27 +233,24 @@ export const Button = ({
   className,
   children,
   ref,
+  title,
   ...props
 }: ButtonProps & { ref?: React.RefObject<HTMLButtonElement | null> }) => {
   const resolvedSize = size ?? 'md';
   const isSquare = shape === 'square';
   const glyphSize =
     resolvedSize === 'sm' || resolvedSize === 'md' || resolvedSize === 'lg' ? resolvedSize : 'md';
-  const resolvedTitle =
-    props.title ??
-    (typeof props['aria-label'] === 'string'
-      ? props['aria-label']
-      : typeof children === 'string' || typeof children === 'number'
-        ? String(children)
-        : undefined);
+  const resolvedTitle = resolveControlHoverLabel(title, props['aria-label'], children);
+  const showHoverLabel = shouldShowButtonHoverLabel(variant ?? 'primary', resolvedTitle);
+  const isDisabled = Boolean(disabled || loading);
 
-  return (
+  const button = (
     <button
       ref={ref}
-      disabled={disabled || loading}
+      disabled={isDisabled}
       className={cn(buttonVariants({ variant, size, shape }), className)}
+      title={showHoverLabel ? undefined : resolvedTitle}
       {...props}
-      title={resolvedTitle}
     >
       {isSquare ? (
         <span
@@ -270,6 +272,16 @@ export const Button = ({
       )}
     </button>
   );
+
+  if (showHoverLabel && resolvedTitle) {
+    return (
+      <ControlHoverLabel label={resolvedTitle} disabled={isDisabled}>
+        {button}
+      </ControlHoverLabel>
+    );
+  }
+
+  return button;
 };
 
 Button.displayName = 'Button';

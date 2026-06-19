@@ -221,6 +221,7 @@ export const AppTitleBar = ({
             variant={currentTab === key ? 'tabActive' : 'tab'}
             size="inherit"
             aria-label={label}
+            title={label}
             aria-current={currentTab === key ? 'page' : undefined}
             className={cn(
               ...appTitleBarRecipes.contextPillTab,

@@ -1,12 +1,17 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import type React from 'react';
-import { useAccountsToastStack } from '@/features/accounts/hooks/useAccountsToastStack';
+import * as accountsToastStackModule from '@/features/accounts/hooks/useAccountsToastStack';
 import { useAutoCategorization } from '@/features/auto-categorization/hooks/useAutoCategorization';
 import { useCategories } from '@/features/transactions/hooks/useCategories';
 import { useTransactionsContextualInsights } from '@/features/transactions/hooks/useTransactionsContextualInsights';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
 import TransactionsPage from '@/views/TransactionsPage';
+
+function renderTransactionsPage(ui: React.ReactElement) {
+  return render(<ControlTooltipProvider>{ui}</ControlTooltipProvider>);
+}
 
 jest.mock('@/hooks/useAccountFilter', () => ({
   useAccountFilter: jest.fn(),
@@ -24,30 +29,8 @@ jest.mock('@/features/auto-categorization/hooks/useAutoCategorization', () => ({
   useAutoCategorization: jest.fn(),
 }));
 
-jest.mock('@/features/accounts/hooks/useAccountsToastStack', () => ({
-  useAccountsToastStack: jest.fn(),
-}));
-
 jest.mock('@/hooks/useOnlineStatus', () => ({
   useOnlineStatus: jest.fn(),
-}));
-
-jest.mock('@/layouts/PageLayout', () => ({
-  PageLayout: ({
-    children,
-    stats,
-    actions,
-  }: {
-    children?: React.ReactNode;
-    stats?: React.ReactNode;
-    actions?: React.ReactNode;
-  }) => (
-    <div data-testid="page-layout">
-      <div data-testid="page-actions">{actions}</div>
-      <div data-testid="page-stats">{stats}</div>
-      <div data-testid="page-children">{children}</div>
-    </div>
-  ),
 }));
 
 jest.mock('@/features/transactions/components/TransactionInsightsPanel', () => ({
@@ -79,23 +62,11 @@ jest.mock('@/features/transactions/components/CategoryCatalogPicker', () => ({
     open ? <div data-testid="category-catalog-picker" /> : null,
 }));
 
-jest.mock('@/components/toastStack/ToastStack', () => ({
-  ToastStack: ({
-    transients,
-    pinnedToast,
-  }: {
-    transients: Array<{ id: string; message: string }>;
-    pinnedToast: { message: string } | null;
-  }) => (
-    <div
-      data-testid="toast-stack"
-      data-transients={transients.length}
-      data-pinned={pinnedToast?.message ?? ''}
-    />
-  ),
-}));
-
 describe('TransactionsPage', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   beforeEach(() => {
     jest.mocked(useAccountFilter).mockReturnValue({
       selectedAccountIds: [],
@@ -111,7 +82,7 @@ describe('TransactionsPage', () => {
       progressLabel: null,
       handleAction: jest.fn(),
     } as any);
-    jest.mocked(useAccountsToastStack).mockReturnValue({
+    jest.spyOn(accountsToastStackModule, 'useAccountsToastStack').mockReturnValue({
       transients: [],
       pinnedToast: null,
       pushToast: jest.fn(),
@@ -159,7 +130,7 @@ describe('TransactionsPage', () => {
   });
 
   it('renders the insights panel in the stats slot', () => {
-    render(
+    renderTransactionsPage(
       <TransactionsPage
         filterControl={{
           search: '',
@@ -174,10 +145,11 @@ describe('TransactionsPage', () => {
     expect(panel).toBeInTheDocument();
     expect(panel).toHaveAttribute('data-state', 'a');
     expect(panel).toHaveAttribute('data-loading', 'false');
+    expect(screen.getByTestId('page-layout-sticky-scope')).toContainElement(panel);
   });
 
-  it('renders categorize actions in the page hero with responsive layout classes', () => {
-    render(
+  it('renders categorize actions inline with the transactions section header', () => {
+    renderTransactionsPage(
       <TransactionsPage
         filterControl={{
           search: '',
@@ -188,16 +160,25 @@ describe('TransactionsPage', () => {
       />
     );
 
-    const heroActions = screen.getByTestId('page-actions');
-    const actionsRow = heroActions.firstElementChild;
-    expect(heroActions).toHaveTextContent('Categorize');
-    expect(actionsRow?.className).toContain('justify-between');
-    expect(actionsRow?.className).toContain('lg:w-auto');
+    const hero = screen.getByRole('heading', {
+      level: 1,
+      name: /explore your ledger/i,
+    });
     expect(
-      screen.getByRole('heading', { name: 'Transactions' }).parentElement
-    ).not.toHaveTextContent('Categorize');
-    expect(screen.getByRole('button', { name: 'Categories' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /categorize/i })).toBeEnabled();
+      within(hero.closest('section') ?? hero).queryByRole('button', { name: /categorize/i })
+    ).not.toBeInTheDocument();
+
+    const transactionsHeading = screen.getByRole('heading', { name: 'Transactions' });
+    const sectionHeader = transactionsHeading.parentElement;
+    expect(sectionHeader).toHaveTextContent('Categorize');
+    expect(sectionHeader?.className).toContain('justify-between');
+    expect(screen.getByRole('button', { name: 'Manage categories' })).toBeInTheDocument();
+    const categorizeButton = screen.getByRole('button', { name: /categorize/i });
+    expect(categorizeButton).toBeEnabled();
+    expect(categorizeButton.className).toContain('max-md:aspect-square');
+    expect(categorizeButton.querySelector('span.hidden.md\\:inline')).toHaveTextContent(
+      'Categorize'
+    );
   });
 
   it('passes loading state to the insights panel independently from the list', () => {
@@ -209,7 +190,7 @@ describe('TransactionsPage', () => {
       accountKey: '',
     } as any);
 
-    render(
+    renderTransactionsPage(
       <TransactionsPage
         filterControl={{
           search: '',
@@ -227,7 +208,7 @@ describe('TransactionsPage', () => {
     expect(screen.getByTestId('virtualized-transaction-list')).toBeInTheDocument();
   });
 
-  it('renders the shared toast stack for auto-categorization job state', () => {
+  it('renders the shared toast stack for auto-categorization job state', async () => {
     jest.mocked(useAutoCategorization).mockReturnValue({
       job: {
         job_id: '11111111-2222-3333-4444-555555555555',
@@ -246,7 +227,7 @@ describe('TransactionsPage', () => {
       progressLabel: '2 / 8 processed',
       handleAction: jest.fn(),
     } as any);
-    jest.mocked(useAccountsToastStack).mockReturnValue({
+    jest.spyOn(accountsToastStackModule, 'useAccountsToastStack').mockReturnValue({
       transients: [{ id: 'toast-1', message: 'Synced 2 transactions' }],
       pinnedToast: {
         message: 'Categorizing transactions…',
@@ -258,7 +239,7 @@ describe('TransactionsPage', () => {
       dismissPinned: jest.fn(),
     } as any);
 
-    render(
+    renderTransactionsPage(
       <TransactionsPage
         filterControl={{
           search: '',
@@ -269,10 +250,10 @@ describe('TransactionsPage', () => {
       />
     );
 
-    expect(screen.getByTestId('toast-stack')).toHaveAttribute('data-transients', '1');
-    expect(screen.getByTestId('toast-stack')).toHaveAttribute(
-      'data-pinned',
-      'Categorizing transactions…'
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId('toast-stack')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Synced 2 transactions')).toBeInTheDocument();
+    expect(screen.getByText('Categorizing transactions…')).toBeInTheDocument();
   });
 });

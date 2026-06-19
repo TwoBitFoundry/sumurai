@@ -125,4 +125,15 @@ describe('MobileTransactionRow', () => {
 
     expect(onAccountFilter).not.toHaveBeenCalled();
   });
+
+  it('right-aligns read-only category labels in contextual rows', () => {
+    render(
+      <MobileTransactionRow transaction={transaction} index={0} variant="contextual" readOnly />
+    );
+
+    const categoryCell = screen.getByRole('cell');
+    expect(categoryCell.className).toContain('justify-end');
+    expect(categoryCell.className).toContain('left-3');
+    expect(categoryCell.className).toContain('right-3');
+  });
 });

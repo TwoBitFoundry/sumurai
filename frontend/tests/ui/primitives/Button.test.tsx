@@ -1,17 +1,22 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
+import type React from 'react';
 import { Button } from '@/ui/primitives/Button';
+import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
 import { control, font } from '@/ui/recipes';
+
+function renderButton(ui: React.ReactElement) {
+  return render(<ControlTooltipProvider>{ui}</ControlTooltipProvider>);
+}
 
 describe('Button', () => {
   it('defaults to the md control size', () => {
-    render(<Button>Save</Button>);
+    renderButton(<Button>Save</Button>);
 
     const button = screen.getByRole('button', { name: 'Save' });
     expect(button.className).toContain(control.height.md);
     expect(button.className).toContain(control.paddingX.md);
     expect(button.className).toContain(font.bodyStrong);
-    expect(button).toHaveAttribute('title', 'Save');
+    expect(button).not.toHaveAttribute('title');
   });
 
   it.each([
@@ -19,7 +24,7 @@ describe('Button', () => {
     ['md', control.height.md, control.paddingX.md, font.bodyStrong],
     ['lg', control.height.lg, control.paddingX.lg, font.bodyStrong],
   ] as const)('renders the %s control size', (_, height, paddingX, label) => {
-    render(<Button size={_}>Submit</Button>);
+    renderButton(<Button size={_}>Submit</Button>);
 
     const button = screen.getByRole('button', { name: 'Submit' });
     expect(button.className).toContain(height);
@@ -28,7 +33,7 @@ describe('Button', () => {
   });
 
   it('renders filter chip pills with shared button affordances', () => {
-    render(
+    renderButton(
       <Button variant="filterChip" size="sm" shape="pill">
         Food
       </Button>
@@ -50,7 +55,7 @@ describe('Button', () => {
     ['tab', 'tab' as const],
     ['tabActive', 'tabActive' as const],
   ])('keeps %s buttons free of elevation drop shadow', (_, variant) => {
-    render(
+    renderButton(
       <Button variant={variant} size="md">
         Action
       </Button>
@@ -70,7 +75,7 @@ describe('Button', () => {
     ['connect', 'connect' as const, '--color-effect-accent-outline-glow'],
     ['tabActive', 'tabActive' as const, '--color-effect-accent-outline-glow'],
   ])('uses CTA glow on %s buttons', (_, variant, glowToken) => {
-    render(
+    renderButton(
       <Button variant={variant} size="md">
         Action
       </Button>
@@ -83,7 +88,7 @@ describe('Button', () => {
   });
 
   it('uses flat brand sky for the primary variant', () => {
-    render(
+    renderButton(
       <Button variant="primary" size="md">
         Categorize
       </Button>
@@ -97,7 +102,7 @@ describe('Button', () => {
   });
 
   it('renders square controls with the shared square recipe', () => {
-    render(
+    renderButton(
       <Button size="md" shape="square">
         Edit
       </Button>

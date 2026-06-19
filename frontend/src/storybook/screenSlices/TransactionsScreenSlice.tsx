@@ -112,8 +112,8 @@ export function TransactionsScreenSlice(props: {
     <StoryApiScope handlers={handlers}>
       <div data-testid="transactions-page">
         <PageLayout
-          title="Transactions, fully accounted"
-          subtitle="Every transaction on the books. Search and filter your complete history."
+          title="Explore your ledger"
+          subtitle="Review, categorize, and track transactions from all your connected bank accounts."
           error={
             props.state === 'error' ? (props.errorMessage ?? 'Failed to load transactions.') : null
           }

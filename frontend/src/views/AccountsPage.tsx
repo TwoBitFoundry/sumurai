@@ -253,6 +253,11 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const hasActiveConnections = banks.some((bank) => bank.connectionId != null);
 
   const needsProviderPick = !accountsDataLoading && !hasActiveConnections;
+  const accountsPageTitle = useMemo(() => {
+    const showProvider =
+      providerCatalog.userProvider != null || connectedProviders.size > 0 || hasActiveConnections;
+    return showProvider ? `Unite your accounts with ${providerLabel}` : 'Unite your accounts';
+  }, [providerCatalog.userProvider, connectedProviders.size, hasActiveConnections, providerLabel]);
   const prevNeedsProviderPickRef = useRef(needsProviderPick);
   const pickerConnectionFlow =
     pickerConnectingProvider === 'plaid'
@@ -833,7 +838,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     <div data-testid="accounts-page">
       {connectionFlow.connectionMount}
       <PageLayout
-        title={`Unite your financial allies with ${providerLabel}`}
+        title={accountsPageTitle}
         subtitle="Securely link and sync accounts on-demand, view balances, and import or export your data any time."
         actions={actions}
         stats={statsGrid}
