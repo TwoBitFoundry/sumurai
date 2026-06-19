@@ -1,6 +1,10 @@
 import type React from 'react';
 import { cn } from '@/ui/primitives';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import {
+  focus as uiFocusRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import type { Transaction } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
 import { transactionMerchantName } from '../utils/transactionMerchantName';
@@ -36,15 +40,15 @@ export const DesktopTransactionRow: React.FC<Props> = ({
   onAccountFilter,
 }) => {
   const merchantName = transactionMerchantName(r);
-  const handleRowActivate = onMerchantSearch ? () => onMerchantSearch(merchantName) : undefined;
-  const handleRowKeyDown = onMerchantSearch
-    ? (event: React.KeyboardEvent<HTMLDivElement>) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onMerchantSearch(merchantName);
-        }
-      }
+  const handleMerchantSearchClick = onMerchantSearch
+    ? () => onMerchantSearch(merchantName)
     : undefined;
+  const merchantLabelClassName = cn(
+    transactionsRowRecipes.merchantEllipsis,
+    uiTypographyRecipes.body,
+    uiTextRecipes.primary,
+    'transition-colors duration-500'
+  );
 
   const isPageVariant = variant === 'page';
 
@@ -53,16 +57,13 @@ export const DesktopTransactionRow: React.FC<Props> = ({
       role="row"
       aria-rowindex={index + 2}
       style={style}
-      tabIndex={handleRowActivate ? 0 : undefined}
-      onClick={handleRowActivate}
-      onKeyDown={handleRowKeyDown}
       className={cn(
         transactionsRowRecipes.desktopGridCols,
         transactionsRowRecipes.desktopGridRow,
         transactionsRowRecipes.shell,
         index % 2 ? transactionsRowRecipes.odd : transactionsRowRecipes.even,
         'h-full',
-        onMerchantSearch && 'cursor-pointer touch-manipulation'
+        onMerchantSearch && 'hover:ring-0 dark:hover:ring-0'
       )}
     >
       <div
@@ -80,19 +81,36 @@ export const DesktopTransactionRow: React.FC<Props> = ({
       </div>
       <div
         role="cell"
-        className={cn(transactionsRowRecipes.merchantCell, 'px-4 py-3 align-middle')}
+        className={cn(
+          transactionsRowRecipes.merchantCell,
+          'relative px-4 py-3 align-middle',
+          handleMerchantSearchClick && 'touch-manipulation'
+        )}
       >
-        <TransactionMerchantLabel
-          merchantName={r.name}
-          originalMerchantName={r.originalMerchantName}
+        {handleMerchantSearchClick ? (
+          <button
+            type="button"
+            aria-label={`Search transactions for ${merchantName}`}
+            onClick={handleMerchantSearchClick}
+            className={cn(
+              'absolute inset-0 z-0 cursor-pointer rounded-[inherit]',
+              uiFocusRecipes.visible
+            )}
+          />
+        ) : null}
+        <div
           className={cn(
-            'block',
-            transactionsRowRecipes.merchantEllipsis,
-            uiTypographyRecipes.body,
-            uiTextRecipes.primary,
-            'transition-colors duration-500'
+            'relative z-10 min-w-0',
+            handleMerchantSearchClick && 'pointer-events-none'
           )}
-        />
+        >
+          <TransactionMerchantLabel
+            merchantName={r.name}
+            originalMerchantName={r.originalMerchantName}
+            className={merchantLabelClassName}
+            layeredSearchTarget={Boolean(handleMerchantSearchClick)}
+          />
+        </div>
       </div>
       <div
         role="cell"

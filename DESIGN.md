@@ -214,7 +214,7 @@ spacing:
   page-y: 16px
   shell-x: 16px
   shell-y: 48px
-  content-max: 1440px
+  content-max: 1280px
   compact-gap: 8px
   section-gap: 20px
   button-chrome-inset-sm-x: 12px

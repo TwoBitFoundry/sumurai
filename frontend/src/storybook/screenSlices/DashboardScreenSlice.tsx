@@ -101,6 +101,67 @@ export function DashboardScreenSlice(props: {
             )}
           >
             <DashboardChartCard
+              className={cn('min-w-0')}
+              title="Income vs expenses over time"
+              refreshingLabel="Tracing the flow..."
+              isRefreshing={false}
+            >
+              {cashFlowLoading ? (
+                <div className={cn('flex-1', 'min-h-0', dashboardLoadingCard)} />
+              ) : cashFlowError ? (
+                <div
+                  className={cn(
+                    'flex-1',
+                    'min-h-0',
+                    'min-h-[28px]',
+                    uiTypographyRecipes.body,
+                    uiTextRecipes.danger
+                  )}
+                >
+                  {cashFlowError}
+                </div>
+              ) : (
+                <div
+                  ref={cashFlowChartRef}
+                  className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}
+                >
+                  {cashFlowWidth > 0 && cashFlowHeight > 0 ? (
+                    <CashFlowChart
+                      data={sampleCashFlowSeries}
+                      width={cashFlowWidth}
+                      height={cashFlowHeight}
+                    />
+                  ) : null}
+                </div>
+              )}
+            </DashboardChartCard>
+
+            <DashboardChartCard
+              className={cn('min-w-0')}
+              title="Budget vs reality over time"
+              refreshingLabel="Reviewing allowances..."
+              isRefreshing={false}
+            >
+              <div ref={budgetChartRef} className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}>
+                {budgetChartWidth > 0 && budgetChartHeight > 0 ? (
+                  <BudgetVsActualChart
+                    data={[
+                      { month: 'Jan', expenses: 620 },
+                      { month: 'Feb', expenses: 490 },
+                      { month: 'Mar', expenses: 780 },
+                      { month: 'Apr', expenses: 920 },
+                      { month: 'May', expenses: 710 },
+                      { month: 'Jun', expenses: 835 },
+                    ]}
+                    totalBudget={850}
+                    width={budgetChartWidth}
+                    height={budgetChartHeight}
+                  />
+                ) : null}
+              </div>
+            </DashboardChartCard>
+
+            <DashboardChartCard
               className={cn('min-w-0', 'col-span-1')}
               title="Spending over time"
               refreshingLabel="Reading the field..."
@@ -230,67 +291,6 @@ export function DashboardScreenSlice(props: {
                   merchants={sampleTopMerchants}
                   className={cn('h-full', 'overflow-y-auto')}
                 />
-              </div>
-            </DashboardChartCard>
-
-            <DashboardChartCard
-              className={cn('min-w-0')}
-              title="Income vs expenses over time"
-              refreshingLabel="Tracing the flow..."
-              isRefreshing={false}
-            >
-              {cashFlowLoading ? (
-                <div className={cn('flex-1', 'min-h-0', dashboardLoadingCard)} />
-              ) : cashFlowError ? (
-                <div
-                  className={cn(
-                    'flex-1',
-                    'min-h-0',
-                    'min-h-[28px]',
-                    uiTypographyRecipes.body,
-                    uiTextRecipes.danger
-                  )}
-                >
-                  {cashFlowError}
-                </div>
-              ) : (
-                <div
-                  ref={cashFlowChartRef}
-                  className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}
-                >
-                  {cashFlowWidth > 0 && cashFlowHeight > 0 ? (
-                    <CashFlowChart
-                      data={sampleCashFlowSeries}
-                      width={cashFlowWidth}
-                      height={cashFlowHeight}
-                    />
-                  ) : null}
-                </div>
-              )}
-            </DashboardChartCard>
-
-            <DashboardChartCard
-              className={cn('min-w-0')}
-              title="Budget vs reality over time"
-              refreshingLabel="Reviewing allowances..."
-              isRefreshing={false}
-            >
-              <div ref={budgetChartRef} className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}>
-                {budgetChartWidth > 0 && budgetChartHeight > 0 ? (
-                  <BudgetVsActualChart
-                    data={[
-                      { month: 'Jan', expenses: 620 },
-                      { month: 'Feb', expenses: 490 },
-                      { month: 'Mar', expenses: 780 },
-                      { month: 'Apr', expenses: 920 },
-                      { month: 'May', expenses: 710 },
-                      { month: 'Jun', expenses: 835 },
-                    ]}
-                    totalBudget={850}
-                    width={budgetChartWidth}
-                    height={budgetChartHeight}
-                  />
-                ) : null}
               </div>
             </DashboardChartCard>
           </div>

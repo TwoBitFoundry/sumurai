@@ -18,6 +18,7 @@ interface Props {
   merchantLineClassName?: string;
   metaContent?: React.ReactNode;
   onMerchantActivate?: () => void;
+  layeredSearchTarget?: boolean;
 }
 
 function RawMerchantPopoverContent({ rawMerchant }: { rawMerchant: string }) {
@@ -56,12 +57,14 @@ function MerchantInteractiveLine({
   rawMerchant,
   onMerchantActivate,
   className,
+  layeredSearchTarget = false,
 }: {
   normalizedMerchant: string;
   showPopover: boolean;
   rawMerchant?: string;
   onMerchantActivate?: () => void;
   className?: string;
+  layeredSearchTarget?: boolean;
 }) {
   const lineClassName = cn(
     'block',
@@ -74,6 +77,7 @@ function MerchantInteractiveLine({
     'duration-150',
     'touch-manipulation',
     uiFocusRecipes.visible,
+    layeredSearchTarget && 'relative z-10 pointer-events-auto',
     className
   );
 
@@ -117,7 +121,11 @@ function MerchantInteractiveLine({
     );
   }
 
-  return <span className={className}>{normalizedMerchant}</span>;
+  return (
+    <span className={cn(className, layeredSearchTarget && 'pointer-events-none')}>
+      {normalizedMerchant}
+    </span>
+  );
 }
 
 export const TransactionMerchantLabel: React.FC<Props> = ({
@@ -127,6 +135,7 @@ export const TransactionMerchantLabel: React.FC<Props> = ({
   merchantLineClassName,
   metaContent,
   onMerchantActivate,
+  layeredSearchTarget = false,
 }) => {
   const normalizedMerchant = merchantName || '-';
   const rawMerchant = originalMerchantName?.trim();
@@ -149,7 +158,11 @@ export const TransactionMerchantLabel: React.FC<Props> = ({
   }
 
   if (!showPopover) {
-    return <span className={className}>{normalizedMerchant}</span>;
+    return (
+      <span className={cn(className, layeredSearchTarget && 'pointer-events-none')}>
+        {normalizedMerchant}
+      </span>
+    );
   }
 
   return (
@@ -158,6 +171,7 @@ export const TransactionMerchantLabel: React.FC<Props> = ({
       showPopover={showPopover}
       rawMerchant={rawMerchant}
       className={className}
+      layeredSearchTarget={layeredSearchTarget}
     />
   );
 };

@@ -1682,7 +1682,7 @@ export const generatedTokens = {
     },
     "content-max": {
       "$value": {
-        "value": 1440,
+        "value": 1280,
         "unit": "px"
       }
     },

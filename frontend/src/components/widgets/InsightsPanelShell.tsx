@@ -32,10 +32,6 @@ export function InsightsPanelShell({
           className={cn('pointer-events-none', ...uiInsightsPanelRecipes.glassInnerRing)}
         />
         <div
-          aria-hidden
-          className={cn('pointer-events-none', ...uiInsightsPanelRecipes.glassInnerGradient)}
-        />
-        <div
           className={cn(
             'hero-stat-card__gradient',
             'pointer-events-none',
@@ -45,7 +41,7 @@ export function InsightsPanelShell({
             'opacity-100'
           )}
           style={{
-            backgroundImage: `linear-gradient(135deg, ${shellAccent.gradFrom}33, ${shellAccent.gradVia}1f, transparent 70%)`,
+            backgroundColor: `${shellAccent.gradFrom}33`,
           }}
         />
         <div

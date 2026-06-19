@@ -1,9 +1,9 @@
 import { cva } from 'class-variance-authority';
 import {
-  ArrowLeftRight,
   Building2,
   LayoutDashboard,
   LogOut,
+  ReceiptText,
   Settings,
   Target,
   Wifi,
@@ -159,7 +159,7 @@ export const TABS: Array<{
   icon: React.ComponentType<{ className?: string }>;
 }> = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { key: 'transactions', label: 'Transactions', icon: ArrowLeftRight },
+  { key: 'transactions', label: 'Transactions', icon: ReceiptText },
   { key: 'budgets', label: 'Budgets', icon: Target },
   { key: 'accounts', label: 'Accounts', icon: Building2 },
 ];

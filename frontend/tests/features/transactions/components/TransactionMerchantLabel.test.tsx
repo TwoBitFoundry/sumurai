@@ -37,4 +37,16 @@ describe('TransactionMerchantLabel', () => {
 
     expect(onMerchantActivate).toHaveBeenCalledTimes(1);
   });
+
+  it('passes pointer events through plain merchant text to the search target', () => {
+    render(
+      <TransactionMerchantLabel
+        merchantName="Transfer"
+        className="merchant-line"
+        layeredSearchTarget
+      />
+    );
+
+    expect(screen.getByText('Transfer')).toHaveClass('pointer-events-none');
+  });
 });

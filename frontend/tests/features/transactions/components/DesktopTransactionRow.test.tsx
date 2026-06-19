@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import DesktopTransactionRow from '@/features/transactions/components/DesktopTransactionRow';
 import type { Transaction } from '@/types/api';
 
@@ -32,7 +33,7 @@ const transaction: Transaction = {
 };
 
 describe('DesktopTransactionRow', () => {
-  it('searches by merchant when the row is clicked', () => {
+  it('searches by merchant when the merchant cell is clicked', () => {
     const onMerchantSearch = jest.fn();
 
     render(
@@ -46,9 +47,69 @@ describe('DesktopTransactionRow', () => {
     expect(screen.getByRole('row').className).toContain(
       'grid-cols-[minmax(0,9rem)_minmax(0,1fr)_minmax(0,8rem)'
     );
-    fireEvent.click(screen.getByRole('row'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Search transactions for Transfer' }));
 
     expect(onMerchantSearch).toHaveBeenCalledWith('Transfer');
+  });
+
+  it('searches by merchant when empty merchant cell space is clicked', () => {
+    const onMerchantSearch = jest.fn();
+
+    render(
+      <DesktopTransactionRow
+        transaction={{
+          ...transaction,
+          name: "Lowe's",
+          originalMerchantName: 'LOWES #1234',
+        }}
+        index={0}
+        onMerchantSearch={onMerchantSearch}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Search transactions for Lowe's/i }));
+
+    expect(onMerchantSearch).toHaveBeenCalledWith("Lowe's");
+  });
+
+  it('shows raw merchant from the merchant name without searching', async () => {
+    const user = userEvent.setup();
+    const onMerchantSearch = jest.fn();
+
+    render(
+      <DesktopTransactionRow
+        transaction={{
+          ...transaction,
+          name: "Lowe's",
+          originalMerchantName: 'LOWES #1234',
+        }}
+        index={0}
+        onMerchantSearch={onMerchantSearch}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /Show raw merchant for Lowe's/i }));
+
+    expect(onMerchantSearch).not.toHaveBeenCalled();
+    expect(screen.getByText('Raw merchant')).toBeInTheDocument();
+    expect(screen.getByText('LOWES #1234')).toBeInTheDocument();
+  });
+
+  it('does not search when another row cell is clicked', () => {
+    const onMerchantSearch = jest.fn();
+
+    render(
+      <DesktopTransactionRow
+        transaction={transaction}
+        index={0}
+        onMerchantSearch={onMerchantSearch}
+      />
+    );
+
+    fireEvent.click(screen.getByText('5/31/2026'));
+
+    expect(onMerchantSearch).not.toHaveBeenCalled();
   });
 
   it('does not search when the category control is clicked', () => {
@@ -83,7 +144,7 @@ describe('DesktopTransactionRow', () => {
     expect(onAccountFilter).toHaveBeenCalledWith('account-savings');
   });
 
-  it('does not filter by account when the row is clicked', () => {
+  it('does not filter by account when the merchant cell is clicked', () => {
     const onAccountFilter = jest.fn();
 
     render(
@@ -95,7 +156,7 @@ describe('DesktopTransactionRow', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('row'));
+    fireEvent.click(screen.getByRole('button', { name: 'Search transactions for Transfer' }));
 
     expect(onAccountFilter).not.toHaveBeenCalled();
   });
