@@ -154,7 +154,7 @@ describe('sankeyResponseToChartData', () => {
 
     expect(sankeyResponseToChartData(response)).toMatchObject({
       nodes: [
-        { id: 'income', percentOfExpenses: 100, percentContext: 'expenseFunding' },
+        { id: 'income', percentOfExpenses: 106.66666666666667, percentContext: 'expenseFunding' },
         { id: 'expenses', percentOfExpenses: 93.75, percentContext: 'income' },
         { id: 'fixed_expenses', percentOfExpenses: 10, percentContext: 'expenses' },
         { id: 'free_spending', percentOfExpenses: 90, percentContext: 'expenses' },
@@ -176,8 +176,8 @@ describe('sankeyResponseToChartData', () => {
         {
           sourceId: 'income',
           targetId: 'expenses',
-          percentOfExpenses: 93.75,
-          percentContext: 'income',
+          percentOfExpenses: 100,
+          percentContext: 'expenses',
         },
         {
           sourceId: 'expenses',
@@ -249,7 +249,7 @@ describe('sankeyResponseToChartData', () => {
 
     const chartData = sankeyResponseToChartData(response);
     expect(chartData.nodes.find((node) => node.id === 'income')).toMatchObject({
-      percentOfExpenses: 100,
+      percentOfExpenses: 492.3392020166214,
       percentContext: 'expenseFunding',
     });
     expect(chartData.nodes.find((node) => node.id === 'savings')).toMatchObject({
@@ -264,8 +264,8 @@ describe('sankeyResponseToChartData', () => {
       {
         sourceId: 'income',
         targetId: 'expenses',
-        percentOfExpenses: 20.3112,
-        percentContext: 'income',
+        percentOfExpenses: 100,
+        percentContext: 'expenses',
       },
       {
         sourceId: 'income',
@@ -302,7 +302,7 @@ describe('resolveSankeyTooltipMetadata', () => {
     const chartData = sankeyResponseToChartData(response);
 
     expect(resolveSankeyTooltipMetadata(chartData, { value: 2500 }, 'INCOME')).toMatchObject({
-      percentOfExpenses: 100,
+      percentOfExpenses: 492.3392020166214,
       percentContext: 'expenseFunding',
       kind: 'Income',
     });

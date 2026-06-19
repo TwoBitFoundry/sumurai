@@ -185,7 +185,7 @@ describe('MoneyFlowSankeyChart', () => {
     expect(await screen.findByTestId('sankey-node-income')).toBeVisible();
     expect(screen.getByText('20%')).toBeVisible();
     expect(screen.getByText('80%')).toBeVisible();
-    expect(screen.getAllByText('100%')).toHaveLength(2);
+    expect(screen.getAllByText('100%')).toHaveLength(1);
     const savingsNode = screen.getByTestId('sankey-node-savings');
     const savingsRect = savingsNode.querySelector('rect');
     const savingsLabel = savingsNode.querySelector('text:first-of-type');
@@ -490,7 +490,10 @@ describe('MoneyFlowSankeyChart', () => {
           income: 2500,
           expenses: 507.78,
           covered: 507.78,
+          deficit: 0,
           surplus: 1992.22,
+          fixedExpenses: 0,
+          freeSpending: 0,
         }}
         payload={[
           {
@@ -540,7 +543,10 @@ describe('MoneyFlowSankeyChart', () => {
           income: 2500,
           expenses: 507.78,
           covered: 507.78,
+          deficit: 0,
           surplus: 1992.22,
+          fixedExpenses: 0,
+          freeSpending: 0,
         }}
         payload={[
           {
@@ -556,7 +562,123 @@ describe('MoneyFlowSankeyChart', () => {
 
     expect(screen.getByText('Income')).toBeVisible();
     expect(screen.getByText('$2,500.00')).toBeVisible();
-    expect(screen.getByText('100% of expenses')).toBeVisible();
+    expect(screen.getByText('492.3% of expenses')).toBeVisible();
+  });
+
+  it('shows free spending tooltip percent as a share of expenses when the payload is underspecified', () => {
+    const response: SankeyResponse = {
+      nodes: [
+        { id: 'income', label: 'Income', kind: 'Income' },
+        { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+        { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' },
+        { id: 'category_travel', label: 'TRAVEL', kind: 'Category' },
+      ],
+      links: [
+        { source: 'income', target: 'expenses', value: 2624.29 },
+        { source: 'expenses', target: 'free_spending', value: 1970.08 },
+        { source: 'free_spending', target: 'category_travel', value: 1970.08 },
+      ],
+      currency: 'USD',
+      summary: {
+        income: 2624.29,
+        expenses: 2736.23,
+        covered: 2624.29,
+        deficit: 111.94,
+        surplus: 0,
+        coverage_ratio: 0.959090169905967,
+      },
+    };
+
+    render(
+      <SankeyTooltipContent
+        active
+        label="FREE SPENDING"
+        chartData={sankeyResponseToChartData(response)}
+        summary={{
+          income: 2624.29,
+          expenses: 2736.23,
+          covered: 2624.29,
+          deficit: 111.94,
+          surplus: 0,
+          fixedExpenses: 0,
+          freeSpending: 1970.08,
+        }}
+        payload={[
+          {
+            name: 'FREE SPENDING',
+            value: 1970.08,
+            payload: {
+              label: 'FREE SPENDING',
+              name: 'FREE SPENDING',
+              value: 1970.08,
+              kind: 'Expenses',
+            },
+          } as never,
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Free Spending')).toBeVisible();
+    expect(screen.getByText('$1,970.08')).toBeVisible();
+    expect(screen.getByText('72% of expenses')).toBeVisible();
+  });
+
+  it('shows fixed expenses tooltip percent as a share of expenses when the payload is underspecified', () => {
+    const response: SankeyResponse = {
+      nodes: [
+        { id: 'income', label: 'Income', kind: 'Income' },
+        { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+        { id: 'fixed_expenses', label: 'Fixed Expenses', kind: 'FixedExpenses' },
+        { id: 'category_bills', label: 'BILLS', kind: 'Category' },
+      ],
+      links: [
+        { source: 'income', target: 'expenses', value: 2624.29 },
+        { source: 'expenses', target: 'fixed_expenses', value: 766.15 },
+        { source: 'fixed_expenses', target: 'category_bills', value: 766.15 },
+      ],
+      currency: 'USD',
+      summary: {
+        income: 2624.29,
+        expenses: 2736.23,
+        covered: 2624.29,
+        deficit: 111.94,
+        surplus: 0,
+        coverage_ratio: 0.959090169905967,
+      },
+    };
+
+    render(
+      <SankeyTooltipContent
+        active
+        label="FIXED EXPENSES"
+        chartData={sankeyResponseToChartData(response)}
+        summary={{
+          income: 2624.29,
+          expenses: 2736.23,
+          covered: 2624.29,
+          deficit: 111.94,
+          surplus: 0,
+          fixedExpenses: 766.15,
+          freeSpending: 0,
+        }}
+        payload={[
+          {
+            name: 'FIXED EXPENSES',
+            value: 766.15,
+            payload: {
+              label: 'FIXED EXPENSES',
+              name: 'FIXED EXPENSES',
+              value: 766.15,
+              kind: 'Expenses',
+            },
+          } as never,
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Fixed Expenses')).toBeVisible();
+    expect(screen.getByText('$766.15')).toBeVisible();
+    expect(screen.getByText('28% of expenses')).toBeVisible();
   });
 
   it('does not show the expenses hub label for income tooltips', () => {
@@ -641,11 +763,13 @@ describe('MoneyFlowSankeyChart', () => {
         { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
         { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' },
         { id: 'category_travel', label: 'TRAVEL', kind: 'Category' },
+        { id: 'category_food_and_drink', label: 'FOOD_AND_DRINK', kind: 'Category' },
       ],
       links: [
         { source: 'income', target: 'expenses', value: 1500 },
         { source: 'expenses', target: 'free_spending', value: 1500 },
         { source: 'free_spending', target: 'category_travel', value: 700 },
+        { source: 'free_spending', target: 'category_food_and_drink', value: 800 },
       ],
       currency: 'USD',
       summary: {
@@ -668,7 +792,10 @@ describe('MoneyFlowSankeyChart', () => {
           income: 2500,
           expenses: 1500,
           covered: 1500,
+          deficit: 0,
           surplus: 1000,
+          fixedExpenses: 0,
+          freeSpending: 1500,
         }}
         payload={[
           {
@@ -687,7 +814,135 @@ describe('MoneyFlowSankeyChart', () => {
 
     expect(screen.getByText('Travel')).toBeVisible();
     expect(screen.getByText('$700.00')).toBeVisible();
-    expect(screen.getByText('100% of free spending')).toBeVisible();
+    expect(screen.getByText('46.7% of free spending')).toBeVisible();
+  });
+
+  it('derives fixed expense category tooltip percent from fixed expenses when metadata is missing', () => {
+    const response: SankeyResponse = {
+      nodes: [
+        { id: 'income', label: 'Income', kind: 'Income' },
+        { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+        { id: 'fixed_expenses', label: 'Fixed Expenses', kind: 'FixedExpenses' },
+        { id: 'category_bills', label: 'BILLS', kind: 'Category' },
+        { id: 'category_services', label: 'SERVICES', kind: 'Category' },
+      ],
+      links: [
+        { source: 'income', target: 'expenses', value: 1500 },
+        { source: 'expenses', target: 'fixed_expenses', value: 800 },
+        { source: 'fixed_expenses', target: 'category_bills', value: 600 },
+        { source: 'fixed_expenses', target: 'category_services', value: 200 },
+      ],
+      currency: 'USD',
+      summary: {
+        income: 1500,
+        expenses: 1500,
+        covered: 1500,
+        deficit: 0,
+        surplus: 0,
+        coverage_ratio: 1,
+      },
+    };
+
+    render(
+      <SankeyTooltipContent
+        active
+        label="BILLS"
+        chartData={sankeyResponseToChartData(response)}
+        summary={{
+          income: 1500,
+          expenses: 1500,
+          covered: 1500,
+          deficit: 0,
+          surplus: 0,
+          fixedExpenses: 800,
+          freeSpending: 0,
+        }}
+        payload={[
+          {
+            name: 'BILLS',
+            value: 600,
+            payload: {
+              label: 'BILLS',
+              name: 'BILLS',
+              kind: 'Expenses',
+            },
+          } as never,
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Bills')).toBeVisible();
+    expect(screen.getByText('$600.00')).toBeVisible();
+    expect(screen.getByText('75% of fixed expenses')).toBeVisible();
+  });
+
+  it('prefers the category label over an ambiguous parent id in tooltip payloads', () => {
+    const response: SankeyResponse = {
+      nodes: [
+        { id: 'income', label: 'Income', kind: 'Income' },
+        { id: 'expenses', label: 'Expenses', kind: 'Expenses' },
+        { id: 'free_spending', label: 'Free Spending', kind: 'FreeSpending' },
+        { id: 'fixed_expenses', label: 'Fixed Expenses', kind: 'FixedExpenses' },
+        { id: 'category_merchandise', label: 'MERCHANDISE', kind: 'Category' },
+        { id: 'category_travel', label: 'TRAVEL', kind: 'Category' },
+        { id: 'category_bills', label: 'BILLS', kind: 'Category' },
+        { id: 'category_services', label: 'SERVICES', kind: 'Category' },
+      ],
+      links: [
+        { source: 'income', target: 'expenses', value: 2624.29 },
+        { source: 'expenses', target: 'free_spending', value: 1970.08 },
+        { source: 'expenses', target: 'fixed_expenses', value: 766.15 },
+        { source: 'free_spending', target: 'category_merchandise', value: 501.18 },
+        { source: 'free_spending', target: 'category_travel', value: 1468.9 },
+        { source: 'fixed_expenses', target: 'category_bills', value: 547.42 },
+        { source: 'fixed_expenses', target: 'category_services', value: 218.73 },
+      ],
+      currency: 'USD',
+      summary: {
+        income: 2624.29,
+        expenses: 2736.23,
+        covered: 2624.29,
+        deficit: 111.94,
+        surplus: 0,
+        coverage_ratio: 0.959090169905967,
+      },
+    };
+
+    const chartData = sankeyResponseToChartData(response);
+
+    render(
+      <SankeyTooltipContent
+        active
+        label="MERCHANDISE"
+        chartData={chartData}
+        summary={{
+          income: 2624.29,
+          expenses: 2736.23,
+          covered: 2624.29,
+          deficit: 111.94,
+          surplus: 0,
+          fixedExpenses: 766.15,
+          freeSpending: 1970.08,
+        }}
+        payload={[
+          {
+            name: 'MERCHANDISE',
+            value: 501.18,
+            payload: {
+              id: 'free_spending',
+              label: 'MERCHANDISE',
+              name: 'MERCHANDISE',
+              kind: 'Expenses',
+              value: 501.18,
+            },
+          } as never,
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Merchandise')).toBeVisible();
+    expect(screen.getByText('$501.18')).toBeVisible();
+    expect(screen.getByText('25.4% of free spending')).toBeVisible();
   });
 
   it('formats category labels from the category key instead of the prefixed node id', () => {

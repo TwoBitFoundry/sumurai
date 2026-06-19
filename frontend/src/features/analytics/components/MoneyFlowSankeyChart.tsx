@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Waypoints } from 'lucide-react';
-import { useLayoutEffect, useMemo } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import type { SankeyLinkProps, SankeyNodeProps, TooltipContentProps } from 'recharts';
 import { Sankey, Tooltip } from 'recharts';
 import type { SankeyResponse } from '@/types/api';
@@ -14,11 +15,12 @@ import { useTheme } from '../../../context/ThemeContext';
 import { useCategories } from '../../transactions/hooks/useCategories';
 import {
   resolveSankeyLayoutMetrics,
-  resolveSankeyTooltipMetadata,
+  resolveSankeyTooltipTarget,
   type SankeyChartData,
   type SankeyChartLink,
   type SankeyChartNode,
   type SankeyPercentContext,
+  type SankeyTooltipTarget,
   sankeyResponseToChartData,
 } from '../adapters/chartData';
 import { useChartContainerSize } from '../hooks/useChartContainerSize';
@@ -49,20 +51,6 @@ type MoneyFlowSankeyChartContentProps = {
   error?: string | null;
 };
 
-type RechartsSankeyNodePayload = {
-  dx: number;
-  dy: number;
-  name: string;
-  value: number;
-  x: number;
-  y: number;
-  depth: number;
-  targetNodes: number[];
-  targetLinks: number[];
-  sourceNodes: number[];
-  sourceLinks: number[];
-};
-
 type RechartsSankeyLinkPayload = {
   target: number;
   source: number;
@@ -90,6 +78,18 @@ type SankeyLinkPayload = RechartsSankeyLinkPayload &
     source: SankeyNodePayload;
     target: SankeyNodePayload;
   };
+
+type SankeyNodeLike = Pick<SankeyChartNode, 'id' | 'label' | 'name' | 'kind'>;
+type SankeyHoverState = {
+  target: SankeyTooltipTarget;
+  x: number;
+  y: number;
+};
+type SankeyTooltipContentProps = Partial<TooltipContentProps<number, string>> & {
+  summary?: SankeyTooltipSummary | null;
+  chartData?: SankeyChartData | null;
+  tooltipTarget?: SankeyTooltipTarget | null;
+};
 
 const defaultAccentIndexByName = new Map<string, number>();
 
@@ -123,8 +123,6 @@ function formatSankeyPercentLine(
       return `${value} of fixed expenses`;
     case 'freeSpending':
       return `${value} of free spending`;
-    case 'expenseFunding':
-    case 'expenses':
     default:
       return `${value} of expenses`;
   }
@@ -142,7 +140,7 @@ function resolveSankeyPercentContext(
       return 'income';
     }
     if (entry.target.kind === 'Expenses' && entry.source.kind === 'Income') {
-      return 'income';
+      return 'expenses';
     }
     if (entry.source.kind === 'Income' || entry.source.kind === 'Deficit') {
       return 'expenseFunding';
@@ -172,7 +170,10 @@ type SankeyTooltipSummary = {
   income: number;
   expenses: number;
   covered: number;
+  deficit: number;
   surplus: number;
+  fixedExpenses: number;
+  freeSpending: number;
 };
 
 function resolveTooltipPercentValue(
@@ -180,17 +181,23 @@ function resolveTooltipPercentValue(
   value: number,
   summary: SankeyTooltipSummary,
   context: SankeyPercentContext | null,
-  metadata: ReturnType<typeof resolveSankeyTooltipMetadata> | null
+  kind: SankeyChartNode['kind'] | null
 ) {
-  if (metadata?.percentOfExpenses != null && Number.isFinite(metadata.percentOfExpenses)) {
-    return metadata.percentOfExpenses;
-  }
-
   if (entry.percentOfExpenses != null && Number.isFinite(entry.percentOfExpenses)) {
     return entry.percentOfExpenses;
   }
 
-  const kind = metadata?.kind ?? (isSankeyNodePayload(entry) ? entry.kind : null);
+  switch (context) {
+    case 'income':
+      return summary.income > 0 ? (value / summary.income) * 100 : null;
+    case 'fixedExpenses':
+      return summary.fixedExpenses > 0 ? (value / summary.fixedExpenses) * 100 : null;
+    case 'freeSpending':
+      return summary.freeSpending > 0 ? (value / summary.freeSpending) * 100 : null;
+    case 'expenseFunding':
+    case 'expenses':
+      return summary.expenses > 0 ? (value / summary.expenses) * 100 : null;
+  }
 
   if (kind === 'Savings') {
     return summary.income > 0 ? (summary.surplus / summary.income) * 100 : null;
@@ -199,21 +206,19 @@ function resolveTooltipPercentValue(
     return summary.income > 0 ? (summary.covered / summary.income) * 100 : null;
   }
   if (kind === 'Income') {
-    return summary.expenses > 0 ? (summary.covered / summary.expenses) * 100 : null;
+    return summary.expenses > 0 ? (summary.income / summary.expenses) * 100 : null;
   }
   if (kind === 'Deficit') {
-    return summary.expenses > 0 ? (value / summary.expenses) * 100 : null;
+    return summary.expenses > 0 ? (summary.deficit / summary.expenses) * 100 : null;
+  }
+  if (kind === 'FixedExpenses') {
+    return summary.expenses > 0 ? (summary.fixedExpenses / summary.expenses) * 100 : null;
+  }
+  if (kind === 'FreeSpending') {
+    return summary.expenses > 0 ? (summary.freeSpending / summary.expenses) * 100 : null;
   }
 
-  switch (context ?? metadata?.percentContext ?? null) {
-    case 'income':
-      return summary.income > 0 ? (value / summary.income) * 100 : null;
-    case 'expenseFunding':
-    case 'expenses':
-      return summary.expenses > 0 ? (value / summary.expenses) * 100 : null;
-    default:
-      return null;
-  }
+  return null;
 }
 
 function resolveNodeFill(
@@ -247,7 +252,7 @@ function formatSankeyTooltipLabel(label: string) {
     .trim();
 }
 
-function isSankeyCategoryNode(payload: Pick<SankeyNodePayload, 'id' | 'kind'>) {
+function isSankeyCategoryNode(payload: Pick<SankeyNodeLike, 'id' | 'kind'>) {
   return payload.kind === 'Category' || (payload.id?.startsWith('category_') ?? false);
 }
 
@@ -260,15 +265,13 @@ function isSankeyNodePayload(payload: unknown): payload is SankeyNodePayload {
   );
 }
 
-function resolveSankeyCategoryKey(
-  payload: Pick<SankeyNodePayload, 'id' | 'label' | 'name' | 'kind'>
-) {
+function resolveSankeyCategoryKey(payload: SankeyNodeLike) {
   const raw =
     payload.label ?? payload.name ?? (payload.id ? payload.id.replace(/^category_/, '') : '');
   return formatSankeyTooltipLabel(raw);
 }
 
-function resolveNodeLabel(payload: SankeyNodePayload) {
+function resolveNodeLabel(payload: SankeyNodeLike) {
   if (isSankeyCategoryNode(payload)) {
     return formatCategoryName(resolveSankeyCategoryKey(payload));
   }
@@ -294,6 +297,44 @@ function resolveTooltipLabel(entry: SankeyNodePayload | SankeyLinkPayload, fallb
   }
 
   return formatCategoryName(formatSankeyTooltipLabel(fallback ?? ''));
+}
+
+function resolveTooltipTargetLabel(target: SankeyTooltipTarget) {
+  if (target.type === 'link') {
+    if (isSankeyCategoryNode(target.targetNode)) {
+      return resolveNodeLabel(target.targetNode);
+    }
+
+    if (target.targetNode.kind === 'Expenses') {
+      return formatCategoryName(formatSankeyTooltipLabel(resolveNodeLabel(target.sourceNode)));
+    }
+
+    return `${resolveNodeLabel(target.sourceNode)} → ${resolveNodeLabel(target.targetNode)}`;
+  }
+
+  return formatCategoryName(formatSankeyTooltipLabel(resolveNodeLabel(target.node)));
+}
+
+function resolveTooltipTargetContext(target: SankeyTooltipTarget) {
+  return target.type === 'node' ? target.node.percentContext : target.link.percentContext;
+}
+
+function resolveTooltipTargetKind(target: SankeyTooltipTarget) {
+  if (target.type === 'node') {
+    return target.node.kind;
+  }
+
+  return target.link.percentContext === 'expenseFunding'
+    ? target.sourceNode.kind
+    : target.targetNode.kind;
+}
+
+function resolveTooltipTargetValue(target: SankeyTooltipTarget) {
+  return target.type === 'node' ? target.node.value : target.link.value;
+}
+
+function resolveTooltipTargetPercent(target: SankeyTooltipTarget) {
+  return target.type === 'node' ? target.node.percentOfExpenses : target.link.percentOfExpenses;
 }
 
 function resolveNodeLabelFill(
@@ -356,7 +397,7 @@ function isSankeyLinkPayload(
 function SankeyNodeGlowDefs() {
   return (
     <defs>
-      <filter id={sankeyChart.nodeGlow.filterId} x="-100%" y="-100%" width="300%" height="300%">
+      <filter id={sankeyChart.nodeGlow.filterId} x="-100%" y="-30%" width="300%" height="160%">
         <feGaussianBlur in="SourceGraphic" stdDeviation={sankeyChart.nodeGlow.blurStdDeviation} />
       </filter>
     </defs>
@@ -373,12 +414,16 @@ function SankeyNodeShape({
   colors,
   mode,
   accentIndexByName,
+  onHover,
+  onLeave,
 }: SankeyNodeProps & {
   value?: number;
   payload: SankeyNodePayload;
   colors: ReturnType<typeof useTheme>['colors'];
   mode: ThemeMode;
   accentIndexByName: ReadonlyMap<string, number>;
+  onHover?: (payload: SankeyNodePayload, event: ReactMouseEvent<SVGGElement>) => void;
+  onLeave?: () => void;
 }) {
   const nodeX = useSankeyNodeScalar(payload.id, 'x', x);
   const nodeY = useSankeyNodeScalar(payload.id, 'y', y);
@@ -416,7 +461,12 @@ function SankeyNodeShape({
   const percentTransform = `rotate(270 ${percentX} ${centerY})`;
 
   return (
-    <g data-testid={`sankey-node-${payload.id}`}>
+    <g
+      data-testid={`sankey-node-${payload.id}`}
+      onMouseEnter={onHover ? (event) => onHover(payload, event) : undefined}
+      onMouseMove={onHover ? (event) => onHover(payload, event) : undefined}
+      onMouseLeave={onLeave}
+    >
       <rect
         x={nodeX}
         y={nodeY}
@@ -499,10 +549,28 @@ export function SankeyTooltipContent({
   label,
   summary,
   chartData,
-}: TooltipContentProps<number, string> & {
-  summary?: SankeyTooltipSummary | null;
-  chartData?: SankeyChartData | null;
-}) {
+  tooltipTarget,
+}: SankeyTooltipContentProps) {
+  if (tooltipTarget) {
+    const tooltipLabel = resolveTooltipTargetLabel(tooltipTarget);
+    const tooltipValue = resolveTooltipTargetValue(tooltipTarget);
+    const tooltipAmount = fmtUSD(tooltipValue);
+    const tooltipPercent = formatSankeyPercentLine(
+      resolveTooltipTargetPercent(tooltipTarget),
+      resolveTooltipTargetContext(tooltipTarget)
+    );
+
+    return (
+      <ChartTooltipShell className={cn('flex', 'min-w-0', 'flex-col', 'gap-1')}>
+        <p className={cn(...sankeyChart.nodeLabel, uiTextRecipes.primary)}>{tooltipLabel}</p>
+        <p className={cn(...sankeyChart.nodeMeta, 'whitespace-nowrap')}>{tooltipAmount}</p>
+        {tooltipPercent ? (
+          <p className={cn(...sankeyChart.nodePercent, 'whitespace-nowrap')}>{tooltipPercent}</p>
+        ) : null}
+      </ChartTooltipShell>
+    );
+  }
+
   if (!active || !payload?.length) {
     return null;
   }
@@ -513,20 +581,40 @@ export function SankeyTooltipContent({
   }
 
   const tooltipName = String(label ?? payload[0]?.name ?? '');
-  const tooltipLabel = resolveTooltipLabel(entry, tooltipName);
-  const tooltipAmount = fmtUSD(normalizeAmount(payload[0]?.value ?? entry.value));
-  const tooltipValue = normalizeAmount(payload[0]?.value ?? entry.value);
-  const tooltipMetadata =
-    chartData != null ? resolveSankeyTooltipMetadata(chartData, entry, tooltipName) : null;
-  const tooltipPercentContext =
-    tooltipMetadata?.percentContext ?? resolveSankeyPercentContext(entry);
-  const tooltipPercentValue = resolveTooltipPercentValue(
-    entry,
-    tooltipValue,
-    summary ?? { income: 0, expenses: 0, covered: 0, surplus: 0 },
-    tooltipPercentContext,
-    tooltipMetadata
-  );
+  const resolvedTooltipTarget =
+    chartData != null ? resolveSankeyTooltipTarget(chartData, entry, tooltipName) : null;
+  const tooltipLabel = resolvedTooltipTarget
+    ? resolveTooltipTargetLabel(resolvedTooltipTarget)
+    : resolveTooltipLabel(entry, tooltipName);
+  const tooltipValue = resolvedTooltipTarget
+    ? resolveTooltipTargetValue(resolvedTooltipTarget)
+    : normalizeAmount(payload[0]?.value ?? entry.value);
+  const tooltipAmount = fmtUSD(tooltipValue);
+  const tooltipPercentContext = resolvedTooltipTarget
+    ? resolveTooltipTargetContext(resolvedTooltipTarget)
+    : resolveSankeyPercentContext(entry);
+  const tooltipKind = resolvedTooltipTarget
+    ? resolveTooltipTargetKind(resolvedTooltipTarget)
+    : isSankeyNodePayload(entry)
+      ? entry.kind
+      : null;
+  const tooltipPercentValue = resolvedTooltipTarget
+    ? resolveTooltipTargetPercent(resolvedTooltipTarget)
+    : resolveTooltipPercentValue(
+        entry,
+        tooltipValue,
+        summary ?? {
+          income: 0,
+          expenses: 0,
+          covered: 0,
+          deficit: 0,
+          surplus: 0,
+          fixedExpenses: 0,
+          freeSpending: 0,
+        },
+        tooltipPercentContext,
+        tooltipKind
+      );
   const tooltipPercent = formatSankeyPercentLine(tooltipPercentValue, tooltipPercentContext);
 
   return (
@@ -552,10 +640,14 @@ function SankeyLinkShape({
   index,
   colors,
   accentIndexByName,
+  onHover,
+  onLeave,
 }: SankeyLinkProps & {
   payload: SankeyLinkPayload;
   colors: ReturnType<typeof useTheme>['colors'];
   accentIndexByName: ReadonlyMap<string, number>;
+  onHover?: (payload: SankeyLinkPayload, event: ReactMouseEvent<SVGPathElement>) => void;
+  onLeave?: () => void;
 }) {
   const linkId = `${payload.sourceId}->${payload.targetId}`;
   const pathD = useSankeyLinkPath(linkId, {
@@ -577,6 +669,9 @@ function SankeyLinkShape({
       stroke={stroke}
       strokeOpacity={0.3}
       strokeWidth={linkStrokeWidth}
+      onMouseEnter={onHover ? (event) => onHover(payload, event) : undefined}
+      onMouseMove={onHover ? (event) => onHover(payload, event) : undefined}
+      onMouseLeave={onLeave}
     />
   );
 }
@@ -592,6 +687,7 @@ function MoneyFlowSankeyChartContent({
   const { colors, mode } = useTheme();
   const { ref: chartContainerRef, width: measuredWidth, remeasure } = useChartContainerSize();
   const chartData = useMemo<SankeyChartData>(() => sankeyResponseToChartData(data), [data]);
+  const [hoverState, setHoverState] = useState<SankeyHoverState | null>(null);
   const categoryNodes = chartData.nodes.filter((node) => node.kind === 'Category');
   const chartMargin = sankeyChart.margin;
   const layoutWidth = containerSize?.width ?? measuredWidth;
@@ -616,6 +712,73 @@ function MoneyFlowSankeyChartContent({
   const isChart =
     !error && !(loading && !data) && categoryNodes.length > 0 && chartData.links.length > 0;
   const stateKey = error ? 'error' : loading && !data ? 'loading' : !isChart ? 'empty' : 'chart';
+
+  const updateHoverState = useCallback(
+    (target: SankeyTooltipTarget, event: ReactMouseEvent<SVGElement>) => {
+      const bounds = event.currentTarget.ownerSVGElement?.getBoundingClientRect();
+      if (!bounds) {
+        return;
+      }
+
+      setHoverState({
+        target,
+        x: event.clientX - bounds.left,
+        y: event.clientY - bounds.top,
+      });
+    },
+    []
+  );
+
+  const clearHoverState = useCallback(() => {
+    setHoverState(null);
+  }, []);
+
+  const renderNode = useCallback(
+    (props: SankeyNodeProps) => (
+      <SankeyNodeShape
+        {...props}
+        payload={props.payload as unknown as SankeyNodePayload}
+        colors={colors}
+        mode={mode}
+        accentIndexByName={accentIndexByName}
+        onHover={(payload, event) =>
+          updateHoverState(
+            {
+              type: 'node',
+              node: payload,
+            },
+            event
+          )
+        }
+        onLeave={clearHoverState}
+      />
+    ),
+    [colors, mode, accentIndexByName, updateHoverState, clearHoverState]
+  );
+
+  const renderLink = useCallback(
+    (props: SankeyLinkProps) => (
+      <SankeyLinkShape
+        {...props}
+        payload={props.payload as unknown as SankeyLinkPayload}
+        colors={colors}
+        accentIndexByName={accentIndexByName}
+        onHover={(payload, event) =>
+          updateHoverState(
+            {
+              type: 'link',
+              link: payload,
+              sourceNode: payload.source,
+              targetNode: payload.target,
+            },
+            event
+          )
+        }
+        onLeave={clearHoverState}
+      />
+    ),
+    [colors, accentIndexByName, updateHoverState, clearHoverState]
+  );
 
   useLayoutEffect(() => {
     if (stateKey !== 'chart') {
@@ -661,7 +824,7 @@ function MoneyFlowSankeyChartContent({
         {stateKey === 'chart' && (
           <div
             ref={containerSize ? undefined : chartContainerRef}
-            className={cn(...sankeyChart.viewport)}
+            className={cn(...sankeyChart.viewport, 'relative')}
           >
             {layoutWidth > 0 && chartHeight > 0 ? (
               <SankeyAnimationProvider>
@@ -676,23 +839,8 @@ function MoneyFlowSankeyChartContent({
                   margin={chartMargin}
                   align="left"
                   verticalAlign="justify"
-                  node={(props) => (
-                    <SankeyNodeShape
-                      {...props}
-                      payload={props.payload as unknown as SankeyNodePayload}
-                      colors={colors}
-                      mode={mode}
-                      accentIndexByName={accentIndexByName}
-                    />
-                  )}
-                  link={(props) => (
-                    <SankeyLinkShape
-                      {...props}
-                      payload={props.payload as unknown as SankeyLinkPayload}
-                      colors={colors}
-                      accentIndexByName={accentIndexByName}
-                    />
-                  )}
+                  node={renderNode}
+                  link={renderLink}
                 >
                   <SankeyNodeGlowDefs />
                   <Tooltip
@@ -705,14 +853,39 @@ function MoneyFlowSankeyChartContent({
                           income: normalizeAmount(data?.summary.income),
                           expenses: normalizeAmount(data?.summary.expenses),
                           covered: normalizeAmount(data?.summary.covered),
+                          deficit: normalizeAmount(data?.summary.deficit),
                           surplus: normalizeAmount(data?.summary.surplus),
+                          fixedExpenses: chartData.links
+                            .filter(
+                              (link) =>
+                                link.sourceId === 'expenses' && link.targetId === 'fixed_expenses'
+                            )
+                            .reduce((sum, link) => sum + link.value, 0),
+                          freeSpending: chartData.links
+                            .filter(
+                              (link) =>
+                                link.sourceId === 'expenses' && link.targetId === 'free_spending'
+                            )
+                            .reduce((sum, link) => sum + link.value, 0),
                         }}
                       />
                     )}
                     {...chartTooltipRechartsProps}
+                    wrapperStyle={{ display: 'none' }}
                   />
                 </Sankey>
               </SankeyAnimationProvider>
+            ) : null}
+            {hoverState ? (
+              <div
+                className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full"
+                style={{
+                  left: hoverState.x,
+                  top: hoverState.y - 12,
+                }}
+              >
+                <SankeyTooltipContent active tooltipTarget={hoverState.target} />
+              </div>
             ) : null}
           </div>
         )}
