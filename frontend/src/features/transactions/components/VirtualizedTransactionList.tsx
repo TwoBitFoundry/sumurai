@@ -234,7 +234,7 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
         role="table"
         aria-label="Transactions"
         className={cn(
-          'relative overflow-y-auto overscroll-contain',
+          ...uiTransactionsTableRecipes.listViewport,
           isContextual ? 'min-h-0 flex-1 touch-pan-y' : ''
         )}
         style={!isContextual && listHeight != null ? { height: `${listHeight}px` } : undefined}

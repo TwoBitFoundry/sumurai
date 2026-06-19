@@ -151,6 +151,7 @@ export const TransactionMerchantLabel: React.FC<Props> = ({
           rawMerchant={rawMerchant}
           onMerchantActivate={onMerchantActivate}
           className={merchantLineClassName}
+          layeredSearchTarget={layeredSearchTarget}
         />
         {metaContent}
       </div>

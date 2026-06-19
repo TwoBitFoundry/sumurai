@@ -120,6 +120,19 @@ export const effect = {
   glassBackdrop: ['backdrop-blur-md', 'backdrop-saturate-[150%]'],
 } as const;
 
+export const scroll = {
+  visibleWhenOverflow: [
+    '[scrollbar-gutter:stable]',
+    '[scrollbar-width:thin]',
+    '[scrollbar-color:color-mix(in_srgb,var(--color-border-strong)_72%,transparent)_transparent]',
+    '[&::-webkit-scrollbar]:w-2',
+    '[&::-webkit-scrollbar-track]:bg-transparent',
+    '[&::-webkit-scrollbar-thumb]:rounded-full',
+    '[&::-webkit-scrollbar-thumb]:bg-[color:color-mix(in_srgb,var(--color-border-strong)_72%,transparent)]',
+    'dark:[&::-webkit-scrollbar-thumb]:bg-[color:color-mix(in_srgb,var(--color-border-glass)_60%,transparent)]',
+  ],
+} as const;
+
 export const buttonCta = {
   gradient: ['bg-[var(--color-brand-sky)]'],
   glow: [...effect.accentOutlineGlowCta],
@@ -580,6 +593,12 @@ export const dashboardStatsCarousel = {
 
 export const transactionsTable = {
   chromeBar: [...surface.glassPanel, ...effect.glassBackdrop],
+  listViewport: [
+    'relative',
+    'overflow-y-auto',
+    'overscroll-contain',
+    ...scroll.visibleWhenOverflow,
+  ],
   footer: [
     'border-t px-4 py-4 transition-colors duration-500',
     ...border.subtle,

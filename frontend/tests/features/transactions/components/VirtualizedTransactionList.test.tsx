@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import VirtualizedTransactionList from '@/features/transactions/components/VirtualizedTransactionList';
 import type { Transaction } from '@/types/api';
 
@@ -122,5 +122,21 @@ describe('VirtualizedTransactionList', () => {
     expect(mobileOptions.estimateSize()).toBe(96);
     expect(measureMock).toHaveBeenCalled();
     expect(scrollToIndexMock).toHaveBeenCalledWith(0);
+  });
+
+  it('keeps a visible scrollbar track when the list can scroll', () => {
+    jest.mocked(useViewportBreakpoint).mockReturnValue({
+      breakpoint: 'desktop',
+      isMobile: false,
+      isTablet: false,
+      isDesktop: true,
+    });
+
+    render(<VirtualizedTransactionList filters={{}} />);
+
+    const listViewport = screen.getByRole('table', { name: 'Transactions' });
+    expect(listViewport.className).toContain('[scrollbar-gutter:stable]');
+    expect(listViewport.className).toContain('[scrollbar-width:thin]');
+    expect(listViewport.className).toContain('[&::-webkit-scrollbar]:w-2');
   });
 });

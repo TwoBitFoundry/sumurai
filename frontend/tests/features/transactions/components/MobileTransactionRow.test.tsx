@@ -53,12 +53,34 @@ describe('MobileTransactionRow', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('row'));
+    fireEvent.click(screen.getByRole('button', { name: 'Search transactions for Transfer' }));
 
     expect(onMerchantSearch).toHaveBeenCalledWith('Transfer');
   });
 
-  it('searches by merchant when the merchant name is clicked', async () => {
+  it('shows raw merchant from the merchant name without searching', async () => {
+    const user = userEvent.setup();
+    const onMerchantSearch = jest.fn();
+
+    render(
+      <MobileTransactionRow
+        transaction={{
+          ...transaction,
+          name: "Lowe's",
+          originalMerchantName: 'LOWES #1234',
+        }}
+        index={0}
+        onMerchantSearch={onMerchantSearch}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /Show raw merchant for Lowe's/i }));
+
+    expect(onMerchantSearch).not.toHaveBeenCalled();
+    expect(screen.getByText('Raw merchant')).toBeInTheDocument();
+  });
+
+  it('does not search when the category control is clicked', async () => {
     const user = userEvent.setup();
     const onMerchantSearch = jest.fn();
 
@@ -70,23 +92,7 @@ describe('MobileTransactionRow', () => {
       />
     );
 
-    await user.click(screen.getByRole('button', { name: 'Transfer' }));
-
-    expect(onMerchantSearch).toHaveBeenCalledWith('Transfer');
-  });
-
-  it('does not search when the category control is clicked', () => {
-    const onMerchantSearch = jest.fn();
-
-    render(
-      <MobileTransactionRow
-        transaction={transaction}
-        index={0}
-        onMerchantSearch={onMerchantSearch}
-      />
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: /Edit category: Transfer Out/i }));
+    await user.click(screen.getByRole('button', { name: /Edit category: Transfer Out/i }));
 
     expect(onMerchantSearch).not.toHaveBeenCalled();
   });
@@ -115,7 +121,7 @@ describe('MobileTransactionRow', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('row'));
+    fireEvent.click(screen.getByRole('button', { name: 'Search transactions for Transfer' }));
 
     expect(onAccountFilter).not.toHaveBeenCalled();
   });
