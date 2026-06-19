@@ -22,7 +22,7 @@ import { resolveAccountFilterToggle } from '../features/transactions/utils/resol
 import { resolveMerchantSearchToggle } from '../features/transactions/utils/resolveMerchantSearchToggle';
 import { useAccountFilter } from '../hooks/useAccountFilter';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { PageLayout } from '../layouts/PageLayout';
+import { PageLayout, pageLayoutRecipes } from '../layouts/PageLayout';
 
 const TransactionsPage: React.FC<{
   filterControl: TransactionFilterControl;
@@ -124,6 +124,7 @@ const TransactionsPage: React.FC<{
         title="Explore your ledger"
         subtitle="Review, categorize, and track transactions from all your connected bank accounts."
         error={error}
+        className={cn(...pageLayoutRecipes.floatingChromeTail)}
         stats={
           <TransactionInsightsPanel
             insights={insights}

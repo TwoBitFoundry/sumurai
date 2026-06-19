@@ -84,6 +84,7 @@ export const pageLayoutRecipes = {
     'md:[&_[data-page-layout-stats-host]>*]:mx-8',
   ],
   stickyContentGap: ['mt-10', 'md:mt-16'],
+  floatingChromeTail: ['max-md:pb-6'],
 } as const;
 
 interface PageLayoutProps {

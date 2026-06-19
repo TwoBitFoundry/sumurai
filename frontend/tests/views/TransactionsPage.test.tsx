@@ -129,6 +129,22 @@ describe('TransactionsPage', () => {
     } as any);
   });
 
+  it('adds extra bottom spacing on mobile after the transaction section', () => {
+    renderTransactionsPage(
+      <TransactionsPage
+        filterControl={{
+          search: '',
+          setSearch: jest.fn(),
+          selectedCategory: null,
+          setSelectedCategory: jest.fn(),
+        }}
+      />
+    );
+
+    const pageLayout = screen.getByTestId('page-layout-sticky-scope').parentElement;
+    expect(pageLayout?.className).toContain('max-md:pb-6');
+  });
+
   it('renders the insights panel in the stats slot', () => {
     renderTransactionsPage(
       <TransactionsPage
