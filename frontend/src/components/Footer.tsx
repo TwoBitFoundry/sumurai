@@ -107,7 +107,7 @@ export function Footer() {
             'flex-col',
             'overflow-visible',
             'md:flex-row',
-            'md:items-start',
+            'md:items-center',
             'md:justify-between',
             'gap-4',
             'md:gap-5',
