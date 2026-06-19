@@ -8,17 +8,19 @@ type AuthFormLayoutProps = {
 
 export function AuthFormLayout({ children }: AuthFormLayoutProps) {
   return (
-    <div className={cn(authLayout.shell)}>
-      <div className={cn(authLayout.brandAside)}>
+    <>
+      <div className={cn(authLayout.brandBackdrop)} aria-hidden>
         <img
           src="/sumurai-logo-no-background.webp"
-          alt="Sumurai"
-          className={cn(authLayout.brandAsideImage)}
+          alt=""
+          className={cn(authLayout.brandBackdropImage)}
         />
       </div>
-      <GlassCard variant="auth" padding="lg" containerClassName={cn(authLayout.card)}>
-        {children}
-      </GlassCard>
-    </div>
+      <div className={cn(authLayout.shell)}>
+        <GlassCard variant="auth" padding="lg" containerClassName={cn(authLayout.card)}>
+          {children}
+        </GlassCard>
+      </div>
+    </>
   );
 }

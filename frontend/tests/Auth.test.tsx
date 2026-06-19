@@ -113,11 +113,14 @@ describe('Auth screens', () => {
     expect(container.querySelector('.lg\\:max-w-lg')).toBeTruthy();
   });
 
-  it('renders the brand logo in auth form layout on desktop', () => {
+  it('renders the samurai backdrop outside the auth card shell', () => {
     const { container } = render(<LoginScreen onNavigateToRegister={jest.fn()} />);
-    const brandAside = container.querySelector('.lg\\:flex');
-    expect(brandAside).toBeTruthy();
-    expect(brandAside?.querySelector('img[alt="Sumurai"]')).toBeTruthy();
+    const brandBackdrop = container.querySelector('[aria-hidden="true"]');
+    expect(brandBackdrop).toBeTruthy();
+    expect(brandBackdrop).toHaveClass('items-end');
+    expect(brandBackdrop).toHaveClass('justify-center');
+    expect(brandBackdrop?.querySelector('img')).toBeTruthy();
+    expect(container.querySelector('.lg\\:max-w-lg')?.querySelector('img')).toBeNull();
   });
 
   it('starts legacy password migration enrollment after password sign-in', async () => {
