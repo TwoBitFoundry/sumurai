@@ -1,21 +1,24 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { ProviderSelectionPanel } from '@/features/plaid/components/ProviderSelectionPanel';
+import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
 import { ThemeTestProvider } from '../../../utils/ThemeTestProvider';
 
 function renderPanel(props: Partial<ComponentProps<typeof ProviderSelectionPanel>> = {}) {
   return render(
     <ThemeTestProvider>
-      <ProviderSelectionPanel
-        loading={false}
-        error={null}
-        availableProviders={['plaid', 'teller']}
-        tellerApplicationId={null}
-        connectingProvider={null}
-        onSelectProvider={jest.fn()}
-        {...props}
-      />
+      <ControlTooltipProvider>
+        <ProviderSelectionPanel
+          loading={false}
+          error={null}
+          availableProviders={['plaid', 'teller']}
+          tellerApplicationId={null}
+          connectingProvider={null}
+          onSelectProvider={jest.fn()}
+          {...props}
+        />
+      </ControlTooltipProvider>
     </ThemeTestProvider>
   );
 }
@@ -29,8 +32,8 @@ describe('ProviderSelectionPanel', () => {
 
     expect(screen.getByText('Choose how you connect accounts')).toBeVisible();
     expect(
-      screen.getByText('Pick the provider that fits your household, budget, and privacy needs.')
-    ).toBeVisible();
+      screen.queryByText('Pick the provider that fits your household, budget, and privacy needs.')
+    ).not.toBeInTheDocument();
     expect(screen.getByText('Self-Managed')).toBeVisible();
     expect(screen.getAllByText('DIY')).toHaveLength(1);
     expect(screen.getByText('US Only')).toBeVisible();
@@ -39,9 +42,9 @@ describe('ProviderSelectionPanel', () => {
     expect(screen.getByText('Any (USD)')).toBeVisible();
     expect(screen.getByText('$1.50/mo')).toBeVisible();
     expect(screen.getByText('Pay/use')).toBeVisible();
-    expect(screen.getByText('~7,000 Institutions')).toBeVisible();
-    expect(screen.getByText('~16,000 Institutions')).toBeVisible();
-    expect(screen.getByText('~12,000 Institutions')).toBeVisible();
+    expect(screen.getByText('~7K Banks')).toBeVisible();
+    expect(screen.getByText('~16K Banks')).toBeVisible();
+    expect(screen.getByText('~12K Banks')).toBeVisible();
     expect(screen.getByText('Strong')).toBeVisible();
     expect(screen.getByText('Broad')).toBeVisible();
 
@@ -64,7 +67,7 @@ describe('ProviderSelectionPanel', () => {
     expect(buttons[3]).toHaveAccessibleName('Link Account');
   });
 
-  it('keeps Teller disabled with missing credentials while SimpleFIN stays enabled', async () => {
+  it('keeps Teller unavailable with missing credentials while SimpleFIN stays enabled', async () => {
     const user = userEvent.setup();
     const onSelectProvider = jest.fn();
 
@@ -75,11 +78,14 @@ describe('ProviderSelectionPanel', () => {
 
     const buttons = screen.getAllByRole('button', { name: 'Link Account' });
     const simpleFinButton = buttons[1];
-    const tellerButton = buttons[2];
+    const tellerButton = screen.getByRole('button', { name: 'Unavailable' });
 
     expect(tellerButton).toBeDisabled();
     expect(simpleFinButton).toBeEnabled();
-    expect(screen.getAllByText('Missing credentials')).toHaveLength(1);
+    expect(screen.queryByText('Missing credentials')).not.toBeInTheDocument();
+
+    expect(screen.queryByRole('button', { name: 'Loading…' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Preparing secure connection')).not.toBeInTheDocument();
 
     await user.click(tellerButton);
 
@@ -97,15 +103,14 @@ describe('ProviderSelectionPanel', () => {
 
     const buttons = screen.getAllByRole('button', { name: 'Link Account' });
     const simpleFinButton = buttons[1];
-    const tellerButton = buttons[2];
-    const plaidButton = buttons[3];
+    const unavailableButtons = screen.getAllByRole('button', { name: 'Unavailable' });
 
-    expect(tellerButton).toBeDisabled();
-    expect(plaidButton).toBeDisabled();
+    expect(unavailableButtons).toHaveLength(2);
+    expect(unavailableButtons.every((button) => button.hasAttribute('disabled'))).toBe(true);
     expect(simpleFinButton).toBeEnabled();
-    expect(screen.getAllByText('Missing credentials')).toHaveLength(2);
+    expect(screen.queryByText('Missing credentials')).not.toBeInTheDocument();
 
-    await user.click(plaidButton);
+    await user.click(unavailableButtons[1]!);
 
     expect(onSelectProvider).not.toHaveBeenCalled();
   });
@@ -119,9 +124,8 @@ describe('ProviderSelectionPanel', () => {
 
     expect(buttons[0]).toBeEnabled();
     expect(buttons[1]).toBeEnabled();
-    expect(buttons[2]).toBeDisabled();
-    expect(buttons[3]).toBeDisabled();
-    expect(screen.getAllByText('Missing credentials')).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: 'Unavailable' })).toHaveLength(2);
+    expect(screen.queryByText('Missing credentials')).not.toBeInTheDocument();
   });
 
   it('keeps connect buttons neutral after selection is initiated', async () => {
@@ -140,7 +144,7 @@ describe('ProviderSelectionPanel', () => {
     expect(screen.queryByRole('button', { name: 'Selected' })).not.toBeInTheDocument();
   });
 
-  it('renders DIY as fourth card with Sync row showing Manual uploads', () => {
+  it('renders DIY as fourth card with Sync row showing Import', () => {
     renderPanel({
       availableProviders: ['plaid', 'teller', 'simplefin', 'diy'],
       tellerApplicationId: 'app-123',
@@ -150,8 +154,8 @@ describe('ProviderSelectionPanel', () => {
     expect(screen.getByText('Self-Managed')).toBeVisible();
     expect(screen.getAllByText('Any (USD)').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Sync')).toHaveLength(4);
-    expect(screen.getByText('Manual uploads')).toBeVisible();
-    expect(screen.getAllByText('On-demand')).toHaveLength(3);
+    expect(screen.getByText('Import')).toBeVisible();
+    expect(screen.getAllByText('Yes')).toHaveLength(3);
     expect(document.querySelectorAll('svg.lucide-x')).toHaveLength(1);
   });
 
@@ -190,6 +194,14 @@ describe('ProviderSelectionPanel', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('renders hero actions in the top-right hero slot', () => {
+    renderPanel({
+      heroAction: <button type="button">Skip for now</button>,
+    });
+
+    expect(screen.getByRole('button', { name: 'Skip for now' })).toBeVisible();
+  });
+
   it('renders only the providers listed in visibleProviders', () => {
     renderPanel({
       availableProviders: ['plaid', 'teller', 'simplefin', 'diy'],
@@ -202,5 +214,45 @@ describe('ProviderSelectionPanel', () => {
     expect(screen.queryByText('SimpleFIN')).not.toBeInTheDocument();
     expect(screen.queryByText('Plaid')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /link account/i })).toHaveLength(2);
+  });
+
+  it('shows hover labels on connect buttons', async () => {
+    const user = userEvent.setup();
+
+    renderPanel({
+      availableProviders: ['plaid', 'teller', 'simplefin'],
+      tellerApplicationId: 'app-123',
+    });
+
+    const simpleFinButton = screen.getAllByRole('button', { name: 'Link Account' })[1]!;
+
+    expect(simpleFinButton).not.toHaveAttribute('title');
+
+    await user.hover(simpleFinButton);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Link Account').length).toBeGreaterThan(1);
+    });
+  });
+
+  it('shows concise hover labels on privacy info buttons', async () => {
+    const user = userEvent.setup();
+
+    renderPanel({
+      availableProviders: ['plaid', 'teller', 'simplefin'],
+      tellerApplicationId: 'app-123',
+    });
+
+    const privacyInfoButton = screen.getAllByRole('button', {
+      name: 'Privacy details for Privacy',
+    })[0]!;
+
+    expect(privacyInfoButton).not.toHaveAttribute('title');
+
+    await user.hover(privacyInfoButton);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Privacy details').length).toBeGreaterThan(1);
+    });
   });
 });

@@ -114,9 +114,6 @@ export function TransactionsScreenSlice(props: {
         <PageLayout
           title="Explore your ledger"
           subtitle="Review, categorize, and track transactions from all your connected bank accounts."
-          error={
-            props.state === 'error' ? (props.errorMessage ?? 'Failed to load transactions.') : null
-          }
           stats={
             <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-4')}>
               <HeroStatCard

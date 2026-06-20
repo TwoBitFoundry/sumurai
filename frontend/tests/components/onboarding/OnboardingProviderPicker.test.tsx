@@ -100,12 +100,13 @@ jest.mock('@/components/onboarding/OnboardingProviderConnectModal', () => ({
 jest.mock('@/features/plaid/components/ProviderSelectionPanel', () => ({
   ProviderSelectionPanel: ({
     onSelectProvider,
-    footerContent,
+    heroAction,
   }: {
     onSelectProvider: (provider: 'plaid' | 'teller' | 'simplefin' | 'diy') => void;
-    footerContent?: React.ReactNode;
+    heroAction?: React.ReactNode;
   }) => (
     <div>
+      {heroAction}
       <button type="button" onClick={() => onSelectProvider('teller')}>
         Pick Teller
       </button>
@@ -118,7 +119,6 @@ jest.mock('@/features/plaid/components/ProviderSelectionPanel', () => ({
       <button type="button" onClick={() => onSelectProvider('diy')}>
         Pick DIY
       </button>
-      {footerContent}
     </div>
   ),
 }));

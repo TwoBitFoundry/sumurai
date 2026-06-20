@@ -161,7 +161,7 @@ async fn given_diy_connection_when_creating_account_then_persists_and_returns_ac
         .body(axum::body::Body::from(
             serde_json::to_string(&json!({
                 "name": "My Checking",
-                "account_type": "checking",
+                "account_type": "depository",
                 "balance": "1000.00"
             }))
             .unwrap(),
@@ -177,7 +177,7 @@ async fn given_diy_connection_when_creating_account_then_persists_and_returns_ac
         payload["id"].as_str().is_some(),
         "response should include id"
     );
-    assert_eq!(payload["account_type"], json!("checking"));
+    assert_eq!(payload["account_type"], json!("depository"));
 }
 
 #[tokio::test]
@@ -221,7 +221,7 @@ async fn given_existing_account_name_when_creating_diy_account_then_returns_conf
         provider_account_id: Some("diy_existing".to_string()),
         provider_connection_id: Some(connection_id),
         name: "My Checking".to_string(),
-        account_type: "checking".to_string(),
+        account_type: "depository".to_string(),
         balance_current: None,
         mask: Some("1234".to_string()),
         institution_name: Some("My Cash".to_string()),
@@ -248,7 +248,7 @@ async fn given_existing_account_name_when_creating_diy_account_then_returns_conf
         .body(axum::body::Body::from(
             serde_json::to_string(&json!({
                 "name": "my checking",
-                "account_type": "checking",
+                "account_type": "depository",
                 "mask": "5678",
                 "balance": "1000.00"
             }))
@@ -309,7 +309,7 @@ async fn given_non_diy_connection_when_creating_account_then_returns_forbidden()
         .body(axum::body::Body::from(
             serde_json::to_string(&json!({
                 "name": "My Checking",
-                "account_type": "checking",
+                "account_type": "depository",
                 "balance": "1000.00"
             }))
             .unwrap(),
@@ -357,7 +357,7 @@ async fn given_nonexistent_connection_when_creating_account_then_returns_not_fou
         .body(axum::body::Body::from(
             serde_json::to_string(&json!({
                 "name": "My Checking",
-                "account_type": "checking",
+                "account_type": "depository",
                 "balance": "1000.00"
             }))
             .unwrap(),
@@ -448,7 +448,7 @@ async fn given_diy_connection_when_creating_account_without_balance_then_returns
         .body(axum::body::Body::from(
             serde_json::to_string(&json!({
                 "name": "My Checking",
-                "account_type": "checking"
+                "account_type": "depository"
             }))
             .unwrap(),
         ))
@@ -507,7 +507,7 @@ async fn given_diy_connection_when_creating_account_with_invalid_type_then_retur
         .body(axum::body::Body::from(
             serde_json::to_string(&json!({
                 "name": "My Account",
-                "account_type": "investment",
+                "account_type": "checking",
                 "balance": "1000.00"
             }))
             .unwrap(),

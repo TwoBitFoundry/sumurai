@@ -6,6 +6,8 @@ import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { OnboardingProviderConnectModal } from '../components/onboarding/OnboardingProviderConnectModal';
 import { ToastStack } from '../components/toastStack/ToastStack';
+import { mapStoredAccountTypeToUiType } from '../domain/accountCategories';
+import { compareInstitutionNames } from '../domain/institutionSort';
 import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToastStack';
 import { DiyInstitutionModal } from '../features/diy/DiyInstitutionModal';
 import AccountsSummaryStats from '../features/plaid/components/AccountsSummaryStats';
@@ -34,13 +36,9 @@ import { SimpleFinService } from '../services/SimpleFinService';
 import { TellerService } from '../services/TellerService';
 import type { FinancialProvider } from '../types/api';
 import type { ProviderCatalogue } from '../types/providerCatalog';
-import { dispatchAccountsChanged } from '../utils/events';
+import { dispatchAccountsChanged, dispatchProviderConnected } from '../utils/events';
 import { formatUserFacingApiError } from '../utils/formatUserFacingApiError';
-import {
-  getProviderCardConfig,
-  getProviderLogoSrc,
-  resolvePickerVisibleProviders,
-} from '../utils/providerCards';
+import { getProviderCardConfig, resolvePickerVisibleProviders } from '../utils/providerCards';
 import {
   type InvalidateStaleCacheOptions,
   isSyncProvider,
@@ -81,17 +79,6 @@ type DiyModalTarget = {
   existingAccounts?: { name: string; mask: string | null }[];
 };
 
-const toAccountType = (
-  value: string | undefined
-): BankConnectionViewModel['accounts'][number]['type'] => {
-  const normalized = (value ?? '').toLowerCase();
-  if (normalized === 'savings') return 'savings';
-  if (normalized === 'credit' || normalized === 'credit card') return 'credit';
-  if (normalized === 'loan') return 'loan';
-  if (normalized === 'checking' || normalized === 'depository') return 'checking';
-  return 'other';
-};
-
 const AccountsPage = ({ onError }: AccountsPageProps) => {
   const queryClient = useQueryClient();
   const isOnline = useOnlineStatus();
@@ -127,44 +114,54 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     return providers;
   }, [plaidConnections.connections, tellerStatusQuery.data]);
 
+  const connectedAggregators = useMemo(() => {
+    const providers = new Set<SyncProvider>();
+    for (const provider of providerByConnectionId.values()) {
+      if (isSyncProvider(provider)) providers.add(provider);
+    }
+    return providers;
+  }, [providerByConnectionId]);
+
   const banks = useMemo(
     () =>
-      Object.entries(accountFilter.accountsByBank).map(([bankName, accounts]) => {
-        const displayName = accounts[0]?.institution_name ?? bankName.split('::')[0] ?? bankName;
-        const connectionId =
-          accounts.find((account) => account.connection_id)?.connection_id ?? null;
-        const provider =
-          accounts.find((account) => account.provider != null)?.provider ??
-          inferBankProvider(connectionId, providerByConnectionId, preferredProvider);
+      Object.entries(accountFilter.accountsByBank)
+        .map(([bankName, accounts]) => {
+          const displayName = accounts[0]?.institution_name ?? bankName.split('::')[0] ?? bankName;
+          const connectionId =
+            accounts.find((account) => account.connection_id)?.connection_id ?? null;
+          const provider =
+            accounts.find((account) => account.provider != null)?.provider ??
+            inferBankProvider(connectionId, providerByConnectionId, preferredProvider);
 
-        return {
-          id: connectionId ?? bankName,
-          name: displayName,
-          short: displayName
-            .split(' ')
-            .map((word) => word[0])
-            .join('')
-            .slice(0, 2)
-            .toUpperCase(),
-          status: 'connected' as const,
-          lastSync: null,
-          provider,
-          connectionId,
-          accounts: accounts.map((account) => ({
-            id: account.id,
-            name: account.name,
-            mask: account.mask ?? '0000',
-            type: toAccountType(account.account_type),
-            balance:
-              account.balance_current ??
-              account.balance_ledger ??
-              account.balance_available ??
-              undefined,
-            transactions: account.transaction_count ?? undefined,
-            providerAccountId: account.provider_account_id ?? null,
-          })),
-        };
-      }),
+          return {
+            id: connectionId ?? bankName,
+            name: displayName,
+            short: displayName
+              .split(' ')
+              .map((word) => word[0])
+              .join('')
+              .slice(0, 2)
+              .toUpperCase(),
+            status: 'connected' as const,
+            lastSync: null,
+            provider,
+            connectionId,
+            accounts: accounts.map((account) => ({
+              id: account.id,
+              name: account.name,
+              mask: account.mask ?? '0000',
+              type: mapStoredAccountTypeToUiType(account.account_type),
+              balance:
+                account.balance_current ??
+                account.balance_ledger ??
+                account.balance_available ??
+                undefined,
+              transactions: account.transaction_count ?? undefined,
+              providerAccountId: account.provider_account_id ?? null,
+            })),
+          };
+        })
+        .sort((left, right) => compareInstitutionNames(left.name, right.name)),
     [accountFilter.accountsByBank, preferredProvider, providerByConnectionId]
   );
   const activeAggregator = useMemo<SyncProvider | null>(() => {
@@ -179,7 +176,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const primaryProviderCard = getProviderCardConfig(primaryProvider);
   const providerLabel = primaryProviderCard.title;
   const connectAccountLabel = 'Link Account';
-  const providerLogoSrc = activeAggregator ? getProviderLogoSrc(activeAggregator) : undefined;
 
   const existingInstitutionNames = useMemo(() => banks.map((bank) => bank.name), [banks]);
 
@@ -217,6 +213,9 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const [syncInstitutionRow, setSyncInstitutionRow] = useState<SyncAllRow | null>(null);
   const [diyModalTarget, setDiyModalTarget] = useState<DiyModalTarget | null>(null);
   const [isProviderPickerOpen, setIsProviderPickerOpen] = useState(false);
+  const [pickerConnectingProvider, setPickerConnectingProvider] = useState<SyncProvider | null>(
+    null
+  );
   const exportInFlightRef = useRef(false);
   const dismissSyncInstitutionToast = useCallback(() => {
     setSyncInstitutionRow(null);
@@ -233,6 +232,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     },
     isOnline,
   });
+  const handlePickerSdkExit = useCallback(() => {
+    setPickerConnectingProvider(null);
+    setIsProviderPickerOpen(true);
+  }, []);
   const plaidPickerConnectionFlow = useFinancialConnection({
     provider: 'plaid',
     mountKey: 'accounts-picker-plaid',
@@ -240,7 +243,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       pushAccountsToast(message, 'error');
       onError?.(message);
     },
-    isOnline,
+    onExit: handlePickerSdkExit,
+    isOnline: isOnline && providerCatalog.canConnectWith('plaid'),
   });
   const tellerPickerConnectionFlow = useFinancialConnection({
     provider: 'teller',
@@ -249,13 +253,9 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       pushAccountsToast(message, 'error');
       onError?.(message);
     },
-    isOnline,
+    onExit: handlePickerSdkExit,
+    isOnline: isOnline && providerCatalog.canConnectWith('teller'),
   });
-  const [pickerConnectingProvider, setPickerConnectingProvider] = useState<SyncProvider | null>(
-    null
-  );
-  const pickerPrevInProgressRef = useRef(false);
-  const primaryConnectionPrevInProgressRef = useRef(false);
   const [restoringIgnoredOrgConnId, setRestoringIgnoredOrgConnId] = useState<string | null>(null);
   const accountsDataLoading = providerCatalog.loading || accountFilter.loading;
   const pickerConnectionFlow =
@@ -310,6 +310,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     async (provider: FinancialProvider) => {
       try {
         await providerCatalog.chooseProvider(provider);
+        dispatchProviderConnected();
         setIsProviderPickerOpen(false);
       } catch (error) {
         console.warn('Failed to select provider after SimpleFIN connection', error);
@@ -322,7 +323,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   );
 
   const openDiyInstitutionModal = useCallback((target: DiyModalTarget | null = null) => {
-    setIsProviderPickerOpen(false);
     setDiyModalTarget(
       target ?? {
         connectionId: null,
@@ -341,6 +341,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       if (!isSyncProvider(provider)) {
         return;
       }
+
+      setIsProviderPickerOpen(true);
 
       if (provider === 'simplefin') {
         setPickerConnectingProvider(provider);
@@ -365,11 +367,19 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
   const handleDiyInstitutionComplete = useCallback(
     async (_connectionId: string) => {
+      const createdFromProviderPicker = diyModalTarget?.connectionId == null;
+      let providerSelected = false;
+
       try {
         await providerCatalog.chooseProvider('diy');
+        providerSelected = true;
       } catch (error) {
         console.warn('Failed to select DIY provider after institution creation', error);
         pushAccountsToast('Unable to select provider right now', 'error');
+      }
+
+      if (providerSelected && createdFromProviderPicker) {
+        dispatchProviderConnected();
       }
 
       dispatchAccountsChanged();
@@ -383,7 +393,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         setDiyModalTarget(null);
       }
     },
-    [providerCatalog, pushAccountsToast]
+    [diyModalTarget, providerCatalog, pushAccountsToast]
   );
 
   useEffect(() => {
@@ -402,22 +412,17 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   }, []);
 
   useEffect(() => {
-    if (!pickerConnectionFlow || !pickerConnectingProvider) {
-      pickerPrevInProgressRef.current = false;
+    if (
+      accountsDataLoading ||
+      providerCatalog.userProvider != null ||
+      connectedAggregators.size !== 1
+    ) {
       return;
     }
-
-    const wasInProgress = pickerPrevInProgressRef.current;
-    pickerPrevInProgressRef.current = pickerConnectionFlow.connectionInProgress;
-
-    if (
-      wasInProgress &&
-      !pickerConnectionFlow.connectionInProgress &&
-      !pickerConnectionFlow.isConnected
-    ) {
-      setPickerConnectingProvider(null);
-    }
-  }, [pickerConnectingProvider, pickerConnectionFlow]);
+    const [provider] = connectedAggregators;
+    if (!providerCatalog.canConnectWith(provider)) return;
+    void providerCatalog.chooseProvider(provider).catch(() => undefined);
+  }, [accountsDataLoading, connectedAggregators, providerCatalog]);
 
   useEffect(() => {
     if (!pickerConnectionFlow || !pickerConnectingProvider) {
@@ -432,12 +437,11 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       void providerCatalog
         .chooseProvider(pickerConnectingProvider)
         .then(() => {
-          setIsProviderPickerOpen(false);
+          dispatchProviderConnected();
         })
         .catch(() => pushAccountsToast('Unable to select provider right now', 'error'))
         .finally(() => {
           setPickerConnectingProvider(null);
-          pickerPrevInProgressRef.current = false;
         });
     }
   }, [pickerConnectingProvider, pickerConnectionFlow, providerCatalog, pushAccountsToast]);
@@ -735,10 +739,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const catalogLoading = providerCatalog.loading || accountFilter.loading;
 
   const connectDisabled = catalogLoading || !isOnline;
-  const showProviderPicker =
-    banksWithSync.length === 0 && !accountsDataLoading && !showSimpleFinIgnoredList
-      ? true
-      : isProviderPickerOpen;
+  const showProviderPicker = isProviderPickerOpen || pickerConnectingProvider !== null;
 
   const lastSyncValue = syncingAll
     ? 'Syncing...'
@@ -804,7 +805,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           onClick={handlePrimaryConnect}
           disabled={connectDisabled}
           title={!isOnline ? 'Unavailable while offline' : undefined}
-          leadingImageSrc={providerLogoSrc}
         >
           {connectAccountLabel}
         </ConnectButton>
@@ -832,7 +832,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       </div>
       <PageLayout
         hideHero={showProviderPicker}
-        title={`Unite your financial allies with ${providerLabel}`}
+        title="Unite your accounts"
         subtitle="Securely link and sync accounts on-demand, view balances, and import or export your data any time."
         actions={actions}
         stats={statsGrid}
@@ -847,7 +847,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
             providerReadyState={pickerProviderReadyState}
             connectingProvider={activePickerConnectingProvider}
             onSelectProvider={(provider) => void startProviderPickerConnection(provider)}
-            onClose={banksWithSync.length > 0 ? () => setIsProviderPickerOpen(false) : undefined}
+            onClose={() => setIsProviderPickerOpen(false)}
+            isOnline={isOnline}
           />
         ) : null}
         {showConnectionsList ? (
@@ -876,7 +877,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
             isOnline={isOnline}
             providerName={`${providerLabel} accounts`}
             connectLabel={connectAccountLabel}
-            connectLogoSrc={providerLogoSrc}
             onImportSuccess={handleImportSuccess}
             emptyState={connectionsEmptyState}
           />

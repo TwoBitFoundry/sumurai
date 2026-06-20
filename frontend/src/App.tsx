@@ -22,6 +22,7 @@ import { BrowserStorageAdapter } from './services/boundaries';
 import { AppFooter, AppTitleBar, GlassCard, GradientShell } from './ui/primitives';
 import { ControlTooltipProvider } from './ui/primitives/ControlHoverLabel';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from './ui/recipes';
+import { PROVIDER_CONNECTED_EVENT } from './utils/events';
 
 AuthService.configure({
   storage: new BrowserStorageAdapter(),
@@ -57,6 +58,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>(initialAuthScreen ?? 'login');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [mainAppKey, setMainAppKey] = useState(0);
+  const [remountTab, setRemountTab] = useState<TabKey>(initialTab ?? 'dashboard');
   const [sessionExpiresAt, setSessionExpiresAt] = useState<string | null>(null);
 
   const isOnline = useOnlineStatus();
@@ -189,7 +191,17 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
 
   const handleOnboardingComplete = useCallback(() => {
     setShowOnboarding(false);
+    setRemountTab('dashboard');
     setMainAppKey((prev) => prev + 1);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      setRemountTab('accounts');
+      setMainAppKey((prev) => prev + 1);
+    };
+    window.addEventListener(PROVIDER_CONNECTED_EVENT, handler);
+    return () => window.removeEventListener(PROVIDER_CONNECTED_EVENT, handler);
   }, []);
 
   if (isLoading) {
@@ -262,7 +274,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
           <AuthenticatedApp
             key={`app-${mainAppKey}`}
             onLogout={handleLogout}
-            initialTab={initialTab}
+            initialTab={remountTab}
             isOnline={isOnline}
           />
         </TransactionListLauncherProvider>

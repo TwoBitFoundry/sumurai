@@ -58,7 +58,7 @@ export function resolvePickerVisibleProviders(
 export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig> = {
   plaid: {
     title: 'Plaid',
-    badge: 'Turn Key',
+    badge: 'Organizations',
     region: 'US, CA, UK, EU',
     logoSrc: '/plaid.webp',
     privacyHref: 'https://plaid.com/legal/#consumers',
@@ -71,7 +71,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       {
         icon: Building2,
         label: 'Coverage',
-        value: '~12,000 Institutions',
+        value: '~12K Banks',
       },
       {
         icon: ShieldCheck,
@@ -99,7 +99,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       {
         icon: RefreshCw,
         label: 'Sync',
-        value: 'On-demand',
+        value: 'Yes',
         synced: true,
       },
     ],
@@ -119,7 +119,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       {
         icon: Building2,
         label: 'Coverage',
-        value: '~7,000 Institutions',
+        value: '~7K Banks',
       },
       {
         icon: ShieldCheck,
@@ -147,7 +147,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       {
         icon: RefreshCw,
         label: 'Sync',
-        value: 'On-demand',
+        value: 'Yes',
         synced: true,
       },
     ],
@@ -167,7 +167,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       {
         icon: Building2,
         label: 'Coverage',
-        value: '~16,000 Institutions',
+        value: '~16K Banks',
       },
       {
         icon: ShieldCheck,
@@ -195,7 +195,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       {
         icon: RefreshCw,
         label: 'Sync',
-        value: 'On-demand',
+        value: 'Yes',
         synced: true,
       },
     ],
@@ -242,7 +242,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       {
         icon: RefreshCw,
         label: 'Sync',
-        value: 'Manual uploads',
+        value: 'Import',
         synced: false,
       },
     ],
@@ -451,9 +451,9 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
     backgroundClassName: cn(uiStatusRecipes.info.surface),
     textClassName: cn(uiStatusRecipes.info.text),
   },
-  heroTitle: 'Connect your SimpleFIN bridge',
+  heroTitle: 'SimpleFIN',
   heroDescription:
-    'Paste a one-time SimpleFIN setup token to connect the institutions you authorize on the bridge.',
+    'Paste a one-time SimpleFIN setup token to connect the banks you already authorized on your private bridge.',
   highlightLabel: "What you'll connect",
   highlightMeta: 'Read-only access',
   features: [
@@ -480,13 +480,13 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
     {
       icon: Eye,
       title: 'Read-only by design',
-      body: "We can't move money or make changes—only view balances and transactions.",
+      body: 'SimpleFIN only shares balance and transaction data. No money movement, no account changes.',
       palette: featurePalettes.highlight.sky,
     },
     {
       icon: Fingerprint,
-      title: "You're in control",
-      body: 'Disconnect individual institutions without removing bridge access for the rest.',
+      title: 'Your bridge, your control',
+      body: 'Manage or revoke individual bank connections from your SimpleFIN dashboard.',
       palette: featurePalettes.highlight.violet,
     },
     {
@@ -516,9 +516,9 @@ const DIY_CONNECT_CONTENT: ConnectAccountProviderContent = {
     backgroundClassName: cn(uiStatusRecipes.info.surface),
     textClassName: cn(uiStatusRecipes.info.text),
   },
-  heroTitle: 'Create your own institution',
+  heroTitle: 'Self-Managed',
   heroDescription:
-    'Add custom institutions and accounts, then import transactions from any CSV or OFX file. No aggregator required — your data stays entirely on your server.',
+    'Manually add a bank and accounts, then import transactions from a supported file.',
   highlightLabel: "What you'll create",
   highlightMeta: 'No external connections',
   features: [
@@ -544,14 +544,14 @@ const DIY_CONNECT_CONTENT: ConnectAccountProviderContent = {
   highlights: [
     {
       icon: ShieldCheck,
-      title: 'Strongest privacy',
-      body: 'No third-party ever sees your data — everything stays on your server.',
+      title: 'Strongest privacy option',
+      body: 'No third party ever sees your data. Everything stays on your device.',
       palette: featurePalettes.highlight.emerald,
     },
     {
       icon: Fingerprint,
-      title: 'You own the data',
-      body: 'Disconnect an institution to remove all its records instantly.',
+      title: 'You control your data',
+      body: 'Import new bank data or remove the bank anytime to delete its accounts and transactions.',
       palette: featurePalettes.highlight.violet,
     },
     {

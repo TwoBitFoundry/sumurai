@@ -41,6 +41,7 @@ export interface UseFinancialConnectionOptions {
   mountKey?: string;
   onConnectionSuccess?: (institutionName: string) => void;
   onError?: (error: string) => void;
+  onExit?: () => void;
   onSimpleFinAuthRequired?: (institutions: SimpleFinInstitutionAuthRequired[]) => void;
   isOnline?: boolean;
 }
@@ -67,6 +68,7 @@ export function useFinancialConnection(
     mountKey,
     onConnectionSuccess,
     onError,
+    onExit,
     onSimpleFinAuthRequired,
     isOnline = true,
   } = options;
@@ -111,6 +113,7 @@ export function useFinancialConnection(
       dispatch,
       handleError,
       onConnectionSuccess,
+      onExit,
       onSimpleFinAuthRequired,
       invalidateCache,
       tellerApplicationId: providerCatalog.tellerApplicationId,
@@ -121,6 +124,7 @@ export function useFinancialConnection(
       invalidateCache,
       isOnline,
       onConnectionSuccess,
+      onExit,
       onSimpleFinAuthRequired,
       providerCatalog.tellerApplicationId,
       providerCatalog.tellerEnvironment,
@@ -144,7 +148,7 @@ export function useFinancialConnection(
       return bridge;
     }
 
-    return createElement(Fragment, { key: `${provider}-connection` }, [
+    return createElement(Fragment, { key: `${provider}-${mountKey ?? 'default'}-connection` }, [
       createElement(ProviderSdkLaunchBackdrop, {
         key: 'sdk-launch-backdrop',
         active: sdkLaunchBackdropActive,

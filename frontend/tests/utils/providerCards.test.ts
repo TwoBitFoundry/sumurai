@@ -25,18 +25,18 @@ describe('providerCards', () => {
     }
   });
 
-  it('aggregator Sync sections are marked synced with On-demand value', () => {
+  it('aggregator Sync sections are marked synced with Yes value', () => {
     for (const provider of ['teller', 'simplefin', 'plaid'] as const) {
       const syncSection = PROVIDER_CARD_CONFIG[provider].sections.find((s) => s.label === 'Sync');
       expect(syncSection?.synced).toBe(true);
-      expect(syncSection?.value).toBe('On-demand');
+      expect(syncSection?.value).toBe('Yes');
     }
   });
 
-  it('DIY Sync section is marked not synced with Manual uploads value', () => {
+  it('DIY Sync section is marked not synced with Import value', () => {
     const syncSection = PROVIDER_CARD_CONFIG.diy.sections.find((s) => s.label === 'Sync');
     expect(syncSection?.synced).toBe(false);
-    expect(syncSection?.value).toBe('Manual uploads');
+    expect(syncSection?.value).toBe('Import');
   });
 
   it('CONNECT_ACCOUNT_PROVIDER_CONTENT includes diy', () => {

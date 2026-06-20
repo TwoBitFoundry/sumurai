@@ -11,7 +11,10 @@ import {
 } from '@/ui/recipes';
 import { heroAccents } from '@/ui/tokens';
 import { ToastStack } from '../components/toastStack/ToastStack';
-import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToastStack';
+import {
+  useAccountsToastStack,
+  useErrorToast,
+} from '../features/accounts/hooks/useAccountsToastStack';
 import { useAutoCategorization } from '../features/auto-categorization/hooks/useAutoCategorization';
 import CategoryCatalogPicker from '../features/transactions/components/CategoryCatalogPicker';
 import { TransactionInsightsPanel } from '../features/transactions/components/TransactionInsightsPanel';
@@ -45,6 +48,8 @@ const TransactionsPage: React.FC<{
   const autoCategorization = useAutoCategorization();
   const { pinnedToast, transients, dismissTransient, dismissPinned, pushToast } =
     useAccountsToastStack(autoCategorization.job);
+
+  useErrorToast(error, pushToast);
 
   const addCategoryButtonRef = useRef<HTMLButtonElement>(null);
   const [isCategoryCatalogOpen, setIsCategoryCatalogOpen] = useState(false);
@@ -123,7 +128,6 @@ const TransactionsPage: React.FC<{
       <PageLayout
         title="Explore your ledger"
         subtitle="Review, categorize, and track transactions from all your connected bank accounts."
-        error={error}
         className={cn(...pageLayoutRecipes.floatingChromeTail)}
         stats={
           <TransactionInsightsPanel

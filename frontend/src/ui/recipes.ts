@@ -363,10 +363,11 @@ export const insightsPanel = {
     'grid',
     'w-full',
     'grid-cols-[1rem_minmax(0,1fr)]',
-    'items-stretch',
+    'items-start',
     'gap-x-1.5',
   ],
-  summaryChevronColumn: ['flex', 'w-4', 'self-stretch', 'items-center', 'justify-start'],
+  summaryChevronColumn: ['flex', 'w-4', 'items-start', 'justify-start', 'pt-1'],
+  summaryChevronColumnCenter: ['flex', 'w-4', 'self-center', 'items-center', 'justify-center'],
   summaryChevron: [
     'h-4',
     'w-4',
@@ -751,6 +752,37 @@ export const heroSubtitleInfoIconWell = [
   '[&_svg]:w-full',
 ] as const;
 
+const infoTriggerShell = [
+  'rounded-full',
+  'border',
+  'border-transparent',
+  'bg-transparent',
+  text.muted,
+  'transition-colors',
+  'duration-150',
+  'hover:text-[var(--color-text-primary)]',
+  'hover:bg-[var(--color-surface-hover-row)]',
+  'dark:hover:text-[var(--color-text-primary)]',
+  ...focus.visible,
+] as const;
+
+export const heroInfoTriggerButton = [...infoTriggerShell, ...heroSubtitleInfoIconWell] as const;
+
+export const inlineInfoTriggerIconWell = [
+  'inline-flex',
+  'shrink-0',
+  'items-center',
+  'justify-center',
+  'self-center',
+  'h-5',
+  'w-5',
+  '[&_svg]:block',
+  '[&_svg]:h-full',
+  '[&_svg]:w-full',
+] as const;
+
+export const inlineInfoTriggerButton = [...infoTriggerShell, ...inlineInfoTriggerIconWell] as const;
+
 export const controlIconWell = {
   sm: [
     'inline-flex',
@@ -866,6 +898,7 @@ export const authLayout = {
   primaryAction: ['w-full', 'md:w-full', 'lg:w-auto', 'lg:min-w-[220px]'],
   secondaryAction: ['w-full', 'md:w-full', 'lg:w-auto'],
   footerLink: ['text-center', font.body, text.body],
+  subtitle: [font.body, text.body],
 } as const;
 
 export const semanticTextRecipes = text;

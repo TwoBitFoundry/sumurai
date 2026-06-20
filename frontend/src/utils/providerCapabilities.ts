@@ -24,7 +24,7 @@ export function isProviderConnectable(
   catalogue: ProviderCatalogue | null
 ): boolean {
   if (!catalogue) {
-    return provider !== 'teller';
+    return false;
   }
 
   if (provider !== 'diy' && !isProviderListed(provider, catalogue)) {
@@ -32,7 +32,9 @@ export function isProviderConnectable(
   }
 
   if (provider === 'teller') {
-    return Boolean(catalogue.teller_application_id?.trim());
+    return (
+      isProviderListed(provider, catalogue) && Boolean(catalogue.teller_application_id?.trim())
+    );
   }
 
   return true;
@@ -42,17 +44,17 @@ export function isPickerEnabled(
   provider: FinancialProvider,
   catalogue: ProviderCatalogue | null
 ): boolean {
-  if (provider === 'diy') {
+  if (provider === 'diy' || provider === 'simplefin') {
     return true;
   }
 
   const connectedAggregator = getConnectedAggregator(catalogue);
-  if (connectedAggregator && isAggregator(provider) && connectedAggregator !== provider) {
+  if (
+    connectedAggregator &&
+    (provider === 'plaid' || provider === 'teller') &&
+    connectedAggregator !== provider
+  ) {
     return false;
-  }
-
-  if (provider === 'simplefin') {
-    return true;
   }
 
   return isProviderConnectable(provider, catalogue);
@@ -62,17 +64,17 @@ export function getConnectBlockedReason(
   provider: FinancialProvider,
   catalogue: ProviderCatalogue | null
 ): string | null {
-  if (provider === 'diy') {
+  if (provider === 'diy' || provider === 'simplefin') {
     return null;
   }
 
   const connectedAggregator = getConnectedAggregator(catalogue);
-  if (connectedAggregator && isAggregator(provider) && connectedAggregator !== provider) {
+  if (
+    connectedAggregator &&
+    (provider === 'plaid' || provider === 'teller') &&
+    connectedAggregator !== provider
+  ) {
     return `Disconnect ${connectedAggregator} first`;
-  }
-
-  if (provider === 'simplefin') {
-    return null;
   }
 
   if (!catalogue) {
@@ -84,6 +86,17 @@ export function getConnectBlockedReason(
   }
 
   return 'Missing credentials';
+}
+
+export function isCredentialsEnvUnavailable(
+  provider: FinancialProvider,
+  catalogue: ProviderCatalogue | null
+): boolean {
+  if (provider !== 'plaid' && provider !== 'teller') {
+    return false;
+  }
+
+  return getConnectBlockedReason(provider, catalogue) === 'Missing credentials';
 }
 
 export function resolveConnectProvider(

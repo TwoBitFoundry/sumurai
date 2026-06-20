@@ -92,7 +92,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn given_no_provider_when_active_connections_exist_then_returns_matching_accounts() {
+    async fn given_no_provider_when_active_connections_exist_then_excludes_aggregator_accounts() {
         let user = user_with_provider("");
         let user_id = user.id;
         let teller_conn_id = Uuid::new_v4();
@@ -132,9 +132,53 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(result.len(), 2);
-        assert!(result.contains(&teller_account_id));
-        assert!(result.contains(&plaid_account_id));
+        assert!(result.is_empty());
+    }
+
+    #[tokio::test]
+    async fn given_no_provider_when_diy_connections_exist_then_returns_diy_accounts() {
+        let user = user_with_provider("");
+        let user_id = user.id;
+        let diy_conn_id = Uuid::new_v4();
+        let plaid_conn_id = Uuid::new_v4();
+        let diy_account_id = Uuid::new_v4();
+        let plaid_account_id = Uuid::new_v4();
+
+        let connections = vec![
+            connection(diy_conn_id, user_id, "diy"),
+            connection(plaid_conn_id, user_id, "plaid"),
+        ];
+        let accounts = vec![
+            account(diy_account_id, user_id, diy_conn_id),
+            account(plaid_account_id, user_id, plaid_conn_id),
+        ];
+
+        let mut mock_db = MockDatabaseRepository::new();
+        mock_db.expect_get_user_by_id().returning(move |_| {
+            let u = user.clone();
+            Box::pin(async move { Ok(Some(u)) })
+        });
+        mock_db
+            .expect_get_all_provider_connections_by_user()
+            .returning(move |_| {
+                let c = connections.clone();
+                Box::pin(async move { Ok(c) })
+            });
+        mock_db.expect_get_accounts_for_user().returning(move |_| {
+            let a = accounts.clone();
+            Box::pin(async move { Ok(a) })
+        });
+
+        let db: Arc<dyn crate::services::repository_service::DatabaseRepository> =
+            Arc::new(mock_db);
+
+        let result = provider_scoped_account_ids(db.as_ref(), &user_id)
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), 1);
+        assert!(result.contains(&diy_account_id));
+        assert!(!result.contains(&plaid_account_id));
     }
 
     #[tokio::test]

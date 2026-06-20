@@ -1,9 +1,9 @@
-export function compareBankNames(a: string, b: string) {
-  return a.localeCompare(b, undefined, { sensitivity: 'base' });
-}
+import { compareInstitutionNames } from '@/domain/institutionSort';
+
+export { compareInstitutionNames as compareBankNames } from '@/domain/institutionSort';
 
 export function sortBanksAlphabetically<T extends { bankName: string }>(banks: readonly T[]): T[] {
-  return [...banks].sort((left, right) => compareBankNames(left.bankName, right.bankName));
+  return [...banks].sort((left, right) => compareInstitutionNames(left.bankName, right.bankName));
 }
 
 export function safeBalanceAmount(value: number | null | undefined) {

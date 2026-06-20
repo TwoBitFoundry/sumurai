@@ -96,6 +96,7 @@ fn create_auth_cookie_cache() -> MockCacheService {
 fn build_test_config() -> Config {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "test");
+    env.set("TELLER_APPLICATION_ID", "app-test");
     env.set("AUTH_COOKIE_SAME_SITE", "Lax");
     env.set("APP_ORIGIN", "http://localhost:8080");
     Config::from_env_provider(&env).unwrap()

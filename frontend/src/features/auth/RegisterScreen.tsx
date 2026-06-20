@@ -110,11 +110,11 @@ export function RegisterScreen({
       <AuthFormLayout>
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
-            <span className={getCategoryAccentByIndex(0).inlineLabel}>Begin the path</span>
+            <span className={getCategoryAccentByIndex(0).inlineLabel}>Join the Path</span>
             <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
-              Sign up for Sumurai
+              Become a Sumurai
             </h2>
-            <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+            <p className={cn(authLayout.subtitle)}>
               Enter your details, then seal a passkey to finish creating your account.
             </p>
           </div>
@@ -174,7 +174,7 @@ export function RegisterScreen({
             <Button
               type="button"
               onClick={onNavigateToLogin}
-              variant="ghost"
+              variant="secondary"
               size="sm"
               disabled={isBusy}
             >

@@ -12,6 +12,7 @@ import { AuthService } from '@/services/authService';
 import type { FinancialProvider } from '@/types/api';
 import { AppTitleBar, Button, GradientShell } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
+import { appLayout } from '@/ui/recipes';
 
 interface OnboardingProviderPickerProps {
   onComplete: () => void;
@@ -147,8 +148,16 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
           onLogout={onLogout}
         />
 
-        <main className={cn('flex', 'flex-1', 'items-center', 'px-4', 'py-8')}>
-          <div className={cn('mx-auto', 'flex', 'w-full', 'max-w-7xl', 'flex-col', 'gap-6')}>
+        <main className={cn('flex', 'flex-1', 'items-start', 'pt-3', 'pb-8', 'md:pt-6', 'lg:pt-8')}>
+          <div
+            className={cn(
+              ...appLayout.contentShellWithGutter,
+              'flex',
+              'min-w-0',
+              'flex-col',
+              'gap-6'
+            )}
+          >
             <ProviderSelectionPanel
               loading={providerCatalog.loading}
               error={providerCatalog.error}
@@ -157,10 +166,10 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
               providerReadyState={providerReadyState}
               connectingProvider={connectingProvider}
               onSelectProvider={handleSelectProvider}
-              footerContent={
+              heroAction={
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="secondary"
                   size="md"
                   onClick={() => void completeAndExit()}
                   disabled={isCompleting}

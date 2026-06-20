@@ -4143,7 +4143,7 @@ async fn create_diy_institution(
     }
 }
 
-const DIY_VALID_ACCOUNT_TYPES: &[&str] = &["checking", "savings", "loan", "credit"];
+const DIY_VALID_ACCOUNT_TYPES: &[&str] = &["depository", "credit", "investment", "loan"];
 
 #[utoipa::path(
     post,
@@ -4344,9 +4344,20 @@ async fn get_authenticated_provider_info(
 
     let mut available_providers = Vec::new();
     for provider in ["plaid", "teller", "simplefin", "diy"] {
-        if state.provider_registry.get(provider).is_some() {
-            available_providers.push(provider.to_string());
+        if state.provider_registry.get(provider).is_none() {
+            continue;
         }
+
+        if provider == "teller"
+            && state
+                .config
+                .get_teller_application_id()
+                .is_none_or(|value| value.trim().is_empty())
+        {
+            continue;
+        }
+
+        available_providers.push(provider.to_string());
     }
 
     let user_provider = user

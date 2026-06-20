@@ -164,6 +164,39 @@ describe('TransactionsPage', () => {
     expect(screen.getByTestId('page-layout-sticky-scope')).toContainElement(panel);
   });
 
+  it('reports insights load failures through the toast stack instead of inline hero errors', () => {
+    const pushToast = jest.fn();
+
+    jest.spyOn(accountsToastStackModule, 'useAccountsToastStack').mockReturnValue({
+      transients: [],
+      pinnedToast: null,
+      pushToast,
+      dismissTransient: jest.fn(),
+      dismissPinned: jest.fn(),
+    } as any);
+    jest.mocked(useTransactionsContextualInsights).mockReturnValue({
+      insights: null,
+      isLoading: false,
+      displayState: 'a',
+      error: 'Failed to load insights.',
+      accountKey: '',
+    } as any);
+
+    renderTransactionsPage(
+      <TransactionsPage
+        filterControl={{
+          search: '',
+          setSearch: jest.fn(),
+          selectedCategory: null,
+          setSelectedCategory: jest.fn(),
+        }}
+      />
+    );
+
+    expect(pushToast).toHaveBeenCalledWith('Failed to load insights.', 'error');
+    expect(screen.queryByText('Error: Failed to load insights.')).not.toBeInTheDocument();
+  });
+
   it('renders categorize actions inline with the transactions section header', () => {
     renderTransactionsPage(
       <TransactionsPage

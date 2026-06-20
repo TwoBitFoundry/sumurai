@@ -1,5 +1,6 @@
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import type React from 'react';
+import type { AccountCategoryType } from '@/domain/accountCategories';
 import { cn } from '@/ui/primitives';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { Alert, Button, GlassCard, Modal } from '../ui/primitives';
@@ -8,7 +9,7 @@ interface Account {
   id: string;
   name: string;
   mask: string;
-  type: 'checking' | 'savings' | 'credit' | 'loan' | 'other';
+  type: AccountCategoryType;
   balance?: number;
   transactions?: number;
 }

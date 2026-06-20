@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PageLayout, pageLayoutRecipes } from '@/layouts/PageLayout';
+import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
 
 describe('PageLayout', () => {
   it('keeps the shell spacing on the base, md, and lg tiers', () => {
@@ -25,7 +26,11 @@ describe('PageLayout', () => {
     const user = userEvent.setup();
     const subtitle = 'Track your total balances and net worth across accounts.';
 
-    render(<PageLayout title="Assess your financial health" subtitle={subtitle} />);
+    render(
+      <ControlTooltipProvider>
+        <PageLayout title="Assess your financial health" subtitle={subtitle} />
+      </ControlTooltipProvider>
+    );
 
     expect(screen.queryByText(subtitle)).not.toBeInTheDocument();
 
@@ -38,9 +43,7 @@ describe('PageLayout', () => {
     expect(heading.className).toContain('inline');
     expect(heading.className).not.toContain('text-[2rem]');
     expect(heading).toHaveTextContent('Assess your financial health');
-    await user.click(
-      screen.getByRole('button', { name: 'Show details for Assess your financial health' })
-    );
+    await user.click(screen.getByRole('button', { name: 'About Assess your financial health' }));
 
     expect(screen.getByText(subtitle)).toBeInTheDocument();
   });

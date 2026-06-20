@@ -4,7 +4,6 @@ import { cn } from '@/ui/primitives/utils';
 import {
   border as semanticBorders,
   effect as semanticEffects,
-  status as semanticStatus,
   surface as semanticSurfaces,
   text as semanticTextRecipes,
   radius as uiRadiusRecipes,
@@ -65,14 +64,6 @@ export const pageLayoutRecipes = {
   ],
   titleInlineHeading: 'inline',
   subtitle: `${uiTypographyRecipes.body} ${semanticTextRecipes.body} transition-colors duration-300 ease-out`,
-  error: [
-    uiRadiusRecipes.standard,
-    ...semanticBorders.danger,
-    ...semanticStatus.danger.surface,
-    ...semanticEffects.glassDropShadow,
-    'px-5 py-3',
-  ].join(' '),
-  errorText: `${uiTypographyRecipes.captionStrong} ${semanticTextRecipes.danger}`,
   settingsShell: ['mx-auto', 'w-full', 'max-w-3xl'],
   stickyScope: ['flex', 'min-w-0', 'flex-col'],
   stickyStatsOverlap: [
@@ -93,7 +84,6 @@ interface PageLayoutProps {
   subtitle?: string;
   actions?: ReactNode;
   stats?: ReactNode;
-  error?: string | null;
   children?: ReactNode;
   className?: string;
   hideHero?: boolean;
@@ -105,7 +95,6 @@ export function PageLayout({
   subtitle,
   actions,
   stats,
-  error,
   children,
   className,
   hideHero = false,
@@ -184,12 +173,6 @@ export function PageLayout({
                 </div>
               )}
             </div>
-
-            {error && (
-              <div className={cn(pageLayoutRecipes.error)}>
-                <div className={cn(pageLayoutRecipes.errorText)}>Error: {error}</div>
-              </div>
-            )}
 
             {stats ? (
               <div

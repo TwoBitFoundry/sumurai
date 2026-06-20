@@ -30,9 +30,9 @@ describe('DiyInstitutionModal', () => {
       </ThemeTestProvider>
     );
 
-    await user.type(screen.getByLabelText('Institution name'), 'my institution');
+    await user.type(screen.getByLabelText('Bank name'), 'my institution');
 
-    expect(screen.getByText('An institution with this name already exists.')).toBeVisible();
+    expect(screen.getByText('A bank with this name already exists.')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
     expect(DiyService.createInstitution).not.toHaveBeenCalled();
   });
@@ -46,7 +46,7 @@ describe('DiyInstitutionModal', () => {
       </ThemeTestProvider>
     );
 
-    await user.type(screen.getByLabelText('Institution name'), 'My Institution');
+    await user.type(screen.getByLabelText('Bank name'), 'My Institution');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await waitFor(() => {
@@ -56,7 +56,7 @@ describe('DiyInstitutionModal', () => {
 
     await user.click(screen.getByRole('button', { name: 'Back' }));
 
-    expect(screen.getByLabelText('Institution name')).toHaveValue('My Institution');
+    expect(screen.getByLabelText('Bank name')).toHaveValue('My Institution');
 
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -73,7 +73,7 @@ describe('DiyInstitutionModal', () => {
     jest.mocked(DiyService.createAccount).mockResolvedValue({
       id: 'acc-1',
       name: 'Checking',
-      account_type: 'checking',
+      account_type: 'depository',
     });
 
     render(
@@ -82,7 +82,7 @@ describe('DiyInstitutionModal', () => {
       </ThemeTestProvider>
     );
 
-    await user.type(screen.getByLabelText('Institution name'), 'My Institution');
+    await user.type(screen.getByLabelText('Bank name'), 'My Institution');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await waitFor(() => {
@@ -99,7 +99,7 @@ describe('DiyInstitutionModal', () => {
     await user.type(accountNames[1], 'Savings');
 
     const accountTypes = screen.getAllByLabelText('Account type');
-    await user.selectOptions(accountTypes[1], 'savings');
+    await user.selectOptions(accountTypes[1], 'investment');
 
     const balanceInputs = screen.getAllByLabelText('Current balance');
     await user.type(balanceInputs[1], '500');
@@ -113,13 +113,13 @@ describe('DiyInstitutionModal', () => {
 
     expect(DiyService.createAccount).toHaveBeenNthCalledWith(1, 'conn-1', {
       name: 'Checking',
-      account_type: 'checking',
+      account_type: 'depository',
       mask: '1234',
       balance: '1000.00',
     });
     expect(DiyService.createAccount).toHaveBeenNthCalledWith(2, 'conn-1', {
       name: 'Savings',
-      account_type: 'savings',
+      account_type: 'investment',
       mask: null,
       balance: '500',
     });
@@ -132,7 +132,7 @@ describe('DiyInstitutionModal', () => {
     jest.mocked(DiyService.createAccount).mockResolvedValue({
       id: 'acc-2',
       name: 'Checking',
-      account_type: 'checking',
+      account_type: 'depository',
     });
 
     render(
@@ -147,8 +147,8 @@ describe('DiyInstitutionModal', () => {
       </ThemeTestProvider>
     );
 
-    expect(screen.queryByLabelText('Institution name')).not.toBeInTheDocument();
-    expect(screen.getByText('Existing Institution')).toBeVisible();
+    expect(screen.getByLabelText('Bank name')).toHaveAttribute('readonly');
+    expect(screen.getByDisplayValue('Existing Institution')).toBeVisible();
 
     await user.type(screen.getByLabelText('Account name'), 'Checking');
     await user.type(screen.getByLabelText('Current balance'), '250');
@@ -157,7 +157,7 @@ describe('DiyInstitutionModal', () => {
     await waitFor(() => {
       expect(DiyService.createAccount).toHaveBeenCalledWith('conn-2', {
         name: 'Checking',
-        account_type: 'checking',
+        account_type: 'depository',
         mask: null,
         balance: '250',
       });
@@ -182,14 +182,14 @@ describe('DiyInstitutionModal', () => {
       </ThemeTestProvider>
     );
 
-    await user.type(screen.getByLabelText('Account name'), 'checking');
+    await user.type(screen.getByLabelText('Account name'), 'CHECKING');
     await user.type(screen.getByLabelText('Mask'), '1234');
 
     expect(
-      screen.getByText('An account with this name already exists in this institution.')
+      screen.getByText('An account with this name already exists in this bank.')
     ).toBeVisible();
     expect(
-      screen.getByText('An account with this mask already exists in this institution.')
+      screen.getByText('An account with this mask already exists in this bank.')
     ).toBeVisible();
     expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled();
     expect(DiyService.createAccount).not.toHaveBeenCalled();
@@ -204,16 +204,16 @@ describe('DiyInstitutionModal', () => {
       </ThemeTestProvider>
     );
 
-    await user.type(screen.getByLabelText('Institution name'), 'My Institution');
+    await user.type(screen.getByLabelText('Bank name'), 'My Institution');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.type(screen.getByLabelText('Account name'), 'Checking');
     await user.click(screen.getByRole('button', { name: 'Add account' }));
 
     const accountNames = screen.getAllByLabelText('Account name');
-    await user.type(accountNames[1], 'checking');
+    await user.type(accountNames[1], 'CHECKING');
 
     expect(
-      screen.getAllByText('An account with this name already exists in this institution.')
+      screen.getAllByText('An account with this name already exists in this bank.')
     ).toHaveLength(2);
     expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled();
   });
@@ -227,7 +227,7 @@ describe('DiyInstitutionModal', () => {
       </ThemeTestProvider>
     );
 
-    await user.type(screen.getByLabelText('Institution name'), 'My Institution');
+    await user.type(screen.getByLabelText('Bank name'), 'My Institution');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.type(screen.getByLabelText('Account name'), 'Checking');
 
@@ -249,7 +249,7 @@ describe('DiyInstitutionModal', () => {
       </ThemeTestProvider>
     );
 
-    await user.type(screen.getByLabelText('Institution name'), 'My Institution');
+    await user.type(screen.getByLabelText('Bank name'), 'My Institution');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.type(screen.getByLabelText('Account name'), 'Checking');
     await user.type(screen.getByLabelText('Current balance'), '.');
@@ -272,7 +272,7 @@ describe('DiyInstitutionModal', () => {
       </ThemeTestProvider>
     );
 
-    await user.type(screen.getByLabelText('Institution name'), 'My Institution');
+    await user.type(screen.getByLabelText('Bank name'), 'My Institution');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     const balanceInput = screen.getByLabelText('Current balance');

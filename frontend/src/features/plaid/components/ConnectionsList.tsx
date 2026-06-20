@@ -1,5 +1,7 @@
 import { Link2 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { type ReactNode, useMemo } from 'react';
+import type { AccountCategoryType } from '@/domain/accountCategories';
+import { compareInstitutionNames } from '@/domain/institutionSort';
 import type { FinancialProvider } from '@/types/api';
 import { EmptyState } from '@/ui/primitives';
 import { BankCard } from '../../../components/BankCard';
@@ -9,7 +11,7 @@ export interface BankAccount {
   id: string;
   name: string;
   mask: string;
-  type: 'checking' | 'savings' | 'credit' | 'loan' | 'other';
+  type: AccountCategoryType;
   balance?: number;
   transactions?: number;
   providerAccountId?: string | null;
@@ -38,7 +40,6 @@ interface ConnectionsListProps {
   onImportSuccess?: (count: number, mask: string) => void;
   providerName?: string;
   connectLabel?: string;
-  connectLogoSrc?: string;
   emptyState?: ReactNode;
 }
 
@@ -54,13 +55,16 @@ const ConnectionsList = ({
   onImportSuccess,
   providerName,
   connectLabel,
-  connectLogoSrc,
   emptyState,
 }: ConnectionsListProps) => {
   const headingProviderName = providerName ?? 'accounts';
   const connectButtonLabel = connectLabel ?? 'Add ally account';
+  const sortedBanks = useMemo(
+    () => [...banks].sort((left, right) => compareInstitutionNames(left.name, right.name)),
+    [banks]
+  );
 
-  if (!banks.length) {
+  if (!sortedBanks.length) {
     if (emptyState) {
       return emptyState;
     }
@@ -75,7 +79,6 @@ const ConnectionsList = ({
             onClick={onConnect}
             disabled={!isOnline}
             title={!isOnline ? 'Unavailable while offline' : undefined}
-            leadingImageSrc={connectLogoSrc}
           >
             {connectButtonLabel}
           </ConnectButton>
@@ -86,7 +89,7 @@ const ConnectionsList = ({
 
   return (
     <div className="space-y-6">
-      {banks.map((bank) => (
+      {sortedBanks.map((bank) => (
         <BankCard
           key={bank.id}
           bank={bank}

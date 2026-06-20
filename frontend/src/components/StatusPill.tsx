@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, Shield } from 'lucide-react';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import type React from 'react';
 import { cn } from '@/ui/primitives';
 import { controlIconWell, status as uiStatusRecipes } from '@/ui/recipes';
@@ -7,16 +7,15 @@ type ConnectionStatus = 'connected' | 'needs_reauth' | 'error';
 
 interface StatusPillProps {
   status: ConnectionStatus;
-  provider?: string;
   className?: string;
 }
 
-export const StatusPill: React.FC<StatusPillProps> = ({ status, provider, className }) => {
+export const StatusPill: React.FC<StatusPillProps> = ({ status, className }) => {
   const statusConfig = {
     connected: {
       label: 'Connected',
       iconClass: uiStatusRecipes.success.icon,
-      Icon: provider === 'diy' ? Shield : CheckCircle2,
+      Icon: CheckCircle2,
     },
     needs_reauth: {
       label: 'Re-auth needed',

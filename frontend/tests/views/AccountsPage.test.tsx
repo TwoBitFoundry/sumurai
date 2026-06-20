@@ -23,6 +23,7 @@ import { DiyService } from '@/services/DiyService';
 import { PlaidService } from '@/services/PlaidService';
 import { TellerService } from '@/services/TellerService';
 import type { ProviderCatalogue } from '@/types/providerCatalog';
+import * as events from '@/utils/events';
 import { isProviderConnectable } from '@/utils/providerCapabilities';
 import AccountsPage from '@/views/AccountsPage';
 import { ThemeTestProvider } from '../utils/ThemeTestProvider';
@@ -194,17 +195,22 @@ jest.mock('@/features/diy/DiyInstitutionModal', () => ({
     isOpen,
     connectionId,
     institutionName,
+    onClose,
     onComplete,
   }: {
     isOpen: boolean;
     connectionId?: string | null;
     institutionName?: string | null;
+    onClose: () => void;
     onComplete: (connectionId: string) => Promise<void> | void;
   }) =>
     isOpen ? (
       <div data-testid="diy-institution-modal">
         <div>{connectionId ?? 'new-diy-connection'}</div>
         <div>{institutionName ?? 'new institution'}</div>
+        <button type="button" onClick={onClose}>
+          Close DIY modal
+        </button>
         <button type="button" onClick={() => void onComplete(connectionId ?? 'conn-diy')}>
           Complete DIY
         </button>
@@ -325,7 +331,7 @@ describe('AccountsPage', () => {
     expect(screen.getByTestId('accounts-page')).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {
-        name: /unite your accounts with teller/i,
+        name: /unite your accounts/i,
       })
     ).toBeVisible();
     expect(screen.getByText('Unavailable while offline')).toBeVisible();
@@ -333,7 +339,7 @@ describe('AccountsPage', () => {
       name: /^link account$/i,
     })[0];
     expect(tellerButton).toBeDisabled();
-    expect(tellerButton.querySelector('img')).toHaveAttribute('src', '/teller.webp');
+    expect(tellerButton.querySelector('svg.lucide-link')).toBeTruthy();
   });
 
   it('does not show the auto-categorize action on the accounts page', () => {
@@ -447,7 +453,7 @@ describe('AccountsPage', () => {
 
     const heroSection = screen
       .getByRole('heading', {
-        name: /unite your accounts with teller/i,
+        name: /unite your accounts/i,
       })
       .closest('section');
     expect(heroSection).toBeTruthy();
@@ -525,7 +531,7 @@ describe('AccountsPage', () => {
     });
   });
 
-  it('renders the Plaid accounts button with the Plaid logo', () => {
+  it('renders the Link Account button with the link glyph', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
@@ -557,7 +563,7 @@ describe('AccountsPage', () => {
     renderAccountsPage();
 
     const plaidButton = screen.getByRole('button', { name: /^link account$/i });
-    expect(plaidButton.querySelector('img')).toHaveAttribute('src', '/plaid.webp');
+    expect(plaidButton.querySelector('svg.lucide-link')).toBeTruthy();
   });
 
   it('renders Teller current balances on the accounts page', async () => {
@@ -625,6 +631,7 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
+    await user.click(screen.getByRole('button', { name: /^link account$/i }));
     await user.click(screen.getAllByRole('button', { name: /^connect$/i })[1]);
 
     expect(
@@ -717,7 +724,7 @@ describe('AccountsPage', () => {
             {
               id: 'acc_diy_1',
               name: 'Checking',
-              account_type: 'checking',
+              account_type: 'depository',
               balance_ledger: 100,
               balance_available: 100,
               mask: '1234',
@@ -815,11 +822,15 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
+    expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^link account$/i }));
+
     expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
     await user.click(screen.getAllByRole('button', { name: 'Connect' })[0]);
 
     const modal = screen.getByTestId('diy-institution-modal');
     expect(modal).toBeInTheDocument();
+    expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
     expect(within(modal).getByText('new institution')).toBeVisible();
   });
 
@@ -840,7 +851,7 @@ describe('AccountsPage', () => {
             {
               id: 'acc_diy_1',
               name: 'Checking',
-              account_type: 'checking',
+              account_type: 'depository',
               balance_ledger: 100,
               balance_available: 100,
               mask: '1234',
@@ -1048,12 +1059,12 @@ describe('AccountsPage', () => {
 
     expect(screen.getByRole('button', { name: /^link account$/i })).toBeEnabled();
     expect(
-      screen.getByRole('button', { name: /^link account$/i }).querySelector('img')
-    ).toHaveAttribute('src', '/plaid.webp');
+      screen.getByRole('button', { name: /^link account$/i }).querySelector('svg.lucide-link')
+    ).toBeTruthy();
   });
 
   describe('diy default state', () => {
-    it('shows the provider picker when user has no active provider and no institutions', () => {
+    it('shows DIY default state when user has no active provider and no institutions', () => {
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
@@ -1064,19 +1075,18 @@ describe('AccountsPage', () => {
 
       renderAccountsPage();
 
-      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+      expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
       expect(
-        screen.queryByRole('heading', {
-          name: /unite your financial allies with self-managed/i,
+        screen.getByRole('heading', {
+          name: /unite your accounts/i,
         })
-      ).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /^link account$/i })).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole('button', { name: /add custom institution/i })
-      ).not.toBeInTheDocument();
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^link account$/i })).toBeInTheDocument();
     });
 
-    it('shows connect actions in the provider picker when user has no institutions', () => {
+    it('shows connect actions in the provider picker after clicking Link Account when no institutions exist', async () => {
+      const user = userEvent.setup();
+
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
@@ -1087,6 +1097,8 @@ describe('AccountsPage', () => {
       );
 
       renderAccountsPage();
+
+      await user.click(screen.getByRole('button', { name: /^link account$/i }));
 
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       const connectButtons = screen.getAllByRole('button', { name: /^connect$/i });
@@ -1108,6 +1120,7 @@ describe('AccountsPage', () => {
 
       renderAccountsPage();
 
+      await user.click(screen.getByRole('button', { name: /^link account$/i }));
       await user.click(screen.getAllByRole('button', { name: /^connect$/i })[1]);
 
       expect(
@@ -1119,7 +1132,7 @@ describe('AccountsPage', () => {
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
     });
 
-    it('shows the provider picker when user has a provider but no active connections', () => {
+    it('shows DIY default state when the last aggregator is disconnected', () => {
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
@@ -1149,13 +1162,13 @@ describe('AccountsPage', () => {
 
       renderAccountsPage();
 
-      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+      expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
       expect(
-        screen.queryByRole('heading', {
-          name: /unite your financial allies with self-managed/i,
+        screen.getByRole('heading', {
+          name: /unite your accounts/i,
         })
-      ).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /^link account$/i })).not.toBeInTheDocument();
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^link account$/i })).toBeInTheDocument();
     });
 
     it('does not show the picker when active connections exist', () => {
@@ -1274,6 +1287,7 @@ describe('AccountsPage', () => {
 
       renderAccountsPage();
 
+      await user.click(screen.getByRole('button', { name: /^link account$/i }));
       await user.click(screen.getAllByRole('button', { name: 'Connect' })[2]);
 
       expect(tellerInitiateConnection).toHaveBeenCalledTimes(1);
@@ -1293,9 +1307,235 @@ describe('AccountsPage', () => {
 
       renderAccountsPage();
 
+      await user.click(screen.getByRole('button', { name: /^link account$/i }));
       await user.click(screen.getAllByRole('button', { name: 'Connect' })[0]);
 
       expect(screen.getByTestId('diy-institution-modal')).toBeInTheDocument();
+      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+    });
+
+    it('keeps the provider picker open if the DIY modal is closed before an account is added', async () => {
+      const user = userEvent.setup();
+
+      jest.mocked(useOnlineStatus).mockReturnValue(true);
+      jest.mocked(useProviderCatalog).mockReturnValue(
+        makeProviderCatalogMock({
+          available_providers: ['plaid', 'teller', 'diy'],
+          user_provider: null,
+        })
+      );
+      jest.mocked(useAccountFilter).mockReturnValue({
+        selectedAccountIds: [],
+        allAccountIds: [],
+        isAllAccountsSelected: false,
+        accountsByBank: {},
+        loading: false,
+        setSelectedAccountIds: jest.fn(),
+        toggleBank: jest.fn(),
+        toggleAccount: jest.fn(),
+        removeAccountsByIds: jest.fn(),
+      });
+
+      renderAccountsPage();
+
+      await user.click(screen.getByRole('button', { name: /^link account$/i }));
+      await user.click(screen.getAllByRole('button', { name: 'Connect' })[0]);
+
+      expect(screen.getByTestId('diy-institution-modal')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Close DIY modal' }));
+
+      expect(screen.queryByTestId('diy-institution-modal')).not.toBeInTheDocument();
+      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+    });
+
+    it('closes the provider picker after DIY account setup completes', async () => {
+      const user = userEvent.setup();
+      const chooseProvider = jest.fn().mockResolvedValue(undefined);
+      const dispatchProviderConnected = jest.spyOn(events, 'dispatchProviderConnected');
+
+      jest.mocked(useOnlineStatus).mockReturnValue(true);
+      jest.mocked(useProviderCatalog).mockReturnValue(
+        makeProviderCatalogMock(
+          {
+            available_providers: ['plaid', 'teller', 'diy'],
+            user_provider: null,
+          },
+          { chooseProvider }
+        )
+      );
+      jest.mocked(useAccountFilter).mockReturnValue({
+        selectedAccountIds: [],
+        allAccountIds: [],
+        isAllAccountsSelected: false,
+        accountsByBank: {},
+        loading: false,
+        setSelectedAccountIds: jest.fn(),
+        toggleBank: jest.fn(),
+        toggleAccount: jest.fn(),
+        removeAccountsByIds: jest.fn(),
+      });
+
+      renderAccountsPage();
+
+      await user.click(screen.getByRole('button', { name: /^link account$/i }));
+      await user.click(screen.getAllByRole('button', { name: 'Connect' })[0]);
+
+      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Complete DIY' }));
+
+      await waitFor(() => {
+        expect(chooseProvider).toHaveBeenCalledWith('diy');
+        expect(dispatchProviderConnected).toHaveBeenCalledTimes(1);
+        expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
+      });
+
+      dispatchProviderConnected.mockRestore();
+    });
+
+    it('keeps the provider picker open if teller connect exits before completing', async () => {
+      const user = userEvent.setup();
+      const tellerPickerFlow = { connectionInProgress: false, isConnected: false };
+
+      jest.mocked(useOnlineStatus).mockReturnValue(true);
+      jest.mocked(useProviderCatalog).mockReturnValue(
+        makeProviderCatalogMock({
+          available_providers: ['teller', 'simplefin', 'plaid'],
+          user_provider: null,
+          teller_application_id: 'app_123',
+        })
+      );
+      jest.mocked(useAccountFilter).mockReturnValue({
+        selectedAccountIds: [],
+        allAccountIds: [],
+        isAllAccountsSelected: false,
+        accountsByBank: {},
+        loading: false,
+        setSelectedAccountIds: jest.fn(),
+        toggleBank: jest.fn(),
+        toggleAccount: jest.fn(),
+        removeAccountsByIds: jest.fn(),
+      });
+      jest
+        .mocked(useFinancialConnection)
+        .mockImplementation(
+          ({
+            provider,
+            mountKey,
+          }: {
+            provider: 'plaid' | 'teller' | 'simplefin';
+            mountKey?: string;
+          }) => {
+            if (mountKey === 'accounts-picker-teller') {
+              return makeFinancialConnectionMock({
+                connectionInProgress: tellerPickerFlow.connectionInProgress,
+                isConnected: tellerPickerFlow.isConnected,
+                initiateConnection: jest.fn(async () => {
+                  tellerPickerFlow.connectionInProgress = true;
+                }),
+              });
+            }
+
+            return makeFinancialConnectionMock({ provider });
+          }
+        );
+
+      const view = renderAccountsPage();
+
+      await user.click(screen.getByRole('button', { name: /^link account$/i }));
+      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+
+      await user.click(screen.getAllByRole('button', { name: 'Connect' })[2]);
+      tellerPickerFlow.connectionInProgress = true;
+      view.rerender(
+        <ThemeTestProvider>
+          <QueryClientProvider client={queryClient}>
+            <AccountsPage />
+          </QueryClientProvider>
+        </ThemeTestProvider>
+      );
+
+      tellerPickerFlow.connectionInProgress = false;
+      view.rerender(
+        <ThemeTestProvider>
+          <QueryClientProvider client={queryClient}>
+            <AccountsPage />
+          </QueryClientProvider>
+        </ThemeTestProvider>
+      );
+
+      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+    });
+
+    it('keeps the provider picker open if plaid connect exits before completing', async () => {
+      const user = userEvent.setup();
+      const plaidPickerFlow = { connectionInProgress: false, isConnected: false };
+
+      jest.mocked(useOnlineStatus).mockReturnValue(true);
+      jest.mocked(useProviderCatalog).mockReturnValue(
+        makeProviderCatalogMock({
+          available_providers: ['teller', 'simplefin', 'plaid'],
+          user_provider: null,
+        })
+      );
+      jest.mocked(useAccountFilter).mockReturnValue({
+        selectedAccountIds: [],
+        allAccountIds: [],
+        isAllAccountsSelected: false,
+        accountsByBank: {},
+        loading: false,
+        setSelectedAccountIds: jest.fn(),
+        toggleBank: jest.fn(),
+        toggleAccount: jest.fn(),
+        removeAccountsByIds: jest.fn(),
+      });
+      jest
+        .mocked(useFinancialConnection)
+        .mockImplementation(
+          ({
+            provider,
+            mountKey,
+          }: {
+            provider: 'plaid' | 'teller' | 'simplefin';
+            mountKey?: string;
+          }) => {
+            if (mountKey === 'accounts-picker-plaid') {
+              return makeFinancialConnectionMock({
+                connectionInProgress: plaidPickerFlow.connectionInProgress,
+                isConnected: plaidPickerFlow.isConnected,
+                initiateConnection: jest.fn(async () => {
+                  plaidPickerFlow.connectionInProgress = true;
+                }),
+              });
+            }
+
+            return makeFinancialConnectionMock({ provider });
+          }
+        );
+
+      const view = renderAccountsPage();
+
+      await user.click(screen.getByRole('button', { name: /^link account$/i }));
+      await user.click(screen.getAllByRole('button', { name: 'Connect' })[3]);
+
+      plaidPickerFlow.connectionInProgress = true;
+      view.rerender(
+        <ThemeTestProvider>
+          <QueryClientProvider client={queryClient}>
+            <AccountsPage />
+          </QueryClientProvider>
+        </ThemeTestProvider>
+      );
+
+      plaidPickerFlow.connectionInProgress = false;
+      view.rerender(
+        <ThemeTestProvider>
+          <QueryClientProvider client={queryClient}>
+            <AccountsPage />
+          </QueryClientProvider>
+        </ThemeTestProvider>
+      );
+
+      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
     });
 
     it('opens the provider picker from link account when only diy institutions exist', async () => {
@@ -1315,7 +1555,7 @@ describe('AccountsPage', () => {
               {
                 id: 'acc_diy_1',
                 name: 'Checking',
-                account_type: 'checking',
+                account_type: 'depository',
                 balance_ledger: 100,
                 balance_available: 100,
                 mask: '1234',

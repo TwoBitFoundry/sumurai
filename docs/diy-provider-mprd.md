@@ -248,11 +248,11 @@ conditionally.
 **Acceptance criteria**
 - [x] Onboarding: selecting DIY creates a first institution + account, selects `diy`, and
       exits onboarding into the app.
-- [ ] Onboarding: "Skip for now" lands in the accounts-page DIY default state.
+- [x] Onboarding: "Skip for now" lands in the accounts-page DIY default state.
 - [x] Accounts page, no aggregator: Link Account opens the picker (all 4).
 - [x] Accounts page, aggregator active: Link Account opens that aggregator's flow directly;
       DIY still addable via "Add custom institution".
-- [ ] Disconnecting the last aggregator returns the app to the DIY default state.
+- [x] Disconnecting the last aggregator returns the app to the DIY default state.
 
 **TDD log**
 - Red: isolated the DIY host paths and added coverage for the onboarding picker plus the accounts page entry points.

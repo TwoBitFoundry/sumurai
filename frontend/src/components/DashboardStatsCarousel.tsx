@@ -23,7 +23,6 @@ export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsC
     >
       <DashboardChartCard
         title="Financial breakdown over time"
-        description="Follow income and spending across your accounts."
         refreshingLabel="Refreshing financial breakdown over time"
         isRefreshing={false}
         bodyClassName={cn('gap-4')}

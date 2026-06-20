@@ -15,8 +15,6 @@ describe('primitive typography recipes', () => {
     expect(pageLayoutRecipes.badge).toContain(uiTextRecipes.label);
     expect(pageLayoutRecipes.title).toContain(uiTextRecipes.primary);
     expect(pageLayoutRecipes.subtitle).toContain(uiTextRecipes.body);
-    expect(pageLayoutRecipes.errorText).toContain(uiTypographyRecipes.captionStrong);
-    expect(pageLayoutRecipes.errorText).toContain(uiTextRecipes.danger);
   });
 
   it('uses semantic typography for empty state copy', () => {

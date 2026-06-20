@@ -97,7 +97,10 @@ export function CollapsibleSection({
           ...uiInsightsPanelRecipes.summaryToggleContent
         )}
       >
-        <div className={cn(...uiInsightsPanelRecipes.summaryChevronColumn)} aria-hidden="true">
+        <div
+          className={cn(...uiInsightsPanelRecipes.summaryChevronColumnCenter)}
+          aria-hidden="true"
+        >
           <ChevronDown
             className={cn(...uiInsightsPanelRecipes.summaryChevron, expanded && 'rotate-180')}
           />

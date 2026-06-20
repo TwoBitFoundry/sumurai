@@ -48,11 +48,10 @@ describe('ui tokens runtime map', () => {
     expect(categoryAccents).toHaveLength(10);
     expect(categoryAccents[0]).toMatchObject({ key: 'sky', ringHex: '#38bdf8' });
     expect(accountTypeDot).toEqual({
-      checking: '#38bdf8',
-      savings: '#22c55e',
+      cash: '#38bdf8',
       credit: '#f59e0b',
+      investments: '#94a3b8',
       loan: '#a78bfa',
-      other: '#94a3b8',
     });
     expect(heroAccents.emerald).toMatchObject({
       gradFrom: '#34d399',

@@ -21,7 +21,7 @@ pub struct CreateDiyInstitutionResponse {
 #[derive(Debug, Deserialize, ToSchema)]
 #[schema(example = json!({
     "name": "My Checking",
-    "account_type": "checking",
+    "account_type": "depository",
     "mask": "1234",
     "balance": "1000.00"
 }))]
@@ -37,7 +37,7 @@ pub struct CreateDiyAccountRequest {
 #[schema(example = json!({
     "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
     "name": "My Checking",
-    "account_type": "checking"
+    "account_type": "depository"
 }))]
 pub struct CreateDiyAccountResponse {
     pub id: Uuid,

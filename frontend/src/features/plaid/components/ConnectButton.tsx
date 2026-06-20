@@ -5,13 +5,11 @@ import { control } from '@/ui/recipes';
 
 interface ConnectButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary';
-  leadingImageSrc?: string;
 }
 
 const ConnectButton = ({
   variant = 'primary',
   className = '',
-  leadingImageSrc,
   children,
   size = 'md',
   ...props
@@ -25,20 +23,7 @@ const ConnectButton = ({
       className={cn('normal-case', className)}
       {...props}
     >
-      {leadingImageSrc ? (
-        <img
-          src={leadingImageSrc}
-          alt=""
-          aria-hidden="true"
-          className={cn(
-            control.glyph[size],
-            'rounded-[length:var(--radius-medium)]',
-            'object-cover'
-          )}
-        />
-      ) : (
-        <Link aria-hidden className={control.glyph[size]} />
-      )}
+      <Link aria-hidden className={control.glyph[size]} />
       <span>{children ?? 'Add ally account'}</span>
     </Button>
   );

@@ -1,11 +1,16 @@
 import { Check, Loader2, Pencil, Plus, Target } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
+import { ToastStack } from '@/components/toastStack/ToastStack';
 import { Button, cn, EmptyState, GlassCard } from '@/ui/primitives';
 import { control } from '@/ui/recipes';
 import { heroAccents } from '@/ui/tokens';
 import { BudgetCalculator } from '../domain/BudgetCalculator';
 import { computeBudgetInsights } from '../domain/BudgetInsightsCalculator';
+import {
+  useAccountsToastStack,
+  useErrorToast,
+} from '../features/accounts/hooks/useAccountsToastStack';
 import AddBudgetPicker, {
   type BudgetFormValue,
 } from '../features/budgets/components/AddBudgetPicker';
@@ -132,13 +137,16 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
   );
 
   const errorMessage = error || (validationError && !error ? validationError : null);
+  const { transients, pinnedToast, pushToast, dismissTransient, dismissPinned } =
+    useAccountsToastStack(null);
+
+  useErrorToast(errorMessage, pushToast);
 
   return (
     <div data-testid="budgets-page">
       <PageLayout
         title="Track your expenses"
         subtitle="Review subscriptions and manage monthly budgets categories from all your connected bank accounts."
-        error={errorMessage}
         stats={heroStats}
       >
         <div className={cn('w-full', 'min-w-0', 'max-w-full', 'space-y-6')}>
@@ -264,6 +272,12 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
             />
           </GlassCard>
         </div>
+        <ToastStack
+          transients={transients}
+          pinnedToast={pinnedToast}
+          onDismissTransient={dismissTransient}
+          onDismissPinned={dismissPinned}
+        />
       </PageLayout>
     </div>
   );

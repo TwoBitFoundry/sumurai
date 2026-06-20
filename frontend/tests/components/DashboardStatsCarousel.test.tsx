@@ -32,8 +32,8 @@ describe('DashboardStatsCarousel', () => {
     expect(screen.getByTestId('dashboard-stats-carousel')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /financial breakdown/i })).toBeInTheDocument();
     expect(
-      screen.getByText('Follow income and spending across your accounts.')
-    ).toBeInTheDocument();
+      screen.queryByText('Follow income and spending across your accounts.')
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId('money-flow-sankey-chart')).toBeInTheDocument();
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
     expect(screen.queryByTestId('balances-chart')).not.toBeInTheDocument();

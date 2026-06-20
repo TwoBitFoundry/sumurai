@@ -117,7 +117,7 @@ describe('shared responsive layout surfaces', () => {
             id: 'acct-1',
             name: 'Essential Savings',
             mask: '8677',
-            type: 'checking',
+            type: 'cash',
             balance: 52011.88,
             transactions: 108,
           }}
@@ -182,7 +182,7 @@ describe('shared responsive layout surfaces', () => {
     expect(summaryGrid?.textContent).toContain('25%');
   });
 
-  it('keeps the provider selection title on the md tier', () => {
+  it('matches the provider selection title to other hero cards', () => {
     const { container } = render(
       <ProviderSelectionPanel
         loading={false}
@@ -193,9 +193,12 @@ describe('shared responsive layout surfaces', () => {
       />
     );
 
-    expect(screen.getByRole('heading', { name: 'Choose how you connect accounts' })).toHaveClass(
-      'md:text-[2.25rem]'
-    );
+    const heading = screen.getByRole('heading', { name: 'Choose how you connect accounts' });
+    const titleHost = heading.parentElement;
+
+    expect(titleHost?.className).toContain('text-[2rem]');
+    expect(heading.className).toContain('inline');
+    expect(heading.className).not.toContain('text-[2rem]');
     expect(screen.getByAltText('Plaid logo')).toHaveAttribute('src', '/plaid.webp');
     expect(container.firstElementChild).toBeTruthy();
   });

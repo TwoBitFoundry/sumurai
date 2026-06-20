@@ -1,4 +1,4 @@
-import { Link } from 'lucide-react';
+import { ArrowUpRight, Link } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import CategoryInlinePill from '@/features/transactions/components/CategoryInlinePill';
 import useViewportBreakpoint from '@/hooks/useViewportBreakpoint';
@@ -15,7 +15,11 @@ import {
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { heroAccents } from '@/ui/tokens';
-import { getConnectBlockedReason, isPickerEnabled } from '../../../utils/providerCapabilities';
+import {
+  getConnectBlockedReason,
+  isCredentialsEnvUnavailable,
+  isPickerEnabled,
+} from '../../../utils/providerCapabilities';
 import { getProviderCardConfig } from '../../../utils/providerCards';
 import { ProviderSelectionSection } from './ProviderSelectionSection';
 
@@ -28,6 +32,7 @@ const providerCardHoverRingStyle = {
 const privacyLinkClasses = cn(
   'inline-flex',
   'items-center',
+  'gap-1',
   'underline',
   'underline-offset-4',
   uiTypographyRecipes.caption,
@@ -39,12 +44,15 @@ const privacyLinkClasses = cn(
   'dark:hover:text-[var(--color-text-primary)]'
 );
 
+const privacyLinkExternalIcon = cn('h-3.5', 'w-3.5', 'shrink-0');
+
 interface ProviderSelectionCardProps {
   provider: FinancialProvider;
   providerCatalogue: ProviderCatalogue;
   ready: boolean;
   connectingProvider: FinancialProvider | null;
   onSelectProvider: (provider: FinancialProvider) => void | Promise<void>;
+  isOnline?: boolean;
 }
 
 export const ProviderSelectionCard = ({
@@ -53,23 +61,43 @@ export const ProviderSelectionCard = ({
   ready,
   connectingProvider,
   onSelectProvider,
+  isOnline = true,
 }: ProviderSelectionCardProps) => {
   const { isMobile } = useViewportBreakpoint();
   const details = getProviderCardConfig(provider);
   const LogoIcon = details.logoIcon;
   const enabled = isPickerEnabled(provider, providerCatalogue);
   const blockedReason = getConnectBlockedReason(provider, providerCatalogue);
+  const credentialsUnavailable = isCredentialsEnvUnavailable(provider, providerCatalogue);
   const privacyLinkLabel = `${details.title} privacy policy`;
   const isConnecting = connectingProvider === provider;
   const isAnyProviderConnecting = connectingProvider !== null;
   const requiresPreparedSdk = provider === 'teller';
   const isPrepared = !requiresPreparedSdk || ready;
-  const disabled = !enabled || !isPrepared || isAnyProviderConnecting;
-  const availabilityReason = !enabled
-    ? blockedReason
-    : !isPrepared
-      ? 'Preparing secure connection'
-      : null;
+  const needsNetwork = provider !== 'diy';
+  const offline = needsNetwork && !isOnline;
+  const disabled =
+    offline || !enabled || !isPrepared || isAnyProviderConnecting || credentialsUnavailable;
+  const availabilityReason = offline
+    ? 'No internet connection'
+    : credentialsUnavailable
+      ? null
+      : !enabled
+        ? blockedReason
+        : !isPrepared
+          ? 'Preparing secure connection'
+          : null;
+  const connectButtonLabel = isConnecting
+    ? 'Connecting…'
+    : offline
+      ? 'Offline'
+      : credentialsUnavailable
+        ? 'Unavailable'
+        : !isPrepared
+          ? 'Loading…'
+          : 'Link Account';
+  const connectButtonHoverLabel =
+    availabilityReason ?? (credentialsUnavailable ? blockedReason : null) ?? connectButtonLabel;
 
   return (
     <GlassCard
@@ -90,10 +118,8 @@ export const ProviderSelectionCard = ({
         'overflow-hidden',
         'h-full',
         'w-full',
-        'lg:max-w-3xl',
-        'mx-auto',
         'p-3',
-        'sm:p-6',
+        'md:p-6',
         'transition-all',
         'duration-200',
         ...uiBorderRecipes.glass,
@@ -187,13 +213,23 @@ export const ProviderSelectionCard = ({
               aria-label={privacyLinkLabel}
             >
               {privacyLinkLabel}
+              <ArrowUpRight aria-hidden className={privacyLinkExternalIcon} />
             </a>
-          ) : null}
+          ) : (
+            <span
+              aria-hidden
+              className={cn(privacyLinkClasses, 'invisible', 'pointer-events-none', 'select-none')}
+            >
+              {privacyLinkLabel}
+              <ArrowUpRight aria-hidden className={privacyLinkExternalIcon} />
+            </span>
+          )}
           <div className={cn('flex', 'w-full', 'flex-col', 'items-center', 'gap-2')}>
             <Button
               type="button"
               variant="connect"
               size="md"
+              title={connectButtonHoverLabel}
               disabled={disabled}
               onClick={() => {
                 void onSelectProvider(provider);
@@ -201,13 +237,15 @@ export const ProviderSelectionCard = ({
               className={cn('w-auto', 'min-w-40')}
             >
               {isConnecting ? (
-                'Connecting…'
+                connectButtonLabel
+              ) : credentialsUnavailable ? (
+                connectButtonLabel
               ) : !isPrepared ? (
-                'Loading…'
+                connectButtonLabel
               ) : (
                 <>
                   <Link aria-hidden className={cn('h-4', 'w-4')} />
-                  Link Account
+                  {connectButtonLabel}
                 </>
               )}
             </Button>

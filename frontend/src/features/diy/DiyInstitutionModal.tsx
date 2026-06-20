@@ -1,7 +1,9 @@
 'use client';
 
-import { Building2, Plus, X } from 'lucide-react';
+import { TrashIcon as TrashSolidIcon } from '@heroicons/react/24/solid';
+import { Building2, CheckCircle2, ChevronLeft, Plus, Shield, Upload, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { DIY_ACCOUNT_TYPE_OPTIONS, type DiyAccountTypeValue } from '@/domain/accountCategories';
 import { DiyService } from '@/services/DiyService';
 import {
   Button,
@@ -14,16 +16,34 @@ import {
   Select,
 } from '@/ui/primitives';
 import {
+  control,
   border as uiBorderRecipes,
+  effect as uiEffectRecipes,
+  status as uiStatusRecipes,
   surface as uiSurfaceRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 
+const DIY_INSTITUTION_COPY = {
+  title: 'Self-Managed',
+  description: 'Manually add a bank and accounts, then import transactions from a supported file.',
+  highlights: [
+    {
+      title: 'Strongest privacy option',
+      body: 'No third party ever sees your data. Everything stays on your device.',
+    },
+    {
+      title: 'You control your data',
+      body: 'Import new bank data or remove the bank anytime to delete its accounts and transactions.',
+    },
+  ],
+} as const;
+
 type DiyAccountDraft = {
   id: string;
   name: string;
-  accountType: 'checking' | 'savings' | 'loan' | 'credit';
+  accountType: DiyAccountTypeValue;
   mask: string;
   balance: string;
 };
@@ -110,10 +130,10 @@ const getAccountFieldValidationError = (
   for (let index = 0; index < drafts.length; index += 1) {
     const account = drafts[index];
     if (isAccountNameTakenAt(account.name, index, drafts, existingAccounts)) {
-      return 'Each account name must be unique within this institution.';
+      return 'Each account name must be unique within this bank.';
     }
     if (isAccountMaskTakenAt(account.mask, index, drafts, existingAccounts)) {
-      return 'Each account mask must be unique within this institution.';
+      return 'Each account mask must be unique within this bank.';
     }
   }
 
@@ -123,7 +143,7 @@ const getAccountFieldValidationError = (
 const emptyAccountDraft = (): DiyAccountDraft => ({
   id: crypto.randomUUID(),
   name: '',
-  accountType: 'checking',
+  accountType: 'depository',
   mask: '',
   balance: '',
 });
@@ -156,6 +176,14 @@ const getBalanceFieldError = (value: string): string | null => {
 const isValidBalanceInput = (value: string) => getBalanceFieldError(value) === null;
 
 const toBalancePayload = (value: string): string => value.trim();
+
+const connectBridgeDots = (
+  <div className={cn('mx-2', 'flex', 'items-center', 'gap-1')}>
+    <div className={cn('h-1', 'w-1', 'rounded-full', 'bg-slate-300', 'dark:bg-slate-600')} />
+    <div className={cn('h-1', 'w-1', 'rounded-full', 'bg-slate-300', 'dark:bg-slate-600')} />
+    <div className={cn('h-1', 'w-1', 'rounded-full', 'bg-slate-300', 'dark:bg-slate-600')} />
+  </div>
+);
 
 export function DiyInstitutionModal({
   isOpen,
@@ -190,7 +218,7 @@ export function DiyInstitutionModal({
   }, [connectionId, institutionName, isOpen]);
 
   const title = useMemo(
-    () => (step === 'institution' ? 'Add a custom institution' : 'Add custom accounts'),
+    () => (step === 'institution' ? DIY_INSTITUTION_COPY.title : 'Add custom bank accounts'),
     [step]
   );
 
@@ -241,12 +269,12 @@ export function DiyInstitutionModal({
   const continueToAccounts = () => {
     const trimmedName = institutionDraft.trim();
     if (!trimmedName) {
-      setError('Enter an institution name.');
+      setError('Enter a bank name.');
       return;
     }
 
     if (isInstitutionNameTaken(trimmedName, existingInstitutionNames)) {
-      setError('An institution with this name already exists.');
+      setError('A bank with this name already exists.');
       return;
     }
 
@@ -274,12 +302,12 @@ export function DiyInstitutionModal({
 
     if (!activeConnectionId) {
       if (!trimmedName) {
-        setError('Enter an institution name.');
+        setError('Enter a bank name.');
         return;
       }
 
       if (isInstitutionNameTaken(trimmedName, existingInstitutionNames)) {
-        setError('An institution with this name already exists.');
+        setError('A bank with this name already exists.');
         return;
       }
     }
@@ -315,203 +343,257 @@ export function DiyInstitutionModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      presentation="centered"
-      size="lg"
       labelledBy="diy-institution-modal-title"
-      description="diy-institution-modal-description"
+      size="sm"
+      animateCentered
+      backdropVariant="provider"
       preventCloseOnBackdrop={isSubmitting}
     >
       <GlassCard
-        variant="accent"
-        rounded="xl"
+        variant="auth"
         padding="none"
-        withInnerEffects={false}
-        className={cn('flex', 'max-h-[min(90dvh,48rem)]', 'min-h-0', 'flex-col', 'overflow-hidden')}
+        className={cn(
+          'flex',
+          'max-h-[min(90dvh,48rem)]',
+          'min-h-0',
+          'flex-col',
+          'overflow-hidden',
+          'space-y-6',
+          'p-5',
+          'md:p-6'
+        )}
       >
-        <div className={cn('flex', 'min-h-0', 'flex-1', 'flex-col', 'space-y-6', 'p-5', 'sm:p-6')}>
-          <div className={cn('flex', 'items-start', 'justify-between', 'gap-4')}>
-            <div className={cn('space-y-2')}>
-              <h2
-                id="diy-institution-modal-title"
-                className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}
-              >
-                {title}
-              </h2>
-              <p
-                id="diy-institution-modal-description"
-                className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}
-              >
-                {step === 'institution'
-                  ? 'A custom institution allows adding custom bank accounts to it.'
-                  : 'Add one or more custom accounts under this institution.'}
-              </p>
-            </div>
-            <IconButton
-              type="button"
-              variant="ghost"
-              size="sm"
-              aria-label="Close DIY institution modal"
-              onClick={onClose}
-            >
-              <X aria-hidden />
-            </IconButton>
-          </div>
+        <div className={cn('flex', 'justify-end')}>
+          <IconButton
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label="Close DIY bank modal"
+            title="Close"
+            onClick={onClose}
+          >
+            <X aria-hidden />
+          </IconButton>
+        </div>
 
-          {error ? (
-            <p className={cn(uiTypographyRecipes.caption, 'text-red-600', 'dark:text-red-400')}>
-              {error}
+        <div className={cn('flex', 'items-center', 'justify-center')}>
+          <div
+            className={cn(
+              'rounded-2xl',
+              'border',
+              'bg-white',
+              'p-3',
+              ...uiEffectRecipes.glassDropShadow,
+              ...uiBorderRecipes.default
+            )}
+          >
+            <Upload className={cn('h-6', 'w-6', uiTextRecipes.subtle)} aria-hidden />
+          </div>
+          {connectBridgeDots}
+          <div
+            className={cn(
+              'rounded-2xl',
+              'border-2',
+              'bg-white',
+              'p-4',
+              ...uiEffectRecipes.glassDropShadow,
+              ...uiBorderRecipes.subtle
+            )}
+          >
+            <Shield className={cn('h-10', 'w-10', ...uiStatusRecipes.info.icon)} aria-hidden />
+          </div>
+          {connectBridgeDots}
+          <div
+            className={cn(
+              'rounded-2xl',
+              'border',
+              'bg-white',
+              'p-3',
+              ...uiEffectRecipes.glassDropShadow,
+              ...uiBorderRecipes.default
+            )}
+          >
+            <Building2 className={cn('h-6', 'w-6', uiTextRecipes.subtle)} aria-hidden />
+          </div>
+        </div>
+
+        <div className={cn('space-y-2', 'text-center')}>
+          <h2
+            id="diy-institution-modal-title"
+            className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}
+          >
+            {title}
+          </h2>
+          {step === 'institution' ? (
+            <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
+              {DIY_INSTITUTION_COPY.description}
             </p>
           ) : null}
+        </div>
 
-          {step === 'institution' ? (
-            <div className={cn('space-y-4')}>
-              <div className={cn('space-y-2')}>
-                <FormLabel htmlFor="diy-institution-name">Institution name</FormLabel>
-                <Input
-                  id="diy-institution-name"
-                  value={institutionDraft}
-                  onChange={(event) => {
-                    setInstitutionDraft(event.target.value);
-                    if (error) {
-                      setError(null);
-                    }
-                  }}
-                  placeholder="My credit union"
-                  autoComplete="off"
-                  variant={institutionNameIsDuplicate ? 'invalid' : 'default'}
-                  aria-invalid={institutionNameIsDuplicate}
+        {step === 'institution' ? (
+          <ul className={cn('space-y-3')}>
+            {DIY_INSTITUTION_COPY.highlights.map((highlight) => (
+              <li key={highlight.title} className={cn('flex', 'items-start', 'gap-3')}>
+                <CheckCircle2
+                  className={cn('mt-0.5', 'h-5', 'w-5', 'shrink-0', ...uiStatusRecipes.info.icon)}
+                  aria-hidden
                 />
-                {institutionNameIsDuplicate ? (
-                  <p
-                    className={cn(uiTypographyRecipes.caption, 'text-red-600', 'dark:text-red-400')}
-                  >
-                    An institution with this name already exists.
+                <div>
+                  <p className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
+                    {highlight.title}
                   </p>
-                ) : null}
-              </div>
-              <div className={cn('flex', 'justify-end')}>
-                <Button
-                  type="button"
-                  onClick={continueToAccounts}
-                  disabled={!trimmedInstitutionName || institutionNameIsDuplicate}
-                >
-                  Continue
-                </Button>
+                  <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.body)}>
+                    {highlight.body}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        {error ? (
+          <p
+            className={cn(
+              uiTypographyRecipes.caption,
+              'text-center',
+              'text-red-600',
+              'dark:text-red-400'
+            )}
+          >
+            {error}
+          </p>
+        ) : null}
+
+        {step === 'institution' ? (
+          <div className={cn('space-y-4')}>
+            <div className={cn('space-y-3', 'text-center')}>
+              <FormLabel htmlFor="diy-institution-name">Bank name</FormLabel>
+              <Input
+                id="diy-institution-name"
+                value={institutionDraft}
+                onChange={(event) => {
+                  setInstitutionDraft(event.target.value);
+                  if (error) {
+                    setError(null);
+                  }
+                }}
+                placeholder="My credit union"
+                autoComplete="off"
+                variant={institutionNameIsDuplicate ? 'invalid' : 'default'}
+                aria-invalid={institutionNameIsDuplicate}
+                className={cn('text-center', 'placeholder:text-center')}
+              />
+              {institutionNameIsDuplicate ? (
+                <p className={cn(uiTypographyRecipes.caption, 'text-red-600', 'dark:text-red-400')}>
+                  A bank with this name already exists.
+                </p>
+              ) : null}
+            </div>
+            <Button
+              type="button"
+              variant="connect"
+              size="md"
+              className={cn('w-full')}
+              onClick={continueToAccounts}
+              disabled={!trimmedInstitutionName || institutionNameIsDuplicate}
+            >
+              Continue
+            </Button>
+          </div>
+        ) : (
+          <div className={cn('flex', 'min-h-0', 'flex-1', 'flex-col', 'gap-5')}>
+            <div
+              className={cn(
+                'space-y-4',
+                'rounded-2xl',
+                'border',
+                ...uiBorderRecipes.subtle,
+                ...uiSurfaceRecipes.card,
+                'p-4'
+              )}
+            >
+              <div className={cn('grid', 'gap-4')}>
+                <div className={cn('space-y-2')}>
+                  <FormLabel htmlFor="diy-institution-name-readonly">Bank name</FormLabel>
+                  <Input
+                    id="diy-institution-name-readonly"
+                    value={institutionDraft.trim() || institutionName || 'Custom bank'}
+                    readOnly
+                    aria-readonly="true"
+                  />
+                </div>
               </div>
             </div>
-          ) : (
-            <div className={cn('space-y-5')}>
-              <div
-                className={cn(
-                  'rounded-2xl',
-                  'border',
-                  ...uiBorderRecipes.subtle,
-                  ...uiSurfaceRecipes.insetWell,
-                  'p-4'
-                )}
-              >
-                <p className={cn(uiTypographyRecipes.label, uiTextRecipes.subtle)}>Institution</p>
-                <p className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
-                  {institutionDraft.trim() || institutionName || 'Custom institution'}
-                </p>
-              </div>
 
-              <div
-                className={cn(
-                  'max-h-[min(45dvh,18rem)]',
-                  'min-h-0',
-                  'space-y-4',
-                  'overflow-y-auto',
-                  'pr-1'
-                )}
-              >
-                {accounts.map((account, index) => {
-                  const balanceFieldError = getBalanceFieldError(account.balance);
-                  const balanceIsInvalid = balanceFieldError !== null;
-                  const accountNameIsDuplicate = isAccountNameTakenAt(
-                    account.name,
-                    index,
-                    accounts,
-                    existingInstitutionAccounts
-                  );
-                  const accountMaskIsDuplicate = isAccountMaskTakenAt(
-                    account.mask,
-                    index,
-                    accounts,
-                    existingInstitutionAccounts
-                  );
+            <div className={cn('min-h-0', 'flex-1', 'space-y-4', 'overflow-y-auto', 'pr-1')}>
+              {accounts.map((account, index) => {
+                const balanceFieldError = getBalanceFieldError(account.balance);
+                const balanceIsInvalid = balanceFieldError !== null;
+                const accountNameIsDuplicate = isAccountNameTakenAt(
+                  account.name,
+                  index,
+                  accounts,
+                  existingInstitutionAccounts
+                );
+                const accountMaskIsDuplicate = isAccountMaskTakenAt(
+                  account.mask,
+                  index,
+                  accounts,
+                  existingInstitutionAccounts
+                );
 
-                  return (
-                    <div
-                      key={account.id}
-                      className={cn(
-                        'space-y-4',
-                        'rounded-2xl',
-                        'border',
-                        ...uiBorderRecipes.subtle,
-                        ...uiSurfaceRecipes.card,
-                        'p-4'
-                      )}
-                    >
-                      <div className={cn('flex', 'items-center', 'justify-between')}>
-                        <p className={cn(uiTypographyRecipes.label, uiTextRecipes.subtle)}>
-                          Account {index + 1}
-                        </p>
-                        {accounts.length > 1 ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveAccount(index)}
-                          >
-                            Remove
-                          </Button>
-                        ) : null}
-                      </div>
-
-                      <div className={cn('grid', 'gap-4', 'md:grid-cols-2')}>
-                        <div className={cn('space-y-2')}>
+                return (
+                  <div
+                    key={account.id}
+                    className={cn(
+                      'space-y-4',
+                      'rounded-2xl',
+                      'border',
+                      ...uiBorderRecipes.subtle,
+                      ...uiSurfaceRecipes.card,
+                      'p-4'
+                    )}
+                  >
+                    <div className={cn('grid', 'gap-4')}>
+                      <div className={cn('space-y-2')}>
+                        <div className={cn('flex', 'items-center', 'justify-between', 'gap-2')}>
                           <FormLabel htmlFor={`diy-account-name-${index}`}>Account name</FormLabel>
-                          <Input
-                            id={`diy-account-name-${index}`}
-                            value={account.name}
-                            onChange={(event) => updateAccount(index, 'name', event.target.value)}
-                            placeholder="Checking"
-                            autoComplete="off"
-                            variant={accountNameIsDuplicate ? 'invalid' : 'default'}
-                            aria-invalid={accountNameIsDuplicate}
-                          />
-                          {accountNameIsDuplicate ? (
-                            <p
-                              className={cn(
-                                uiTypographyRecipes.caption,
-                                'text-red-600',
-                                'dark:text-red-400'
-                              )}
+                          {accounts.length > 1 ? (
+                            <IconButton
+                              type="button"
+                              variant="danger"
+                              size="sm"
+                              aria-label={`Remove account ${index + 1}`}
+                              title="Remove account"
+                              onClick={() => handleRemoveAccount(index)}
                             >
-                              An account with this name already exists in this institution.
-                            </p>
+                              <TrashSolidIcon />
+                            </IconButton>
                           ) : null}
                         </div>
-                        <div className={cn('space-y-2')}>
-                          <FormLabel htmlFor={`diy-account-type-${index}`}>Account type</FormLabel>
-                          <Select
-                            id={`diy-account-type-${index}`}
-                            value={account.accountType}
-                            onChange={(event) =>
-                              updateAccount(
-                                index,
-                                'accountType',
-                                event.target.value as DiyAccountDraft['accountType']
-                              )
-                            }
+                        <Input
+                          id={`diy-account-name-${index}`}
+                          value={account.name}
+                          onChange={(event) => updateAccount(index, 'name', event.target.value)}
+                          placeholder="Checking"
+                          autoComplete="off"
+                          variant={accountNameIsDuplicate ? 'invalid' : 'default'}
+                          aria-invalid={accountNameIsDuplicate}
+                        />
+                        {accountNameIsDuplicate ? (
+                          <p
+                            className={cn(
+                              uiTypographyRecipes.caption,
+                              'text-red-600',
+                              'dark:text-red-400'
+                            )}
                           >
-                            <option value="checking">Checking</option>
-                            <option value="savings">Savings</option>
-                            <option value="loan">Loan</option>
-                            <option value="credit">Credit</option>
-                          </Select>
-                        </div>
+                            An account with this name already exists in this bank.
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className={cn('grid', 'grid-cols-2', 'gap-4')}>
                         <div className={cn('space-y-2')}>
                           <FormLabel htmlFor={`diy-account-mask-${index}`}>Mask</FormLabel>
                           <Input
@@ -531,80 +613,110 @@ export function DiyInstitutionModal({
                                 'dark:text-red-400'
                               )}
                             >
-                              An account with this mask already exists in this institution.
+                              An account with this mask already exists in this bank.
                             </p>
                           ) : null}
                         </div>
                         <div className={cn('space-y-2')}>
-                          <FormLabel htmlFor={`diy-account-balance-${index}`}>
-                            Current balance
-                          </FormLabel>
-                          <Input
-                            id={`diy-account-balance-${index}`}
-                            value={account.balance}
+                          <FormLabel htmlFor={`diy-account-type-${index}`}>Account type</FormLabel>
+                          <Select
+                            id={`diy-account-type-${index}`}
+                            value={account.accountType}
                             onChange={(event) =>
                               updateAccount(
                                 index,
-                                'balance',
-                                sanitizeBalanceInput(event.target.value)
+                                'accountType',
+                                event.target.value as DiyAccountDraft['accountType']
                               )
                             }
-                            placeholder="1000.00"
-                            inputMode="decimal"
-                            pattern="[0-9]*[.]?[0-9]*"
-                            autoComplete="off"
-                            variant={balanceIsInvalid ? 'invalid' : 'default'}
-                            aria-invalid={balanceIsInvalid}
-                          />
-                          {balanceIsInvalid ? (
-                            <p
-                              className={cn(
-                                uiTypographyRecipes.caption,
-                                'text-red-600',
-                                'dark:text-red-400'
-                              )}
-                            >
-                              {balanceFieldError}
-                            </p>
-                          ) : null}
+                          >
+                            {DIY_ACCOUNT_TYPE_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </Select>
                         </div>
                       </div>
+                      <div className={cn('space-y-2')}>
+                        <FormLabel htmlFor={`diy-account-balance-${index}`}>
+                          Current balance
+                        </FormLabel>
+                        <Input
+                          id={`diy-account-balance-${index}`}
+                          value={account.balance}
+                          onChange={(event) =>
+                            updateAccount(
+                              index,
+                              'balance',
+                              sanitizeBalanceInput(event.target.value)
+                            )
+                          }
+                          placeholder="1000.00"
+                          inputMode="decimal"
+                          pattern="[0-9]*[.]?[0-9]*"
+                          autoComplete="off"
+                          variant={balanceIsInvalid ? 'invalid' : 'default'}
+                          aria-invalid={balanceIsInvalid}
+                        />
+                        {balanceIsInvalid ? (
+                          <p
+                            className={cn(
+                              uiTypographyRecipes.caption,
+                              'text-red-600',
+                              'dark:text-red-400'
+                            )}
+                          >
+                            {balanceFieldError}
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
+            </div>
 
-              <div className={cn('flex', 'flex-wrap', 'justify-between', 'gap-3')}>
-                <Button type="button" variant="secondary" onClick={handleAddAccount}>
-                  <Plus aria-hidden />
-                  Add account
-                </Button>
-                <div className={cn('flex', 'gap-3')}>
-                  {!isExistingInstitution ? (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={handleBackToInstitution}
-                      disabled={isSubmitting}
-                    >
-                      Back
-                    </Button>
-                  ) : null}
+            <div className={cn('flex', 'flex-wrap', 'justify-between', 'gap-3')}>
+              <div className={cn('flex', 'gap-1.5')}>
+                {!isExistingInstitution ? (
                   <Button
                     type="button"
-                    onClick={() => void submitAccounts()}
-                    disabled={
-                      isSubmitting || accountsHaveInvalidBalance || accountsHaveDuplicateFields
-                    }
+                    variant="secondary"
+                    shape="square"
+                    size="md"
+                    aria-label="Back"
+                    title="Back"
+                    onClick={handleBackToInstitution}
+                    disabled={isSubmitting}
                   >
-                    <Building2 aria-hidden />
-                    Create
+                    <ChevronLeft className={cn(control.glyph.md)} aria-hidden />
                   </Button>
-                </div>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  shape="square"
+                  size="md"
+                  aria-label="Add account"
+                  title="Add account"
+                  onClick={handleAddAccount}
+                >
+                  <Plus className={cn(control.glyph.md)} aria-hidden />
+                </Button>
               </div>
+              <Button
+                type="button"
+                variant="connect"
+                size="md"
+                onClick={() => void submitAccounts()}
+                disabled={isSubmitting || accountsHaveInvalidBalance || accountsHaveDuplicateFields}
+              >
+                {isSubmitting ? 'Creating…' : 'Create'}
+              </Button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </GlassCard>
     </Modal>
   );

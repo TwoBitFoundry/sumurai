@@ -29,22 +29,26 @@ describe('DiyService', () => {
   });
 
   it('creates a DIY account through the dedicated nested endpoint', async () => {
-    postSpy.mockResolvedValue({ id: 'acc-1', name: 'Checking', account_type: 'checking' } as never);
+    postSpy.mockResolvedValue({
+      id: 'acc-1',
+      name: 'Checking',
+      account_type: 'depository',
+    } as never);
 
     const result = await DiyService.createAccount('conn-1', {
       name: 'Checking',
-      account_type: 'checking',
+      account_type: 'depository',
       mask: '1234',
       balance: '1000.00',
     });
 
     expect(ApiClient.post).toHaveBeenCalledWith('/diy/institutions/conn-1/accounts', {
       name: 'Checking',
-      account_type: 'checking',
+      account_type: 'depository',
       mask: '1234',
       balance: '1000.00',
     });
-    expect(result).toEqual({ id: 'acc-1', name: 'Checking', account_type: 'checking' });
+    expect(result).toEqual({ id: 'acc-1', name: 'Checking', account_type: 'depository' });
   });
 
   it('disconnects a DIY institution through the dedicated endpoint', async () => {

@@ -1,10 +1,10 @@
 import * as Popover from '@radix-ui/react-popover';
 import { Check, Info, X } from 'lucide-react';
 import { useId, useState } from 'react';
-import { Button, cn, IconButton, Modal } from '@/ui/primitives';
+import { Button, ControlHoverLabel, cn, Modal } from '@/ui/primitives';
 import {
-  chromeBar,
   controlIconWell,
+  inlineInfoTriggerButton,
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
   status as uiStatusRecipes,
@@ -19,21 +19,13 @@ interface ProviderSelectionSectionProps {
   isMobile: boolean;
 }
 
+const privacyInfoHoverLabel = 'Privacy details';
+
 export const ProviderSelectionSection = ({ section, isMobile }: ProviderSelectionSectionProps) => {
   const SectionIcon = section.icon;
   const privacyInfoDetails = section.label === 'Privacy' ? (section.privacyDetails ?? []) : [];
   const [isPrivacyDetailsOpen, setIsPrivacyDetailsOpen] = useState(false);
   const privacyDescriptionId = useId();
-  const privacyDetailsTriggerClasses = cn(
-    'shrink-0',
-    'rounded-full',
-    ...chromeBar.glyphWell,
-    ...uiSurfaceRecipes.card,
-    ...uiBorderRecipes.subtle,
-    uiTextRecipes.accent,
-    'hover:text-[var(--color-text-primary)]',
-    'dark:hover:text-[var(--color-text-primary)]'
-  );
 
   const privacyDetailsList = (
     <div className={cn('space-y-3')}>
@@ -106,21 +98,21 @@ export const ProviderSelectionSection = ({ section, isMobile }: ProviderSelectio
         {privacyInfoDetails.length > 0 ? (
           isMobile ? (
             <>
-              <IconButton
-                type="button"
-                variant="ghost"
-                size="sm"
-                aria-haspopup="dialog"
-                aria-expanded={isPrivacyDetailsOpen}
-                aria-controls={privacyDescriptionId}
-                aria-label={`Show privacy details for ${section.value}`}
-                onClick={() => {
-                  setIsPrivacyDetailsOpen(true);
-                }}
-                className={privacyDetailsTriggerClasses}
-              >
-                <Info className={cn(chromeBar.glyph)} aria-hidden />
-              </IconButton>
+              <ControlHoverLabel label={privacyInfoHoverLabel}>
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-expanded={isPrivacyDetailsOpen}
+                  aria-controls={privacyDescriptionId}
+                  aria-label={`${privacyInfoHoverLabel} for ${section.label}`}
+                  onClick={() => {
+                    setIsPrivacyDetailsOpen(true);
+                  }}
+                  className={cn(...inlineInfoTriggerButton)}
+                >
+                  <Info aria-hidden />
+                </button>
+              </ControlHoverLabel>
               <Modal
                 isOpen={isPrivacyDetailsOpen}
                 onClose={() => {
@@ -159,17 +151,17 @@ export const ProviderSelectionSection = ({ section, isMobile }: ProviderSelectio
             </>
           ) : (
             <Popover.Root>
-              <Popover.Trigger asChild>
-                <IconButton
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  aria-label={`Show privacy details for ${section.value}`}
-                  className={privacyDetailsTriggerClasses}
-                >
-                  <Info className={cn(chromeBar.glyph)} aria-hidden />
-                </IconButton>
-              </Popover.Trigger>
+              <ControlHoverLabel label={privacyInfoHoverLabel}>
+                <Popover.Trigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`${privacyInfoHoverLabel} for ${section.label}`}
+                    className={cn(...inlineInfoTriggerButton)}
+                  >
+                    <Info aria-hidden />
+                  </button>
+                </Popover.Trigger>
+              </ControlHoverLabel>
               <Popover.Portal>
                 <Popover.Content
                   side="top"

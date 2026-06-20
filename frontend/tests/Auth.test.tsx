@@ -92,7 +92,7 @@ describe('Auth screens', () => {
 
   it('renders register badge with inline category sky styling', () => {
     render(<RegisterScreen onNavigateToLogin={jest.fn()} />);
-    const badge = screen.getByText(/begin the path/i);
+    const badge = screen.getByText(/join the path/i);
     expect(badge.tagName).toBe('SPAN');
     expect(badge.className).toContain('font-label');
     expect(badge.className).toContain('text-sky-500');
