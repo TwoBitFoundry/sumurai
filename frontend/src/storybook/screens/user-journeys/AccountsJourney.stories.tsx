@@ -41,7 +41,11 @@ async function waitForPickerSdkConnect(
         return;
       }
 
-      expect(body.getByTestId('provider-sdk-launch-backdrop').className).toContain('opacity-100');
+      const activeBackdrop = body
+        .getAllByTestId('provider-sdk-launch-backdrop')
+        .find((backdrop) => backdrop.className.includes('opacity-100'));
+      expect(activeBackdrop).toBeDefined();
+      expect(activeBackdrop!.className).toContain('opacity-100');
     },
     { timeout: timeoutMs }
   );
@@ -416,6 +420,8 @@ export const LastInstitutionDisconnectPlaidPicker: Story = {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
 
+    await waitForAccountsPage(canvas);
+
     await waitFor(
       () => {
         expect(canvas.getByText('Story Federal Credit Union')).toBeVisible();
@@ -433,6 +439,7 @@ export const LastInstitutionDisconnectPlaidPicker: Story = {
       { timeout: storyInteractionTimeoutMs }
     );
 
+    await waitForPrimaryLinkAccount(canvas);
     await openProviderPicker(canvas);
     await waitForPickerLinkButtons(canvas);
 
