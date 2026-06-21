@@ -51,8 +51,15 @@ export interface ProviderCatalogState {
 
 const emptyProviders: FinancialProvider[] = [];
 
+const supportedFinancialProviders = new Set<FinancialProvider>([
+  'plaid',
+  'teller',
+  'simplefin',
+  'diy',
+]);
+
 const isSupportedFinancialProvider = (value: string): value is FinancialProvider =>
-  value === 'plaid' || value === 'teller' || value === 'simplefin';
+  supportedFinancialProviders.has(value as FinancialProvider);
 
 export function useProviderCatalog(options: UseProviderCatalogOptions = {}): ProviderCatalogState {
   const gateway = options.gateway ?? apiGateway;

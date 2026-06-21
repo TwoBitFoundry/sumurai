@@ -1392,6 +1392,68 @@ describe('AccountsPage', () => {
       dispatchProviderConnected.mockRestore();
     });
 
+    it('preserves the active aggregator after adding a DIY account from an existing DIY bank', async () => {
+      const user = userEvent.setup();
+      const chooseProvider = jest.fn().mockResolvedValue(undefined);
+
+      jest.mocked(useOnlineStatus).mockReturnValue(true);
+      jest.mocked(useProviderCatalog).mockReturnValue(
+        makeProviderCatalogMock(
+          {
+            available_providers: ['plaid', 'teller', 'diy'],
+            user_provider: 'plaid',
+          },
+          { chooseProvider }
+        )
+      );
+      jest.mocked(useAccountFilter).mockReturnValue(
+        makeTellerAccountFilter({
+          accountsByBank: {
+            'DIY Bank': [
+              {
+                id: 'acc_diy_1',
+                name: 'Checking',
+                account_type: 'depository',
+                balance_ledger: 100,
+                balance_available: 100,
+                mask: '1234',
+                provider: 'diy',
+                institution_name: 'DIY Bank',
+                connection_id: 'conn_diy_1',
+                transaction_count: 0,
+              },
+            ],
+            'Plaid Bank': [
+              {
+                id: 'acc_plaid_1',
+                name: 'Savings',
+                account_type: 'depository',
+                balance_ledger: 200,
+                balance_available: 200,
+                mask: '5678',
+                provider: 'plaid',
+                institution_name: 'Plaid Bank',
+                connection_id: 'conn_plaid_1',
+                transaction_count: 0,
+              },
+            ],
+          },
+        })
+      );
+
+      renderAccountsPage();
+
+      await user.click(screen.getAllByRole('button', { name: 'Add account' })[0]);
+
+      expect(screen.getByTestId('diy-institution-modal')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Complete DIY' }));
+
+      await waitFor(() => {
+        expect(chooseProvider).not.toHaveBeenCalled();
+        expect(screen.queryByTestId('diy-institution-modal')).not.toBeInTheDocument();
+      });
+    });
+
     it('keeps the provider picker open if teller connect exits before completing', async () => {
       const user = userEvent.setup();
       const tellerPickerFlow = { connectionInProgress: false, isConnected: false };

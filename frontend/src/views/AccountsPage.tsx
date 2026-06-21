@@ -368,17 +368,18 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const handleDiyInstitutionComplete = useCallback(
     async (_connectionId: string) => {
       const createdFromProviderPicker = diyModalTarget?.connectionId == null;
-      let providerSelected = false;
+      const shouldSelectDiy = activeAggregator == null;
 
       try {
-        await providerCatalog.chooseProvider('diy');
-        providerSelected = true;
+        if (shouldSelectDiy) {
+          await providerCatalog.chooseProvider('diy');
+        }
       } catch (error) {
         console.warn('Failed to select DIY provider after institution creation', error);
         pushAccountsToast('Unable to select provider right now', 'error');
       }
 
-      if (providerSelected && createdFromProviderPicker) {
+      if (createdFromProviderPicker) {
         dispatchProviderConnected();
       }
 
@@ -393,7 +394,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         setDiyModalTarget(null);
       }
     },
-    [diyModalTarget, providerCatalog, pushAccountsToast]
+    [activeAggregator, diyModalTarget, providerCatalog, pushAccountsToast]
   );
 
   useEffect(() => {

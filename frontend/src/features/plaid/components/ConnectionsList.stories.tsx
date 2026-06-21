@@ -32,11 +32,13 @@ export const BankOperations: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText(/story federal credit union/i)).toBeVisible();
-    await userEvent.click(canvas.getAllByRole('button', { name: /sync now/i })[0]);
+    const syncButtons = canvas.getAllByRole('button', { name: /sync now/i });
+    await userEvent.click(syncButtons[1]!);
     await expect(args.onSync).toHaveBeenCalledWith(sampleBankConnections[0].id);
-    await userEvent.click(canvas.getAllByRole('button', { name: /show accounts/i })[0]);
-    await userEvent.click(canvas.getAllByRole('button', { name: /hide accounts/i })[0]);
-    await expect(canvas.getAllByRole('button', { name: /show accounts/i })[0]).toBeVisible();
+    const showAccountsButtons = canvas.getAllByRole('button', { name: /show accounts/i });
+    await userEvent.click(showAccountsButtons[1]!);
+    await userEvent.click(canvas.getByRole('button', { name: /hide accounts/i }));
+    await expect(canvas.getAllByRole('button', { name: /show accounts/i })).toHaveLength(2);
   },
 };
 

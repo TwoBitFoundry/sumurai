@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
+import { storyProviderPickerPanelProps } from '@/storybook/fixtures/providerPicker';
 import {
-  storyConnectButtonIndex,
-  storyProviderPickerPanelProps,
-} from '@/storybook/fixtures/providerPicker';
+  expectStoryProviderCardsVisible,
+  getStoryProviderPickerButton,
+} from '@/storybook/fixtures/providerPickerStoryHelpers';
 import type { FinancialProvider } from '@/types/api';
 import { ProviderSelectionPanel } from './ProviderSelectionPanel';
 
@@ -37,11 +38,8 @@ export const AllEnabled: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByTestId('provider-selection-panel')).toBeVisible();
     await expect(canvas.getByText('Choose how you connect accounts')).toBeVisible();
-    await expect(canvas.getByAltText('Teller logo')).toBeVisible();
-    await expect(canvas.getByAltText('SimpleFIN logo')).toBeVisible();
-    await expect(canvas.getByAltText('Plaid logo')).toBeVisible();
-    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
-    await userEvent.click(connectButtons[storyConnectButtonIndex('plaid')]!);
+    await expectStoryProviderCardsVisible(canvas);
+    await userEvent.click(getStoryProviderPickerButton(canvas, 'plaid'));
     await expect(args.onSelectProvider).toHaveBeenCalledWith('plaid');
   },
 };
@@ -74,9 +72,8 @@ export const TellerDisabled: Story = {
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
-    await expect(connectButtons[storyConnectButtonIndex('teller')]).toBeDisabled();
-    await userEvent.click(connectButtons[storyConnectButtonIndex('simplefin')]!);
+    await expect(getStoryProviderPickerButton(canvas, 'teller')).toBeDisabled();
+    await userEvent.click(getStoryProviderPickerButton(canvas, 'simplefin'));
     await expect(args.onSelectProvider).toHaveBeenCalledWith('simplefin');
   },
 };
@@ -88,10 +85,10 @@ export const ZeroCreds: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
-    await expect(connectButtons[storyConnectButtonIndex('teller')]).toBeDisabled();
-    await expect(connectButtons[storyConnectButtonIndex('plaid')]).toBeDisabled();
-    await expect(connectButtons[storyConnectButtonIndex('simplefin')]).toBeEnabled();
+    await expect(getStoryProviderPickerButton(canvas, 'diy')).toBeEnabled();
+    await expect(getStoryProviderPickerButton(canvas, 'simplefin')).toBeEnabled();
+    await expect(getStoryProviderPickerButton(canvas, 'teller')).toBeDisabled();
+    await expect(getStoryProviderPickerButton(canvas, 'plaid')).toBeDisabled();
   },
 };
 
