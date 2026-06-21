@@ -78,10 +78,10 @@ describe('useProviderCatalog', () => {
     expect(gateway.fetchInfo).toHaveBeenCalledTimes(1);
   });
 
-  it('treats unsupported stored providers as null', async () => {
+  it('accepts diy as a stored provider selection', async () => {
     const gateway: ProviderCatalogGateway = {
       fetchInfo: jest.fn().mockResolvedValue({
-        available_providers: ['plaid', 'teller'],
+        available_providers: ['plaid', 'teller', 'diy'],
         user_provider: 'diy',
       }),
       selectProvider: jest.fn().mockResolvedValue({
@@ -93,7 +93,7 @@ describe('useProviderCatalog', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    expect(result.current.availableProviders).toEqual(['plaid', 'teller']);
-    expect(result.current.userProvider).toBeNull();
+    expect(result.current.availableProviders).toEqual(['plaid', 'teller', 'diy']);
+    expect(result.current.userProvider).toBe('diy');
   });
 });

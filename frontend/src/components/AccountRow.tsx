@@ -1,6 +1,6 @@
 import { Upload } from 'lucide-react';
-import type React from 'react';
 import { type CSSProperties, useRef, useState } from 'react';
+import type { AccountCategoryType } from '@/domain/accountCategories';
 import { ImportModal } from '@/features/import/components/ImportModal';
 import { useTransactionListLauncher } from '@/features/transactions/hooks/useTransactionListLauncher';
 import { cn, GlassCard, IconButton } from '@/ui/primitives';
@@ -16,7 +16,7 @@ interface Account {
   id: string;
   name: string;
   mask: string;
-  type: 'checking' | 'savings' | 'credit' | 'loan' | 'other';
+  type: AccountCategoryType;
   balance?: number;
   transactions?: number;
 }
@@ -69,7 +69,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
   const cardRef = useRef<HTMLDivElement>(null);
   const { openTransactionList } = useTransactionListLauncher();
   const isDebtAccount = account.type === 'credit' || account.type === 'loan';
-  const isOtherAccount = account.type === 'other';
+  const isInvestmentAccount = account.type === 'investments';
 
   const rawBalance = account.balance;
   const balanceText = formatMoney(rawBalance);
@@ -82,9 +82,13 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
     rawBalance != null &&
       !isDebtAccount &&
       rawBalance > 0 &&
-      !isOtherAccount &&
+      !isInvestmentAccount &&
       uiStatusRecipes.success.text,
-    rawBalance != null && !isDebtAccount && rawBalance > 0 && isOtherAccount && uiTextRecipes.muted,
+    rawBalance != null &&
+      !isDebtAccount &&
+      rawBalance > 0 &&
+      isInvestmentAccount &&
+      uiTextRecipes.muted,
     rawBalance != null && rawBalance < 0 && uiStatusRecipes.danger.text,
     isDebtAccount && rawBalance != null && uiStatusRecipes.danger.text,
     rawBalance === 0 && uiTextRecipes.subtle

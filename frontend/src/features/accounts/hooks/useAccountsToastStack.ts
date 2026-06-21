@@ -98,3 +98,24 @@ export function useAccountsToastStack(job: AutoCategorizationJobState | null) {
     dismissPinned,
   };
 }
+
+export function useErrorToast(
+  error: string | null,
+  pushToast: (message: string, type?: 'error' | 'success') => void
+) {
+  const lastErrorRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!error) {
+      lastErrorRef.current = null;
+      return;
+    }
+
+    if (error === lastErrorRef.current) {
+      return;
+    }
+
+    lastErrorRef.current = error;
+    pushToast(error, 'error');
+  }, [error, pushToast]);
+}

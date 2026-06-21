@@ -1,15 +1,27 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, Download, RefreshCw, Unlink } from 'lucide-react';
+import { ChevronDown, Download, Plus, RefreshCw, Shield, Unlink } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
+import useViewportBreakpoint from '@/hooks/useViewportBreakpoint';
+import type { FinancialProvider } from '@/types/api';
+import { getProviderCardConfig, getProviderLogoSrc } from '@/utils/providerCards';
 import { getSessionBankExpanded, setSessionBankExpanded } from '@/utils/sessionPreferences';
 import {
   ACCOUNT_GROUP_LABELS,
+  type AccountCategoryType,
   type AccountGroupKey,
   accountTypeSortOrder,
 } from '../domain/accountCategories';
 import { getConnectionStatusCaption } from '../domain/connectionStatus';
-import { Button, cn, GlassCard, IconButton, MenuDropdown, MenuItem } from '../ui/primitives';
+import {
+  Button,
+  ControlHoverLabel,
+  cn,
+  GlassCard,
+  IconButton,
+  MenuDropdown,
+  MenuItem,
+} from '../ui/primitives';
 import { appTitleBarRecipes } from '../ui/primitives/AppTitleBar';
 import {
   control,
@@ -29,7 +41,7 @@ interface Account {
   id: string;
   name: string;
   mask: string;
-  type: 'checking' | 'savings' | 'credit' | 'loan' | 'other';
+  type: AccountCategoryType;
   balance?: number;
   transactions?: number;
 }
@@ -49,21 +61,35 @@ interface BankCardProps {
   bank: BankConnection;
   onSync: (id: string) => Promise<void>;
   onDisconnect: (id: string) => Promise<void>;
+  onAddAccount?: (id: string) => void;
   onExport?: (format: 'csv' | 'ofx', connectionId?: string) => Promise<void>;
   isExporting?: boolean;
   isOnline: boolean;
   onImportSuccess?: (count: number, mask: string) => void;
 }
 
+const FINANCIAL_PROVIDERS = new Set<FinancialProvider>(['diy', 'simplefin', 'teller', 'plaid']);
+
+function resolveBankProvider(provider: string | undefined): FinancialProvider | null {
+  if (provider && FINANCIAL_PROVIDERS.has(provider as FinancialProvider)) {
+    return provider as FinancialProvider;
+  }
+
+  return null;
+}
+
 export const BankCard: React.FC<BankCardProps> = ({
   bank,
   onSync,
   onDisconnect,
+  onAddAccount,
   onExport = async () => undefined,
   isExporting = false,
   isOnline,
   onImportSuccess,
 }) => {
+  const { isDesktop } = useViewportBreakpoint();
+  const isCompactHeader = !isDesktop;
   const sectionBadgeClass = cn(uiTypographyRecipes.label, uiTextRecipes.muted);
   const statusCaption = getConnectionStatusCaption(bank.status);
 
@@ -77,7 +103,7 @@ export const BankCard: React.FC<BankCardProps> = ({
   const syncStartRef = useRef<number | null>(null);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [disconnectLoading, setDisconnectLoading] = useState(false);
-  const showSyncButton = bank.provider !== 'simplefin';
+  const showSyncButton = bank.provider !== 'simplefin' && bank.provider !== 'diy';
 
   useEffect(() => {
     if (!loading) {
@@ -191,6 +217,138 @@ export const BankCard: React.FC<BankCardProps> = ({
     </Button>
   );
 
+  const addAccountControl =
+    bank.provider === 'diy' && onAddAccount ? (
+      <IconButton
+        type="button"
+        variant="ghost"
+        size="md"
+        onClick={() => onAddAccount(bank.id)}
+        aria-label="Add account"
+        title="Add account"
+        className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
+      >
+        <Plus />
+      </IconButton>
+    ) : null;
+
+  const headerSecondaryActions = (
+    <>
+      {addAccountControl}
+      {syncControl}
+      {exportControl}
+    </>
+  );
+
+  const headerSecondaryActionsRow = (
+    <div
+      className={cn(
+        'pointer-events-auto',
+        'flex',
+        'items-center',
+        'gap-2',
+        'col-start-2',
+        'col-span-2',
+        'row-start-2'
+      )}
+    >
+      {headerSecondaryActions}
+    </div>
+  );
+
+  const headerDisconnect = (
+    <div
+      className={cn(
+        'pointer-events-auto',
+        'col-start-4',
+        'row-start-2',
+        'self-end',
+        'justify-self-end'
+      )}
+    >
+      {disconnectControl}
+    </div>
+  );
+
+  const bankCardHeaderGrid = cn(
+    'grid',
+    'w-full',
+    'grid-cols-[1rem_auto_minmax(0,1fr)_auto]',
+    'gap-x-2'
+  );
+
+  const bankCardHeaderIconShell = cn(
+    'flex',
+    'items-center',
+    'justify-center',
+    control.square.md,
+    'shrink-0'
+  );
+
+  const bankCardHeaderRowHeight = cn('min-h-11', 'md:min-h-9', 'lg:min-h-8');
+
+  const bankProvider = resolveBankProvider(bank.provider);
+  const providerLogoSrc = bankProvider ? getProviderLogoSrc(bankProvider) : undefined;
+  const ProviderLogoIcon = bankProvider ? getProviderCardConfig(bankProvider).logoIcon : undefined;
+
+  const providerEmblem =
+    bankProvider === 'diy' ? (
+      <span className={cn(...controlIconWell.lg, ...uiStatusRecipes.info.icon)}>
+        <Shield strokeWidth={2.25} aria-hidden />
+      </span>
+    ) : providerLogoSrc ? (
+      <img
+        src={providerLogoSrc}
+        alt=""
+        className={cn(control.glyph.lg, 'rounded-full', 'object-cover')}
+      />
+    ) : ProviderLogoIcon ? (
+      <span className={cn(...controlIconWell.lg, uiTextRecipes.subtle)}>
+        <ProviderLogoIcon strokeWidth={2.25} aria-hidden />
+      </span>
+    ) : null;
+
+  const providerEmblemTooltipLabel =
+    bankProvider === 'diy'
+      ? 'Self-managed'
+      : bankProvider
+        ? `Connected with ${getProviderCardConfig(bankProvider).title}`
+        : undefined;
+
+  const bankTitle = (
+    <h3
+      title={bank.name}
+      className={cn(
+        'min-w-0',
+        'flex-1',
+        'line-clamp-2',
+        'break-words',
+        uiTypographyRecipes.sectionTitle,
+        uiTextRecipes.primary,
+        isCompactHeader && 'leading-none'
+      )}
+    >
+      {bank.name}
+    </h3>
+  );
+
+  const providerEmblemCell =
+    providerEmblem && providerEmblemTooltipLabel ? (
+      <ControlHoverLabel label={providerEmblemTooltipLabel}>
+        <div className={cn(bankCardHeaderIconShell)}>{providerEmblem}</div>
+      </ControlHoverLabel>
+    ) : (
+      <div className={cn(bankCardHeaderIconShell)}>{providerEmblem}</div>
+    );
+
+  const desktopHeaderActions = (
+    <div className={cn('pointer-events-auto', 'flex', 'shrink-0', 'items-center', 'gap-2')}>
+      {headerSecondaryActions}
+      {disconnectControl}
+      {providerEmblemCell}
+    </div>
+  );
+
   const renderGroup = (group: AccountGroupKey, accounts: Account[]) => (
     <div key={group} className={cn('space-y-3')}>
       <span className={cn(sectionBadgeClass, 'inline-flex items-center gap-2')}>
@@ -239,85 +397,65 @@ export const BankCard: React.FC<BankCardProps> = ({
           aria-expanded={expanded}
           className={cn(...uiInsightsPanelRecipes.summaryToggleOverlay)}
         />
-        <div
-          className={cn(
-            ...uiInsightsPanelRecipes.summaryToggleGrid,
-            ...uiInsightsPanelRecipes.summaryToggleContent
-          )}
-        >
-          <div className={cn(...uiInsightsPanelRecipes.summaryChevronColumn)} aria-hidden="true">
-            <ChevronDown
-              className={cn(...uiInsightsPanelRecipes.summaryChevron, expanded && 'rotate-180')}
-            />
-          </div>
-          <div className={cn('min-w-0')}>
+        <div className={cn(...uiInsightsPanelRecipes.summaryToggleContent)}>
+          <div className={cn(bankCardHeaderGrid, 'items-start', 'gap-y-2')}>
             <div
               className={cn(
+                'col-start-1',
+                'row-start-1',
+                'self-center',
+                'flex',
+                'w-4',
+                'items-center',
+                'justify-center',
+                bankCardHeaderRowHeight
+              )}
+              aria-hidden="true"
+            >
+              <ChevronDown
+                className={cn(...uiInsightsPanelRecipes.summaryChevron, expanded && 'rotate-180')}
+              />
+            </div>
+            <div
+              className={cn('col-start-2', 'row-start-1', 'self-center', bankCardHeaderIconShell)}
+            >
+              <StatusPill status={bank.status} />
+            </div>
+            <div
+              className={cn(
+                isCompactHeader ? 'col-start-3' : cn('col-start-3', 'col-span-2'),
+                'row-start-1',
+                'self-center',
                 'flex',
                 'min-w-0',
-                'flex-wrap',
                 'items-center',
-                'gap-x-2',
-                'gap-y-2',
-                'md:flex-nowrap'
+                'gap-2',
+                isCompactHeader && bankCardHeaderRowHeight
               )}
             >
-              <div
-                className={cn(
-                  'flex',
-                  'min-w-0',
-                  'w-full',
-                  'flex-1',
-                  'items-center',
-                  'gap-x-2',
-                  'md:w-auto'
-                )}
-              >
-                <div
-                  className={cn(
-                    'flex',
-                    'items-center',
-                    'justify-center',
-                    control.square.md,
-                    'shrink-0'
-                  )}
-                >
-                  <StatusPill status={bank.status} />
-                </div>
-                <h3
-                  title={bank.name}
-                  className={cn(
-                    'min-w-0',
-                    'line-clamp-2',
-                    'break-words',
-                    uiTypographyRecipes.sectionTitle,
-                    uiTextRecipes.primary
-                  )}
-                >
-                  {bank.name}
-                </h3>
-              </div>
-              <div
-                className={cn(
-                  'pointer-events-auto',
-                  'flex',
-                  'w-full',
-                  'items-center',
-                  'gap-2',
-                  'md:ml-auto',
-                  'md:w-auto',
-                  'md:justify-end'
-                )}
-              >
-                {syncControl}
-                {exportControl}
-                <div className={cn('ml-auto', 'md:ml-0')}>{disconnectControl}</div>
-              </div>
+              {bankTitle}
+              {isCompactHeader ? null : desktopHeaderActions}
             </div>
-            {statusCaption ? (
+            {isCompactHeader ? (
+              <>
+                <div
+                  className={cn('col-start-4', 'row-start-1', 'self-center', 'justify-self-end')}
+                >
+                  {providerEmblemCell}
+                </div>
+                {headerSecondaryActionsRow}
+                {headerDisconnect}
+              </>
+            ) : null}
+          </div>
+          {statusCaption ? (
+            <div className={cn(bankCardHeaderGrid, 'mt-1', 'gap-y-0')}>
+              <div className={cn('col-start-1')} aria-hidden />
               <p
                 className={cn(
-                  'mt-1',
+                  'col-start-2',
+                  'col-span-2',
+                  'min-w-0',
                   uiTypographyRecipes.caption,
                   ...(bank.status === 'needs_reauth'
                     ? uiStatusRecipes.warning.text
@@ -326,8 +464,9 @@ export const BankCard: React.FC<BankCardProps> = ({
               >
                 {statusCaption}
               </p>
-            ) : null}
-          </div>
+              <div className={cn('col-start-4')} aria-hidden />
+            </div>
+          ) : null}
         </div>
       </div>
       <AnimatePresence initial={false}>
@@ -353,11 +492,9 @@ export const BankCard: React.FC<BankCardProps> = ({
                 return bBalance - aBalance;
               });
 
-              const cashAccounts = sortedAccounts.filter(
-                (a) => a.type === 'checking' || a.type === 'savings'
-              );
+              const cashAccounts = sortedAccounts.filter((a) => a.type === 'cash');
               const creditAccounts = sortedAccounts.filter((a) => a.type === 'credit');
-              const investmentAccounts = sortedAccounts.filter((a) => a.type === 'other');
+              const investmentAccounts = sortedAccounts.filter((a) => a.type === 'investments');
               const loanAccounts = sortedAccounts.filter((a) => a.type === 'loan');
 
               return (

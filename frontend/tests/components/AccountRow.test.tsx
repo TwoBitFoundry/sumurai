@@ -25,7 +25,7 @@ function renderAccountRow(transactions?: number) {
           id: 'acct-1',
           name: 'Everyday Checking',
           mask: '4821',
-          type: 'checking',
+          type: 'cash',
           balance: 2450.12,
           transactions,
         }}

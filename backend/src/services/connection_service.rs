@@ -312,21 +312,9 @@ impl ConnectionService {
                 .await?
         };
 
-        let deleted_transactions = self
+        let (deleted_transactions, deleted_accounts) = self
             .db_repository
-            .delete_provider_transactions(&connection.item_id)
-            .await?;
-        let deleted_accounts = self
-            .db_repository
-            .delete_provider_accounts(&connection.item_id)
-            .await?;
-
-        self.db_repository
-            .delete_provider_credentials(&connection.item_id)
-            .await?;
-
-        self.db_repository
-            .delete_provider_connection(user_id, &connection.item_id)
+            .disconnect_provider_connection_cascade(user_id, &connection.item_id)
             .await?;
 
         self.clear_user_provider_if_no_active_connections(user_id)

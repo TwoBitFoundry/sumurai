@@ -19,3 +19,9 @@ export interface NavigateToTransactionsDetail {
 export const dispatchNavigateToTransactions = (detail: NavigateToTransactionsDetail) => {
   window.dispatchEvent(new CustomEvent(NAVIGATE_TO_TRANSACTIONS_EVENT, { detail }));
 };
+
+export const PROVIDER_CONNECTED_EVENT = 'sumurai:provider-connected';
+
+export const dispatchProviderConnected = () => {
+  window.dispatchEvent(new Event(PROVIDER_CONNECTED_EVENT));
+};

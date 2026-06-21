@@ -33,15 +33,11 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
 
   const fixedExpenses = props.state === 'empty' ? [] : sampleFixedExpenses;
 
-  const errorMessage =
-    props.state === 'error' ? 'Unable to reach the budgets service. Try again shortly.' : null;
-
   return (
     <div data-testid="budgets-page">
       <PageLayout
         title="Track your expenses"
         subtitle="Review subscriptions and manage monthly budgets categories from all your connected bank accounts."
-        error={errorMessage}
         stats={heroStats}
       >
         <div className={cn('w-full', 'min-w-0', 'max-w-full', 'space-y-6')}>

@@ -5,13 +5,14 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { AccountNormalizer, type BackendAccount } from '../domain/AccountNormalizer';
+import type { AccountCategoryType } from '../domain/accountCategories';
 import { PlaidService } from '../services/PlaidService';
 
 type NormalizedAccount = {
   id: string;
   name: string;
   mask: string;
-  type: 'checking' | 'savings' | 'credit' | 'loan' | 'other';
+  type: AccountCategoryType;
   balance?: number;
   transactions?: number;
   connectionKey: string | null;
@@ -30,7 +31,7 @@ export interface PlaidConnection {
     id: string;
     name: string;
     mask: string;
-    type: 'checking' | 'savings' | 'credit' | 'loan' | 'other';
+    type: AccountCategoryType;
     balance?: number;
     transactions?: number;
   }>;
@@ -169,7 +170,7 @@ export const usePlaidConnections = (
         id: string;
         name: string;
         mask: string;
-        type: 'checking' | 'savings' | 'credit' | 'loan' | 'other';
+        type: AccountCategoryType;
         balance?: number;
         transactions?: number;
       }> = [];

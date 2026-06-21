@@ -1,6 +1,7 @@
 import { Check, ChevronDown, ChevronRight, Filter, Minus } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { compareInstitutionNames } from '@/domain/institutionSort';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { Button, cn, modalDrawerSectionLabelClassName } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
@@ -320,105 +321,113 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
                   </div>
                 ) : (
                   <div className={cn('space-y-2')}>
-                    {Object.entries(accountsByBank).map(([bankName, accounts]) => {
-                      const displayName =
-                        accounts[0]?.institution_name ?? bankName.split('::')[0] ?? bankName;
-                      const bankAccountIds = accounts.map((account) => account.id);
-                      const allBankAccountsSelected = bankAccountIds.every((id) =>
-                        selectedAccountIds.includes(id)
-                      );
-                      const someBankAccountsSelected = bankAccountIds.some((id) =>
-                        selectedAccountIds.includes(id)
-                      );
-                      const isCollapsed = collapsedBanks.has(bankName);
+                    {[...Object.entries(accountsByBank)]
+                      .sort(([bankNameA, accountsA], [bankNameB, accountsB]) => {
+                        const displayNameA =
+                          accountsA[0]?.institution_name ?? bankNameA.split('::')[0] ?? bankNameA;
+                        const displayNameB =
+                          accountsB[0]?.institution_name ?? bankNameB.split('::')[0] ?? bankNameB;
+                        return compareInstitutionNames(displayNameA, displayNameB);
+                      })
+                      .map(([bankName, accounts]) => {
+                        const displayName =
+                          accounts[0]?.institution_name ?? bankName.split('::')[0] ?? bankName;
+                        const bankAccountIds = accounts.map((account) => account.id);
+                        const allBankAccountsSelected = bankAccountIds.every((id) =>
+                          selectedAccountIds.includes(id)
+                        );
+                        const someBankAccountsSelected = bankAccountIds.some((id) =>
+                          selectedAccountIds.includes(id)
+                        );
+                        const isCollapsed = collapsedBanks.has(bankName);
 
-                      return (
-                        <div
-                          key={bankName}
-                          className={cn(
-                            'border-t',
-                            ...uiBorderRecipes.divider,
-                            'pt-2',
-                            'first:border-t-0',
-                            'first:pt-0'
-                          )}
-                        >
-                          <div className={cn('flex', 'items-center', 'gap-2')}>
-                            <button
-                              type="button"
-                              onClick={() => toggleBankCollapse(bankName)}
-                              className={cn(
-                                'p-1',
-                                'hover:bg-[var(--color-surface-hover-row)]',
-                                'dark:hover:bg-[var(--color-surface-hover-row)]',
-                                uiRadiusRecipes.standard,
-                                'transition-all',
-                                'duration-200',
-                                'ease-out',
-                                'active:scale-[0.98]'
-                              )}
-                              aria-label={
-                                isCollapsed ? `Expand ${displayName}` : `Collapse ${displayName}`
-                              }
-                            >
-                              <ChevronRight
+                        return (
+                          <div
+                            key={bankName}
+                            className={cn(
+                              'border-t',
+                              ...uiBorderRecipes.divider,
+                              'pt-2',
+                              'first:border-t-0',
+                              'first:pt-0'
+                            )}
+                          >
+                            <div className={cn('flex', 'items-center', 'gap-2')}>
+                              <button
+                                type="button"
+                                onClick={() => toggleBankCollapse(bankName)}
                                 className={cn(
-                                  'h-4',
-                                  'w-4',
-                                  uiTextRecipes.muted,
-                                  'transition-transform',
-                                  !isCollapsed && 'rotate-90'
+                                  'p-1',
+                                  'hover:bg-[var(--color-surface-hover-row)]',
+                                  'dark:hover:bg-[var(--color-surface-hover-row)]',
+                                  uiRadiusRecipes.standard,
+                                  'transition-all',
+                                  'duration-200',
+                                  'ease-out',
+                                  'active:scale-[0.98]'
                                 )}
+                                aria-label={
+                                  isCollapsed ? `Expand ${displayName}` : `Collapse ${displayName}`
+                                }
+                              >
+                                <ChevronRight
+                                  className={cn(
+                                    'h-4',
+                                    'w-4',
+                                    uiTextRecipes.muted,
+                                    'transition-transform',
+                                    !isCollapsed && 'rotate-90'
+                                  )}
+                                />
+                              </button>
+                              <AccountFilterCheckbox
+                                id={`bank-${bankName}`}
+                                checked={allBankAccountsSelected}
+                                indeterminate={someBankAccountsSelected && !allBankAccountsSelected}
+                                onChange={() => toggleBank(bankName)}
                               />
-                            </button>
-                            <AccountFilterCheckbox
-                              id={`bank-${bankName}`}
-                              checked={allBankAccountsSelected}
-                              indeterminate={someBankAccountsSelected && !allBankAccountsSelected}
-                              onChange={() => toggleBank(bankName)}
-                            />
-                            <label
-                              htmlFor={`bank-${bankName}`}
-                              className={cn(
-                                uiTypographyRecipes.captionStrong,
-                                uiTextRecipes.primary,
-                                'flex-1',
-                                'cursor-pointer'
-                              )}
-                            >
-                              {displayName}
-                            </label>
-                          </div>
-
-                          {!isCollapsed ? (
-                            <div className={cn('ml-11', 'mt-2', 'space-y-2')}>
-                              {accounts.map((account) => (
-                                <div
-                                  key={account.id}
-                                  className={cn('flex', 'items-center', 'gap-2')}
-                                >
-                                  <AccountFilterCheckbox
-                                    id={`account-${account.id}`}
-                                    checked={selectedAccountIds.includes(account.id)}
-                                    onChange={() => toggleAccount(account.id)}
-                                  />
-                                  <label
-                                    htmlFor={`account-${account.id}`}
-                                    className={cn(
-                                      uiTypographyRecipes.caption,
-                                      uiTextRecipes.muted,
-                                      'cursor-pointer'
-                                    )}
-                                  >
-                                    {account.name}
-                                  </label>
-                                </div>
-                              ))}
+                              <label
+                                htmlFor={`bank-${bankName}`}
+                                className={cn(
+                                  uiTypographyRecipes.captionStrong,
+                                  uiTextRecipes.primary,
+                                  'flex-1',
+                                  'cursor-pointer'
+                                )}
+                              >
+                                {displayName}
+                              </label>
                             </div>
-                          ) : null}
-                        </div>
-                      );
-                    })}
+
+                            {!isCollapsed ? (
+                              <div className={cn('ml-11', 'mt-2', 'space-y-2')}>
+                                {accounts.map((account) => (
+                                  <div
+                                    key={account.id}
+                                    className={cn('flex', 'items-center', 'gap-2')}
+                                  >
+                                    <AccountFilterCheckbox
+                                      id={`account-${account.id}`}
+                                      checked={selectedAccountIds.includes(account.id)}
+                                      onChange={() => toggleAccount(account.id)}
+                                    />
+                                    <label
+                                      htmlFor={`account-${account.id}`}
+                                      className={cn(
+                                        uiTypographyRecipes.caption,
+                                        uiTextRecipes.muted,
+                                        'cursor-pointer'
+                                      )}
+                                    >
+                                      {account.name}
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
                     {Object.keys(accountsByBank).length === 0 && !loading && (
                       <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
                         No accounts available.

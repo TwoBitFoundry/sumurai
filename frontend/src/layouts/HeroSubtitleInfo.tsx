@@ -1,10 +1,9 @@
 import * as Popover from '@radix-ui/react-popover';
 import { Info } from 'lucide-react';
-import { cn } from '@/ui/primitives';
+import { ControlHoverLabel, cn } from '@/ui/primitives';
 import {
-  heroSubtitleInfoIconWell,
+  heroInfoTriggerButton,
   infoPopoverShell,
-  focus as uiFocusRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
@@ -14,32 +13,22 @@ interface HeroSubtitleInfoProps {
   subtitle: string;
 }
 
+const heroSubtitleInfoHoverLabel = 'About';
+
 export function HeroSubtitleInfo({ pageTitle, subtitle }: HeroSubtitleInfoProps) {
   return (
     <Popover.Root>
-      <Popover.Trigger asChild>
-        <button
-          type="button"
-          aria-label={`Show details for ${pageTitle}`}
-          title={`Show details for ${pageTitle}`}
-          className={cn(
-            'rounded-full',
-            'border',
-            'border-transparent',
-            'bg-transparent',
-            uiTextRecipes.muted,
-            'transition-colors',
-            'duration-150',
-            'hover:text-[var(--color-text-primary)]',
-            'hover:bg-[var(--color-surface-hover-row)]',
-            'dark:hover:text-[var(--color-text-primary)]',
-            uiFocusRecipes.visible,
-            ...heroSubtitleInfoIconWell
-          )}
-        >
-          <Info aria-hidden />
-        </button>
-      </Popover.Trigger>
+      <ControlHoverLabel label={heroSubtitleInfoHoverLabel}>
+        <Popover.Trigger asChild>
+          <button
+            type="button"
+            aria-label={`${heroSubtitleInfoHoverLabel} ${pageTitle}`}
+            className={cn(...heroInfoTriggerButton)}
+          >
+            <Info aria-hidden />
+          </button>
+        </Popover.Trigger>
+      </ControlHoverLabel>
       <Popover.Portal>
         <Popover.Content
           side="bottom"

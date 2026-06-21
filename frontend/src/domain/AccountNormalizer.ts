@@ -1,31 +1,13 @@
+import { type AccountCategoryType, mapStoredAccountTypeToUiType } from '@/domain/accountCategories';
+
 type NormalizedAccount = {
   id: string;
   name: string;
   mask: string;
-  type: 'checking' | 'savings' | 'credit' | 'loan' | 'other';
+  type: AccountCategoryType;
   balance?: number;
   transactions?: number;
   connectionKey: string | null;
-};
-
-const mapAccountType = (
-  backendType?: string
-): 'checking' | 'savings' | 'credit' | 'loan' | 'other' => {
-  const normalized = (backendType ?? '').toLowerCase();
-  switch (normalized) {
-    case 'depository':
-    case 'checking':
-      return 'checking';
-    case 'savings':
-      return 'savings';
-    case 'credit':
-    case 'credit card':
-      return 'credit';
-    case 'loan':
-      return 'loan';
-    default:
-      return 'other';
-  }
 };
 
 const parseNumeric = (value: unknown): number | undefined => {
@@ -99,7 +81,7 @@ export class AccountNormalizer {
         id: String(account.id),
         name,
         mask,
-        type: mapAccountType(
+        type: mapStoredAccountTypeToUiType(
           account.account_type ?? account.type ?? account.accountType ?? account.subtype
         ),
         balance,

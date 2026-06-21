@@ -5,6 +5,8 @@ import {
   Eye,
   Fingerprint,
   Landmark,
+  RefreshCw,
+  Shield,
   ShieldCheck,
   Sparkles,
   Zap,
@@ -13,6 +15,7 @@ import type { FinancialProvider } from '@/types/api';
 import { cn } from '@/ui/primitives';
 import { status as uiStatusRecipes } from '@/ui/recipes';
 import { featurePalettes } from '@/ui/tokens';
+import type { SyncProvider } from '@/utils/queryInvalidation';
 
 export type ProviderCardSection = {
   icon: LucideIcon;
@@ -20,6 +23,7 @@ export type ProviderCardSection = {
   value: string;
   description?: string;
   privacyDetails?: ProviderPrivacyDetail[];
+  synced?: boolean;
 };
 
 export type ProviderPrivacyDetail = {
@@ -32,16 +36,29 @@ export type ProviderCardConfig = {
   badge: string;
   region: string;
   sections: ProviderCardSection[];
-  privacyHref: string;
+  privacyHref?: string;
   logoSrc?: string;
+  logoIcon?: LucideIcon;
 };
 
-export const PROVIDER_PRICE_ORDER: FinancialProvider[] = ['teller', 'simplefin', 'plaid'];
+export const PROVIDER_PRICE_ORDER: FinancialProvider[] = ['diy', 'simplefin', 'teller', 'plaid'];
+
+export function resolvePickerVisibleProviders(
+  activeAggregator: SyncProvider | null
+): FinancialProvider[] {
+  if (activeAggregator) {
+    return PROVIDER_PRICE_ORDER.filter(
+      (provider) => provider === 'diy' || provider === activeAggregator
+    );
+  }
+
+  return [...PROVIDER_PRICE_ORDER];
+}
 
 export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig> = {
   plaid: {
     title: 'Plaid',
-    badge: 'Turn Key',
+    badge: 'Organizations',
     region: 'US, CA, UK, EU',
     logoSrc: '/plaid.webp',
     privacyHref: 'https://plaid.com/legal/#consumers',
@@ -54,7 +71,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       {
         icon: Building2,
         label: 'Coverage',
-        value: '~12,000 Institutions',
+        value: '~12K Banks',
       },
       {
         icon: ShieldCheck,
@@ -79,6 +96,12 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
           },
         ],
       },
+      {
+        icon: RefreshCw,
+        label: 'Sync',
+        value: 'Yes',
+        synced: true,
+      },
     ],
   },
   teller: {
@@ -96,7 +119,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       {
         icon: Building2,
         label: 'Coverage',
-        value: '~7,000 Institutions',
+        value: '~7K Banks',
       },
       {
         icon: ShieldCheck,
@@ -121,6 +144,12 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
           },
         ],
       },
+      {
+        icon: RefreshCw,
+        label: 'Sync',
+        value: 'Yes',
+        synced: true,
+      },
     ],
   },
   simplefin: {
@@ -138,12 +167,12 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       {
         icon: Building2,
         label: 'Coverage',
-        value: '~16,000 Institutions',
+        value: '~16K Banks',
       },
       {
         icon: ShieldCheck,
         label: 'Privacy',
-        value: 'Strongest',
+        value: 'Strong',
         privacyDetails: [
           {
             label: 'How it connects',
@@ -162,6 +191,59 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
             value: 'Deletes your setup right away.',
           },
         ],
+      },
+      {
+        icon: RefreshCw,
+        label: 'Sync',
+        value: 'Yes',
+        synced: true,
+      },
+    ],
+  },
+  diy: {
+    title: 'Self-Managed',
+    badge: 'DIY',
+    region: 'Any (USD)',
+    logoIcon: Shield,
+    sections: [
+      {
+        icon: CircleDollarSign,
+        label: 'Cost',
+        value: 'Free',
+      },
+      {
+        icon: Building2,
+        label: 'Coverage',
+        value: 'Unlimited',
+      },
+      {
+        icon: ShieldCheck,
+        label: 'Privacy',
+        value: 'Strongest',
+        privacyDetails: [
+          {
+            label: 'How it connects',
+            value: 'No third-party aggregator — you manage your own data.',
+          },
+          {
+            label: 'What it stores',
+            value: 'Only what you import; nothing leaves your self-hosted instance.',
+          },
+          {
+            label: 'How it uses data',
+            value: 'Your data never leaves your server.',
+          },
+          {
+            label: 'How to disconnect',
+            value: 'Deletes the institution and all its accounts and transactions instantly.',
+          },
+        ],
+      },
+      {
+        icon: RefreshCw,
+        label: 'Sync',
+        value: 'Import',
+        synced: false,
       },
     ],
   },
@@ -369,9 +451,9 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
     backgroundClassName: cn(uiStatusRecipes.info.surface),
     textClassName: cn(uiStatusRecipes.info.text),
   },
-  heroTitle: 'Connect your SimpleFIN bridge',
+  heroTitle: 'SimpleFIN',
   heroDescription:
-    'Paste a one-time SimpleFIN setup token to connect the institutions you authorize on the bridge.',
+    'Paste a one-time SimpleFIN setup token to connect the banks you already authorized on your private bridge.',
   highlightLabel: "What you'll connect",
   highlightMeta: 'Read-only access',
   features: [
@@ -398,13 +480,13 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
     {
       icon: Eye,
       title: 'Read-only by design',
-      body: "We can't move money or make changes—only view balances and transactions.",
+      body: 'SimpleFIN only shares balance and transaction data. No money movement, no account changes.',
       palette: featurePalettes.highlight.sky,
     },
     {
       icon: Fingerprint,
-      title: "You're in control",
-      body: 'Disconnect individual institutions without removing bridge access for the rest.',
+      title: 'Your bridge, your control',
+      body: 'Manage or revoke individual bank connections from your SimpleFIN dashboard.',
       palette: featurePalettes.highlight.violet,
     },
     {
@@ -427,6 +509,70 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
   securityNote: 'Disconnect individual institutions anytime without removing your bridge access.',
 };
 
+const DIY_CONNECT_CONTENT: ConnectAccountProviderContent = {
+  displayName: 'DIY',
+  eyebrow: {
+    text: 'Self-Hosted',
+    backgroundClassName: cn(uiStatusRecipes.info.surface),
+    textClassName: cn(uiStatusRecipes.info.text),
+  },
+  heroTitle: 'Self-Managed',
+  heroDescription:
+    'Manually add a bank and accounts, then import transactions from a supported file.',
+  highlightLabel: "What you'll create",
+  highlightMeta: 'No external connections',
+  features: [
+    {
+      icon: Landmark,
+      title: 'Custom institutions',
+      body: 'Name your own bank or account container and add it instantly.',
+      palette: featurePalettes.providerFeature.emerald,
+    },
+    {
+      icon: Zap,
+      title: 'Any account type',
+      body: 'Create checking, savings, loan, or credit accounts under each institution.',
+      palette: featurePalettes.providerFeature.amber,
+    },
+    {
+      icon: Sparkles,
+      title: 'File import',
+      body: 'Upload CSV or OFX files to populate transactions; no aggregator fees.',
+      palette: featurePalettes.providerFeature.purple,
+    },
+  ],
+  highlights: [
+    {
+      icon: ShieldCheck,
+      title: 'Strongest privacy option',
+      body: 'No third party ever sees your data. Everything stays on your device.',
+      palette: featurePalettes.highlight.emerald,
+    },
+    {
+      icon: Fingerprint,
+      title: 'You control your data',
+      body: 'Import new bank data or remove the bank anytime to delete its accounts and transactions.',
+      palette: featurePalettes.highlight.violet,
+    },
+    {
+      icon: Building2,
+      title: 'Unlimited coverage',
+      body: 'Any institution worldwide — if you can export it, you can import it.',
+      palette: featurePalettes.highlight.amber,
+    },
+    {
+      icon: Eye,
+      title: 'Always free',
+      body: 'No subscriptions, no per-account fees, no surprises.',
+      palette: featurePalettes.highlight.sky,
+    },
+  ],
+  cta: {
+    defaultLabel: 'Create custom institution',
+  },
+  securityNote: 'Your data never leaves your self-hosted instance.',
+};
+
 export const CONNECT_ACCOUNT_PROVIDER_CONTENT: Record<
   FinancialProvider,
   ConnectAccountProviderContent
@@ -434,6 +580,7 @@ export const CONNECT_ACCOUNT_PROVIDER_CONTENT: Record<
   plaid: PLAID_CONNECT_CONTENT,
   teller: TELLER_CONNECT_CONTENT,
   simplefin: SIMPLEFIN_CONNECT_CONTENT,
+  diy: DIY_CONNECT_CONTENT,
 };
 
 export const getConnectAccountProviderContent = (

@@ -24,6 +24,7 @@ export function usePlaidConnectionStrategy(
     dispatch,
     handleError,
     onConnectionSuccess,
+    onExit: onExitCallback,
     invalidateCache,
   } = context;
 
@@ -189,6 +190,7 @@ export function usePlaidConnectionStrategy(
                 setReady(false);
                 setLinkToken(null);
                 dispatch(connectionActions.patch({ connectionInProgress: false }));
+                onExitCallback?.();
                 if (err) {
                   handleError(POPUP_BLOCKED_MESSAGE);
                 }
@@ -203,6 +205,7 @@ export function usePlaidConnectionStrategy(
       handleError,
       handleSuccess,
       linkToken,
+      onExitCallback,
       onScriptLoadFailed,
       sdkNonce,
       setReady,

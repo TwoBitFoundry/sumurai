@@ -64,7 +64,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
     return items.reduce<AccountsByBank>((acc, account) => {
       const bankName = account.institution_name || 'Unknown Bank';
       const bankKey =
-        account.provider === 'simplefin' && account.connection_id
+        account.connection_id && (account.provider === 'simplefin' || account.provider === 'diy')
           ? `${bankName}::${account.connection_id}`
           : bankName;
 
@@ -287,8 +287,8 @@ function mapProviderAccounts(
       institution_name: account.institution_name ?? 'Unknown Bank',
       connection_id:
         account.connection_id ??
-        account.provider_connection_id ??
-        account.plaid_connection_id ??
+        (account.provider_connection_id != null ? String(account.provider_connection_id) : null) ??
+        (account.plaid_connection_id != null ? String(account.plaid_connection_id) : null) ??
         null,
       provider_account_id: account.provider_account_id ?? null,
       transaction_count: parseTransactionCount(account.transaction_count),

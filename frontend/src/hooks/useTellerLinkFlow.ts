@@ -15,6 +15,7 @@ import {
   TELLER_CONNECT_LOAD_FAILED_MESSAGE,
 } from '@/utils/popupBlockedMessage';
 import type { BackendAccount } from '../domain/AccountNormalizer';
+import { mapStoredAccountTypeToUiType } from '../domain/accountCategories';
 import { ProviderCatalog } from '../services/ProviderCatalog';
 import { TellerService } from '../services/TellerService';
 import { dispatchAccountsChanged } from '../utils/events';
@@ -85,17 +86,6 @@ const resolveConnectionId = (account: BackendAccount): string | null => {
   return raw != null ? String(raw) : null;
 };
 
-const mapAccountType = (
-  value: string | null | undefined
-): PlaidConnection['accounts'][number]['type'] => {
-  const normalized = (value ?? '').toLowerCase();
-  if (normalized.includes('savings')) return 'savings';
-  if (normalized.includes('credit')) return 'credit';
-  if (normalized.includes('loan')) return 'loan';
-  if (normalized.includes('depository') || normalized.includes('checking')) return 'checking';
-  return 'other';
-};
-
 const mapAccount = (account: BackendAccount) => {
   const ledger =
     parseNumeric(account.balance_ledger) ??
@@ -118,8 +108,8 @@ const mapAccount = (account: BackendAccount) => {
     id: String(account.id),
     name,
     mask: maskSource != null ? String(maskSource) : '0000',
-    type: mapAccountType(
-      account.account_type ?? account.type ?? account.accountType ?? account.subtype ?? null
+    type: mapStoredAccountTypeToUiType(
+      account.account_type ?? account.type ?? account.accountType ?? account.subtype ?? undefined
     ),
     balance: ledger ?? undefined,
     transactions: txnCount ?? undefined,

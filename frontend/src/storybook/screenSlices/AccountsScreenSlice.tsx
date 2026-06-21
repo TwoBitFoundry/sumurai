@@ -10,7 +10,6 @@ import { storyProviderPickerPanelProps } from '@/storybook/fixtures/providerPick
 import type { FinancialProvider } from '@/types/api';
 import { cn, IconButton } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { getProviderLogoSrc } from '@/utils/providerCards';
 
 type ProviderPickerSliceProps = {
   loading?: boolean;
@@ -62,11 +61,7 @@ export function AccountsConnectedScreenSlice(props: {
       >
         <RefreshCw className={cn(props.syncingAll && 'animate-spin')} />
       </IconButton>
-      <ConnectButton
-        onClick={() => {}}
-        disabled={false}
-        leadingImageSrc={getProviderLogoSrc('plaid')}
-      >
+      <ConnectButton onClick={() => {}} disabled={false}>
         Link Account
       </ConnectButton>
     </>
@@ -82,7 +77,7 @@ export function AccountsConnectedScreenSlice(props: {
   return (
     <div data-testid="accounts-page">
       <PageLayout
-        title="Unite your accounts with Plaid"
+        title="Unite your accounts"
         subtitle="Securely link and sync accounts on-demand, view balances, and import or export your data any time."
         actions={actions}
         stats={statsGrid}

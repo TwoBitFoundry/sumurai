@@ -16,8 +16,8 @@ Read the relevant doc before editing — don't reinvent what's already specified
 
 AGENTS.md covers the full suites. For iteration:
 
-- Frontend single file: `bun --cwd=frontend test -- path/to/file.test.tsx`
-- Frontend single test name: `bun --cwd=frontend test -- -t "name pattern"`
+- Frontend single file: `bun --cwd=frontend run test -- path/to/file.test.tsx`
+- Frontend single test name: `bun --cwd=frontend run test -- -t "name pattern"`
 - Backend single test: `cargo test -p sumurai-backend --locked <name_substring>` (from repository root)
 
 ## Architecture notes

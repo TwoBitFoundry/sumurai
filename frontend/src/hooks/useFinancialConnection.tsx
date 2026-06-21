@@ -38,8 +38,10 @@ import {
 
 export interface UseFinancialConnectionOptions {
   provider: SyncProvider;
+  mountKey?: string;
   onConnectionSuccess?: (institutionName: string) => void;
   onError?: (error: string) => void;
+  onExit?: () => void;
   onSimpleFinAuthRequired?: (institutions: SimpleFinInstitutionAuthRequired[]) => void;
   isOnline?: boolean;
 }
@@ -63,8 +65,10 @@ export function useFinancialConnection(
 ): UseFinancialConnectionReturn {
   const {
     provider,
+    mountKey,
     onConnectionSuccess,
     onError,
+    onExit,
     onSimpleFinAuthRequired,
     isOnline = true,
   } = options;
@@ -109,6 +113,7 @@ export function useFinancialConnection(
       dispatch,
       handleError,
       onConnectionSuccess,
+      onExit,
       onSimpleFinAuthRequired,
       invalidateCache,
       tellerApplicationId: providerCatalog.tellerApplicationId,
@@ -119,6 +124,7 @@ export function useFinancialConnection(
       invalidateCache,
       isOnline,
       onConnectionSuccess,
+      onExit,
       onSimpleFinAuthRequired,
       providerCatalog.tellerApplicationId,
       providerCatalog.tellerEnvironment,
@@ -132,7 +138,7 @@ export function useFinancialConnection(
 
   const connectionMount = useMemo(() => {
     const bridge = createElement(FinancialConnectionStrategyBridge, {
-      key: provider,
+      key: `${provider}-${mountKey ?? 'default'}`,
       provider,
       context: strategyContext,
       strategyRef,
@@ -142,14 +148,14 @@ export function useFinancialConnection(
       return bridge;
     }
 
-    return createElement(Fragment, { key: `${provider}-connection` }, [
+    return createElement(Fragment, { key: `${provider}-${mountKey ?? 'default'}-connection` }, [
       createElement(ProviderSdkLaunchBackdrop, {
         key: 'sdk-launch-backdrop',
         active: sdkLaunchBackdropActive,
       }),
       bridge,
     ]);
-  }, [provider, sdkLaunchBackdropActive, strategyContext]);
+  }, [mountKey, provider, sdkLaunchBackdropActive, strategyContext]);
 
   const waitForSdkReady = useCallback(async (timeoutMs: number) => {
     await new Promise((r) => setTimeout(r, 0));

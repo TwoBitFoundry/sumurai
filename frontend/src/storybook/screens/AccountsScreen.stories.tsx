@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
-import { STORY_ALL_PROVIDERS, storyConnectButtonIndex } from '@/storybook/fixtures/providerPicker';
+import {
+  expectStoryProviderCardsVisible,
+  getStoryProviderPickerButton,
+} from '@/storybook/fixtures/providerPickerStoryHelpers';
 import {
   AccountsConnectedScreenSlice,
   AccountsProviderPickerSlice,
@@ -50,19 +53,12 @@ export const ProviderPicker: StoryObj<ProviderPickerStoryArgs> = {
     const canvas = within(canvasElement);
     await expect(canvas.getByTestId('provider-selection-panel')).toBeVisible();
     await expect(canvas.getByText('Choose how you connect accounts')).toBeVisible();
-    for (const provider of STORY_ALL_PROVIDERS) {
-      const label =
-        provider === 'simplefin'
-          ? 'SimpleFIN'
-          : provider.charAt(0).toUpperCase() + provider.slice(1);
-      await expect(canvas.getByAltText(`${label} logo`)).toBeVisible();
-    }
-    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
-    await expect(connectButtons).toHaveLength(3);
-    await expect(connectButtons[storyConnectButtonIndex('plaid')]).toBeEnabled();
-    await expect(connectButtons[storyConnectButtonIndex('teller')]).toBeEnabled();
-    await expect(connectButtons[storyConnectButtonIndex('simplefin')]).toBeEnabled();
-    await userEvent.click(connectButtons[storyConnectButtonIndex('plaid')]!);
+    await expectStoryProviderCardsVisible(canvas);
+    await expect(getStoryProviderPickerButton(canvas, 'plaid')).toBeEnabled();
+    await expect(getStoryProviderPickerButton(canvas, 'teller')).toBeEnabled();
+    await expect(getStoryProviderPickerButton(canvas, 'simplefin')).toBeEnabled();
+    await expect(getStoryProviderPickerButton(canvas, 'diy')).toBeEnabled();
+    await userEvent.click(getStoryProviderPickerButton(canvas, 'plaid'));
     await expect(args.onSelectProvider).toHaveBeenCalledWith('plaid');
   },
 };
@@ -75,8 +71,7 @@ export const ProviderPickerTellerConnect: StoryObj<ProviderPickerStoryArgs> = {
   render: (args) => <AccountsProviderPickerSlice onSelectProvider={args.onSelectProvider} />,
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
-    await userEvent.click(connectButtons[storyConnectButtonIndex('teller')]!);
+    await userEvent.click(getStoryProviderPickerButton(canvas, 'teller'));
     await expect(args.onSelectProvider).toHaveBeenCalledWith('teller');
   },
 };
@@ -89,8 +84,7 @@ export const ProviderPickerSimpleFinConnect: StoryObj<ProviderPickerStoryArgs> =
   render: (args) => <AccountsProviderPickerSlice onSelectProvider={args.onSelectProvider} />,
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
-    await userEvent.click(connectButtons[storyConnectButtonIndex('simplefin')]!);
+    await userEvent.click(getStoryProviderPickerButton(canvas, 'simplefin'));
     await expect(args.onSelectProvider).toHaveBeenCalledWith('simplefin');
   },
 };

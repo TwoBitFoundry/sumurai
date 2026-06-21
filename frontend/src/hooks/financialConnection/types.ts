@@ -30,6 +30,7 @@ export interface FinancialConnectionStrategyContext {
   dispatch: Dispatch<FinancialConnectionAction>;
   handleError: (message: string) => void;
   onConnectionSuccess?: (institutionName: string) => void;
+  onExit?: () => void;
   onSimpleFinAuthRequired?: (institutions: SimpleFinInstitutionAuthRequired[]) => void;
   invalidateCache: () => Promise<void>;
   tellerApplicationId: string | null;

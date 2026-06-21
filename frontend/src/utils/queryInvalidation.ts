@@ -10,6 +10,10 @@ import {
 
 export type SyncProvider = 'plaid' | 'teller' | 'simplefin';
 
+export function isSyncProvider(provider: string): provider is SyncProvider {
+  return provider === 'plaid' || provider === 'teller' || provider === 'simplefin';
+}
+
 export type InvalidateStaleCacheOptions = {
   resetTransactions?: TransactionQueryResetMode;
 };

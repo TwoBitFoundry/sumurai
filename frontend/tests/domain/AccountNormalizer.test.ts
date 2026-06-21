@@ -2,10 +2,10 @@ import { AccountNormalizer } from '@/domain/AccountNormalizer';
 
 describe('AccountNormalizer', () => {
   describe('normalize', () => {
-    it('should normalize account type from depository to checking', () => {
-      const accounts = [{ id: '1', account_type: 'depository', name: 'Checking' }];
+    it('should normalize account type from depository to cash', () => {
+      const accounts = [{ id: '1', account_type: 'depository', name: 'Cash' }];
       const result = AccountNormalizer.normalize(accounts);
-      expect(result[0].type).toBe('checking');
+      expect(result[0].type).toBe('cash');
     });
 
     it('should normalize account type from credit card to credit', () => {
@@ -56,20 +56,32 @@ describe('AccountNormalizer', () => {
       expect(result[0].id).toBe('123');
       expect(result[0].name).toBe('Account');
       expect(result[0].mask).toBe('0000');
-      expect(result[0].type).toBe('other');
+      expect(result[0].type).toBe('investments');
       expect(result[0].connectionKey).toBe(null);
       expect(result[0].balance).toBeUndefined();
     });
 
+    it('should normalize DIY cash accounts to cash UI type', () => {
+      const accounts = [{ id: '1', account_type: 'depository', name: 'Cash' }];
+      const result = AccountNormalizer.normalize(accounts);
+      expect(result[0].type).toBe('cash');
+    });
+
+    it('should normalize DIY investment accounts to investments UI type', () => {
+      const accounts = [{ id: '1', account_type: 'investment', name: 'Brokerage' }];
+      const result = AccountNormalizer.normalize(accounts);
+      expect(result[0].type).toBe('investments');
+    });
+
     it('should handle array of accounts', () => {
       const accounts = [
-        { id: '1', name: 'Account 1', account_type: 'checking' },
-        { id: '2', name: 'Account 2', account_type: 'savings' },
+        { id: '1', name: 'Account 1', account_type: 'depository' },
+        { id: '2', name: 'Account 2', account_type: 'investment' },
       ];
       const result = AccountNormalizer.normalize(accounts);
       expect(result).toHaveLength(2);
-      expect(result[0].type).toBe('checking');
-      expect(result[1].type).toBe('savings');
+      expect(result[0].type).toBe('cash');
+      expect(result[1].type).toBe('investments');
     });
   });
 });

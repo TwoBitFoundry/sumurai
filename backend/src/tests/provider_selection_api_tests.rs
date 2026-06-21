@@ -96,6 +96,7 @@ fn create_auth_cookie_cache() -> MockCacheService {
 fn build_test_config() -> Config {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "test");
+    env.set("TELLER_APPLICATION_ID", "app-test");
     env.set("AUTH_COOKIE_SAME_SITE", "Lax");
     env.set("APP_ORIGIN", "http://localhost:8080");
     Config::from_env_provider(&env).unwrap()
@@ -146,6 +147,9 @@ async fn build_test_app(
             cache_service.clone(),
         ),
     );
+    let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
+        db_repository.clone(),
+    ));
 
     let state = AppState {
         plaid_service: plaid_service_arc,
@@ -175,6 +179,7 @@ async fn build_test_app(
             )
             .unwrap(),
         ),
+        diy_service,
     };
 
     create_app(state)
@@ -618,6 +623,117 @@ async fn given_inactive_provider_account_filter_when_getting_transactions_then_f
 }
 
 #[tokio::test]
+async fn given_diy_account_filter_when_getting_transactions_then_keeps_diy_scope() {
+    let user = User {
+        provider: "teller".to_string(),
+        ..crate::test_fixtures::TestFixtures::create_authenticated_user_with_token().0
+    };
+    let (_user, token) =
+        crate::test_fixtures::TestFixtures::create_authenticated_user_with_token_for_user(
+            user.clone(),
+        );
+    let user_id = user.id;
+    let teller_connection_id = Uuid::new_v4();
+    let diy_connection_id = Uuid::new_v4();
+    let teller_account_id = Uuid::new_v4();
+    let diy_account_id = Uuid::new_v4();
+    let mut teller_connection = ProviderConnection::new(user_id, "item-teller");
+    teller_connection.id = teller_connection_id;
+    teller_connection.provider = "teller".to_string();
+    let mut diy_connection = ProviderConnection::new(user_id, "diy_item");
+    diy_connection.id = diy_connection_id;
+    diy_connection.provider = "diy".to_string();
+
+    let mut mock_db = MockDatabaseRepository::new();
+
+    mock_db
+        .expect_get_user_by_id()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let user = user.clone();
+            Box::pin(async move { Ok(Some(user)) })
+        });
+
+    mock_db.expect_get_accounts_for_user().returning(move |_| {
+        use crate::models::account::Account;
+        let accounts = vec![
+            Account {
+                id: teller_account_id,
+                user_id: Some(user_id),
+                provider_account_id: Some("teller_acc_1".to_string()),
+                provider_connection_id: Some(teller_connection_id),
+                name: "Teller Account".to_string(),
+                account_type: "checking".to_string(),
+                balance_current: Some(rust_decimal_macros::dec!(1000.00)),
+                mask: Some("1111".to_string()),
+                institution_name: Some("Teller Bank".to_string()),
+                provider_conn_id: None,
+            },
+            Account {
+                id: diy_account_id,
+                user_id: Some(user_id),
+                provider_account_id: Some("diy_acc_1".to_string()),
+                provider_connection_id: Some(diy_connection_id),
+                name: "DIY Account".to_string(),
+                account_type: "checking".to_string(),
+                balance_current: Some(rust_decimal_macros::dec!(250.00)),
+                mask: Some("3333".to_string()),
+                institution_name: Some("My Bank".to_string()),
+                provider_conn_id: None,
+            },
+        ];
+        Box::pin(async move { Ok(accounts) })
+    });
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let teller_connection = teller_connection.clone();
+            let diy_connection = diy_connection.clone();
+            Box::pin(async move { Ok(vec![teller_connection, diy_connection]) })
+        });
+
+    mock_db
+        .expect_get_budgets_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_latest_account_balances_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db.expect_get_transactions_keyset().returning(
+        move |_, _, _, _, account_ids, _, _, _, _| {
+            assert_eq!(account_ids.map(|ids| ids.len()), Some(1));
+            assert_eq!(
+                account_ids.and_then(|ids| ids.first().copied()),
+                Some(diy_account_id)
+            );
+            Box::pin(async {
+                Ok(crate::models::transaction::CursorTransactionsResponse {
+                    transactions: vec![],
+                    next_cursor: None,
+                    prev_cursor: None,
+                    has_more: false,
+                })
+            })
+        },
+    );
+
+    let app = build_test_app(mock_db, provider_registry(&["plaid", "teller", "diy"])).await;
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::GET)
+        .uri(format!("/api/transactions?account_ids={diy_account_id}"))
+        .header("Cookie", format!("auth_token={token}"))
+        .body(axum::body::Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+}
+
+#[tokio::test]
 async fn given_empty_provider_when_fetching_provider_info_then_returns_null_user_provider() {
     let (user, token) = crate::test_fixtures::TestFixtures::create_authenticated_user_with_token();
     let user_id = user.id;
@@ -702,4 +818,207 @@ fn given_openapi_when_generating_spec_then_marks_user_provider_nullable() {
             ["type"],
         json!(["string", "null"])
     );
+}
+
+#[tokio::test]
+async fn given_diy_registered_when_fetching_provider_info_then_lists_diy() {
+    let (user, token) = crate::test_fixtures::TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+    let mut mock_db = MockDatabaseRepository::new();
+
+    mock_db
+        .expect_get_user_by_id()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let user = User {
+                provider: String::new(),
+                ..user.clone()
+            };
+            Box::pin(async move { Ok(Some(user)) })
+        });
+
+    let app = build_test_app(mock_db, provider_registry(&["simplefin", "diy"])).await;
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::GET)
+        .uri("/api/providers/info")
+        .header("Cookie", format!("auth_token={}", token))
+        .body(axum::body::Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let available = payload["available_providers"]
+        .as_array()
+        .expect("available_providers array");
+    assert!(
+        available.iter().any(|v| v == "diy"),
+        "diy should be listed in available_providers"
+    );
+}
+
+#[tokio::test]
+async fn given_active_aggregator_when_selecting_diy_then_returns_ok() {
+    let (user, token) = crate::test_fixtures::TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+    let mut mock_db = MockDatabaseRepository::new();
+    let mut teller_connection = ProviderConnection::new(user_id, "item-teller");
+    teller_connection.provider = "teller".to_string();
+    teller_connection.mark_connected("Teller Bank");
+
+    mock_db
+        .expect_get_user_by_id()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let user = User {
+                provider: "teller".to_string(),
+                ..user.clone()
+            };
+            Box::pin(async move { Ok(Some(user)) })
+        });
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let conn = teller_connection.clone();
+            Box::pin(async move { Ok(vec![conn]) })
+        });
+
+    mock_db
+        .expect_update_user_provider()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq("diy"),
+        )
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+
+    let app = build_test_app(mock_db, provider_registry(&["teller", "diy"])).await;
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::POST)
+        .uri("/api/providers/select")
+        .header("Cookie", format!("auth_token={}", token))
+        .header("Content-Type", "application/json")
+        .body(axum::body::Body::from(
+            serde_json::to_string(&json!({ "provider": "diy" })).unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(payload["user_provider"], json!("diy"));
+}
+
+#[tokio::test]
+async fn given_diy_connection_when_selecting_aggregator_then_returns_ok() {
+    let (user, token) = crate::test_fixtures::TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+    let mut mock_db = MockDatabaseRepository::new();
+    let mut diy_connection = ProviderConnection::new(user_id, "diy_item-1");
+    diy_connection.provider = "diy".to_string();
+    diy_connection.mark_connected("My Cash");
+
+    mock_db
+        .expect_get_user_by_id()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let user = User {
+                provider: String::new(),
+                ..user.clone()
+            };
+            Box::pin(async move { Ok(Some(user)) })
+        });
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let conn = diy_connection.clone();
+            Box::pin(async move { Ok(vec![conn]) })
+        });
+
+    mock_db
+        .expect_update_user_provider()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq("teller"),
+        )
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+
+    let app = build_test_app(mock_db, provider_registry(&["teller", "diy"])).await;
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::POST)
+        .uri("/api/providers/select")
+        .header("Cookie", format!("auth_token={}", token))
+        .header("Content-Type", "application/json")
+        .body(axum::body::Body::from(
+            serde_json::to_string(&json!({ "provider": "teller" })).unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(payload["user_provider"], json!("teller"));
+}
+
+#[tokio::test]
+async fn given_active_teller_connection_when_selecting_plaid_then_conflict_preserved() {
+    let (user, token) = crate::test_fixtures::TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+    let mut mock_db = MockDatabaseRepository::new();
+    let mut teller_connection = ProviderConnection::new(user_id, "item-teller");
+    teller_connection.provider = "teller".to_string();
+    teller_connection.mark_connected("Teller Bank");
+
+    mock_db
+        .expect_get_user_by_id()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let user = User {
+                provider: "teller".to_string(),
+                ..user.clone()
+            };
+            Box::pin(async move { Ok(Some(user)) })
+        });
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let conn = teller_connection.clone();
+            Box::pin(async move { Ok(vec![conn]) })
+        });
+
+    let app = build_test_app(mock_db, provider_registry(&["teller", "plaid", "diy"])).await;
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::POST)
+        .uri("/api/providers/select")
+        .header("Cookie", format!("auth_token={}", token))
+        .header("Content-Type", "application/json")
+        .body(axum::body::Body::from(
+            serde_json::to_string(&json!({ "provider": "plaid" })).unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 409);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert!(payload["message"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("Disconnect all teller accounts before switching"));
 }

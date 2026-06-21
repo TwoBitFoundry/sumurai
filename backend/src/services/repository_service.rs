@@ -284,6 +284,11 @@ pub trait DatabaseRepository: Send + Sync {
     async fn delete_provider_accounts(&self, item_id: &str) -> Result<i32>;
     async fn delete_provider_connection(&self, user_id: &Uuid, item_id: &str) -> Result<()>;
     async fn delete_provider_credentials(&self, item_id: &str) -> Result<()>;
+    async fn disconnect_provider_connection_cascade(
+        &self,
+        user_id: &Uuid,
+        item_id: &str,
+    ) -> Result<(i32, i32)>;
     async fn get_budgets_for_user(&self, user_id: Uuid) -> Result<Vec<Budget>>;
     async fn get_budget_by_id_for_user(
         &self,
@@ -1628,6 +1633,65 @@ impl DatabaseRepository for PostgresRepository {
             .await?;
 
         Ok(())
+    }
+
+    async fn disconnect_provider_connection_cascade(
+        &self,
+        user_id: &Uuid,
+        item_id: &str,
+    ) -> Result<(i32, i32)> {
+        let user_id = *user_id;
+        let item_id = item_id.to_string();
+
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                let connection = provider_connections::Entity::find()
+                    .filter(provider_connections::Column::UserId.eq(user_id))
+                    .filter(provider_connections::Column::ItemId.eq(item_id))
+                    .one(txn)
+                    .await?;
+
+                let Some(connection) = connection else {
+                    return Ok((0, 0));
+                };
+
+                let account_ids: Vec<Uuid> = accounts::Entity::find()
+                    .filter(accounts::Column::ProviderConnectionId.eq(connection.id))
+                    .all(txn)
+                    .await?
+                    .into_iter()
+                    .map(|account| account.id)
+                    .collect();
+
+                let deleted_transactions = if account_ids.is_empty() {
+                    0
+                } else {
+                    transactions::Entity::delete_many()
+                        .filter(transactions::Column::AccountId.is_in(account_ids))
+                        .exec(txn)
+                        .await?
+                        .rows_affected as i32
+                };
+
+                let deleted_accounts = accounts::Entity::delete_many()
+                    .filter(accounts::Column::ProviderConnectionId.eq(connection.id))
+                    .exec(txn)
+                    .await?
+                    .rows_affected as i32;
+
+                provider_credentials::Entity::delete_many()
+                    .filter(provider_credentials::Column::ItemId.eq(connection.item_id))
+                    .exec(txn)
+                    .await?;
+
+                provider_connections::Entity::delete_by_id(connection.id)
+                    .exec(txn)
+                    .await?;
+
+                Ok((deleted_transactions, deleted_accounts))
+            })
+        })
+        .await
     }
 
     async fn get_transactions_for_user(&self, user_id: &Uuid) -> Result<Vec<Transaction>> {

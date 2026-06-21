@@ -12,7 +12,7 @@ describe('TransactionTransformer', () => {
         amount: 5.5,
         category_primary: 'FOOD_AND_DRINK',
         account_name: 'Checking Account',
-        account_type: 'checking',
+        account_type: 'depository',
       };
       const result = TransactionTransformer.backendToFrontend(backendTxn);
       expect(result.id).toBe('txn123');
@@ -24,7 +24,7 @@ describe('TransactionTransformer', () => {
       expect(result.normalizationSource).toBe('plaid');
       expect(result.category.primary).toBe('FOOD_AND_DRINK');
       expect(result.account_name).toBe('Checking Account');
-      expect(result.account_type).toBe('checking');
+      expect(result.account_type).toBe('depository');
     });
 
     it('should set default values for missing optional fields', () => {
@@ -33,7 +33,7 @@ describe('TransactionTransformer', () => {
         date: '2024-01-15',
         amount: 100,
         account_name: 'Checking',
-        account_type: 'checking',
+        account_type: 'depository',
       };
       const result = TransactionTransformer.backendToFrontend(backendTxn);
       expect(result.name).toBe('Unknown');
@@ -51,7 +51,7 @@ describe('TransactionTransformer', () => {
         category_detailed: 'General Merchandise',
         category_confidence: 'HIGH',
         account_name: 'Checking',
-        account_type: 'checking',
+        account_type: 'depository',
       };
       const result = TransactionTransformer.backendToFrontend(backendTxn);
       expect(result.category.detailed).toBe('General Merchandise');
@@ -64,7 +64,7 @@ describe('TransactionTransformer', () => {
         date: '2024-01-15',
         amount: 100,
         account_name: 'Checking',
-        account_type: 'checking',
+        account_type: 'depository',
         account_mask: '1234',
         running_balance: 5000,
       };
@@ -79,7 +79,7 @@ describe('TransactionTransformer', () => {
         date: '2024-01-15',
         amount: 100,
         account_name: 'Checking',
-        account_type: 'checking',
+        account_type: 'depository',
         location: { city: 'San Francisco', state: 'CA' },
       };
       const result = TransactionTransformer.backendToFrontend(backendTxn);
@@ -92,7 +92,7 @@ describe('TransactionTransformer', () => {
         date: '2024-01-15',
         amount: 100,
         account_name: 'Checking',
-        account_type: 'checking',
+        account_type: 'depository',
       };
       const result = TransactionTransformer.backendToFrontend(backendTxn);
 

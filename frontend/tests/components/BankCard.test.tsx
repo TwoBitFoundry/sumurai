@@ -102,6 +102,70 @@ describe('BankCard', () => {
     expect(screen.getByRole('button', { name: 'Show accounts' })).toBeVisible();
   });
 
+  it('hides the sync action for DIY banks', () => {
+    render(
+      <BankCard
+        bank={{
+          id: 'bank-1',
+          name: 'My Bank',
+          short: 'MB',
+          status: 'connected',
+          provider: 'diy',
+          accounts: [],
+        }}
+        onSync={jest.fn()}
+        onDisconnect={jest.fn()}
+        onAddAccount={jest.fn()}
+        isOnline
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Sync now' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add account' })).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Add account' }).querySelector('svg.lucide-plus')
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Add account' }).querySelector('svg.lucide-plus')
+        ?.parentElement?.className
+    ).toContain(control.glyph.md);
+    expect(
+      screen.getByRole('status', { name: 'Connected' }).querySelector('svg.lucide-circle-check')
+    ).toBeTruthy();
+    const diyProviderIcon = document.querySelector('.lucide-shield');
+    expect(diyProviderIcon).toBeTruthy();
+    expect(diyProviderIcon?.parentElement?.className).toContain('color-status-info-icon');
+  });
+
+  it('shows a provider tooltip on the institution glyph', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <BankCard
+        bank={{
+          id: 'bank-1',
+          name: 'My Bank',
+          short: 'MB',
+          status: 'connected',
+          provider: 'diy',
+          accounts: [],
+        }}
+        onSync={jest.fn()}
+        onDisconnect={jest.fn()}
+        isOnline
+      />
+    );
+
+    const providerGlyph = document.querySelector('.lucide-shield')?.parentElement?.parentElement;
+    expect(providerGlyph).toBeTruthy();
+
+    await user.hover(providerGlyph!);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Self-managed').length).toBeGreaterThan(1);
+    });
+  });
+
   it('renders an export menu in the header and exports the institution', async () => {
     const user = userEvent.setup();
     const onExport = jest.fn().mockResolvedValue(undefined);
@@ -139,7 +203,7 @@ describe('BankCard', () => {
           name: 'Chase',
           short: 'CH',
           status: 'connected',
-          accounts: [{ id: 'acc-1', name: 'Checking', mask: '1234', type: 'checking' }],
+          accounts: [{ id: 'acc-1', name: 'Checking', mask: '1234', type: 'cash' }],
         }}
         onSync={jest.fn()}
         onDisconnect={jest.fn()}
@@ -176,7 +240,7 @@ describe('BankCard', () => {
               id: 'acc-1',
               name: 'Checking',
               mask: '1234',
-              type: 'checking',
+              type: 'cash',
               transactions: 7,
             },
           ],
@@ -224,7 +288,7 @@ describe('BankCard', () => {
     expect(screen.getByRole('button', { name: 'Disconnect' })).toBeVisible();
   });
 
-  it('shows connection status before the bank name', () => {
+  it('shows connection status in the card header', () => {
     render(
       <BankCard
         bank={{
@@ -305,7 +369,7 @@ describe('BankCard', () => {
               id: 'acc-1',
               name: 'Checking',
               mask: '1234',
-              type: 'checking',
+              type: 'cash',
               transactions: 7,
             },
           ],
@@ -363,7 +427,7 @@ describe('BankCard', () => {
               id: 'acc-1',
               name: 'Checking',
               mask: '1234',
-              type: 'checking',
+              type: 'cash',
               transactions: 7,
             },
           ],
@@ -397,7 +461,7 @@ describe('BankCard', () => {
               id: 'acc-1',
               name: 'Checking',
               mask: '1234',
-              type: 'checking',
+              type: 'cash',
               transactions: 7,
             },
           ],
@@ -428,14 +492,14 @@ describe('BankCard', () => {
               id: 'acc-1',
               name: 'Checking',
               mask: '1234',
-              type: 'checking',
+              type: 'cash',
               transactions: 7,
             },
             {
               id: 'acc-2',
               name: 'Savings',
               mask: '5678',
-              type: 'savings',
+              type: 'investments',
               transactions: 4,
             },
           ],
@@ -470,7 +534,7 @@ describe('BankCard', () => {
               id: 'acc-1',
               name: 'Checking',
               mask: '1234',
-              type: 'checking',
+              type: 'cash',
               transactions: 7,
             },
           ],

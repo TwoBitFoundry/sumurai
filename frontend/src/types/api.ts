@@ -1,4 +1,4 @@
-export type FinancialProvider = 'plaid' | 'teller' | 'simplefin';
+export type FinancialProvider = 'plaid' | 'teller' | 'simplefin' | 'diy';
 export type ExportFormat = 'csv' | 'ofx';
 
 export interface TransactionLocation {
@@ -192,6 +192,27 @@ export interface ProviderConnectResponse {
   simplefin_institutions_requiring_auth?: SimpleFinInstitutionAuthRequired[];
 }
 
+export interface CreateDiyInstitutionRequest {
+  name: string;
+}
+
+export interface CreateDiyInstitutionResponse {
+  connection_id: string;
+}
+
+export interface CreateDiyAccountRequest {
+  name: string;
+  account_type: string;
+  mask?: string | null;
+  balance: string;
+}
+
+export interface CreateDiyAccountResponse {
+  id: string;
+  name: string;
+  account_type: string;
+}
+
 export interface SimpleFinInstitutionAuthRequired {
   institution_name: string;
   org_conn_id?: string | null;
@@ -243,11 +264,13 @@ export interface DataCleared {
   cache_keys: string[];
 }
 
-export interface PlaidDisconnectResponse {
+export interface DisconnectResponse {
   success: boolean;
   message: string;
   data_cleared: DataCleared;
 }
+
+export type PlaidDisconnectResponse = DisconnectResponse;
 
 export interface AnalyticsSpendingResponse {
   total: number;

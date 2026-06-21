@@ -75,6 +75,18 @@ pub(crate) fn test_passkey_for_user(user_id: Uuid) -> WebAuthnCredential {
     }
 }
 
+pub(crate) fn apply_provider_scoping_mock_defaults(mock_db: &mut MockDatabaseRepository) {
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .times(0..)
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_accounts_for_user()
+        .times(0..)
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+}
+
 pub(crate) fn apply_passkey_enrollment_mock_defaults(mock_db: &mut MockDatabaseRepository) {
     mock_db
         .expect_get_user_by_id()
@@ -304,9 +316,7 @@ impl TestFixtures {
 
         let mut mock_db = MockDatabaseRepository::new();
 
-        mock_db
-            .expect_get_all_provider_connections_by_user()
-            .returning(|_| Box::pin(async { Ok(vec![]) }));
+        apply_provider_scoping_mock_defaults(&mut mock_db);
 
         mock_db
             .expect_get_transactions_for_user()
@@ -329,6 +339,7 @@ impl TestFixtures {
             .returning(|_| Box::pin(async { Ok(vec![]) }));
 
         apply_passkey_enrollment_mock_defaults(&mut mock_db);
+        apply_provider_scoping_mock_defaults(&mut mock_db);
 
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
 
@@ -417,6 +428,9 @@ impl TestFixtures {
                 cache_service.clone(),
             ),
         );
+        let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
+            db_repository.clone(),
+        ));
 
         let state = AppState {
             plaid_service: plaid_service_arc,
@@ -446,6 +460,7 @@ impl TestFixtures {
                 )
                 .unwrap(),
             ),
+            diy_service,
         };
 
         Ok(create_app(state))
@@ -482,6 +497,7 @@ impl TestFixtures {
             .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
 
         apply_passkey_enrollment_mock_defaults(&mut mock_db);
+        apply_provider_scoping_mock_defaults(&mut mock_db);
 
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
 
@@ -572,6 +588,9 @@ impl TestFixtures {
                 cache_service.clone(),
             ),
         );
+        let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
+            db_repository.clone(),
+        ));
 
         let state = AppState {
             plaid_service: plaid_service_arc,
@@ -601,6 +620,7 @@ impl TestFixtures {
                 )
                 .unwrap(),
             ),
+            diy_service,
         };
 
         Ok(create_app(state))
@@ -647,6 +667,7 @@ impl TestFixtures {
             .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
 
         apply_passkey_enrollment_mock_defaults(&mut mock_db);
+        apply_provider_scoping_mock_defaults(&mut mock_db);
 
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
@@ -682,6 +703,9 @@ impl TestFixtures {
                 cache_service.clone(),
             ),
         );
+        let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
+            db_repository.clone(),
+        ));
 
         let state = AppState {
             plaid_service: plaid_service_arc,
@@ -711,6 +735,7 @@ impl TestFixtures {
                 )
                 .unwrap(),
             ),
+            diy_service,
         };
 
         Ok(create_app(state))

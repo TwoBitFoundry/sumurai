@@ -170,11 +170,10 @@ export const status = {
 } as const;
 
 export const accountTypeDot = {
-  checking: '#38bdf8',
-  savings: '#22c55e',
+  cash: '#38bdf8',
   credit: '#f59e0b',
+  investments: '#94a3b8',
   loan: '#a78bfa',
-  other: '#94a3b8',
 } as const;
 
 const categoryTagTypography = 'text-[0.6rem] font-bold uppercase tracking-[0.18em]';

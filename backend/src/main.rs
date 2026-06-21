@@ -197,6 +197,10 @@ pub(crate) fn build_provider_registry(
     }
 
     provider_registry.register("simplefin", simplefin_provider);
+    provider_registry.register(
+        "diy",
+        Arc::new(providers::DiyProvider) as Arc<dyn providers::FinancialDataProvider>,
+    );
 
     provider_registry
 }
@@ -446,6 +450,10 @@ async fn main() -> anyhow::Result<()> {
         )
     };
 
+    let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
+        db_repository.clone(),
+    ));
+
     let state = AppState {
         plaid_service,
         plaid_client,
@@ -466,6 +474,7 @@ async fn main() -> anyhow::Result<()> {
         category_management_service,
         auto_categorization_service,
         webauthn_service,
+        diy_service,
     };
 
     let app = create_app(state);
@@ -576,6 +585,15 @@ pub fn create_app(state: AppState) -> Router {
         )
         .route("/api/providers/info", get(get_authenticated_provider_info))
         .route("/api/providers/select", post(select_authenticated_provider))
+        .route("/api/diy/institutions", post(create_diy_institution))
+        .route(
+            "/api/diy/institutions/{connection_id}",
+            delete(disconnect_diy_institution),
+        )
+        .route(
+            "/api/diy/institutions/{connection_id}/accounts",
+            post(create_diy_account),
+        )
         .route(
             "/api/providers/connect",
             post(connect_authenticated_provider),
@@ -4071,6 +4089,228 @@ async fn health_check() -> &'static str {
 }
 
 #[utoipa::path(
+    post,
+    path = "/api/diy/institutions",
+    description = "Creates a new DIY institution (provider_connection with provider='diy') for the authenticated user.",
+    request_body = crate::models::diy::CreateDiyInstitutionRequest,
+    responses(
+        (status = 200, description = "Institution created successfully", body = crate::models::diy::CreateDiyInstitutionResponse),
+        (status = 400, description = "Invalid request body", body = ApiErrorResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "DIY Provider"
+)]
+async fn create_diy_institution(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<crate::models::diy::CreateDiyInstitutionRequest>,
+) -> Result<
+    Json<crate::models::diy::CreateDiyInstitutionResponse>,
+    (StatusCode, Json<ApiErrorResponse>),
+> {
+    let user_id = auth_context.user_id;
+
+    if req.name.trim().is_empty() {
+        return Err(
+            ApiErrorResponse::new("BAD_REQUEST", "Institution name cannot be empty")
+                .into_response(StatusCode::BAD_REQUEST),
+        );
+    }
+
+    match state
+        .diy_service
+        .create_institution(user_id, req.name.trim())
+        .await
+    {
+        Ok(connection) => Ok(Json(crate::models::diy::CreateDiyInstitutionResponse {
+            connection_id: connection.id,
+        })),
+        Err(e) if e.to_string().contains("already exists") => Err(ApiErrorResponse::conflict(
+            "Institution name already exists",
+        )),
+        Err(e) => {
+            tracing::error!(
+                "Failed to create DIY institution for user {}: {}",
+                user_id,
+                e
+            );
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to create institution",
+            ))
+        }
+    }
+}
+
+const DIY_VALID_ACCOUNT_TYPES: &[&str] = &["depository", "credit", "investment", "loan"];
+
+#[utoipa::path(
+    post,
+    path = "/api/diy/institutions/{connection_id}/accounts",
+    description = "Creates a new account under a DIY institution owned by the authenticated user.",
+    params(
+        ("connection_id" = Uuid, Path, description = "DIY institution connection ID")
+    ),
+    request_body = crate::models::diy::CreateDiyAccountRequest,
+    responses(
+        (status = 200, description = "Account created successfully", body = crate::models::diy::CreateDiyAccountResponse),
+        (status = 400, description = "Invalid account type or empty name", body = ApiErrorResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Connection is not a DIY connection", body = ApiErrorResponse),
+        (status = 404, description = "Connection not found", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "DIY Provider"
+)]
+async fn create_diy_account(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    axum::extract::Path(connection_id): axum::extract::Path<uuid::Uuid>,
+    Json(req): Json<crate::models::diy::CreateDiyAccountRequest>,
+) -> Result<Json<crate::models::diy::CreateDiyAccountResponse>, (StatusCode, Json<ApiErrorResponse>)>
+{
+    let user_id = auth_context.user_id;
+
+    if req.name.trim().is_empty() {
+        return Err(
+            ApiErrorResponse::new("BAD_REQUEST", "Account name cannot be empty")
+                .into_response(StatusCode::BAD_REQUEST),
+        );
+    }
+
+    if !DIY_VALID_ACCOUNT_TYPES.contains(&req.account_type.as_str()) {
+        return Err(ApiErrorResponse::new(
+            "BAD_REQUEST",
+            &format!(
+                "account_type must be one of: {}",
+                DIY_VALID_ACCOUNT_TYPES.join(", ")
+            ),
+        )
+        .into_response(StatusCode::BAD_REQUEST));
+    }
+
+    if req.balance.is_none() {
+        return Err(ApiErrorResponse::new("BAD_REQUEST", "Balance is required")
+            .into_response(StatusCode::BAD_REQUEST));
+    }
+
+    match state
+        .diy_service
+        .create_account(user_id, connection_id, &req)
+        .await
+    {
+        Ok(account) => Ok(Json(crate::models::diy::CreateDiyAccountResponse {
+            id: account.id,
+            name: account.name,
+            account_type: account.account_type,
+        })),
+        Err(e) if e.to_string().contains("not found") => {
+            Err(ApiErrorResponse::new("NOT_FOUND", "Connection not found")
+                .into_response(StatusCode::NOT_FOUND))
+        }
+        Err(e) if e.to_string().contains("not diy") => Err(ApiErrorResponse::new(
+            "FORBIDDEN",
+            "Connection is not a DIY connection",
+        )
+        .into_response(StatusCode::FORBIDDEN)),
+        Err(e) if e.to_string().contains("account name already exists") => Err(
+            ApiErrorResponse::conflict("Account name already exists in this institution"),
+        ),
+        Err(e) if e.to_string().contains("account mask already exists") => Err(
+            ApiErrorResponse::conflict("Account mask already exists in this institution"),
+        ),
+        Err(e) => {
+            tracing::error!(
+                "Failed to create DIY account for user {} connection {}: {}",
+                user_id,
+                connection_id,
+                e
+            );
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to create account",
+            ))
+        }
+    }
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/diy/institutions/{connection_id}",
+    description = "Removes a DIY institution and cascades deletion of its accounts, transactions, and related cache entries.",
+    params(
+        ("connection_id" = Uuid, Path, description = "DIY institution connection ID")
+    ),
+    responses(
+        (status = 200, description = "Institution removed successfully", body = crate::models::plaid::DisconnectResult),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Connection is not a DIY institution", body = ApiErrorResponse),
+        (status = 404, description = "Institution not found", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "DIY Provider"
+)]
+async fn disconnect_diy_institution(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    axum::extract::Path(connection_id): axum::extract::Path<uuid::Uuid>,
+) -> Result<Json<crate::models::plaid::DisconnectResult>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+
+    let connection = match state
+        .diy_service
+        .require_diy_institution(user_id, connection_id)
+        .await
+    {
+        Ok(connection) => connection,
+        Err(e) if e.to_string().contains("not found") => {
+            return Err(ApiErrorResponse::new("NOT_FOUND", "Institution not found")
+                .into_response(StatusCode::NOT_FOUND));
+        }
+        Err(e) if e.to_string().contains("not diy") => {
+            return Err(
+                ApiErrorResponse::new("FORBIDDEN", "Connection is not a DIY institution")
+                    .into_response(StatusCode::FORBIDDEN),
+            );
+        }
+        Err(e) => {
+            tracing::error!(
+                "Failed to resolve DIY institution {} for user {}: {}",
+                connection_id,
+                user_id,
+                e
+            );
+            return Err(ApiErrorResponse::internal_server_error(
+                "Failed to disconnect institution",
+            ));
+        }
+    };
+
+    match state
+        .connection_service
+        .disconnect_owned_connection(&connection, &user_id, &auth_context.jwt_id)
+        .await
+    {
+        Ok(result) if result.success => Ok(Json(result)),
+        Ok(_) => Err(ApiErrorResponse::new("NOT_FOUND", "Institution not found")
+            .into_response(StatusCode::NOT_FOUND)),
+        Err(e) => {
+            tracing::error!(
+                "Failed to disconnect DIY institution {} for user {}: {}",
+                connection_id,
+                user_id,
+                e
+            );
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to disconnect institution",
+            ))
+        }
+    }
+}
+
+#[utoipa::path(
     get,
     path = "/api/providers/info",
     description = "Describes available providers and the caller's current selection.",
@@ -4103,10 +4343,21 @@ async fn get_authenticated_provider_info(
         })?;
 
     let mut available_providers = Vec::new();
-    for provider in ["plaid", "teller", "simplefin"] {
-        if state.provider_registry.get(provider).is_some() {
-            available_providers.push(provider.to_string());
+    for provider in ["plaid", "teller", "simplefin", "diy"] {
+        if state.provider_registry.get(provider).is_none() {
+            continue;
         }
+
+        if provider == "teller"
+            && state
+                .config
+                .get_teller_application_id()
+                .is_none_or(|value| value.trim().is_empty())
+        {
+            continue;
+        }
+
+        available_providers.push(provider.to_string());
     }
 
     let user_provider = user
@@ -4184,18 +4435,22 @@ async fn select_authenticated_provider(
         }
     };
 
-    if let Some(conflicting_provider) = connections.iter().find_map(|connection| {
-        (connection.is_connected && connection.provider != requested_provider)
-            .then_some(connection.provider.as_str())
-    }) {
-        return Err(ApiErrorResponse::new(
-            "CONFLICT",
-            &format!(
-                "Disconnect all {} accounts before switching",
-                conflicting_provider
-            ),
-        )
-        .into_response(StatusCode::CONFLICT));
+    if requested_provider != "diy" {
+        if let Some(conflicting_provider) = connections.iter().find_map(|connection| {
+            (connection.is_connected
+                && connection.provider != requested_provider
+                && connection.provider != "diy")
+                .then_some(connection.provider.as_str())
+        }) {
+            return Err(ApiErrorResponse::new(
+                "CONFLICT",
+                &format!(
+                    "Disconnect all {} accounts before switching",
+                    conflicting_provider
+                ),
+            )
+            .into_response(StatusCode::CONFLICT));
+        }
     }
 
     match state

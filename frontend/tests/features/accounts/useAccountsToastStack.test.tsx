@@ -1,5 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
-import { useAccountsToastStack } from '@/features/accounts/hooks/useAccountsToastStack';
+import {
+  useAccountsToastStack,
+  useErrorToast,
+} from '@/features/accounts/hooks/useAccountsToastStack';
 import type { AutoCategorizationJobState } from '@/types/api';
 
 const runningJob: AutoCategorizationJobState = {
@@ -76,5 +79,25 @@ describe('useAccountsToastStack', () => {
     rerender({ job: completedJob });
 
     expect(result.current.pinnedToast).toBeNull();
+  });
+});
+
+describe('useErrorToast', () => {
+  it('pushes a transient error toast once per distinct message', () => {
+    const pushToast = jest.fn();
+    const { rerender } = renderHook(
+      ({ error }: { error: string | null }) => useErrorToast(error, pushToast),
+      { initialProps: { error: 'Failed to load insights.' as string | null } }
+    );
+
+    expect(pushToast).toHaveBeenCalledTimes(1);
+    expect(pushToast).toHaveBeenCalledWith('Failed to load insights.', 'error');
+
+    rerender({ error: 'Failed to load insights.' });
+    expect(pushToast).toHaveBeenCalledTimes(1);
+
+    rerender({ error: null });
+    rerender({ error: 'Failed to load insights.' });
+    expect(pushToast).toHaveBeenCalledTimes(2);
   });
 });

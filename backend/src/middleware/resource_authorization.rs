@@ -76,30 +76,27 @@ pub(crate) async fn provider_scoped_account_ids(
     let connections = db.get_all_provider_connections_by_user(user_id).await?;
 
     let provider_connection_ids: HashSet<Uuid> = match user.active_provider() {
-        None => connections
-            .into_iter()
-            .filter(|connection| connection.is_connected)
-            .map(|connection| connection.id)
-            .collect(),
+        None => HashSet::new(),
         Some(provider) => connections
-            .into_iter()
-            .filter(|connection| connection.provider == provider)
-            .map(|connection| connection.id)
+            .iter()
+            .filter(|c| c.provider == provider)
+            .map(|c| c.id)
             .collect(),
     };
-
-    if provider_connection_ids.is_empty() {
-        return Ok(HashSet::new());
-    }
+    let diy_connection_ids: HashSet<Uuid> = connections
+        .iter()
+        .filter(|c| c.provider == "diy")
+        .map(|c| c.id)
+        .collect();
 
     let accounts = db.get_accounts_for_user(user_id).await?;
 
     Ok(accounts
         .into_iter()
-        .filter(|account| {
-            account
-                .provider_connection_id
-                .is_some_and(|id| provider_connection_ids.contains(&id))
+        .filter(|a| {
+            a.provider_connection_id.is_some_and(|id| {
+                provider_connection_ids.contains(&id) || diy_connection_ids.contains(&id)
+            })
         })
         .map(|account| account.id)
         .collect())

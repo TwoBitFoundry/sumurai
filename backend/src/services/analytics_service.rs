@@ -39,10 +39,10 @@ impl AnalyticsService {
     ) -> BalanceCategory {
         let t = account_type.to_lowercase();
         match t.as_str() {
-            "depository" => BalanceCategory::Cash,
+            "depository" | "checking" | "savings" | "cash" => BalanceCategory::Cash,
             "credit" => BalanceCategory::Credit,
-            "loan" => BalanceCategory::Loan,
-            "investment" => BalanceCategory::Investments,
+            "loan" | "loans" => BalanceCategory::Loan,
+            "investment" | "investments" => BalanceCategory::Investments,
             _ => {
                 // Fallback: try to infer based on subtype keywords, else Investments
                 if let Some(st) = account_subtype {

@@ -15,7 +15,7 @@
 - `docker compose -f docker-compose.prod.yml up -d --build` - start the production-oriented stack (requires production env and secrets; see `docs/PRODUCTION_TLS.md`).
 - `bun --cwd=frontend install` - install frontend dependencies.
 - `bun --cwd=frontend run dev` - Next.js dev server on `http://localhost:3001`.
-- `bun --cwd=frontend run build` / `bun --cwd=frontend test` - frontend build and tests.
+- `bun --cwd=frontend run build` / `bun --cwd=frontend run test` - frontend build and tests.
 - `bun run precommit` (Husky default): frontend Biome check, `typecheck`, `design:guard`, and `bun test`, then `backend:ci`. Does not reinstall `frontend` deps, nor Storybook static build, Vitest browser tests, Playwright iframe smoke, or Chromium install; `typescript`/`tsc` still covers `*.stories.tsx` under `src/` with the rest of the app sources. Assumes dependencies are installed. Run `bun run backend:ci && bun run frontend:ci` when you need full local parity with the GitHub frontend job (`frontend:ci`).
 
 ## Design system guardrails and Storybook AI

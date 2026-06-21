@@ -196,9 +196,9 @@ export function LoginScreen({
           <div className={cn('space-y-3', 'text-center')}>
             <span className={getCategoryAccentByIndex(0).inlineLabel}>Rejoin the Path</span>
             <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
-              Sign in to Sumurai
+              Return to Sumurai
             </h2>
-            <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>{caption}</p>
+            <p className={cn(authLayout.subtitle)}>{caption}</p>
           </div>
 
           {loginStep === 'password' ? (
@@ -247,7 +247,7 @@ export function LoginScreen({
               {!isEmailLocked ? (
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="secondary"
                   size="sm"
                   className="w-full"
                   disabled={isBusy}
@@ -298,7 +298,7 @@ export function LoginScreen({
               {loginStep === 'passkey' && !isEmailLocked ? (
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="secondary"
                   size="sm"
                   className="w-full"
                   disabled={isBusy}
@@ -315,7 +315,7 @@ export function LoginScreen({
             <Button
               type="button"
               onClick={onNavigateToRegister}
-              variant="ghost"
+              variant="secondary"
               size="sm"
               disabled={isBusy || isEmailLocked}
             >

@@ -55,7 +55,7 @@ Add column sorting to the desktop transaction table and a contextual sort + date
 - [ ] `useTransactionFilterState` initialises all four from session on mount
 - [ ] `TransactionFilterControl` type reflects the new fields
 - [ ] Existing `search` and `selectedCategory` session behaviour is unchanged
-- [ ] `bun --cwd=frontend test` passes
+- [ ] `bun --cwd=frontend run test` passes
 
 ---
 
@@ -81,7 +81,7 @@ Add column sorting to the desktop transaction table and a contextual sort + date
 - [ ] Network request includes `sort2=date&order2=desc` when secondary sort is set
 - [ ] Network request includes `start_date=...&end_date=...` when date range is set
 - [ ] Changing sort state triggers a fresh fetch (filterKey changed)
-- [ ] `bun --cwd=frontend test` passes
+- [ ] `bun --cwd=frontend run test` passes
 
 ---
 
@@ -212,7 +212,7 @@ Date Range
 - [ ] Adding "Then by Date ↓" → request adds `sort2=date&order2=desc`
 - [ ] From/To date inputs add `start_date`/`end_date` to the request
 - [ ] Badge dot appears on sliders icon when any sort/date filter is active
-- [ ] `bun --cwd=frontend test` passes
+- [ ] `bun --cwd=frontend run test` passes
 
 ---
 

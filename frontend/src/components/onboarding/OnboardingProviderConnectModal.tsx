@@ -15,6 +15,7 @@ import {
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { getConnectAccountProviderContent } from '@/utils/providerCards';
+import { isSyncProvider } from '@/utils/queryInvalidation';
 
 interface OnboardingProviderConnectModalProps {
   provider: FinancialProvider | null;
@@ -60,7 +61,7 @@ function OnboardingProviderConnectModalContent({
   const prevInProgressRef = useRef(false);
 
   const connectionFlow = useFinancialConnection({
-    provider,
+    provider: isSyncProvider(provider) ? provider : 'simplefin',
     isOnline,
   });
   const connectContent = getConnectAccountProviderContent(provider);
@@ -128,26 +129,8 @@ function OnboardingProviderConnectModalContent({
         backdropVariant="provider"
         preventCloseOnBackdrop={connectionFlow.connectionInProgress || connectionFlow.isSyncing}
       >
-        <GlassCard variant="auth" padding="none" className={cn('space-y-6', 'p-5', 'sm:p-6')}>
-          <div className={cn('flex', 'items-center', 'justify-between')}>
-            <div className={cn('w-8')} />
-            <span
-              className={cn(
-                'inline-flex',
-                'items-center',
-                'justify-center',
-                'rounded-full',
-                'px-4',
-                'py-1',
-                'uppercase',
-                'tracking-[0.3em]',
-                uiTypographyRecipes.label,
-                connectContent.eyebrow.backgroundClassName,
-                connectContent.eyebrow.textClassName
-              )}
-            >
-              {connectContent.eyebrow.text}
-            </span>
+        <GlassCard variant="auth" padding="none" className={cn('space-y-6', 'p-5', 'md:p-6')}>
+          <div className={cn('flex', 'justify-end')}>
             <IconButton
               type="button"
               variant="ghost"

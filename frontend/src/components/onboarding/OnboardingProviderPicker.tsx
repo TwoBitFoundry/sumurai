@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { OnboardingProviderConnectModal } from '@/components/onboarding/OnboardingProviderConnectModal';
+import { DiyInstitutionModal } from '@/features/diy/DiyInstitutionModal';
 import { ProviderSelectionPanel } from '@/features/plaid/components/ProviderSelectionPanel';
 import { useFinancialConnection } from '@/hooks/useFinancialConnection';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
@@ -11,6 +12,7 @@ import { AuthService } from '@/services/authService';
 import type { FinancialProvider } from '@/types/api';
 import { AppTitleBar, Button, GradientShell } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
+import { appLayout } from '@/ui/recipes';
 
 interface OnboardingProviderPickerProps {
   onComplete: () => void;
@@ -22,6 +24,7 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
   const isOnline = useOnlineStatus();
   const providerCatalog = useProviderCatalog();
   const [connectingProvider, setConnectingProvider] = useState<FinancialProvider | null>(null);
+  const [isDiyModalOpen, setIsDiyModalOpen] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const plaidConnectionFlow = useFinancialConnection({
     provider: 'plaid',
@@ -47,6 +50,11 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
 
   const handleSelectProvider = useCallback(
     async (provider: FinancialProvider) => {
+      if (provider === 'diy') {
+        setIsDiyModalOpen(true);
+        return;
+      }
+
       setConnectingProvider(provider);
       if (provider === 'plaid') {
         await plaidConnectionFlow.initiateConnection();
@@ -83,6 +91,20 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
   const handleConnectClose = useCallback(() => {
     setConnectingProvider(null);
   }, []);
+
+  const handleDiyComplete = useCallback(
+    async (_connectionId: string) => {
+      try {
+        await providerCatalog.chooseProvider('diy');
+      } catch (err) {
+        console.warn('Failed to select DIY provider after institution creation', err);
+      } finally {
+        setIsDiyModalOpen(false);
+      }
+      await completeAndExit();
+    },
+    [completeAndExit, providerCatalog]
+  );
 
   useEffect(() => {
     if (!activeConnectionFlow || connectingProvider === 'simplefin') {
@@ -126,8 +148,16 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
           onLogout={onLogout}
         />
 
-        <main className={cn('flex', 'flex-1', 'items-center', 'px-4', 'py-8')}>
-          <div className={cn('mx-auto', 'flex', 'w-full', 'max-w-7xl', 'flex-col', 'gap-6')}>
+        <main className={cn('flex', 'flex-1', 'items-start', 'pt-3', 'pb-8', 'md:pt-6', 'lg:pt-8')}>
+          <div
+            className={cn(
+              ...appLayout.contentShellWithGutter,
+              'flex',
+              'min-w-0',
+              'flex-col',
+              'gap-6'
+            )}
+          >
             <ProviderSelectionPanel
               loading={providerCatalog.loading}
               error={providerCatalog.error}
@@ -136,10 +166,10 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
               providerReadyState={providerReadyState}
               connectingProvider={connectingProvider}
               onSelectProvider={handleSelectProvider}
-              footerContent={
+              heroAction={
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="secondary"
                   size="md"
                   onClick={() => void completeAndExit()}
                   disabled={isCompleting}
@@ -164,6 +194,11 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
             onConnected={handleConnectComplete}
           />
         ) : null}
+        <DiyInstitutionModal
+          isOpen={isDiyModalOpen}
+          onClose={() => setIsDiyModalOpen(false)}
+          onComplete={handleDiyComplete}
+        />
       </div>
     </GradientShell>
   );

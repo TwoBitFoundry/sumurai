@@ -30,10 +30,3 @@ export const Default: Story = {
     ),
   },
 };
-
-export const WithPageError: Story = {
-  args: {
-    ...Default.args,
-    error: 'Unable to reach the server. Try again shortly.',
-  },
-};

@@ -31,6 +31,7 @@ export function useTellerConnectionStrategy(
     dispatch,
     handleError,
     onConnectionSuccess,
+    onExit: onExitCallback,
     invalidateCache,
     tellerApplicationId,
     tellerEnvironment,
@@ -150,7 +151,8 @@ export function useTellerConnectionStrategy(
   const onExit = useCallback(() => {
     dispatch(connectionActions.patch({ connectionInProgress: false }));
     rearmSdk();
-  }, [dispatch, rearmSdk]);
+    onExitCallback?.();
+  }, [dispatch, onExitCallback, rearmSdk]);
 
   const onEnrollmentError = useCallback(
     (error?: unknown) => {

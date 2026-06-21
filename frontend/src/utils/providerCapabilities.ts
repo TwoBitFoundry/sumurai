@@ -1,9 +1,16 @@
-/**
- * Derives which providers are listed and ready to connect.
- */
-
 import type { FinancialProvider } from '@/types/api';
 import type { ProviderCatalogue } from '@/types/providerCatalog';
+
+const AGGREGATORS: ReadonlySet<FinancialProvider> = new Set(['plaid', 'teller', 'simplefin']);
+
+function isAggregator(provider: FinancialProvider): boolean {
+  return AGGREGATORS.has(provider);
+}
+
+function getConnectedAggregator(catalogue: ProviderCatalogue | null): FinancialProvider | null {
+  if (!catalogue?.user_provider) return null;
+  return isAggregator(catalogue.user_provider) ? catalogue.user_provider : null;
+}
 
 export function isProviderListed(
   provider: FinancialProvider,
@@ -17,15 +24,17 @@ export function isProviderConnectable(
   catalogue: ProviderCatalogue | null
 ): boolean {
   if (!catalogue) {
-    return provider !== 'teller';
+    return false;
   }
 
-  if (!isProviderListed(provider, catalogue)) {
+  if (provider !== 'diy' && !isProviderListed(provider, catalogue)) {
     return false;
   }
 
   if (provider === 'teller') {
-    return Boolean(catalogue.teller_application_id?.trim());
+    return (
+      isProviderListed(provider, catalogue) && Boolean(catalogue.teller_application_id?.trim())
+    );
   }
 
   return true;
@@ -35,8 +44,17 @@ export function isPickerEnabled(
   provider: FinancialProvider,
   catalogue: ProviderCatalogue | null
 ): boolean {
-  if (provider === 'simplefin') {
+  if (provider === 'diy' || provider === 'simplefin') {
     return true;
+  }
+
+  const connectedAggregator = getConnectedAggregator(catalogue);
+  if (
+    connectedAggregator &&
+    (provider === 'plaid' || provider === 'teller') &&
+    connectedAggregator !== provider
+  ) {
+    return false;
   }
 
   return isProviderConnectable(provider, catalogue);
@@ -46,8 +64,17 @@ export function getConnectBlockedReason(
   provider: FinancialProvider,
   catalogue: ProviderCatalogue | null
 ): string | null {
-  if (provider === 'simplefin') {
+  if (provider === 'diy' || provider === 'simplefin') {
     return null;
+  }
+
+  const connectedAggregator = getConnectedAggregator(catalogue);
+  if (
+    connectedAggregator &&
+    (provider === 'plaid' || provider === 'teller') &&
+    connectedAggregator !== provider
+  ) {
+    return `Disconnect ${connectedAggregator} first`;
   }
 
   if (!catalogue) {
@@ -59,6 +86,17 @@ export function getConnectBlockedReason(
   }
 
   return 'Missing credentials';
+}
+
+export function isCredentialsEnvUnavailable(
+  provider: FinancialProvider,
+  catalogue: ProviderCatalogue | null
+): boolean {
+  if (provider !== 'plaid' && provider !== 'teller') {
+    return false;
+  }
+
+  return getConnectBlockedReason(provider, catalogue) === 'Missing credentials';
 }
 
 export function resolveConnectProvider(
