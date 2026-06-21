@@ -6,6 +6,7 @@ import {
   type RefObject,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { useCategories } from '@/features/transactions/hooks/useCategories';
@@ -84,6 +85,7 @@ export function CategoryCatalogPicker({
   const [typedName, setTypedName] = useState('');
   const [hasInteracted, setHasInteracted] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<CustomCategory | null>(null);
+  const deleteAnchorRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -209,7 +211,10 @@ export function CategoryCatalogPicker({
                         'focus-visible:ring-offset-white',
                         'dark:focus-visible:ring-offset-slate-900'
                       )}
-                      onClick={() => setDeleteTarget(customCategory)}
+                      onClick={(event) => {
+                        deleteAnchorRef.current = event.currentTarget;
+                        setDeleteTarget(customCategory);
+                      }}
                     >
                       <span aria-hidden="true" className={cn('relative', '-top-px')}>
                         ×
@@ -292,6 +297,7 @@ export function CategoryCatalogPicker({
         {deleteTarget ? (
           <DeleteCustomCategoryConfirm
             open
+            anchorRef={deleteAnchorRef}
             category={deleteTarget}
             onRequestClose={() => setDeleteTarget(null)}
             onSuccess={() => {
@@ -353,6 +359,7 @@ export function CategoryCatalogPicker({
       {deleteTarget ? (
         <DeleteCustomCategoryConfirm
           open
+          anchorRef={deleteAnchorRef}
           category={deleteTarget}
           onRequestClose={() => setDeleteTarget(null)}
           onSuccess={() => {

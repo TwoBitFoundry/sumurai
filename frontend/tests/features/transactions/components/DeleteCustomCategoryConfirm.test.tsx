@@ -1,5 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ComponentProps } from 'react';
+import { createRef } from 'react';
 import { DeleteCustomCategoryConfirm } from '@/features/transactions/components/DeleteCustomCategoryConfirm';
 
 jest.mock('@/features/transactions/hooks/useDeleteCustomCategory', () => ({
@@ -10,22 +12,42 @@ const useDeleteCustomCategoryMock = jest.requireMock(
   '@/features/transactions/hooks/useDeleteCustomCategory'
 ) as typeof import('@/features/transactions/hooks/useDeleteCustomCategory');
 
+function renderDeleteConfirm(
+  props: Partial<ComponentProps<typeof DeleteCustomCategoryConfirm>> = {}
+) {
+  const anchorRef = createRef<HTMLButtonElement>();
+  const anchor = document.createElement('button');
+  anchor.getBoundingClientRect = () => ({
+    top: 400,
+    left: 200,
+    width: 24,
+    height: 24,
+    right: 224,
+    bottom: 424,
+    x: 200,
+    y: 400,
+    toJSON: () => ({}),
+  });
+  anchorRef.current = anchor;
+
+  const result = render(
+    <DeleteCustomCategoryConfirm
+      open
+      anchorRef={anchorRef}
+      category={{ id: 'custom-1', display_name: 'Coffee', lookup_key: 'coffee' }}
+      onRequestClose={jest.fn()}
+      {...props}
+    />
+  );
+
+  return { anchorRef, ...result };
+}
+
 describe('DeleteCustomCategoryConfirm', () => {
   const deleteCustomCategoryAsync = jest.fn();
   const onRequestClose = jest.fn();
-  const originalInnerWidth = window.innerWidth;
-
-  const setViewport = (width: number) => {
-    Object.defineProperty(window, 'innerWidth', {
-      configurable: true,
-      writable: true,
-      value: width,
-    });
-    window.dispatchEvent(new Event('resize'));
-  };
 
   beforeEach(() => {
-    setViewport(1280);
     jest.clearAllMocks();
     useDeleteCustomCategoryMock.useDeleteCustomCategory.mockReturnValue({
       deleteCustomCategory: jest.fn(),
@@ -35,51 +57,59 @@ describe('DeleteCustomCategoryConfirm', () => {
     });
   });
 
-  afterAll(() => {
-    setViewport(originalInnerWidth);
+  it('renders as a floating popover above the delete trigger', () => {
+    renderDeleteConfirm({ onRequestClose });
+
+    const popover = screen.getByTestId('delete-custom-category-popover');
+    expect(popover).toHaveClass('fixed', 'z-50');
+    expect(popover.style.bottom).toBeTruthy();
+    expect(popover.style.left).toBeTruthy();
   });
 
-  it.each([800, 1280])('keeps the centered dialog surface outside mobile at %ipx', (width) => {
-    setViewport(width);
+  it('keeps the popover clamped in view when the anchor is near the viewport edge', () => {
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      writable: true,
+      value: 390,
+    });
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      writable: true,
+      value: 844,
+    });
+
+    const anchorRef = createRef<HTMLButtonElement>();
+    const anchor = document.createElement('button');
+    anchor.getBoundingClientRect = () => ({
+      top: 900,
+      left: 8,
+      width: 24,
+      height: 24,
+      right: 32,
+      bottom: 924,
+      x: 8,
+      y: 900,
+      toJSON: () => ({}),
+    });
+    anchorRef.current = anchor;
 
     render(
       <DeleteCustomCategoryConfirm
         open
-        category={{ id: 'custom-1', display_name: 'Coffee', lookup_key: 'coffee' }}
-        onRequestClose={onRequestClose}
+        anchorRef={anchorRef}
+        category={{ id: 'custom-1', display_name: 'Kelci', lookup_key: 'kelci' }}
+        onRequestClose={jest.fn()}
       />
     );
 
-    expect(screen.getByTestId('delete-custom-category-dialog')).toBeInTheDocument();
-    expect(screen.queryByTestId('delete-custom-category-sheet')).not.toBeInTheDocument();
-  });
-
-  it('renders as a bottom sheet on mobile', () => {
-    setViewport(375);
-
-    render(
-      <DeleteCustomCategoryConfirm
-        open
-        category={{ id: 'custom-1', display_name: 'Coffee', lookup_key: 'coffee' }}
-        onRequestClose={onRequestClose}
-      />
-    );
-
-    expect(screen.getByTestId('delete-custom-category-sheet')).toHaveClass('w-full', 'max-w-none');
-    expect(screen.queryByTestId('delete-custom-category-dialog')).not.toBeInTheDocument();
+    expect(screen.getByTestId('delete-custom-category-popover').style.left).toBe('176px');
   });
 
   it('renders the confirmation copy and closes after delete succeeds', async () => {
     const user = userEvent.setup();
     deleteCustomCategoryAsync.mockResolvedValue(undefined);
 
-    render(
-      <DeleteCustomCategoryConfirm
-        open
-        category={{ id: 'custom-1', display_name: 'Coffee', lookup_key: 'coffee' }}
-        onRequestClose={onRequestClose}
-      />
-    );
+    renderDeleteConfirm({ onRequestClose });
 
     expect(screen.getByText("Delete 'Coffee'?")).toBeVisible();
     expect(
@@ -94,6 +124,16 @@ describe('DeleteCustomCategoryConfirm', () => {
     expect(onRequestClose).toHaveBeenCalledTimes(1);
   });
 
+  it('closes when Escape is pressed', () => {
+    renderDeleteConfirm({ onRequestClose });
+
+    fireEvent.keyDown(screen.getByTestId('delete-custom-category-popover'), {
+      key: 'Escape',
+    });
+
+    expect(onRequestClose).toHaveBeenCalledTimes(1);
+  });
+
   it('shows the pending state inline', () => {
     useDeleteCustomCategoryMock.useDeleteCustomCategory.mockReturnValue({
       deleteCustomCategory: jest.fn(),
@@ -102,16 +142,10 @@ describe('DeleteCustomCategoryConfirm', () => {
       error: null,
     });
 
-    render(
-      <DeleteCustomCategoryConfirm
-        open
-        category={{ id: 'custom-1', display_name: 'Coffee', lookup_key: 'coffee' }}
-        onRequestClose={onRequestClose}
-      />
-    );
+    renderDeleteConfirm({ onRequestClose });
 
     expect(screen.getByRole('button', { name: 'Deleting...' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancel delete category' })).toBeDisabled();
   });
 
   it('shows the error inline when the delete fails', () => {
@@ -122,13 +156,7 @@ describe('DeleteCustomCategoryConfirm', () => {
       error: new Error('Nope'),
     });
 
-    render(
-      <DeleteCustomCategoryConfirm
-        open
-        category={{ id: 'custom-1', display_name: 'Coffee', lookup_key: 'coffee' }}
-        onRequestClose={onRequestClose}
-      />
-    );
+    renderDeleteConfirm({ onRequestClose });
 
     expect(screen.getByText('Nope')).toBeVisible();
   });

@@ -43,6 +43,7 @@ export const TransactionsFilters: React.FC<Props> = ({
 }) => {
   const { accentIndexByName } = useCategories();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const deleteAnchorRef = useRef<HTMLElement | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CustomCategory | null>(null);
   const [showLeftFade, setShowLeftFade] = useState(false);
   const [showRightFade, setShowRightFade] = useState(false);
@@ -255,6 +256,15 @@ export const TransactionsFilters: React.FC<Props> = ({
                       key={name}
                       className={cn(
                         'group relative inline-flex shrink-0 items-center',
+                        isSelected && transactionsRowRecipes.selectedCategorySticky,
+                        isSelected &&
+                          (showLeftFade
+                            ? transactionsRowRecipes.selectedCategoryStickyLeftOffset
+                            : transactionsRowRecipes.selectedCategoryStickyLeft),
+                        isSelected &&
+                          (showRightFade
+                            ? transactionsRowRecipes.selectedCategoryStickyRightOffset
+                            : transactionsRowRecipes.selectedCategoryStickyRight),
                         isCustom && 'transition-all duration-200 ease-out hover:-translate-y-[2px]'
                       )}
                     >
@@ -316,6 +326,7 @@ export const TransactionsFilters: React.FC<Props> = ({
                           )}
                           onClick={(event) => {
                             event.stopPropagation();
+                            deleteAnchorRef.current = event.currentTarget;
                             setDeleteTarget(customCategory);
                           }}
                         >
@@ -335,6 +346,7 @@ export const TransactionsFilters: React.FC<Props> = ({
       {deleteTarget ? (
         <DeleteCustomCategoryConfirm
           open
+          anchorRef={deleteAnchorRef}
           category={deleteTarget}
           onRequestClose={() => setDeleteTarget(null)}
           onSuccess={handleDeleteSuccess}

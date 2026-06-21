@@ -90,6 +90,11 @@ export const transactionsRowRecipes = {
     ...semanticBorders.floatingChrome,
   ],
   contextualFilterScroll: ['w-full', 'max-w-full', 'py-1.5'],
+  selectedCategorySticky: ['sticky', 'z-10'],
+  selectedCategoryStickyLeft: ['left-0'],
+  selectedCategoryStickyRight: ['right-0'],
+  selectedCategoryStickyLeftOffset: ['left-9', 'md:left-8', 'lg:left-7'],
+  selectedCategoryStickyRightOffset: ['right-9', 'md:right-8', 'lg:right-7'],
   contextualFilterMaskViewport: ['min-w-0', 'w-full', 'max-w-full', 'overflow-hidden'],
   contextualFilterScrollArrow: [
     'absolute',
