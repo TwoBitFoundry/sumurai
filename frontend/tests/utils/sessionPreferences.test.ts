@@ -2,6 +2,7 @@ import {
   getSessionBankExpanded,
   getSessionBudgetsSectionExpanded,
   getSessionCollapsibleExpanded,
+  getSessionDashboardCustomDateRange,
   getSessionDashboardDateRange,
   getSessionThemePreference,
   getSessionTransactionsCategory,
@@ -9,6 +10,7 @@ import {
   setSessionBankExpanded,
   setSessionBudgetsSectionExpanded,
   setSessionCollapsibleExpanded,
+  setSessionDashboardCustomDateRange,
   setSessionDashboardDateRange,
   setSessionThemePreference,
   setSessionTransactionsCategory,
@@ -45,6 +47,14 @@ describe('sessionPreferences', () => {
   it('stores and restores dashboard date range', () => {
     setSessionDashboardDateRange('past-3-months');
     expect(getSessionDashboardDateRange()).toBe('past-3-months');
+  });
+
+  it('stores and restores dashboard custom date range', () => {
+    setSessionDashboardCustomDateRange({ start: '2026-01-01', end: '2026-03-15' });
+    expect(getSessionDashboardCustomDateRange()).toEqual({
+      start: '2026-01-01',
+      end: '2026-03-15',
+    });
   });
 
   it('stores and restores transactions search and category filters', () => {

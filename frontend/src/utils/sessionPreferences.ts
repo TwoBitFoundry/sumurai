@@ -1,9 +1,10 @@
 import type { ThemePreference } from '@/ui/tokens';
-import type { DateRangeKey } from '@/utils/dateRanges';
+import type { CustomDateRangeBounds, DateRangeKey } from '@/utils/dateRanges';
 
 const SESSION_KEYS = {
   theme: 'sumurai.ui.theme',
   dashboardDateRange: 'sumurai.ui.dashboardDateRange',
+  dashboardCustomDateRange: 'sumurai.ui.dashboardCustomDateRange',
   transactionsCategory: 'sumurai.ui.transactionsCategory',
   transactionsSearch: 'sumurai.ui.transactionsSearch',
   accountsBankExpanded: 'sumurai.ui.accountsBankExpanded',
@@ -47,6 +48,9 @@ function writeCollapsibleExpandedMap(map: Record<string, boolean>): void {
 
 const DATE_RANGE_KEYS: DateRangeKey[] = [
   'current-month',
+  'last-month',
+  'ytd',
+  'custom',
   'past-2-months',
   'past-3-months',
   'past-6-months',
@@ -99,6 +103,14 @@ function isThemePreference(value: string): value is ThemePreference {
   return value === 'light' || value === 'dark' || value === 'system';
 }
 
+function isCustomDateRangeBounds(value: unknown): value is CustomDateRangeBounds {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+  const candidate = value as CustomDateRangeBounds;
+  return typeof candidate.start === 'string' && typeof candidate.end === 'string';
+}
+
 function isDateRangeKey(value: string): value is DateRangeKey {
   return DATE_RANGE_KEYS.includes(value as DateRangeKey);
 }
@@ -125,6 +137,25 @@ export function getSessionDashboardDateRange(): DateRangeKey | null {
 
 export function setSessionDashboardDateRange(dateRange: DateRangeKey): void {
   writeItem(SESSION_KEYS.dashboardDateRange, dateRange);
+}
+
+export function getSessionDashboardCustomDateRange(): CustomDateRangeBounds | null {
+  return readJson(SESSION_KEYS.dashboardCustomDateRange, (value) => {
+    if (!isCustomDateRangeBounds(value)) {
+      return null;
+    }
+    return value;
+  });
+}
+
+export function setSessionDashboardCustomDateRange(
+  customDateRange: CustomDateRangeBounds | null
+): void {
+  if (!customDateRange) {
+    removeItem(SESSION_KEYS.dashboardCustomDateRange);
+    return;
+  }
+  writeJson(SESSION_KEYS.dashboardCustomDateRange, customDateRange);
 }
 
 export function getSessionTransactionsSearch(): string | null {

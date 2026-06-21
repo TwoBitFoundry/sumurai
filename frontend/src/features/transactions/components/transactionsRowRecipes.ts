@@ -6,7 +6,7 @@ import {
 
 export const transactionsRowRecipes = {
   shell: [
-    'group relative rounded-md border-b border-slate-200/70 transition-[box-shadow,colors] duration-150 ease-out',
+    'group relative w-full min-w-0 overflow-hidden rounded-md border-b border-slate-200/70 transition-[box-shadow,colors] duration-150 ease-out',
     'dark:border-slate-700/50',
     'hover:ring-2 hover:ring-inset hover:ring-emerald-400/60',
     'dark:hover:ring-emerald-400/50',

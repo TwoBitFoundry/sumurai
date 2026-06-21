@@ -12,7 +12,11 @@ import type {
   AnalyticsTopMerchantsResponse,
 } from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
-import { computeDateRange, type DateRangeKey } from '../../../utils/dateRanges';
+import {
+  type CustomDateRangeBounds,
+  type DateRangeKey,
+  resolveDateRange,
+} from '../../../utils/dateRanges';
 
 export type UseAnalyticsResult = {
   loading: boolean;
@@ -34,7 +38,10 @@ type AnalyticsQueryData = {
   monthlyTotals: AnalyticsMonthlyTotalsResponse[];
 };
 
-export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
+export function useAnalytics(
+  range: DateRangeKey,
+  customRange?: CustomDateRangeBounds | null
+): UseAnalyticsResult {
   const {
     selectedAccountIds,
     isAllAccountsSelected,
@@ -42,13 +49,14 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
     loading: accountsLoading,
   } = useAccountFilter();
 
-  const { start, end } = useMemo(() => computeDateRange(range), [range]);
+  const { start, end } = useMemo(() => resolveDateRange(range, customRange), [customRange, range]);
   const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
   const accountsReady = !accountsLoading;
+  const hasValidRange = range !== 'custom' || (!!start && !!end);
 
   const query = useQuery<AnalyticsQueryData, Error>({
-    queryKey: ['analytics', range, cacheKey],
-    enabled: accountsReady,
+    queryKey: ['analytics', range, customRange?.start, customRange?.end, cacheKey],
+    enabled: accountsReady && hasValidRange,
     placeholderData: keepPreviousData,
     queryFn: async () => {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {

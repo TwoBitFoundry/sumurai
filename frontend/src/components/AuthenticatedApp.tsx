@@ -24,11 +24,14 @@ import TransactionsPage from '@/views/TransactionsPage';
 import { AppLayout } from '../layouts/AppLayout';
 import { GradientShell } from '../ui/primitives';
 import { text as uiTextRecipes } from '../ui/recipes';
-import type { DateRangeKey as DateRange } from '../utils/dateRanges';
+import type { CustomDateRangeBounds, DateRangeKey as DateRange } from '../utils/dateRanges';
+import { DEFAULT_DASHBOARD_DATE_RANGE } from '../utils/dateRanges';
 import type { NavigateToTransactionsDetail } from '../utils/events';
 import { NAVIGATE_TO_TRANSACTIONS_EVENT } from '../utils/events';
 import {
+  getSessionDashboardCustomDateRange,
   getSessionDashboardDateRange,
+  setSessionDashboardCustomDateRange,
   setSessionDashboardDateRange,
 } from '../utils/sessionPreferences';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -53,12 +56,24 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   const [tab, setTab] = useState<TabKey>(initialTab ?? 'dashboard');
   const [tabTransitionDirection, setTabTransitionDirection] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRangeState] = useState<DateRange>(
-    () => getSessionDashboardDateRange() ?? 'current-month'
-  );
+  const [dateRange, setDateRangeState] = useState<DateRange>(() => {
+    return getSessionDashboardDateRange() ?? DEFAULT_DASHBOARD_DATE_RANGE;
+  });
+  const [customDateRange, setCustomDateRangeState] = useState<CustomDateRangeBounds | null>(() => {
+    const storedRange = getSessionDashboardDateRange() ?? DEFAULT_DASHBOARD_DATE_RANGE;
+    return storedRange === 'custom' ? getSessionDashboardCustomDateRange() : null;
+  });
   const setDateRange = (next: DateRange) => {
     setDateRangeState(next);
     setSessionDashboardDateRange(next);
+    if (next !== 'custom') {
+      setCustomDateRangeState(null);
+      setSessionDashboardCustomDateRange(null);
+    }
+  };
+  const setCustomDateRange = (next: CustomDateRangeBounds) => {
+    setCustomDateRangeState(next);
+    setSessionDashboardCustomDateRange(next);
   };
   const budgetMonth = useBudgetMonth();
   const transactionFilters = useTransactionFilterState();
@@ -99,7 +114,12 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
       <BottomContextualBar
         topContent={
           <div className={cn('flex', 'w-full', 'justify-center')}>
-            <DateRangeLabelPill dateRange={dateRange} />
+            <DateRangeLabelPill
+              dateRange={dateRange}
+              customDateRange={customDateRange}
+              onChange={setDateRange}
+              onCustomDateRangeChange={setCustomDateRange}
+            />
           </div>
         }
       >
@@ -176,7 +196,11 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
                 transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
               >
                 {tab === 'dashboard' && (
-                  <DashboardPage dateRange={dateRange} setDateRange={setDateRange} />
+                  <DashboardPage
+                    dateRange={dateRange}
+                    customDateRange={customDateRange}
+                    setDateRange={setDateRange}
+                  />
                 )}
                 {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
                 {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}

@@ -126,8 +126,8 @@ describe('AuthenticatedApp', () => {
   it('renders the date range control in the bottom bar for the dashboard tab', () => {
     render(<AuthenticatedApp onLogout={jest.fn()} isOnline />);
 
-    expect(screen.getByTestId('bottom-bar')).toHaveTextContent('1M');
-    expect(screen.getByText('current-month')).toBeInTheDocument();
+    expect(screen.getByTestId('bottom-bar')).toHaveTextContent('Last mo');
+    expect(screen.getByText('last-month')).toBeInTheDocument();
   });
 
   it('renders the budget month control in the bottom bar for the budgets tab', () => {

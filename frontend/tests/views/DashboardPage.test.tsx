@@ -133,7 +133,7 @@ describe('DashboardPage', () => {
     const statsMock = jest.mocked(DashboardStatsCarousel);
     const noop = jest.fn();
     const { container, unmount } = render(
-      <DashboardPage dateRange="current-month" setDateRange={noop} />
+      <DashboardPage dateRange="current-month" customDateRange={null} setDateRange={noop} />
     );
 
     expect(statsMock).toHaveBeenCalledWith(
@@ -153,7 +153,7 @@ describe('DashboardPage', () => {
 
     unmount();
 
-    render(<DashboardPage dateRange="current-month" setDateRange={noop} />);
+    render(<DashboardPage dateRange="current-month" customDateRange={null} setDateRange={noop} />);
 
     expect(chartMock).toHaveBeenCalledTimes(2);
   });
@@ -161,7 +161,7 @@ describe('DashboardPage', () => {
   it('highlights a top category card when tapped the same way as the chart', async () => {
     const user = userEvent.setup();
     const noop = jest.fn();
-    render(<DashboardPage dateRange="current-month" setDateRange={noop} />);
+    render(<DashboardPage dateRange="current-month" customDateRange={null} setDateRange={noop} />);
 
     const topCard = screen.getByText('Food').closest('button');
     expect(topCard).toBeTruthy();

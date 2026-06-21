@@ -5,25 +5,29 @@ import {
   DateRangePillSlider,
 } from '@/features/analytics/components/DateRangePillSlider';
 import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
-import { formatDateRangeLabel } from '@/utils/dateRanges';
 
 function renderDateRangePillSlider(ui: React.ReactElement) {
   return render(<ControlTooltipProvider>{ui}</ControlTooltipProvider>);
 }
 
+const labelPillProps = {
+  onChange: jest.fn(),
+  onCustomDateRangeChange: jest.fn(),
+};
+
 describe('DateRangePillSlider', () => {
-  it('renders compact labels and calls onChange with the selected range', () => {
+  it('renders preset labels and calls onChange with the selected range', () => {
     const onChange = jest.fn();
 
     renderDateRangePillSlider(
       <DateRangePillSlider dateRange="current-month" onChange={onChange} />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '1 year' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Since year start' }));
 
-    expect(screen.getByRole('button', { name: '1 month' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '5 year' })).toBeInTheDocument();
-    expect(onChange).toHaveBeenCalledWith('past-year');
+    expect(screen.getByRole('button', { name: 'Since this month' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Custom range' })).not.toBeInTheDocument();
+    expect(onChange).toHaveBeenCalledWith('ytd');
   });
 
   it('uses stronger body text for the range labels', () => {
@@ -32,7 +36,7 @@ describe('DateRangePillSlider', () => {
     );
 
     expect(
-      screen.getByRole('button', { name: '1 month' }).querySelector('.font-body-strong')
+      screen.getByRole('button', { name: 'Since this month' }).querySelector('.font-body-strong')
     ).not.toBeNull();
   });
 
@@ -41,7 +45,7 @@ describe('DateRangePillSlider', () => {
       <DateRangePillSlider dateRange="current-month" onChange={jest.fn()} />
     );
 
-    const activeButton = screen.getByRole('button', { name: '1 month' });
+    const activeButton = screen.getByRole('button', { name: 'Since this month' });
     expect(activeButton.className).toContain('rounded-lg');
     expect(activeButton.className).not.toContain('flex-1');
     expect(activeButton.className).not.toContain('aspect-square');
@@ -59,12 +63,63 @@ describe('DateRangePillSlider', () => {
     expect(shell.className).toContain('max-w-full');
     expect(shell.className).toContain('overflow-x-auto');
   });
+});
 
-  it('shows the selected date range in a non-interactive pill', () => {
-    render(<DateRangeLabelPill dateRange="current-month" />);
+describe('DateRangeLabelPill', () => {
+  it('opens the custom date picker when the label pill is clicked', () => {
+    renderDateRangePillSlider(<DateRangeLabelPill dateRange="current-month" {...labelPillProps} />);
 
-    expect(screen.getByLabelText(/selected date range:/i)).toHaveTextContent(
-      formatDateRangeLabel('current-month')
+    const pill = screen.getByRole('button', { name: /selected date range:.*choose custom range/i });
+
+    fireEvent.click(pill);
+
+    expect(screen.getByTestId('custom-date-range-picker-popover')).toBeInTheDocument();
+    expect(screen.getByLabelText('Start date')).toBeInTheDocument();
+    expect(screen.getByLabelText('End date')).toBeInTheDocument();
+
+    fireEvent.click(pill);
+
+    expect(screen.queryByTestId('custom-date-range-picker-popover')).not.toBeInTheDocument();
+  });
+
+  it('uses the sky category filter accent styling', () => {
+    renderDateRangePillSlider(<DateRangeLabelPill dateRange="current-month" {...labelPillProps} />);
+
+    const pill = screen.getByTestId('date-range-label-pill');
+    expect(pill.className).toContain('!bg-sky-500/20');
+    expect(pill.className).not.toContain('!border-sky-500');
+    expect(pill).toHaveTextContent(/\d/);
+  });
+
+  it('shows the active preset range in the label pill', () => {
+    renderDateRangePillSlider(<DateRangeLabelPill dateRange="current-month" {...labelPillProps} />);
+
+    expect(screen.getByRole('button', { name: /selected date range:/i })).not.toHaveTextContent(
+      'Custom'
     );
+  });
+
+  it('shows the applied custom range in the label pill', () => {
+    renderDateRangePillSlider(
+      <DateRangeLabelPill
+        dateRange="custom"
+        customDateRange={{ start: '2026-01-01', end: '2026-03-15' }}
+        {...labelPillProps}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /selected date range:/i })).toHaveTextContent(
+      'Jan 1, 2026 – Mar 15, 2026'
+    );
+  });
+
+  it('shows a formatted date range instead of Custom before apply', () => {
+    renderDateRangePillSlider(
+      <DateRangeLabelPill dateRange="custom" customDateRange={null} {...labelPillProps} />
+    );
+
+    const pill = screen.getByRole('button', { name: /selected date range:/i });
+    expect(pill).not.toHaveTextContent(/^Custom$/);
+    expect(pill.textContent).toMatch(/–/);
   });
 });

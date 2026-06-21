@@ -143,7 +143,7 @@ const TransactionsPage: React.FC<{
           rounded="lg"
           padding="none"
           withInnerEffects={false}
-          containerClassName={cn('pt-4', 'md:pt-8', 'lg:pt-8')}
+          containerClassName={cn('min-w-0 max-w-full pt-4', 'md:pt-8', 'lg:pt-8')}
           className={cn('space-y-4')}
         >
           <div

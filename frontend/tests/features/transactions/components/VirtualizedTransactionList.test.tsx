@@ -135,6 +135,8 @@ describe('VirtualizedTransactionList', () => {
     render(<VirtualizedTransactionList filters={{}} />);
 
     const listViewport = screen.getByRole('table', { name: 'Transactions' });
+    expect(listViewport.className).toContain('overflow-x-hidden');
+    expect(listViewport.className).toContain('touch-pan-y');
     expect(listViewport.className).toContain('[scrollbar-gutter:stable]');
     expect(listViewport.className).toContain('[scrollbar-width:thin]');
     expect(listViewport.className).toContain('[&::-webkit-scrollbar]:w-2');

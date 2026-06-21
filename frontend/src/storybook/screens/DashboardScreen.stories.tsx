@@ -112,12 +112,24 @@ const handlers = [
 
 function DashboardShell({ children }: { children: React.ReactNode }) {
   const [dateRange, setDateRange] = useState<DateRangeKey>('current-month');
+  const [customDateRange, setCustomDateRange] = useState<null | { start: string; end: string }>(
+    null
+  );
   return (
     <StoryApiScope handlers={handlers}>
       <AuthenticatedScreenShell
         currentTab="dashboard"
         bottomBarContent={
-          <BottomContextualBar topContent={<DateRangeLabelPill dateRange={dateRange} />}>
+          <BottomContextualBar
+            topContent={
+              <DateRangeLabelPill
+                dateRange={dateRange}
+                customDateRange={customDateRange}
+                onChange={setDateRange}
+                onCustomDateRangeChange={setCustomDateRange}
+              />
+            }
+          >
             <DateRangePillSlider dateRange={dateRange} onChange={setDateRange} />
           </BottomContextualBar>
         }

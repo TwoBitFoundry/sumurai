@@ -8,7 +8,11 @@ import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { AnalyticsService } from '../../../services/AnalyticsService';
 import type { AnalyticsCashFlowPoint } from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
-import { computeDateRange, type DateRangeKey } from '../../../utils/dateRanges';
+import {
+  type CustomDateRangeBounds,
+  type DateRangeKey,
+  resolveDateRange,
+} from '../../../utils/dateRanges';
 import { chartSeriesStartDate, generateMonthRange } from '../utils/chartMonth';
 
 export type UseCashFlowResult = {
@@ -19,7 +23,11 @@ export type UseCashFlowResult = {
   reload: () => Promise<void>;
 };
 
-export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCashFlowResult {
+export function useCashFlow(
+  months: number = 6,
+  dateRange?: DateRangeKey,
+  customRange?: CustomDateRangeBounds | null
+): UseCashFlowResult {
   const {
     selectedAccountIds,
     isAllAccountsSelected,
@@ -29,10 +37,11 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
 
   const { start, end } = useMemo(() => {
     if (dateRange) {
-      return computeDateRange(dateRange);
+      return resolveDateRange(dateRange, customRange);
     }
     return { start: undefined, end: undefined };
-  }, [dateRange]);
+  }, [customRange, dateRange]);
+  const hasValidRange = !dateRange || dateRange !== 'custom' || (!!start && !!end);
 
   const chartStart = useMemo(() => {
     if (!start) {
@@ -60,8 +69,16 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
   const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
 
   const query = useQuery<AnalyticsCashFlowPoint[], Error>({
-    queryKey: ['analytics', 'cash-flow', monthsToFetch, cacheKey, dateRange],
-    enabled: !accountsLoading,
+    queryKey: [
+      'analytics',
+      'cash-flow',
+      monthsToFetch,
+      cacheKey,
+      dateRange,
+      customRange?.start,
+      customRange?.end,
+    ],
+    enabled: !accountsLoading && hasValidRange,
     placeholderData: keepPreviousData,
     queryFn: async () => {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {

@@ -180,7 +180,7 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
       role="region"
       aria-label="Transaction list"
       className={cn(
-        'flex flex-col',
+        'flex min-w-0 max-w-full flex-col overflow-x-hidden',
         isContextual ? 'absolute inset-0 min-h-0' : 'relative',
         className
       )}
@@ -235,7 +235,7 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
         aria-label="Transactions"
         className={cn(
           ...uiTransactionsTableRecipes.listViewport,
-          isContextual ? 'min-h-0 flex-1 touch-pan-y' : ''
+          isContextual ? 'min-h-0 flex-1' : ''
         )}
         style={!isContextual && listHeight != null ? { height: `${listHeight}px` } : undefined}
         data-no-swipe

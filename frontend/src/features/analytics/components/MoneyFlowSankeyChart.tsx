@@ -9,7 +9,7 @@ import { cn, EmptyState } from '@/ui/primitives';
 import { sankeyChart, text as uiTextRecipes } from '@/ui/recipes';
 import { getCategoryLabelHex, type ThemeMode } from '@/ui/tokens';
 import { formatCategoryName, getTagThemeForCategory } from '@/utils/categories';
-import type { DateRangeKey } from '@/utils/dateRanges';
+import type { CustomDateRangeBounds, DateRangeKey } from '@/utils/dateRanges';
 import { fmtUSD } from '@/utils/format';
 import { useTheme } from '../../../context/ThemeContext';
 import { useCategories } from '../../transactions/hooks/useCategories';
@@ -36,6 +36,7 @@ import { ChartTooltipShell, chartTooltipRechartsProps } from './ChartGlassToolti
 
 type MoneyFlowSankeyChartProps = {
   dateRange?: DateRangeKey;
+  customDateRange?: CustomDateRangeBounds | null;
   data?: SankeyResponse | null;
   accentIndexByName?: ReadonlyMap<string, number>;
   className?: string;
@@ -939,11 +940,12 @@ function MoneyFlowSankeyChartContent({
 
 function MoneyFlowSankeyChartLive({
   dateRange = 'current-month',
+  customDateRange,
   accentIndexByName,
   className,
   containerSize,
 }: Omit<MoneyFlowSankeyChartProps, 'data'>) {
-  const sankey = useSankey(dateRange);
+  const sankey = useSankey(dateRange, customDateRange);
   const { accentIndexByName: hookAccentIndexByName } = useCategories();
   const debouncedData = useDebouncedChartRecalc(sankey.data);
 

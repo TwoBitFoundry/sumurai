@@ -626,7 +626,9 @@ export const transactionsTable = {
   listViewport: [
     'relative',
     'overflow-y-auto',
+    'overflow-x-hidden',
     'overscroll-contain',
+    'touch-pan-y',
     ...scroll.visibleWhenOverflow,
   ],
   footer: [

@@ -1,4 +1,11 @@
-import { computeDateRange, formatDateRangeLabel } from '@/utils/dateRanges';
+import {
+  clampCustomDateRangeBounds,
+  computeDateRange,
+  formatDateRangeLabel,
+  isValidCustomDateRange,
+  resolveDateRange,
+  validateCustomDateRange,
+} from '@/utils/dateRanges';
 
 const localYmd = (d: Date) => {
   const yyyy = d.getFullYear();
@@ -8,13 +15,34 @@ const localYmd = (d: Date) => {
 };
 
 describe('computeDateRange', () => {
-  it('computes current month as trailing 30 days', () => {
+  it('computes current month since the first of the month through today', () => {
     const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const start = localYmd(new Date(y, m, 1));
     const end = localYmd(now);
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 29);
-    const start = localYmd(startDate);
     const r = computeDateRange('current-month');
+    expect(r.start).toBe(start);
+    expect(r.end).toBe(end);
+  });
+
+  it('computes last month since the first of the prior month through today', () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const start = localYmd(new Date(y, m - 1, 1));
+    const end = localYmd(now);
+    const r = computeDateRange('last-month');
+    expect(r.start).toBe(start);
+    expect(r.end).toBe(end);
+  });
+
+  it('computes ytd since January 1 through today', () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const start = localYmd(new Date(y, 0, 1));
+    const end = localYmd(now);
+    const r = computeDateRange('ytd');
     expect(r.start).toBe(start);
     expect(r.end).toBe(end);
   });
@@ -55,5 +83,55 @@ describe('formatDateRangeLabel', () => {
     expect(formatDateRangeLabel('current-month')).toBe(
       `${formatPart(start!)} – ${formatPart(end!)}`
     );
+    expect(formatDateRangeLabel('custom')).toBe('Custom');
+    expect(formatDateRangeLabel('custom', { start: '2026-01-01', end: '2026-01-31' })).toBe(
+      'Jan 1, 2026 – Jan 31, 2026'
+    );
+  });
+});
+
+describe('resolveDateRange', () => {
+  it('returns custom bounds when the key is custom', () => {
+    expect(resolveDateRange('custom', { start: '2026-04-01', end: '2026-04-30' })).toEqual({
+      start: '2026-04-01',
+      end: '2026-04-30',
+    });
+  });
+
+  it('returns empty bounds for custom without stored values', () => {
+    expect(resolveDateRange('custom')).toEqual({});
+  });
+});
+
+describe('validateCustomDateRange', () => {
+  const today = '2026-06-21';
+
+  it('rejects an end date after today', () => {
+    expect(validateCustomDateRange('2026-01-01', '2902-01-01', today)).toBe(
+      'End date cannot be after today.'
+    );
+    expect(isValidCustomDateRange('2026-01-01', '2902-01-01', today)).toBe(false);
+  });
+
+  it('rejects a start date after the end date', () => {
+    expect(validateCustomDateRange('2026-02-15', '2026-01-31', today)).toBe(
+      'Choose a start date on or before the end date.'
+    );
+  });
+
+  it('accepts a range ending today', () => {
+    expect(validateCustomDateRange('2026-01-01', today, today)).toBeNull();
+    expect(isValidCustomDateRange('2026-01-01', today, today)).toBe(true);
+  });
+});
+
+describe('clampCustomDateRangeBounds', () => {
+  it('clamps a future end date to today', () => {
+    expect(
+      clampCustomDateRangeBounds({ start: '2026-01-01', end: '2902-01-01' }, '2026-06-21')
+    ).toEqual({
+      start: '2026-01-01',
+      end: '2026-06-21',
+    });
   });
 });

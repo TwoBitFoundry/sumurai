@@ -97,7 +97,11 @@ function DashboardJourney() {
   return (
     <AccountFilterStoryProvider>
       <StoryApiScope handlers={handlers}>
-        <DashboardPage dateRange="current-month" setDateRange={setDateRange} />
+        <DashboardPage
+          dateRange="current-month"
+          customDateRange={null}
+          setDateRange={setDateRange}
+        />
       </StoryApiScope>
     </AccountFilterStoryProvider>
   );
