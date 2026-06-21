@@ -47,8 +47,38 @@ async function waitForPickerSdkConnect(
   );
 }
 
+async function waitForAccountsPage(canvas: ReturnType<typeof within>) {
+  await waitFor(
+    () => {
+      expect(canvas.getByTestId('accounts-page')).toBeVisible();
+    },
+    { timeout: storyInteractionTimeoutMs }
+  );
+}
+
+async function waitForPrimaryLinkAccount(canvas: ReturnType<typeof within>) {
+  await waitFor(
+    () => {
+      const linkAccount = canvas.getAllByRole('button', { name: STORY_PICKER_LINK_BUTTON })[0];
+      expect(linkAccount).toBeEnabled();
+    },
+    { timeout: storyInteractionTimeoutMs }
+  );
+}
+
+async function waitForSimpleFinConnectDialog(body: ReturnType<typeof within>) {
+  await waitFor(
+    () => {
+      expect(body.getByRole('dialog', { name: /^simplefin$/i })).toBeVisible();
+      expect(body.getByLabelText('SimpleFIN setup token')).toBeVisible();
+    },
+    { timeout: storyInteractionTimeoutMs }
+  );
+}
+
 async function openProviderPicker(canvas: ReturnType<typeof within>) {
-  await userEvent.click(canvas.getByRole('button', { name: STORY_PICKER_LINK_BUTTON }));
+  await waitForPrimaryLinkAccount(canvas);
+  await userEvent.click(canvas.getAllByRole('button', { name: STORY_PICKER_LINK_BUTTON })[0]!);
   await waitForProviderPicker(canvas);
 }
 
@@ -347,6 +377,8 @@ export const LastInstitutionDisconnect: Story = {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
 
+    await waitForAccountsPage(canvas);
+
     await waitFor(
       () => {
         expect(canvas.getByText('Story Federal Credit Union')).toBeVisible();
@@ -364,17 +396,10 @@ export const LastInstitutionDisconnect: Story = {
       { timeout: storyInteractionTimeoutMs }
     );
 
+    await waitForPrimaryLinkAccount(canvas);
     await openProviderPicker(canvas);
-
     await userEvent.click(getStoryProviderPickerButton(canvas, 'simplefin'));
-
-    await waitFor(
-      () => {
-        expect(body.getByRole('dialog')).toBeVisible();
-        expect(body.getByLabelText('SimpleFIN setup token')).toBeVisible();
-      },
-      { timeout: storyInteractionTimeoutMs }
-    );
+    await waitForSimpleFinConnectDialog(body);
   },
 };
 
