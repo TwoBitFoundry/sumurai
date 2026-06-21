@@ -21,8 +21,12 @@ import { TransactionInsightsPanel } from '../features/transactions/components/Tr
 import VirtualizedTransactionList from '../features/transactions/components/VirtualizedTransactionList';
 import type { TransactionFilterControl } from '../features/transactions/hooks/useTransactionFilterState';
 import { useTransactionsContextualInsights } from '../features/transactions/hooks/useTransactionsContextualInsights';
+import {
+  createMerchantScrollRestoreState,
+  prepareMerchantSearchScrollRestore,
+  type TransactionListScrollAccess,
+} from '../features/transactions/utils/merchantScrollRestore';
 import { resolveAccountFilterToggle } from '../features/transactions/utils/resolveAccountFilterToggle';
-import { resolveMerchantSearchToggle } from '../features/transactions/utils/resolveMerchantSearchToggle';
 import { useAccountFilter } from '../hooks/useAccountFilter';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { PageLayout, pageLayoutRecipes } from '../layouts/PageLayout';
@@ -53,6 +57,14 @@ const TransactionsPage: React.FC<{
 
   const addCategoryButtonRef = useRef<HTMLButtonElement>(null);
   const [isCategoryCatalogOpen, setIsCategoryCatalogOpen] = useState(false);
+  const merchantScrollRestoreRef = useRef(createMerchantScrollRestoreState());
+  const listScrollAccessRef = useRef<TransactionListScrollAccess | null>(null);
+  const previousCategoryRef = useRef(selectedCategory);
+
+  if (previousCategoryRef.current !== selectedCategory) {
+    previousCategoryRef.current = selectedCategory;
+    merchantScrollRestoreRef.current = createMerchantScrollRestoreState();
+  }
 
   const insightsResetKey = `${displayState}-${search}-${selectedCategory ?? ''}-${accountKey}`;
   const filters = {
@@ -62,7 +74,14 @@ const TransactionsPage: React.FC<{
 
   const handleMerchantSearch = useCallback(
     (merchant: string) => {
-      setSearch(resolveMerchantSearchToggle(search, merchant));
+      const result = prepareMerchantSearchScrollRestore(
+        merchantScrollRestoreRef.current,
+        search,
+        merchant,
+        listScrollAccessRef.current?.getScrollOffset() ?? 0
+      );
+      merchantScrollRestoreRef.current = result.state;
+      setSearch(result.nextSearch);
     },
     [search, setSearch]
   );
@@ -197,6 +216,8 @@ const TransactionsPage: React.FC<{
             variant="page"
             onMerchantSearch={handleMerchantSearch}
             onAccountFilter={handleAccountFilter}
+            merchantScrollRestoreRef={merchantScrollRestoreRef}
+            listScrollAccessRef={listScrollAccessRef}
           />
         </GlassCard>
         <ToastStack
