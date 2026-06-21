@@ -90,8 +90,7 @@ export function ControlHoverLabel({ label, disabled, children }: ControlHoverLab
       hoveringRef.current = false;
       setOpen(false);
     },
-    onPointerDown: (event: PointerEvent) => {
-      event.preventDefault();
+    onPointerDown: (_event: PointerEvent) => {
       hoveringRef.current = false;
       setOpen(false);
     },

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Button } from '@/ui/primitives/Button';
 import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
@@ -90,6 +90,21 @@ describe('ControlHoverLabel', () => {
     await user.click(screen.getByRole('button', { name: 'Link Account' }));
 
     expect(screen.getAllByText('Link Account')).toHaveLength(1);
+  });
+
+  it('does not prevent default on pointer down for wrapped buttons', () => {
+    render(
+      <ControlTooltipProvider>
+        <Button variant="connect">Link Account</Button>
+      </ControlTooltipProvider>
+    );
+
+    const button = screen.getByRole('button', { name: 'Link Account' });
+    const event = createEvent.pointerDown(button);
+
+    fireEvent(button, event);
+
+    expect(event.defaultPrevented).toBe(false);
   });
 
   it('keeps the hover label visible while the pointer remains on the trigger', async () => {
