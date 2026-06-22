@@ -976,6 +976,7 @@ export function MoneyFlowSankeyChart(props: MoneyFlowSankeyChartProps) {
   return (
     <MoneyFlowSankeyChartLive
       dateRange={props.dateRange}
+      customDateRange={props.customDateRange}
       accentIndexByName={props.accentIndexByName}
       className={props.className}
       containerSize={props.containerSize}

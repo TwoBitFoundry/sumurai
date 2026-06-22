@@ -163,28 +163,30 @@ export function DeleteCustomCategoryConfirm({
         ...floatingChromeGlass.backdrop
       )}
     >
-      <div className={cn('space-y-4', 'p-4')}>
-        <ModalDrawerHeader
-          onClose={onRequestClose}
-          closeLabel="Cancel delete category"
-          closeDisabled={isPending}
-        >
-          <h2 id="delete-custom-category-title" className={cn(modalDrawerSectionLabelClassName)}>
-            {category ? `Delete '${category.display_name}'?` : 'Delete custom category?'}
-          </h2>
-        </ModalDrawerHeader>
-        <p
-          id="delete-custom-category-description"
-          className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}
-        >
-          Transactions in this category will fall back to their original assigned category.
-        </p>
-        {error ? (
-          <p className={cn('text-sm text-red-600 dark:text-red-300')}>
-            {error instanceof Error ? error.message : 'Failed to delete category.'}
+      <div className={cn('flex', 'flex-col')}>
+        <div className={cn('space-y-4', 'p-4')}>
+          <ModalDrawerHeader
+            onClose={onRequestClose}
+            closeLabel="Cancel delete category"
+            closeDisabled={isPending}
+          >
+            <h2 id="delete-custom-category-title" className={cn(modalDrawerSectionLabelClassName)}>
+              {category ? `Delete '${category.display_name}'?` : 'Delete custom category?'}
+            </h2>
+          </ModalDrawerHeader>
+          <p
+            id="delete-custom-category-description"
+            className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}
+          >
+            Transactions in this category will fall back to their original assigned category.
           </p>
-        ) : null}
-        <div className={cn('flex', 'justify-end')}>
+          {error ? (
+            <p className={cn('text-sm text-red-600 dark:text-red-300')}>
+              {error instanceof Error ? error.message : 'Failed to delete category.'}
+            </p>
+          ) : null}
+        </div>
+        <div className={cn('flex', 'justify-end', 'border-t', 'p-4', ...uiBorderRecipes.divider)}>
           <Button
             type="button"
             variant="danger"

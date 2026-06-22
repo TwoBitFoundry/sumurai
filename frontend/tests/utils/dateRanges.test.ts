@@ -190,4 +190,14 @@ describe('slider date helpers', () => {
     expect(isoDateToSliderOffset('2026-06-15', bounds)).toBe(5);
     expect(sliderOffsetToIsoDate(5, bounds)).toBe('2026-06-15');
   });
+
+  it('round-trips long ranges that cross daylight saving boundaries', () => {
+    const longBounds = { start: '2025-01-14', end: '2026-06-20' };
+
+    expect(isoDateToSliderOffset('2025-03-10', longBounds)).toBe(55);
+    expect(sliderOffsetToIsoDate(55, longBounds)).toBe('2025-03-10');
+    expect(isoDateToSliderOffset(longBounds.end, longBounds)).toBe(
+      dateRangeDaySpan(longBounds) - 1
+    );
+  });
 });

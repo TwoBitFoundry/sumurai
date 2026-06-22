@@ -45,4 +45,21 @@ describe('DashboardStatsCarousel', () => {
       undefined
     );
   });
+
+  it('forwards the custom date range to the financial breakdown chart', () => {
+    render(
+      <DashboardStatsCarousel
+        dateRange="custom"
+        customDateRange={{ start: '2026-01-01', end: '2026-03-15' }}
+      />
+    );
+
+    expect(jest.mocked(MoneyFlowSankeyChart)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dateRange: 'custom',
+        customDateRange: { start: '2026-01-01', end: '2026-03-15' },
+      }),
+      undefined
+    );
+  });
 });

@@ -118,7 +118,13 @@ export function DateRangeLabelPill({
           '!border-transparent',
           'dark:!border-transparent',
           '!bg-sky-500/20',
-          'dark:!bg-sky-400/14'
+          'dark:!bg-sky-400/14',
+          dateRange === 'custom' && [
+            'ring-2',
+            'ring-inset',
+            'ring-sky-400/60',
+            'dark:ring-sky-300/60',
+          ]
         )}
       >
         <span

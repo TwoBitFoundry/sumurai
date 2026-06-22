@@ -1,22 +1,24 @@
 import { type RefObject, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { cn, Input, modalDrawerSectionLabelClassName, RangeSlider } from '@/ui/primitives';
+import {
+  cn,
+  FormLabel,
+  Input,
+  modalDrawerSectionLabelClassName,
+  RangeSlider,
+} from '@/ui/primitives';
 import {
   floatingChromeGlass,
-  modalDrawer,
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
   radius as uiRadiusRecipes,
   surface as uiSurfaceRecipes,
-  text as uiTextRecipes,
-  font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import type { CustomDateRangeBounds, DashboardDateBounds } from '@/utils/dateRanges';
 import {
   clampCustomDateRangeBounds,
   dateRangeDaySpan,
   defaultCustomDateRangeBounds,
-  formatDateRangeLabel,
   isoDateToSliderOffset,
   isValidCustomDateRange,
   sliderOffsetToIsoDate,
@@ -40,8 +42,13 @@ type PopoverPosition = {
   left: number;
 };
 
-function formatDateLabel(isoDate: string): string {
-  return formatDateRangeLabel('custom', { start: isoDate, end: isoDate });
+function formatPickerBoundLabel(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
 export function CustomDateRangePicker({
@@ -59,6 +66,10 @@ export function CustomDateRangePicker({
   const [endDate, setEndDate] = useState('');
   const [hasInteracted, setHasInteracted] = useState(false);
   const hasBounds = !!bounds;
+  const boundsStart = bounds?.start;
+  const boundsEnd = bounds?.end;
+  const valueStart = value?.start;
+  const valueEnd = value?.end;
 
   useEffect(() => {
     setMounted(true);
@@ -69,21 +80,24 @@ export function CustomDateRangePicker({
       return;
     }
 
-    if (!bounds) {
+    if (!boundsStart || !boundsEnd) {
       setStartDate('');
       setEndDate('');
       setHasInteracted(false);
       return;
     }
 
+    const activeBounds = { start: boundsStart, end: boundsEnd };
     const defaults = clampCustomDateRangeBounds(
-      value ?? defaultCustomDateRangeBounds(bounds),
-      bounds
+      valueStart && valueEnd
+        ? { start: valueStart, end: valueEnd }
+        : defaultCustomDateRangeBounds(activeBounds),
+      activeBounds
     );
     setStartDate(defaults.start);
     setEndDate(defaults.end);
     setHasInteracted(false);
-  }, [bounds, open, value]);
+  }, [boundsEnd, boundsStart, open, valueEnd, valueStart]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -185,6 +199,16 @@ export function CustomDateRangePicker({
     setHasInteracted(true);
     setStartDate(nextStart);
     setEndDate(nextEnd);
+  };
+
+  const handleSliderCommit = (nextValue: [number, number]) => {
+    if (!bounds) {
+      return;
+    }
+
+    const nextStart = sliderOffsetToIsoDate(nextValue[0], bounds);
+    const nextEnd = sliderOffsetToIsoDate(nextValue[1], bounds);
+
     onApply({ start: nextStart, end: nextEnd });
   };
 
@@ -222,7 +246,7 @@ export function CustomDateRangePicker({
         ...floatingChromeGlass.backdrop
       )}
     >
-      <div className={cn('border-b', 'p-4', ...uiBorderRecipes.divider)}>
+      <div className={cn('p-4')}>
         <p className={cn(modalDrawerSectionLabelClassName)}>Custom range</p>
       </div>
       <div data-testid="custom-date-range-picker-content" className={cn('flex flex-col gap-3 p-4')}>
@@ -237,53 +261,8 @@ export function CustomDateRangePicker({
         ) : (
           <>
             <div className={cn('grid', 'grid-cols-2', 'gap-3')}>
-              <div className={cn('space-y-1')}>
-                <p className={cn(modalDrawerSectionLabelClassName)}>Start</p>
-                <p
-                  className={cn(
-                    uiTypographyRecipes.bodyStrong,
-                    uiTextRecipes.primary,
-                    'rounded-full',
-                    'px-3',
-                    'py-2',
-                    ...uiSurfaceRecipes.insetWell
-                  )}
-                >
-                  {formatDateLabel(startDate || bounds.start)}
-                </p>
-              </div>
-              <div className={cn('space-y-1')}>
-                <p className={cn(modalDrawerSectionLabelClassName)}>End</p>
-                <p
-                  className={cn(
-                    uiTypographyRecipes.bodyStrong,
-                    uiTextRecipes.primary,
-                    'rounded-full',
-                    'px-3',
-                    'py-2',
-                    ...uiSurfaceRecipes.insetWell
-                  )}
-                >
-                  {formatDateLabel(endDate || bounds.end)}
-                </p>
-              </div>
-            </div>
-            <RangeSlider
-              min={0}
-              max={Math.max(0, dateRangeDaySpan(bounds) - 1)}
-              value={sliderValue}
-              onValueChange={handleSliderChange}
-              startAriaLabel="Start date slider"
-              endAriaLabel="End date slider"
-            />
-            <div className={cn(modalDrawer.formRow)}>
-              <div className={cn(modalDrawer.formField)}>
-                <label
-                  htmlFor="custom-date-range-start"
-                  className={cn(modalDrawerSectionLabelClassName)}
-                >
-                  Start
-                </label>
+              <div className={cn('space-y-2')}>
+                <FormLabel htmlFor="custom-date-range-start">Start</FormLabel>
                 <Input
                   id="custom-date-range-start"
                   type="date"
@@ -295,13 +274,8 @@ export function CustomDateRangePicker({
                   variant={validationMessage ? 'floatingChromeInvalid' : 'floatingChrome'}
                 />
               </div>
-              <div className={cn(modalDrawer.formField)}>
-                <label
-                  htmlFor="custom-date-range-end"
-                  className={cn(modalDrawerSectionLabelClassName)}
-                >
-                  End
-                </label>
+              <div className={cn('space-y-2')}>
+                <FormLabel htmlFor="custom-date-range-end">End</FormLabel>
                 <Input
                   id="custom-date-range-end"
                   type="date"
@@ -313,6 +287,31 @@ export function CustomDateRangePicker({
                   variant={validationMessage ? 'floatingChromeInvalid' : 'floatingChrome'}
                 />
               </div>
+            </div>
+            <RangeSlider
+              min={0}
+              max={Math.max(0, dateRangeDaySpan(bounds) - 1)}
+              value={sliderValue}
+              onValueChange={handleSliderChange}
+              onValueChangeCommitted={handleSliderCommit}
+              startAriaLabel="Start date slider"
+              endAriaLabel="End date slider"
+            />
+            <div
+              className={cn(
+                'flex',
+                'items-center',
+                'justify-between',
+                'gap-3',
+                'px-1',
+                'text-xs',
+                'text-slate-500',
+                'dark:text-slate-400'
+              )}
+              data-testid="custom-date-range-picker-bounds"
+            >
+              <span>{formatPickerBoundLabel(bounds.start)}</span>
+              <span>{formatPickerBoundLabel(bounds.end)}</span>
             </div>
             {validationMessage ? (
               <p className={cn('text-sm text-red-600 dark:text-red-300')}>{validationMessage}</p>

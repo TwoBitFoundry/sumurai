@@ -102,6 +102,27 @@ function parseIsoDateLocal(isoDate: string): Date | null {
   return date;
 }
 
+function isoDateToEpochDay(isoDate: string): number | null {
+  const [yearPart, monthPart, dayPart] = isoDate.split('-');
+  const year = Number(yearPart);
+  const month = Number(monthPart);
+  const day = Number(dayPart);
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+    return null;
+  }
+
+  return Math.floor(Date.UTC(year, month - 1, day) / (24 * 60 * 60 * 1000));
+}
+
 function shiftIsoDateLocal(isoDate: string, days: number): string {
   const date = parseIsoDateLocal(isoDate);
   if (!date) {
@@ -264,27 +285,25 @@ export function formatDateRangeLabel(
 }
 
 export function dateRangeDaySpan(bounds: DashboardDateBounds): number {
-  const startDate = parseIsoDateLocal(bounds.start);
-  const endDate = parseIsoDateLocal(bounds.end);
-  if (!startDate || !endDate) {
+  const startDay = isoDateToEpochDay(bounds.start);
+  const endDay = isoDateToEpochDay(bounds.end);
+  if (startDay === null || endDay === null) {
     return 1;
   }
 
-  const msPerDay = 24 * 60 * 60 * 1000;
-  return Math.max(1, Math.floor((endDate.getTime() - startDate.getTime()) / msPerDay) + 1);
+  return Math.max(1, endDay - startDay + 1);
 }
 
 export function isoDateToSliderOffset(isoDate: string, bounds: DashboardDateBounds): number {
   const clamped = clampIsoDate(isoDate, bounds);
-  const startDate = parseIsoDateLocal(bounds.start);
-  const clampedDate = parseIsoDateLocal(clamped);
+  const startDay = isoDateToEpochDay(bounds.start);
+  const clampedDay = isoDateToEpochDay(clamped);
 
-  if (!startDate || !clampedDate) {
+  if (startDay === null || clampedDay === null) {
     return 0;
   }
 
-  const msPerDay = 24 * 60 * 60 * 1000;
-  return Math.max(0, Math.floor((clampedDate.getTime() - startDate.getTime()) / msPerDay));
+  return Math.max(0, clampedDay - startDay);
 }
 
 export function sliderOffsetToIsoDate(offset: number, bounds: DashboardDateBounds): string {

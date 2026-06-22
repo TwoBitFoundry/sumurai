@@ -112,6 +112,8 @@ describe('DateRangeLabelPill', () => {
     expect(screen.getByRole('button', { name: /selected date range:/i })).toHaveTextContent(
       'Jan 1, 2026 – Mar 15, 2026'
     );
+    expect(screen.getByTestId('date-range-label-pill').className).toContain('ring-2');
+    expect(screen.getByTestId('date-range-label-pill').className).toContain('ring-inset');
   });
 
   it('shows Custom before a custom range has been applied', () => {

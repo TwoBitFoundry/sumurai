@@ -72,7 +72,7 @@ export function TransactionListPopover({ open, anchorRef, context, onRequestClos
   const openInTransactionsButton = (
     <IconButton
       type="button"
-      variant="ghost"
+      variant="toolbar"
       size="sm"
       aria-label="Open in transactions"
       title="Open in transactions"

@@ -15,6 +15,7 @@ import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import type { CustomCategory } from '@/types/api';
 import {
   cn,
+  FormLabel,
   IconButton,
   Input,
   Modal,
@@ -232,12 +233,7 @@ export function CategoryCatalogPicker({
 
       <form className={cn('space-y-2', isMobile && modalDrawer.formFooter)} onSubmit={handleSubmit}>
         <div className={cn(modalDrawer.formField)}>
-          <label
-            htmlFor="category-catalog-picker-custom"
-            className={cn(modalDrawerSectionLabelClassName)}
-          >
-            Make Your Own
-          </label>
+          <FormLabel htmlFor="category-catalog-picker-custom">Make Your Own</FormLabel>
           <div className={cn('flex items-center gap-2')}>
             <div className={cn('min-w-0 flex-1')}>
               <Input

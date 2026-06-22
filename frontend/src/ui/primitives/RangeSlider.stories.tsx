@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
-import { expect, fireEvent, userEvent, within } from 'storybook/test';
+import { expect, userEvent, within } from 'storybook/test';
 import { RangeSlider } from './RangeSlider';
 
 function RangeSliderStory() {
@@ -43,7 +43,8 @@ export const Default: Story = {
     await userEvent.keyboard('{ArrowRight}');
     await expect(canvas.getByTestId('range-slider-value')).toHaveTextContent('5-18');
 
-    fireEvent.change(endThumb, { target: { value: '22' } });
+    endThumb.focus();
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}');
     await expect(canvas.getByTestId('range-slider-value')).toHaveTextContent('5-22');
   },
 };

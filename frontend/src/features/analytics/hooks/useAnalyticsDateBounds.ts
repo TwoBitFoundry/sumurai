@@ -25,6 +25,9 @@ export function useAnalyticsDateBounds(): UseAnalyticsDateBoundsResult {
   const query = useQuery<DashboardDateBounds | null, Error>({
     queryKey: ['analytics', 'date-bounds', cacheKey],
     enabled: !accountsLoading,
+    staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     queryFn: async () => {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
         return null;
