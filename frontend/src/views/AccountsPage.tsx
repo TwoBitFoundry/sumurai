@@ -30,6 +30,7 @@ import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { usePlaidConnections } from '../hooks/usePlaidConnections';
 import { useProviderCatalog } from '../hooks/useProviderCatalog';
 import { PageLayout } from '../layouts/PageLayout';
+import { ApiError } from '../services/ApiClient';
 import { DiyService } from '../services/DiyService';
 import { PlaidService } from '../services/PlaidService';
 import { SimpleFinService } from '../services/SimpleFinService';
@@ -77,6 +78,24 @@ type DiyModalTarget = {
   connectionId?: string | null;
   institutionName?: string | null;
   existingAccounts?: { name: string; mask: string | null }[];
+};
+
+type BankStatus = BankConnectionViewModel['status'];
+
+const mapSyncRowStatusToBankStatus = (status: SyncAllRow['status']): BankStatus | null => {
+  if (status === 'auth_required') {
+    return 'needs_reauth';
+  }
+
+  if (status === 'error') {
+    return 'error';
+  }
+
+  if (status === 'synced' || status === 'skipped_hidden' || status === 'no_accounts') {
+    return 'connected';
+  }
+
+  return null;
 };
 
 const AccountsPage = ({ onError }: AccountsPageProps) => {
@@ -142,7 +161,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
               .join('')
               .slice(0, 2)
               .toUpperCase(),
-            status: 'connected' as const,
+            status: 'connected' as BankStatus,
             lastSync: null,
             provider,
             connectionId,
@@ -164,6 +183,36 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         .sort((left, right) => compareInstitutionNames(left.name, right.name)),
     [accountFilter.accountsByBank, preferredProvider, providerByConnectionId]
   );
+  const [bankStatuses, setBankStatuses] = useState<Record<string, BankStatus>>({});
+
+  useEffect(() => {
+    setBankStatuses((current) => {
+      let changed = false;
+      const next: Record<string, BankStatus> = {};
+
+      for (const bank of banks) {
+        const status = current[bank.id] ?? bank.status;
+        next[bank.id] = status;
+
+        if (current[bank.id] !== status) {
+          changed = true;
+        }
+      }
+
+      if (!changed && Object.keys(current).length === banks.length) {
+        return current;
+      }
+
+      return next;
+    });
+  }, [banks]);
+
+  const updateBankStatus = useCallback((bankId: string, status: BankStatus) => {
+    setBankStatuses((current) =>
+      current[bankId] === status ? current : { ...current, [bankId]: status }
+    );
+  }, []);
+
   const activeAggregator = useMemo<SyncProvider | null>(() => {
     for (const bank of banks) {
       if (isSyncProvider(bank.provider)) {
@@ -199,15 +248,19 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     return banks.map((bank) => {
       const connectionId = bank.connectionId;
       if (!connectionId) {
-        return bank;
+        return {
+          ...bank,
+          status: bankStatuses[bank.id] ?? bank.status,
+        };
       }
       const fromStatus = syncByConnectionId.get(connectionId);
       return {
         ...bank,
         lastSync: fromStatus ?? bank.lastSync ?? null,
+        status: bankStatuses[bank.id] ?? bank.status,
       };
     });
-  }, [banks, plaidConnections.connections, tellerStatusQuery.data]);
+  }, [bankStatuses, banks, plaidConnections.connections, tellerStatusQuery.data]);
 
   const { pushToast: pushAccountsToast, ...accountsToastStack } = useAccountsToastStack(null);
   const [syncInstitutionRow, setSyncInstitutionRow] = useState<SyncAllRow | null>(null);
@@ -305,6 +358,15 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         }
       },
     });
+
+  useEffect(() => {
+    for (const row of syncAllRows) {
+      const nextStatus = mapSyncRowStatusToBankStatus(row.status);
+      if (nextStatus) {
+        updateBankStatus(row.id, nextStatus);
+      }
+    }
+  }, [syncAllRows, updateBankStatus]);
 
   const finishSimpleFinPickerConnection = useCallback(
     async (provider: FinancialProvider) => {
@@ -515,6 +577,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
               status: 'error',
               detail: 'No bridge result was returned for this institution.',
             });
+            updateBankStatus(bank.id, 'error');
             return;
           }
 
@@ -524,6 +587,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
               status: 'auth_required',
               detail: matchingResult.message ?? 'Re-authenticate this institution in SimpleFIN.',
             });
+            updateBankStatus(bank.id, 'needs_reauth');
             return;
           }
 
@@ -533,6 +597,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
               status: matchingResult.status,
               detail: matchingResult.message ?? null,
             });
+            const nextStatus = mapSyncRowStatusToBankStatus(matchingResult.status);
+            if (nextStatus) {
+              updateBankStatus(bank.id, nextStatus);
+            }
             return;
           }
 
@@ -551,17 +619,23 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           detail: `Synced ${count} new transaction${count === 1 ? '' : 's'}`,
           transactionCount: count,
         });
+        updateBankStatus(bank.id, 'connected');
       } catch (error) {
         console.warn('Failed to sync bank', error);
         const message = formatUserFacingApiError(error, `Failed to sync ${bank.name}`);
+        const nextStatus =
+          error instanceof ApiError && (error.status === 401 || error.status === 403)
+            ? 'needs_reauth'
+            : 'error';
         setSyncInstitutionRow({
           ...startRow,
-          status: 'error',
+          status: nextStatus === 'needs_reauth' ? 'auth_required' : 'error',
           detail: message,
         });
+        updateBankStatus(bank.id, nextStatus);
       }
     },
-    [banks, isOnline, refreshBankData]
+    [banks, isOnline, refreshBankData, updateBankStatus]
   );
 
   const disconnect = useCallback(
