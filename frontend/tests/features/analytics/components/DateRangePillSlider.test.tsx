@@ -13,6 +13,7 @@ function renderDateRangePillSlider(ui: React.ReactElement) {
 const labelPillProps = {
   onChange: jest.fn(),
   onCustomDateRangeChange: jest.fn(),
+  dateBounds: { start: '2026-01-01', end: '2026-06-21' },
 };
 
 describe('DateRangePillSlider', () => {
@@ -113,13 +114,12 @@ describe('DateRangeLabelPill', () => {
     );
   });
 
-  it('shows a formatted date range instead of Custom before apply', () => {
+  it('shows Custom before a custom range has been applied', () => {
     renderDateRangePillSlider(
       <DateRangeLabelPill dateRange="custom" customDateRange={null} {...labelPillProps} />
     );
 
     const pill = screen.getByRole('button', { name: /selected date range:/i });
-    expect(pill).not.toHaveTextContent(/^Custom$/);
-    expect(pill.textContent).toMatch(/–/);
+    expect(pill).toHaveTextContent('Custom');
   });
 });

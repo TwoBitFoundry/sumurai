@@ -5,6 +5,7 @@ import {
   DateRangeLabelPill,
   DateRangePillSlider,
 } from '@/features/analytics/components/DateRangePillSlider';
+import { useAnalyticsDateBounds } from '@/features/analytics/hooks/useAnalyticsDateBounds';
 import {
   BudgetMonthLabelPill,
   BudgetMonthPillSlider,
@@ -25,7 +26,7 @@ import { AppLayout } from '../layouts/AppLayout';
 import { GradientShell } from '../ui/primitives';
 import { text as uiTextRecipes } from '../ui/recipes';
 import type { CustomDateRangeBounds, DateRangeKey as DateRange } from '../utils/dateRanges';
-import { DEFAULT_DASHBOARD_DATE_RANGE } from '../utils/dateRanges';
+import { clampCustomDateRangeBounds, DEFAULT_DASHBOARD_DATE_RANGE } from '../utils/dateRanges';
 import type { NavigateToTransactionsDetail } from '../utils/events';
 import { NAVIGATE_TO_TRANSACTIONS_EVENT } from '../utils/events';
 import {
@@ -79,6 +80,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   const transactionFilters = useTransactionFilterState();
   const { filterCategories, custom: customCategories } = useCategories();
   const { setSelectedAccountIds } = useAccountFilter();
+  const analyticsDateBounds = useAnalyticsDateBounds();
 
   const handleTabChange = (next: TabKey) => {
     const currentIndex = TAB_INDEX.get(tab) ?? 0;
@@ -109,6 +111,20 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
     return () => window.removeEventListener(NAVIGATE_TO_TRANSACTIONS_EVENT, handler);
   }, [transactionFilters, setSelectedAccountIds]);
 
+  useEffect(() => {
+    if (!analyticsDateBounds.bounds || !customDateRange) {
+      return;
+    }
+
+    const clamped = clampCustomDateRangeBounds(customDateRange, analyticsDateBounds.bounds);
+    if (clamped.start === customDateRange.start && clamped.end === customDateRange.end) {
+      return;
+    }
+
+    setCustomDateRangeState(clamped);
+    setSessionDashboardCustomDateRange(clamped);
+  }, [analyticsDateBounds.bounds, customDateRange]);
+
   const bottomBarContent =
     tab === 'dashboard' ? (
       <BottomContextualBar
@@ -119,6 +135,8 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
               customDateRange={customDateRange}
               onChange={setDateRange}
               onCustomDateRangeChange={setCustomDateRange}
+              dateBounds={analyticsDateBounds.bounds}
+              dateBoundsLoading={analyticsDateBounds.loading}
             />
           </div>
         }

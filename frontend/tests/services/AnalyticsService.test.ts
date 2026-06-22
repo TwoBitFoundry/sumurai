@@ -1,7 +1,9 @@
 import { AnalyticsService } from '@/services/AnalyticsService';
 import { ApiClient } from '@/services/ApiClient';
 import type {
+  AnalyticsCashFlowResponse,
   AnalyticsCategoryResponse,
+  AnalyticsDateBoundsResponse,
   AnalyticsMonthlyTotalsResponse,
   AnalyticsTopMerchantsResponse,
   BudgetSummaryResponse,
@@ -187,7 +189,9 @@ describe('AnalyticsService (date-range endpoints)', () => {
   // Removed daily spending endpoint and related UI
 
   describe('getMonthlyTotals', () => {
-    it('should call backend for pre-calculated monthly totals', async () => {
+    it('calls backend with an explicit date window for monthly totals', async () => {
+      const start = '2024-01-01';
+      const end = '2024-03-31';
       const mockMonthlyTotals: AnalyticsMonthlyTotalsResponse[] = [
         { month: '2024-01', amount: 1250.75 },
         { month: '2023-12', amount: 980.25 },
@@ -195,13 +199,28 @@ describe('AnalyticsService (date-range endpoints)', () => {
       ];
       jest.mocked(ApiClient.get).mockResolvedValue(mockMonthlyTotals);
 
-      const result = await AnalyticsService.getMonthlyTotals(3);
+      const result = await AnalyticsService.getMonthlyTotals(start, end);
 
-      expect(ApiClient.get).toHaveBeenCalledWith('/analytics/monthly-totals?months=3');
+      expect(ApiClient.get).toHaveBeenCalledWith(
+        `/analytics/monthly-totals?start_date=${start}&end_date=${end}`
+      );
       expect(result).toEqual(mockMonthlyTotals);
     });
 
-    it('should NOT perform any date calculations or processing', async () => {
+    it('serializes account_ids for monthly totals when provided', async () => {
+      const start = '2024-01-01';
+      const end = '2024-03-31';
+      const accountIds = ['acc_1', 'acc_2'];
+      jest.mocked(ApiClient.get).mockResolvedValue([]);
+
+      await AnalyticsService.getMonthlyTotals(start, end, accountIds);
+
+      expect(ApiClient.get).toHaveBeenCalledWith(
+        `/analytics/monthly-totals?start_date=${start}&end_date=${end}&account_ids%5B%5D=acc_1&account_ids%5B%5D=acc_2`
+      );
+    });
+
+    it('does not transform the backend monthly totals response', async () => {
       const backendTotals: AnalyticsMonthlyTotalsResponse[] = [
         { month: 'Dec 2023', amount: 500 },
         { month: '2024-01', amount: 1000 },
@@ -209,7 +228,7 @@ describe('AnalyticsService (date-range endpoints)', () => {
       ];
       jest.mocked(ApiClient.get).mockResolvedValue(backendTotals);
 
-      const result = await AnalyticsService.getMonthlyTotals(6);
+      const result = await AnalyticsService.getMonthlyTotals('2024-01-01', '2024-06-30');
 
       expect(result).toEqual(backendTotals);
       expect(result[0].month).toBe('Dec 2023');
@@ -219,14 +238,48 @@ describe('AnalyticsService (date-range endpoints)', () => {
 
   describe('getCashFlow', () => {
     it('serializes account_ids parameter when provided', async () => {
+      const start = '2024-01-01';
+      const end = '2024-03-31';
       const accountIds = ['acc_1', 'acc_2'];
-      jest.mocked(ApiClient.get).mockResolvedValue({ series: [], currency: 'USD' });
+      const response: AnalyticsCashFlowResponse = { series: [], currency: 'USD' };
+      jest.mocked(ApiClient.get).mockResolvedValue(response);
 
-      await AnalyticsService.getCashFlow(6, accountIds);
+      await AnalyticsService.getCashFlow(start, end, accountIds);
 
       expect(ApiClient.get).toHaveBeenCalledWith(
-        '/analytics/cash-flow?months=6&account_ids%5B%5D=acc_1&account_ids%5B%5D=acc_2'
+        `/analytics/cash-flow?start_date=${start}&end_date=${end}&account_ids%5B%5D=acc_1&account_ids%5B%5D=acc_2`
       );
+    });
+  });
+
+  describe('getDateBounds', () => {
+    it('calls backend for account-scoped date bounds', async () => {
+      const accountIds = ['acc_1', 'acc_2'];
+      const response: AnalyticsDateBoundsResponse = {
+        start_date: '2021-04-09',
+        end_date: '2026-06-21',
+      };
+      jest.mocked(ApiClient.get).mockResolvedValue(response);
+
+      const result = await AnalyticsService.getDateBounds(accountIds);
+
+      expect(ApiClient.get).toHaveBeenCalledWith(
+        '/analytics/date-bounds?account_ids%5B%5D=acc_1&account_ids%5B%5D=acc_2'
+      );
+      expect(result).toEqual(response);
+    });
+
+    it('omits account filters when loading global scoped bounds', async () => {
+      const response: AnalyticsDateBoundsResponse = {
+        start_date: null,
+        end_date: null,
+      };
+      jest.mocked(ApiClient.get).mockResolvedValue(response);
+
+      const result = await AnalyticsService.getDateBounds();
+
+      expect(ApiClient.get).toHaveBeenCalledWith('/analytics/date-bounds');
+      expect(result).toEqual(response);
     });
   });
 

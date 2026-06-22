@@ -6,9 +6,11 @@ import { useAnalytics } from '@/features/analytics/hooks/useAnalytics';
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
 import { AnalyticsService } from '@/services/AnalyticsService';
 import { PlaidService } from '@/services/PlaidService';
+import * as dateRanges from '@/utils/dateRanges';
 
 jest.mock('@/services/AnalyticsService', () => ({
   AnalyticsService: {
+    getDateBounds: jest.fn(),
     getSpendingTotal: jest.fn(),
     getCategorySpendingByDateRange: jest.fn(),
     getTopMerchantsByDateRange: jest.fn(),
@@ -59,6 +61,20 @@ const createDeferred = <T,>() => {
 describe('useAnalytics', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(dateRanges, 'computeDateRange').mockImplementation((key) => {
+      switch (key) {
+        case 'current-month':
+          return { start: '2026-04-01', end: '2026-05-31' };
+        case 'all-time':
+          return { start: '2021-01-01', end: '2026-05-31' };
+        default:
+          return {};
+      }
+    });
+    jest.mocked(AnalyticsService.getDateBounds).mockResolvedValue({
+      start_date: '2026-04-01',
+      end_date: '2026-05-31',
+    } as any);
     jest.mocked(AnalyticsService.getSpendingTotal).mockResolvedValue(1000);
     jest.mocked(AnalyticsService.getCategorySpendingByDateRange).mockResolvedValue([]);
     jest.mocked(AnalyticsService.getTopMerchantsByDateRange).mockResolvedValue([]);
@@ -73,6 +89,38 @@ describe('useAnalytics', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+  });
+
+  it('resolves preset ranges to explicit dates before requesting analytics', async () => {
+    const { result } = renderHook(() => useAnalytics('current-month'), {
+      wrapper: TestWrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(AnalyticsService.getDateBounds).toHaveBeenCalledWith(undefined);
+    expect(AnalyticsService.getSpendingTotal).toHaveBeenCalledWith(
+      '2026-04-01',
+      '2026-05-31',
+      undefined
+    );
+    expect(AnalyticsService.getCategorySpendingByDateRange).toHaveBeenCalledWith(
+      '2026-04-01',
+      '2026-05-31',
+      undefined
+    );
+    expect(AnalyticsService.getTopMerchantsByDateRange).toHaveBeenCalledWith(
+      '2026-04-01',
+      '2026-05-31',
+      undefined
+    );
+    expect(AnalyticsService.getMonthlyTotals).toHaveBeenCalledWith(
+      '2026-04-01',
+      '2026-05-31',
+      undefined
+    );
   });
 
   it('should pass account filter to analytics services when not all accounts selected', async () => {

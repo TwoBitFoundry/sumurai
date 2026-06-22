@@ -10,6 +10,7 @@ import * as dateRanges from '@/utils/dateRanges';
 
 jest.mock('@/services/AnalyticsService', () => ({
   AnalyticsService: {
+    getDateBounds: jest.fn(),
     getCashFlow: jest.fn(),
   },
 }));
@@ -82,6 +83,10 @@ describe('useCashFlow', () => {
           return {};
       }
     });
+    jest.mocked(AnalyticsService.getDateBounds).mockResolvedValue({
+      start_date: '2026-02-01',
+      end_date: '2026-05-31',
+    } as any);
     jest.mocked(AnalyticsService.getCashFlow).mockResolvedValue({
       series: [
         { month: '2026-04', income: 800, expenses: 200, net: 600 },
@@ -198,7 +203,10 @@ describe('useCashFlow', () => {
     expectSeriesToInclude(result.current.series, [
       { month: '2026-05', income: 900, expenses: 250, net: 650 },
     ]);
-    expect(AnalyticsService.getCashFlow).toHaveBeenLastCalledWith(2, ['account1']);
+    expect(AnalyticsService.getDateBounds).toHaveBeenLastCalledWith(['account1']);
+    expect(AnalyticsService.getCashFlow).toHaveBeenLastCalledWith('2026-04-01', '2026-05-31', [
+      'account1',
+    ]);
 
     await act(async () => {
       deferred.resolve({
@@ -224,7 +232,11 @@ describe('useCashFlow', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(AnalyticsService.getCashFlow).toHaveBeenCalledWith(2, undefined);
+    expect(AnalyticsService.getCashFlow).toHaveBeenCalledWith(
+      '2026-04-01',
+      '2026-05-31',
+      undefined
+    );
     expect(result.current.series.map((point) => point.month)).toEqual(['2026-04', '2026-05']);
   });
 });

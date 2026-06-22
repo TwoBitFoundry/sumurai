@@ -161,12 +161,6 @@ pub struct DateRangeQuery {
     pub exclude_account_ids: Vec<String>,
 }
 
-pub struct MonthlyTotalsQuery {
-    pub months: Option<u32>,
-    pub account_ids: Vec<String>,
-    pub exclude_account_ids: Vec<String>,
-}
-
 pub struct BalancesOverviewQuery {
     pub account_ids: Vec<String>,
     pub exclude_account_ids: Vec<String>,
@@ -322,64 +316,6 @@ impl<'de> Deserialize<'de> for DateRangeQuery {
         }
 
         deserializer.deserialize_map(DateRangeVisitor)
-    }
-}
-
-impl<'de> Deserialize<'de> for MonthlyTotalsQuery {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct MonthlyTotalsVisitor;
-
-        impl<'de> Visitor<'de> for MonthlyTotalsVisitor {
-            type Value = MonthlyTotalsQuery;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("monthly totals query parameters")
-            }
-
-            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-            where
-                A: MapAccess<'de>,
-            {
-                let mut months: Option<Option<u32>> = None;
-                let mut account_ids: Vec<String> = Vec::new();
-                let mut exclude_account_ids: Vec<String> = Vec::new();
-
-                while let Some(key) = map.next_key::<String>()? {
-                    match key.as_str() {
-                        "months" => {
-                            if months.is_some() {
-                                return Err(de::Error::duplicate_field("months"));
-                            }
-                            months = Some(map.next_value()?);
-                        }
-                        "account_ids" | "account_ids[]" | "account_ids%5B%5D" => {
-                            let values: VecOrOne<String> = map.next_value()?;
-                            account_ids.extend(values.into_vec());
-                        }
-                        "exclude_account_ids"
-                        | "exclude_account_ids[]"
-                        | "exclude_account_ids%5B%5D" => {
-                            let values: VecOrOne<String> = map.next_value()?;
-                            exclude_account_ids.extend(values.into_vec());
-                        }
-                        _ => {
-                            map.next_value::<IgnoredAny>()?;
-                        }
-                    }
-                }
-
-                Ok(MonthlyTotalsQuery {
-                    months: months.unwrap_or(None),
-                    account_ids,
-                    exclude_account_ids,
-                })
-            }
-        }
-
-        deserializer.deserialize_map(MonthlyTotalsVisitor)
     }
 }
 

@@ -71,6 +71,11 @@ export interface IncomeExpenseTotalsResponse {
   expenses: number;
 }
 
+export interface AnalyticsDateBoundsResponse {
+  start_date: string | null;
+  end_date: string | null;
+}
+
 export interface BudgetCategorySpendingResponse {
   name: string;
   value: number;

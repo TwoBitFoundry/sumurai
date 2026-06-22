@@ -1,6 +1,6 @@
 use crate::models::app_state::AppState;
 use crate::models::{
-    analytics::{BalancesOverviewQuery, DateRangeQuery, MonthlyTotalsQuery},
+    analytics::{BalancesOverviewQuery, DateRangeQuery},
     api_error::ApiErrorResponse,
     auth::AuthContext,
     plaid::{DisconnectRequest, ProviderConnection, SyncTransactionsRequest},
@@ -196,16 +196,6 @@ impl AccountIdsQuery for TransactionsQuery {
 }
 
 impl AccountIdsQuery for DateRangeQuery {
-    fn account_ids(&self) -> &[String] {
-        &self.account_ids
-    }
-
-    fn exclude_account_ids(&self) -> &[String] {
-        &self.exclude_account_ids
-    }
-}
-
-impl AccountIdsQuery for MonthlyTotalsQuery {
     fn account_ids(&self) -> &[String] {
         &self.account_ids
     }

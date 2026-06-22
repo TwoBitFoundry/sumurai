@@ -9,6 +9,8 @@ import {
 } from '@/ui/recipes';
 import {
   type CustomDateRangeBounds,
+  clampCustomDateRangeBounds,
+  type DashboardDateBounds,
   type DateRangeKey as DateRange,
   defaultCustomDateRangeBounds,
   formatDateRangeLabel,
@@ -24,14 +26,15 @@ const options: Array<{ key: DateRange; label: string; hoverLabel: string }> = [
 
 function formatVisibleDateRangeLabel(
   dateRange: DateRange,
-  customDateRange: CustomDateRangeBounds | null
+  customDateRange: CustomDateRangeBounds | null,
+  dateBounds?: DashboardDateBounds | null
 ): string {
-  const primary = formatDateRangeLabel(dateRange, customDateRange);
+  const primary = formatDateRangeLabel(dateRange, customDateRange, dateBounds);
   if (primary && primary !== 'Custom') {
     return primary;
   }
 
-  const resolved = resolveDateRange(dateRange, customDateRange);
+  const resolved = resolveDateRange(dateRange, customDateRange, dateBounds);
   if (resolved.start && resolved.end) {
     return formatDateRangeLabel('custom', {
       start: resolved.start,
@@ -39,33 +42,42 @@ function formatVisibleDateRangeLabel(
     });
   }
 
-  return formatDateRangeLabel('custom', defaultCustomDateRangeBounds());
+  return 'Custom';
 }
 
 function resolvePickerValue(
   dateRange: DateRange,
-  customDateRange: CustomDateRangeBounds | null
-): CustomDateRangeBounds {
+  customDateRange: CustomDateRangeBounds | null,
+  dateBounds?: DashboardDateBounds | null
+): CustomDateRangeBounds | null {
   if (dateRange === 'custom' && customDateRange) {
-    return customDateRange;
+    return dateBounds ? clampCustomDateRangeBounds(customDateRange, dateBounds) : customDateRange;
   }
 
-  const activeRange = resolveDateRange(dateRange, customDateRange);
+  const activeRange = resolveDateRange(dateRange, customDateRange, dateBounds);
   if (activeRange.start && activeRange.end) {
     return { start: activeRange.start, end: activeRange.end };
   }
 
-  return customDateRange ?? defaultCustomDateRangeBounds();
+  if (customDateRange) {
+    return dateBounds ? clampCustomDateRangeBounds(customDateRange, dateBounds) : customDateRange;
+  }
+
+  return dateBounds ? defaultCustomDateRangeBounds(dateBounds) : null;
 }
 
 export function DateRangeLabelPill({
   dateRange,
   customDateRange = null,
+  dateBounds = null,
+  dateBoundsLoading = false,
   onChange,
   onCustomDateRangeChange,
 }: {
   dateRange: DateRange;
   customDateRange?: CustomDateRangeBounds | null;
+  dateBounds?: DashboardDateBounds | null;
+  dateBoundsLoading?: boolean;
   onChange: (range: DateRange) => void;
   onCustomDateRangeChange: (bounds: CustomDateRangeBounds) => void;
 }) {
@@ -75,10 +87,10 @@ export function DateRangeLabelPill({
     open: true;
   } | null>(null);
   const pickerOpen = pickerSession?.open === true && pickerSession.openedAtRange === dateRange;
-  const rangeLabel = formatVisibleDateRangeLabel(dateRange, customDateRange ?? null);
+  const rangeLabel = formatVisibleDateRangeLabel(dateRange, customDateRange ?? null, dateBounds);
   const pickerValue = useMemo(
-    () => resolvePickerValue(dateRange, customDateRange),
-    [customDateRange, dateRange]
+    () => resolvePickerValue(dateRange, customDateRange, dateBounds),
+    [customDateRange, dateBounds, dateRange]
   );
 
   return (
@@ -125,6 +137,8 @@ export function DateRangeLabelPill({
         open={pickerOpen}
         anchorRef={buttonRef}
         value={pickerValue}
+        bounds={dateBounds}
+        loading={dateBoundsLoading}
         onApply={(bounds) => {
           onCustomDateRangeChange(bounds);
           onChange('custom');

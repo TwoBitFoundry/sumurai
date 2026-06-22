@@ -34,6 +34,10 @@ function renderCustomDateRangePicker(
 }
 
 describe('CustomDateRangePicker', () => {
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const bounds = { start: '2026-01-01', end: todayIso };
+
   beforeEach(() => {
     Object.defineProperty(window, 'innerWidth', {
       configurable: true,
@@ -51,6 +55,7 @@ describe('CustomDateRangePicker', () => {
   it('renders start and end date inputs in a popover', () => {
     renderCustomDateRangePicker({
       open: true,
+      bounds,
       value: { start: '2026-01-01', end: '2026-01-31' },
       onApply: jest.fn(),
       onRequestClose: jest.fn(),
@@ -67,6 +72,7 @@ describe('CustomDateRangePicker', () => {
 
     renderCustomDateRangePicker({
       open: true,
+      bounds,
       value: { start: '2026-01-01', end: '2026-01-31' },
       onApply,
       onRequestClose,
@@ -86,6 +92,7 @@ describe('CustomDateRangePicker', () => {
   it('shows validation when the start date is after the end date', () => {
     renderCustomDateRangePicker({
       open: true,
+      bounds,
       value: { start: '2026-01-01', end: '2026-01-31' },
       onApply: jest.fn(),
       onRequestClose: jest.fn(),
@@ -101,6 +108,7 @@ describe('CustomDateRangePicker', () => {
 
     renderCustomDateRangePicker({
       open: true,
+      bounds,
       value: { start: '2026-01-01', end: '2026-01-31' },
       onApply,
       onRequestClose: jest.fn(),
@@ -115,15 +123,32 @@ describe('CustomDateRangePicker', () => {
   it('caps the end date input at today', () => {
     renderCustomDateRangePicker({
       open: true,
+      bounds,
       value: { start: '2026-01-01', end: '2026-01-31' },
       onApply: jest.fn(),
       onRequestClose: jest.fn(),
     });
 
-    const today = new Date();
-    const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
     expect(screen.getByLabelText('End date')).toHaveAttribute('max', todayIso);
     expect(screen.getByLabelText('Start date')).toHaveAttribute('max', todayIso);
+    expect(screen.getByLabelText('Start date')).toHaveAttribute('min', '2026-01-01');
+    expect(screen.getByLabelText('End date')).toHaveAttribute('min', '2026-01-01');
+  });
+
+  it('shows an unavailable state when no date bounds exist', () => {
+    renderCustomDateRangePicker({
+      open: true,
+      bounds: null,
+      value: null,
+      onApply: jest.fn(),
+      onRequestClose: jest.fn(),
+    });
+
+    expect(screen.getByText('Custom range')).toBeInTheDocument();
+    expect(
+      screen.getByText('No dated transactions are available for this account selection.')
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText('Start date')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('End date')).not.toBeInTheDocument();
   });
 });

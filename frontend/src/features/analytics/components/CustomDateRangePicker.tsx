@@ -9,12 +9,11 @@ import {
   radius as uiRadiusRecipes,
   surface as uiSurfaceRecipes,
 } from '@/ui/recipes';
-import type { CustomDateRangeBounds } from '@/utils/dateRanges';
+import type { CustomDateRangeBounds, DashboardDateBounds } from '@/utils/dateRanges';
 import {
   clampCustomDateRangeBounds,
   defaultCustomDateRangeBounds,
   isValidCustomDateRange,
-  todayIsoDateLocal,
   validateCustomDateRange,
 } from '@/utils/dateRanges';
 
@@ -24,6 +23,8 @@ interface CustomDateRangePickerProps {
   open: boolean;
   anchorRef: RefObject<HTMLElement | null>;
   value: CustomDateRangeBounds | null;
+  bounds: DashboardDateBounds | null;
+  loading?: boolean;
   onApply: (value: CustomDateRangeBounds) => void;
   onRequestClose: () => void;
 }
@@ -37,6 +38,8 @@ export function CustomDateRangePicker({
   open,
   anchorRef,
   value,
+  bounds,
+  loading = false,
   onApply,
   onRequestClose,
 }: CustomDateRangePickerProps) {
@@ -45,7 +48,7 @@ export function CustomDateRangePicker({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [hasInteracted, setHasInteracted] = useState(false);
-  const maxDate = todayIsoDateLocal();
+  const hasBounds = !!bounds;
 
   useEffect(() => {
     setMounted(true);
@@ -56,11 +59,21 @@ export function CustomDateRangePicker({
       return;
     }
 
-    const defaults = clampCustomDateRangeBounds(value ?? defaultCustomDateRangeBounds(), maxDate);
+    if (!bounds) {
+      setStartDate('');
+      setEndDate('');
+      setHasInteracted(false);
+      return;
+    }
+
+    const defaults = clampCustomDateRangeBounds(
+      value ?? defaultCustomDateRangeBounds(bounds),
+      bounds
+    );
     setStartDate(defaults.start);
     setEndDate(defaults.end);
     setHasInteracted(false);
-  }, [maxDate, open, value]);
+  }, [bounds, open, value]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -111,16 +124,16 @@ export function CustomDateRangePicker({
   }, [anchorRef, open]);
 
   const isValid = useMemo(
-    () => isValidCustomDateRange(startDate, endDate, maxDate),
-    [endDate, maxDate, startDate]
+    () => isValidCustomDateRange(startDate, endDate, bounds),
+    [bounds, endDate, startDate]
   );
   const validationMessage =
-    hasInteracted && !isValid ? validateCustomDateRange(startDate, endDate, maxDate) : null;
+    hasInteracted && !isValid ? validateCustomDateRange(startDate, endDate, bounds) : null;
 
   const handleStartChange = (nextStart: string) => {
     setHasInteracted(true);
     setStartDate(nextStart);
-    if (isValidCustomDateRange(nextStart, endDate, maxDate)) {
+    if (isValidCustomDateRange(nextStart, endDate, bounds)) {
       onApply({ start: nextStart, end: endDate });
     }
   };
@@ -128,7 +141,7 @@ export function CustomDateRangePicker({
   const handleEndChange = (nextEnd: string) => {
     setHasInteracted(true);
     setEndDate(nextEnd);
-    if (isValidCustomDateRange(startDate, nextEnd, maxDate)) {
+    if (isValidCustomDateRange(startDate, nextEnd, bounds)) {
       onApply({ start: startDate, end: nextEnd });
     }
   };
@@ -171,42 +184,59 @@ export function CustomDateRangePicker({
         <p className={cn(modalDrawerSectionLabelClassName)}>Custom range</p>
       </div>
       <div data-testid="custom-date-range-picker-content" className={cn('flex flex-col gap-3 p-4')}>
-        <div className={cn(modalDrawer.formRow)}>
-          <div className={cn(modalDrawer.formField)}>
-            <label
-              htmlFor="custom-date-range-start"
-              className={cn(modalDrawerSectionLabelClassName)}
-            >
-              Start
-            </label>
-            <Input
-              id="custom-date-range-start"
-              type="date"
-              aria-label="Start date"
-              value={startDate}
-              max={maxDate}
-              onChange={(event) => handleStartChange(event.target.value)}
-              variant={validationMessage ? 'floatingChromeInvalid' : 'floatingChrome'}
-            />
-          </div>
-          <div className={cn(modalDrawer.formField)}>
-            <label htmlFor="custom-date-range-end" className={cn(modalDrawerSectionLabelClassName)}>
-              End
-            </label>
-            <Input
-              id="custom-date-range-end"
-              type="date"
-              aria-label="End date"
-              value={endDate}
-              max={maxDate}
-              onChange={(event) => handleEndChange(event.target.value)}
-              variant={validationMessage ? 'floatingChromeInvalid' : 'floatingChrome'}
-            />
-          </div>
-        </div>
-        {validationMessage ? (
-          <p className={cn('text-sm text-red-600 dark:text-red-300')}>{validationMessage}</p>
-        ) : null}
+        {loading ? (
+          <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>
+            Checking available dates...
+          </p>
+        ) : !hasBounds ? (
+          <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>
+            No dated transactions are available for this account selection.
+          </p>
+        ) : (
+          <>
+            <div className={cn(modalDrawer.formRow)}>
+              <div className={cn(modalDrawer.formField)}>
+                <label
+                  htmlFor="custom-date-range-start"
+                  className={cn(modalDrawerSectionLabelClassName)}
+                >
+                  Start
+                </label>
+                <Input
+                  id="custom-date-range-start"
+                  type="date"
+                  aria-label="Start date"
+                  value={startDate}
+                  min={bounds.start}
+                  max={bounds.end}
+                  onChange={(event) => handleStartChange(event.target.value)}
+                  variant={validationMessage ? 'floatingChromeInvalid' : 'floatingChrome'}
+                />
+              </div>
+              <div className={cn(modalDrawer.formField)}>
+                <label
+                  htmlFor="custom-date-range-end"
+                  className={cn(modalDrawerSectionLabelClassName)}
+                >
+                  End
+                </label>
+                <Input
+                  id="custom-date-range-end"
+                  type="date"
+                  aria-label="End date"
+                  value={endDate}
+                  min={bounds.start}
+                  max={bounds.end}
+                  onChange={(event) => handleEndChange(event.target.value)}
+                  variant={validationMessage ? 'floatingChromeInvalid' : 'floatingChrome'}
+                />
+              </div>
+            </div>
+            {validationMessage ? (
+              <p className={cn('text-sm text-red-600 dark:text-red-300')}>{validationMessage}</p>
+            ) : null}
+          </>
+        )}
       </div>
     </div>,
     document.body

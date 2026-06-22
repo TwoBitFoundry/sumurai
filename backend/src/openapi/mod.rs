@@ -122,7 +122,6 @@ use utoipa::OpenApi;
             schemas::ErrorResponse,
             schemas::HealthCheckResponse,
             schemas::DateRangeQueryParams,
-            schemas::MonthlyTotalsQueryParams,
             schemas::DailySpendingQueryParams,
             schemas::TransactionsQueryParams,
         )

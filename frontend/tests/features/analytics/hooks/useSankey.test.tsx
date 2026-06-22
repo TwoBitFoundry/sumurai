@@ -10,6 +10,7 @@ import * as dateRanges from '@/utils/dateRanges';
 
 jest.mock('@/services/AnalyticsService', () => ({
   AnalyticsService: {
+    getDateBounds: jest.fn(),
     getSankey: jest.fn(),
   },
 }));
@@ -73,6 +74,10 @@ describe('useSankey', () => {
           return {};
       }
     });
+    jest.mocked(AnalyticsService.getDateBounds).mockResolvedValue({
+      start_date: '2026-02-01',
+      end_date: '2026-05-31',
+    } as any);
     jest.mocked(AnalyticsService.getSankey).mockResolvedValue({
       nodes: [{ id: 'income', label: 'Income', kind: 'Income' }],
       links: [],
@@ -207,6 +212,7 @@ describe('useSankey', () => {
 
     expect(result.current.loading).toBe(false);
     expect(result.current.data?.summary.income).toBe(500);
+    expect(AnalyticsService.getDateBounds).toHaveBeenLastCalledWith(['account1']);
     expect(AnalyticsService.getSankey).toHaveBeenLastCalledWith('2026-04-01', '2026-05-31', [
       'account1',
     ]);

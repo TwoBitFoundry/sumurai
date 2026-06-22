@@ -17,6 +17,7 @@ import {
   type DateRangeKey,
   resolveDateRange,
 } from '../../../utils/dateRanges';
+import { useAnalyticsDateBounds } from './useAnalyticsDateBounds';
 
 export type UseAnalyticsResult = {
   loading: boolean;
@@ -48,17 +49,30 @@ export function useAnalytics(
     allAccountIds,
     loading: accountsLoading,
   } = useAccountFilter();
+  const dateBounds = useAnalyticsDateBounds();
 
-  const { start, end } = useMemo(() => resolveDateRange(range, customRange), [customRange, range]);
+  const { start, end } = useMemo(
+    () => resolveDateRange(range, customRange, dateBounds.bounds),
+    [customRange, dateBounds.bounds, range]
+  );
   const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
   const accountsReady = !accountsLoading;
-  const hasValidRange = range !== 'custom' || (!!start && !!end);
+  const hasValidRange = !!dateBounds.bounds && !!start && !!end;
 
   const query = useQuery<AnalyticsQueryData, Error>({
-    queryKey: ['analytics', range, customRange?.start, customRange?.end, cacheKey],
-    enabled: accountsReady && hasValidRange,
+    queryKey: ['analytics', range, start, end, cacheKey],
+    enabled: accountsReady && !dateBounds.loading && hasValidRange,
     placeholderData: keepPreviousData,
     queryFn: async () => {
+      if (!start || !end) {
+        return {
+          spendingTotal: 0,
+          categories: [],
+          topMerchants: [],
+          monthlyTotals: [],
+        };
+      }
+
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
         return {
           spendingTotal: 0,
@@ -74,7 +88,7 @@ export function useAnalytics(
         AnalyticsService.getSpendingTotal(start, end, accountIds),
         AnalyticsService.getCategorySpendingByDateRange(start, end, accountIds),
         AnalyticsService.getTopMerchantsByDateRange(start, end, accountIds),
-        AnalyticsService.getMonthlyTotals(6, accountIds),
+        AnalyticsService.getMonthlyTotals(start, end, accountIds),
       ]);
 
       return {
@@ -87,13 +101,14 @@ export function useAnalytics(
   });
 
   const loading =
+    dateBounds.loading ||
     (!accountsReady && query.data === undefined) ||
     (accountsReady && query.fetchStatus === 'fetching' && query.data === undefined);
 
   return {
     loading,
     refreshing: query.isFetching && !query.isPending && accountsReady,
-    error: query.error?.message ?? null,
+    error: dateBounds.error ?? query.error?.message ?? null,
     spendingTotal: query.data?.spendingTotal ?? 0,
     categories: query.data?.categories ?? [],
     topMerchants: query.data?.topMerchants ?? [],

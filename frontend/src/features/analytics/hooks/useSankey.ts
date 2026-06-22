@@ -9,6 +9,7 @@ import {
   type DateRangeKey,
   resolveDateRange,
 } from '../../../utils/dateRanges';
+import { useAnalyticsDateBounds } from './useAnalyticsDateBounds';
 
 const emptySankeyResponse: SankeyResponse = {
   nodes: [],
@@ -44,16 +45,26 @@ export function useSankey(
     allAccountIds,
     loading: accountsLoading,
   } = useAccountFilter();
+  const dateBounds = useAnalyticsDateBounds();
 
-  const { start, end } = useMemo(() => resolveDateRange(range, customRange), [customRange, range]);
+  const { start, end } = useMemo(
+    () => resolveDateRange(range, customRange, dateBounds.bounds),
+    [customRange, dateBounds.bounds, range]
+  );
   const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
   const accountsReady = !accountsLoading;
   const accountsSelectionReady = allAccountIds.length === 0 || selectedAccountIds.length > 0;
   const awaitingAccountSelection = accountsReady && !accountsSelectionReady;
 
   const query = useQuery<SankeyResponse, Error>({
-    queryKey: ['sankey', range, customRange?.start, customRange?.end, cacheKey],
-    enabled: accountsReady && accountsSelectionReady && !!start && !!end,
+    queryKey: ['sankey', range, start, end, cacheKey],
+    enabled:
+      accountsReady &&
+      !dateBounds.loading &&
+      accountsSelectionReady &&
+      !!dateBounds.bounds &&
+      !!start &&
+      !!end,
     placeholderData: keepPreviousData,
     queryFn: async () => {
       if (!start || !end) {
@@ -72,6 +83,7 @@ export function useSankey(
   });
 
   const loading =
+    dateBounds.loading ||
     (!accountsReady && query.data === undefined) ||
     awaitingAccountSelection ||
     (accountsReady &&
@@ -83,7 +95,7 @@ export function useSankey(
     data: query.data ?? null,
     loading,
     refreshing: query.isFetching && !query.isPending && accountsReady,
-    error: query.error?.message ?? null,
+    error: dateBounds.error ?? query.error?.message ?? null,
     cacheKey,
     start,
     end,

@@ -60,7 +60,7 @@ use crate::models::auth::{AuthContext, AuthMiddlewareState};
 use crate::models::auto_categorization_job::AutoCategorizationJobState;
 use crate::models::{
     account::AccountResponse,
-    analytics::{DateRangeQuery, MonthlyTotalsQuery},
+    analytics::DateRangeQuery,
     auth as auth_models,
     budget::{
         Budget, BudgetsOverviewResponse, CreateBudgetRequest, DeleteBudgetResponse,
@@ -2941,10 +2941,13 @@ async fn get_authenticated_category_spending(
     get,
     path = "/api/analytics/monthly-totals",
     description = "Produces a timeline of monthly totals for dashboard charts.",
-    params(("months" = Option<i32>, Query, description = "Number of months to retrieve (default: 6)"),
-           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
+    params(("start_date" = String, Query, description = "Start date in YYYY-MM-DD format"),
+           ("end_date" = String, Query, description = "End date in YYYY-MM-DD format"),
+           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs"),
+           ("exclude_account_ids" = Option<Vec<String>>, Query, description = "Exclude these account IDs (ignored when account_ids is set)")),
     responses(
         (status = 200, description = "Monthly spending totals", body = Vec<MonthlySpending>),
+        (status = 400, description = "Invalid date range"),
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
@@ -2957,10 +2960,23 @@ async fn get_authenticated_monthly_totals(
     AuthorizedQuery {
         query,
         authorized_account_ids,
-    }: AuthorizedQuery<MonthlyTotalsQuery>,
+    }: AuthorizedQuery<DateRangeQuery>,
 ) -> Result<Json<Vec<MonthlySpending>>, StatusCode> {
     let user_id = auth_context.user_id;
-    let months = query.months.unwrap_or(6);
+    let start_date = query
+        .start_date
+        .as_ref()
+        .and_then(|value| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok())
+        .ok_or(StatusCode::BAD_REQUEST)?;
+    let end_date = query
+        .end_date
+        .as_ref()
+        .and_then(|value| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok())
+        .ok_or(StatusCode::BAD_REQUEST)?;
+
+    if end_date < start_date {
+        return Err(StatusCode::BAD_REQUEST);
+    }
 
     let account_ids: Option<Vec<Uuid>> = authorized_account_ids
         .as_ref()
@@ -2972,8 +2988,8 @@ async fn get_authenticated_monthly_totals(
             state.db_repository.as_ref(),
             &user_id,
             SpendingTransactionQuery {
-                start_date: None,
-                end_date: None,
+                start_date: Some(start_date),
+                end_date: Some(end_date),
                 account_ids: account_ids.as_deref(),
             },
         )
@@ -2986,9 +3002,12 @@ async fn get_authenticated_monthly_totals(
             );
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
-    let monthly_totals = state
-        .analytics_service
-        .calculate_monthly_totals(&transactions, months);
+    let monthly_totals = state.analytics_service.calculate_monthly_totals(
+        &transactions,
+        state
+            .analytics_service
+            .inclusive_month_count(start_date, end_date),
+    );
     Ok(Json(monthly_totals))
 }
 

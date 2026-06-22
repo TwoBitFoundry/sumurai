@@ -1,9 +1,13 @@
 import {
   clampCustomDateRangeBounds,
   computeDateRange,
+  dateRangeDaySpan,
+  defaultCustomDateRangeBounds,
   formatDateRangeLabel,
+  isoDateToSliderOffset,
   isValidCustomDateRange,
   resolveDateRange,
+  sliderOffsetToIsoDate,
   validateCustomDateRange,
 } from '@/utils/dateRanges';
 
@@ -101,37 +105,89 @@ describe('resolveDateRange', () => {
   it('returns empty bounds for custom without stored values', () => {
     expect(resolveDateRange('custom')).toEqual({});
   });
+
+  it('uses fetched bounds for all-time', () => {
+    expect(resolveDateRange('all-time', null, { start: '2022-03-11', end: '2026-06-21' })).toEqual({
+      start: '2022-03-11',
+      end: '2026-06-21',
+    });
+  });
+
+  it('clamps preset ranges into the available bounds', () => {
+    expect(resolveDateRange('past-year', null, { start: '2026-05-10', end: '2026-06-21' })).toEqual(
+      {
+        start: '2026-05-10',
+        end: '2026-06-21',
+      }
+    );
+  });
 });
 
 describe('validateCustomDateRange', () => {
-  const today = '2026-06-21';
+  const bounds = { start: '2026-01-15', end: '2026-06-21' };
 
   it('rejects an end date after today', () => {
-    expect(validateCustomDateRange('2026-01-01', '2902-01-01', today)).toBe(
+    expect(validateCustomDateRange('2026-01-16', '2902-01-01', bounds)).toBe(
       'End date cannot be after today.'
     );
-    expect(isValidCustomDateRange('2026-01-01', '2902-01-01', today)).toBe(false);
+    expect(isValidCustomDateRange('2026-01-16', '2902-01-01', bounds)).toBe(false);
   });
 
   it('rejects a start date after the end date', () => {
-    expect(validateCustomDateRange('2026-02-15', '2026-01-31', today)).toBe(
+    expect(validateCustomDateRange('2026-02-15', '2026-01-31', bounds)).toBe(
       'Choose a start date on or before the end date.'
     );
   });
 
+  it('rejects a start date before the earliest available date', () => {
+    expect(validateCustomDateRange('2026-01-01', '2026-01-31', bounds)).toBe(
+      'Start date cannot be before the earliest available date.'
+    );
+  });
+
   it('accepts a range ending today', () => {
-    expect(validateCustomDateRange('2026-01-01', today, today)).toBeNull();
-    expect(isValidCustomDateRange('2026-01-01', today, today)).toBe(true);
+    expect(validateCustomDateRange('2026-01-15', bounds.end, bounds)).toBeNull();
+    expect(isValidCustomDateRange('2026-01-15', bounds.end, bounds)).toBe(true);
   });
 });
 
 describe('clampCustomDateRangeBounds', () => {
-  it('clamps a future end date to today', () => {
+  it('clamps a range into the fetched bounds', () => {
     expect(
-      clampCustomDateRangeBounds({ start: '2026-01-01', end: '2902-01-01' }, '2026-06-21')
+      clampCustomDateRangeBounds(
+        { start: '2026-01-01', end: '2902-01-01' },
+        { start: '2026-01-15', end: '2026-06-21' }
+      )
     ).toEqual({
-      start: '2026-01-01',
+      start: '2026-01-15',
       end: '2026-06-21',
     });
+  });
+});
+
+describe('defaultCustomDateRangeBounds', () => {
+  it('defaults to the available bounds when history is shorter than thirty days', () => {
+    expect(
+      defaultCustomDateRangeBounds({
+        start: '2026-06-10',
+        end: '2026-06-21',
+      })
+    ).toEqual({
+      start: '2026-06-10',
+      end: '2026-06-21',
+    });
+  });
+});
+
+describe('slider date helpers', () => {
+  const bounds = { start: '2026-06-10', end: '2026-06-21' };
+
+  it('computes the inclusive day span', () => {
+    expect(dateRangeDaySpan(bounds)).toBe(12);
+  });
+
+  it('maps between ISO dates and slider offsets', () => {
+    expect(isoDateToSliderOffset('2026-06-15', bounds)).toBe(5);
+    expect(sliderOffsetToIsoDate(5, bounds)).toBe('2026-06-15');
   });
 });

@@ -1565,6 +1565,159 @@ async fn given_end_date_before_start_date_when_get_cash_flow_then_returns_400() 
 }
 
 #[tokio::test]
+async fn given_authenticated_user_when_get_monthly_totals_with_explicit_dates_then_returns_requested_window(
+) {
+    use crate::models::transaction::Transaction;
+    use crate::services::repository_service::MockDatabaseRepository;
+    use chrono::NaiveDate;
+    use rust_decimal_macros::dec;
+    use uuid::Uuid;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let account_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440051").unwrap();
+    let user_clone = user.clone();
+    let user_id = user.id;
+
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let user = user_clone.clone();
+        Box::pin(async move { Ok(Some(user)) })
+    });
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_accounts_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_spending_transactions_by_date_range_for_user()
+        .withf(|_, start_date, end_date, _| {
+            *start_date == NaiveDate::from_ymd_opt(2026, 1, 1).unwrap()
+                && *end_date == NaiveDate::from_ymd_opt(2026, 3, 31).unwrap()
+        })
+        .returning(move |_, _, _, _| {
+            let transactions = vec![
+                Transaction {
+                    id: Uuid::new_v4(),
+                    account_id,
+                    user_id: Some(user_id),
+                    provider_account_id: Some("plaid_acc_1".to_string()),
+                    provider_transaction_id: Some("txn_051".to_string()),
+                    amount: dec!(-125.50),
+                    date: NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
+                    merchant_name: Some("Coffee Shop".to_string()),
+                    category_primary: "FOOD_AND_DRINK".to_string(),
+                    category_detailed: "Coffee Shop".to_string(),
+                    category_confidence: "HIGH".to_string(),
+                    payment_channel: Some("in_store".to_string()),
+                    pending: false,
+                    created_at: Some(chrono::Utc::now()),
+                    original_merchant_name: None,
+                    normalized_merchant: None,
+                    normalization_source: None,
+                },
+                Transaction {
+                    id: Uuid::new_v4(),
+                    account_id,
+                    user_id: Some(user_id),
+                    provider_account_id: Some("plaid_acc_1".to_string()),
+                    provider_transaction_id: Some("txn_052".to_string()),
+                    amount: dec!(-200.00),
+                    date: NaiveDate::from_ymd_opt(2026, 3, 10).unwrap(),
+                    merchant_name: Some("Grocery Store".to_string()),
+                    category_primary: "FOOD_AND_DRINK".to_string(),
+                    category_detailed: "Groceries".to_string(),
+                    category_confidence: "HIGH".to_string(),
+                    payment_channel: Some("in_store".to_string()),
+                    pending: false,
+                    created_at: Some(chrono::Utc::now()),
+                    original_merchant_name: None,
+                    normalized_merchant: None,
+                    normalization_source: None,
+                },
+            ];
+            Box::pin(async move { Ok(transactions) })
+        });
+
+    mock_db
+        .expect_get_budgets_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_latest_account_balances_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request = TestFixtures::create_authenticated_get_request(
+        "/api/analytics/monthly-totals?start_date=2026-01-01&end_date=2026-03-31",
+        &token,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(
+        payload,
+        serde_json::json!([
+            { "month": "2026-01", "total": "125.50" },
+            { "month": "2026-03", "total": "200.00" }
+        ])
+    );
+}
+
+#[tokio::test]
+async fn given_end_date_before_start_date_when_get_monthly_totals_then_returns_400() {
+    use crate::services::repository_service::MockDatabaseRepository;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let user_clone = user.clone();
+
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let user = user_clone.clone();
+        Box::pin(async move { Ok(Some(user)) })
+    });
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_accounts_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_budgets_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_latest_account_balances_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request = TestFixtures::create_authenticated_get_request(
+        "/api/analytics/monthly-totals?start_date=2026-03-31&end_date=2026-01-01",
+        &token,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 400);
+}
+
+#[tokio::test]
 async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_ranking() {
     use crate::models::analytics::TopMerchant;
     use crate::models::transaction::Transaction;

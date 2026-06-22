@@ -100,11 +100,30 @@ Tasks:
 
 Acceptance criteria:
 
-- [ ] Dashboard preset selection resolves to concrete `start_date` and `end_date` values before requests are sent.
-- [ ] Custom range selection resolves to concrete `start_date` and `end_date` values before requests are sent.
-- [ ] Cash-flow requests no longer use a `months` query param from the dashboard.
-- [ ] Persisted custom ranges are clamped back into the fetched bounds after account-filter changes.
-- [ ] No dashboard analytics request sends only one date for a selected range.
+- [x] Dashboard preset selection resolves to concrete `start_date` and `end_date` values before requests are sent.
+- [x] Custom range selection resolves to concrete `start_date` and `end_date` values before requests are sent.
+- [x] Cash-flow requests no longer use a `months` query param from the dashboard.
+- [x] Persisted custom ranges are clamped back into the fetched bounds after account-filter changes.
+- [x] No dashboard analytics request sends only one date for a selected range.
+
+TDD log:
+
+- Red: expanded frontend utility, hook, app-state, and picker tests to require fetched date bounds, explicit monthly-totals and cash-flow dates, stored-range clamping, and unavailable custom-range handling; the initial run failed because the dashboard still used implicit defaults and the picker had no bounds contract.
+- Green: added a shared analytics date-bounds hook, extended date-range utilities with bounds-aware clamping and slider date math, switched dashboard analytics hooks to explicit date pairs, and clamped persisted custom ranges in app state.
+- Refactor: removed the obsolete backend monthly-totals query type, consolidated the monthly-totals and cash-flow request shape around `DateRangeQuery`, and simplified the label-pill fallback so unapplied custom state no longer fabricates a visible range.
+- Verification:
+  - `bun --cwd=frontend test ./tests/utils/dateRanges.test.ts`
+  - `bun --cwd=frontend test ./tests/features/analytics/hooks/useAnalytics.test.tsx ./tests/features/analytics/hooks/useCashFlow.test.tsx ./tests/features/analytics/hooks/useSankey.test.tsx ./tests/components/AuthenticatedApp.test.tsx ./tests/features/analytics/components/CustomDateRangePicker.test.tsx ./tests/features/analytics/components/DateRangePillSlider.test.tsx`
+  - `cargo test -p sumurai-backend --locked get_monthly_totals`
+  - `cargo test -p sumurai-backend --locked openapi`
+  - `bun --cwd=frontend run test`
+  - `bun --cwd=frontend run build`
+  - `bun --cwd=frontend run typecheck`
+  - `cargo fmt --all`
+  - `cargo fmt -p sumurai-backend -p entity --check`
+  - `cargo check --workspace --locked --all-targets`
+  - `cargo clippy -p sumurai-backend -p entity --locked --all-targets --no-deps -- -D warnings`
+  - `cargo test -p sumurai-backend --locked`
 
 ### Phase 3: Replace the custom date picker UI with a bounded dual-thumb slider
 

@@ -1,6 +1,7 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { AuthenticatedApp } from '@/components/AuthenticatedApp';
+import { useAnalyticsDateBounds } from '@/features/analytics/hooks/useAnalyticsDateBounds';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 
 const motionSectionProps: Record<
@@ -64,6 +65,10 @@ jest.mock('@/hooks/useAccountFilter', () => ({
   useAccountFilter: jest.fn(),
 }));
 
+jest.mock('@/features/analytics/hooks/useAnalyticsDateBounds', () => ({
+  useAnalyticsDateBounds: jest.fn(),
+}));
+
 jest.mock('@/views/AccountsPage', () => ({
   __esModule: true,
   default: () => <div>Accounts</div>,
@@ -76,7 +81,20 @@ jest.mock('@/views/BudgetsPage', () => ({
 
 jest.mock('@/views/DashboardPage', () => ({
   __esModule: true,
-  default: ({ dateRange }: { dateRange: string }) => <div>{dateRange}</div>,
+  default: ({
+    dateRange,
+    customDateRange,
+  }: {
+    dateRange: string;
+    customDateRange: { start: string; end: string } | null;
+  }) => (
+    <div>
+      <div>{dateRange}</div>
+      <div data-testid="dashboard-custom-date-range">
+        {customDateRange ? `${customDateRange.start}|${customDateRange.end}` : 'none'}
+      </div>
+    </div>
+  ),
 }));
 
 jest.mock('@/views/SettingsPage', () => ({
@@ -119,6 +137,14 @@ describe('AuthenticatedApp', () => {
       allAccountIds: [],
       setSelectedAccountIds: jest.fn(),
     } as any);
+    jest.mocked(useAnalyticsDateBounds).mockReturnValue({
+      bounds: null,
+      loading: false,
+      refreshing: false,
+      error: null,
+      cacheKey: 'none',
+    } as any);
+    window.sessionStorage.clear();
     appLayoutMock.mockClear();
     for (const key of Object.keys(motionSectionProps)) delete motionSectionProps[key];
   });
@@ -195,5 +221,32 @@ describe('AuthenticatedApp', () => {
       animate: { opacity: 1, x: 0 },
       exit: { opacity: 0, x: 24 },
     });
+  });
+
+  it('clamps a stored custom range into the fetched bounds', async () => {
+    window.sessionStorage.setItem('sumurai.ui.dashboardDateRange', 'custom');
+    window.sessionStorage.setItem(
+      'sumurai.ui.dashboardCustomDateRange',
+      JSON.stringify({ start: '2026-01-01', end: '2026-06-15' })
+    );
+    jest.mocked(useAnalyticsDateBounds).mockReturnValue({
+      bounds: { start: '2026-02-01', end: '2026-05-31' },
+      loading: false,
+      refreshing: false,
+      error: null,
+      cacheKey: 'all',
+    } as any);
+
+    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard-custom-date-range')).toHaveTextContent(
+        '2026-02-01|2026-05-31'
+      );
+    });
+
+    expect(window.sessionStorage.getItem('sumurai.ui.dashboardCustomDateRange')).toBe(
+      JSON.stringify({ start: '2026-02-01', end: '2026-05-31' })
+    );
   });
 });
