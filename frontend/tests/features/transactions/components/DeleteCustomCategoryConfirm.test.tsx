@@ -2,7 +2,10 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { createRef } from 'react';
-import { DeleteCustomCategoryConfirm } from '@/features/transactions/components/DeleteCustomCategoryConfirm';
+import {
+  DeleteCustomCategoryConfirm,
+  isDeleteCustomCategoryConfirmTarget,
+} from '@/features/transactions/components/DeleteCustomCategoryConfirm';
 
 jest.mock('@/features/transactions/hooks/useDeleteCustomCategory', () => ({
   useDeleteCustomCategory: jest.fn(),
@@ -47,6 +50,14 @@ describe('DeleteCustomCategoryConfirm', () => {
   const deleteCustomCategoryAsync = jest.fn();
   const onRequestClose = jest.fn();
 
+  it('marks the portaled confirmation as exempt from parent dismiss handlers', () => {
+    renderDeleteConfirm({ onRequestClose });
+
+    const deleteButton = screen.getByRole('button', { name: 'Delete' });
+    expect(isDeleteCustomCategoryConfirmTarget(deleteButton)).toBe(true);
+    expect(isDeleteCustomCategoryConfirmTarget(document.body)).toBe(false);
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     useDeleteCustomCategoryMock.useDeleteCustomCategory.mockReturnValue({
@@ -61,6 +72,7 @@ describe('DeleteCustomCategoryConfirm', () => {
     renderDeleteConfirm({ onRequestClose });
 
     const popover = screen.getByTestId('delete-custom-category-popover');
+    expect(popover).toHaveAttribute('data-delete-custom-category-confirm');
     expect(popover).toHaveClass('fixed', 'z-50');
     expect(popover.style.bottom).toBeTruthy();
     expect(popover.style.left).toBeTruthy();

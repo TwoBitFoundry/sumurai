@@ -33,7 +33,9 @@ import {
   getTagThemeForCategory,
   validateCustomCategoryName,
 } from '@/utils/categories';
-import DeleteCustomCategoryConfirm from './DeleteCustomCategoryConfirm';
+import DeleteCustomCategoryConfirm, {
+  isDeleteCustomCategoryConfirmTarget,
+} from './DeleteCustomCategoryConfirm';
 
 interface CategoryCatalogPickerProps {
   open: boolean;
@@ -274,6 +276,16 @@ export function CategoryCatalogPicker({
           labelledBy="category-catalog-picker-title"
           description="Browse categories and add your own"
           data-testid="category-catalog-picker-sheet"
+          onInteractOutside={(event) => {
+            if (shouldPreventCatalogDismiss(anchorRef, event.target)) {
+              event.preventDefault();
+            }
+          }}
+          onPointerDownOutside={(event) => {
+            if (shouldPreventCatalogDismiss(anchorRef, event.target)) {
+              event.preventDefault();
+            }
+          }}
           containerClassName={cn(
             'p-[env(safe-area-inset-top)_env(safe-area-inset-right)_env(safe-area-inset-bottom)_env(safe-area-inset-left)]'
           )}
@@ -324,12 +336,12 @@ export function CategoryCatalogPicker({
             align="end"
             sideOffset={10}
             onInteractOutside={(event) => {
-              if (isDismissTargetWithinAnchor(anchorRef, event.target)) {
+              if (shouldPreventCatalogDismiss(anchorRef, event.target)) {
                 event.preventDefault();
               }
             }}
             onPointerDownOutside={(event) => {
-              if (isDismissTargetWithinAnchor(anchorRef, event.target)) {
+              if (shouldPreventCatalogDismiss(anchorRef, event.target)) {
                 event.preventDefault();
               }
             }}
@@ -372,6 +384,15 @@ export default CategoryCatalogPicker;
 
 function formatTypedCategoryDisplay(raw: string): string {
   return raw.toLowerCase().replace(/\b[a-z]/g, (char) => char.toUpperCase());
+}
+
+function shouldPreventCatalogDismiss(
+  anchorRef: RefObject<HTMLElement>,
+  target: EventTarget | null
+): boolean {
+  return (
+    isDismissTargetWithinAnchor(anchorRef, target) || isDeleteCustomCategoryConfirmTarget(target)
+  );
 }
 
 function isDismissTargetWithinAnchor(

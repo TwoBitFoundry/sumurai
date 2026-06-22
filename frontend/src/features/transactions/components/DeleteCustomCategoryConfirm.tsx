@@ -21,6 +21,14 @@ import {
 } from '@/utils/anchoredPopoverPosition';
 import { useDeleteCustomCategory } from '../hooks/useDeleteCustomCategory';
 
+export const DELETE_CUSTOM_CATEGORY_CONFIRM_SELECTOR = '[data-delete-custom-category-confirm]';
+
+export function isDeleteCustomCategoryConfirmTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element && target.closest(DELETE_CUSTOM_CATEGORY_CONFIRM_SELECTOR) != null
+  );
+}
+
 interface Props {
   open: boolean;
   anchorRef: RefObject<HTMLElement | null>;
@@ -138,6 +146,7 @@ export function DeleteCustomCategoryConfirm({
       aria-labelledby="delete-custom-category-title"
       aria-describedby="delete-custom-category-description"
       data-testid="delete-custom-category-popover"
+      data-delete-custom-category-confirm=""
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
           onRequestClose();
