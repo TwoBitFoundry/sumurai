@@ -4,7 +4,12 @@ import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { AnalyticsService } from '../../../services/AnalyticsService';
 import type { SankeyResponse } from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
-import { computeDateRange, type DateRangeKey } from '../../../utils/dateRanges';
+import {
+  type CustomDateRangeBounds,
+  type DateRangeKey,
+  resolveDateRange,
+} from '../../../utils/dateRanges';
+import { useAnalyticsDateBounds } from './useAnalyticsDateBounds';
 
 const emptySankeyResponse: SankeyResponse = {
   nodes: [],
@@ -30,23 +35,36 @@ export type UseSankeyResult = {
   end?: string;
 };
 
-export function useSankey(range: DateRangeKey): UseSankeyResult {
+export function useSankey(
+  range: DateRangeKey,
+  customRange?: CustomDateRangeBounds | null
+): UseSankeyResult {
   const {
     selectedAccountIds,
     isAllAccountsSelected,
     allAccountIds,
     loading: accountsLoading,
   } = useAccountFilter();
+  const dateBounds = useAnalyticsDateBounds();
 
-  const { start, end } = useMemo(() => computeDateRange(range), [range]);
+  const { start, end } = useMemo(
+    () => resolveDateRange(range, customRange, dateBounds.bounds),
+    [customRange, dateBounds.bounds, range]
+  );
   const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
   const accountsReady = !accountsLoading;
   const accountsSelectionReady = allAccountIds.length === 0 || selectedAccountIds.length > 0;
   const awaitingAccountSelection = accountsReady && !accountsSelectionReady;
 
   const query = useQuery<SankeyResponse, Error>({
-    queryKey: ['sankey', range, cacheKey],
-    enabled: accountsReady && accountsSelectionReady && !!start && !!end,
+    queryKey: ['sankey', range, start, end, cacheKey],
+    enabled:
+      accountsReady &&
+      !dateBounds.loading &&
+      accountsSelectionReady &&
+      !!dateBounds.bounds &&
+      !!start &&
+      !!end,
     placeholderData: keepPreviousData,
     queryFn: async () => {
       if (!start || !end) {
@@ -65,6 +83,7 @@ export function useSankey(range: DateRangeKey): UseSankeyResult {
   });
 
   const loading =
+    dateBounds.loading ||
     (!accountsReady && query.data === undefined) ||
     awaitingAccountSelection ||
     (accountsReady &&
@@ -76,7 +95,7 @@ export function useSankey(range: DateRangeKey): UseSankeyResult {
     data: query.data ?? null,
     loading,
     refreshing: query.isFetching && !query.isPending && accountsReady,
-    error: query.error?.message ?? null,
+    error: dateBounds.error ?? query.error?.message ?? null,
     cacheKey,
     start,
     end,

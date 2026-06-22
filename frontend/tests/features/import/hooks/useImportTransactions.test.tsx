@@ -92,6 +92,48 @@ describe('useImportTransactions', () => {
     jest.clearAllMocks();
   });
 
+  it('rejects unsupported filenames before validation starts', async () => {
+    const file = new File(['content'], 'statement.txt', { type: '' });
+    const { wrapper } = setup();
+
+    const { result } = renderHook(() => useImportTransactions('account-1'), { wrapper });
+
+    await act(async () => {
+      await result.current.validateFile(file);
+    });
+
+    expect(ImportService.validate).not.toHaveBeenCalled();
+    expect(result.current.status).toBe('validation-error');
+    expect(result.current.error).toBe("Unsupported file extension for 'statement.txt'");
+  });
+
+  it('accepts supported filenames regardless of case or MIME metadata', async () => {
+    const files = [
+      new File(['Date,Description'], 'statements.CSV', { type: '' }),
+      new File(['OFX'], 'statement.OfX', { type: 'application/octet-stream' }),
+      new File(['QBO'], 'bank.QbO', { type: '' }),
+      new File(['QFX'], 'credit.QfX', { type: 'application/octet-stream' }),
+      new File(['QBX'], 'ledger.QbX', { type: '' }),
+    ];
+    jest.mocked(ImportService.validate).mockResolvedValue(validateResponse);
+    const { wrapper } = setup();
+
+    const { result } = renderHook(() => useImportTransactions('account-1'), { wrapper });
+
+    await act(async () => {
+      for (const file of files) {
+        await result.current.validateFile(file);
+      }
+    });
+
+    expect(ImportService.validate).toHaveBeenCalledTimes(files.length);
+    files.forEach((file) => {
+      expect(ImportService.validate).toHaveBeenCalledWith(file, 'account-1');
+    });
+    expect(result.current.status).toBe('preview');
+    expect(result.current.error).toBeNull();
+  });
+
   it('validates a selected file and opens preview state', async () => {
     const file = makeFile();
     const validation = deferred<ValidateResponse>();

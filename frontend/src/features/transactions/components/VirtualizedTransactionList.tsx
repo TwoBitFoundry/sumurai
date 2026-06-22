@@ -1,7 +1,7 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Receipt } from 'lucide-react';
 import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import { cn, EmptyState } from '@/ui/primitives';
 import {
@@ -12,6 +12,10 @@ import {
 } from '@/ui/recipes';
 import { PREFETCH_THRESHOLD, useInfiniteTransactions } from '../hooks/useInfiniteTransactions';
 import type { TransactionWindowFilters } from '../models/transactionWindow';
+import type {
+  MerchantScrollRestoreState,
+  TransactionListScrollAccess,
+} from '../utils/merchantScrollRestore';
 import DesktopTransactionRow from './DesktopTransactionRow';
 import MobileTransactionRow from './MobileTransactionRow';
 import { DESKTOP_ROW_H, MOBILE_ROW_H, transactionsRowRecipes } from './transactionsRowRecipes';
@@ -23,6 +27,8 @@ interface Props {
   className?: string;
   onMerchantSearch?: (merchant: string) => void;
   onAccountFilter?: (accountId: string) => void;
+  merchantScrollRestoreRef?: React.RefObject<MerchantScrollRestoreState>;
+  listScrollAccessRef?: React.RefObject<TransactionListScrollAccess | null>;
 }
 
 const OVERSCAN = 10;
@@ -41,6 +47,8 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
   className,
   onMerchantSearch,
   onAccountFilter,
+  merchantScrollRestoreRef,
+  listScrollAccessRef,
 }) => {
   const { isDesktop } = useViewportBreakpoint();
   const showDesktopLayout = isDesktop && variant === 'page';
@@ -156,12 +164,44 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
   const virtualizerRef = useRef(virtualizer);
   virtualizerRef.current = virtualizer;
 
+  useLayoutEffect(() => {
+    if (!listScrollAccessRef) {
+      return;
+    }
+
+    listScrollAccessRef.current = {
+      getScrollOffset: () =>
+        virtualizerRef.current.scrollOffset ?? scrollRef.current?.scrollTop ?? 0,
+    };
+
+    return () => {
+      listScrollAccessRef.current = null;
+    };
+  }, [listScrollAccessRef]);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally only fires on filter change, not on every virtualizer update
   useEffect(() => {
-    if (canVirtualize) {
-      virtualizerRef.current.scrollToIndex(0);
+    if (!canVirtualize) {
+      return;
     }
-  }, [filterKey, canVirtualize]);
+
+    const restore = merchantScrollRestoreRef?.current;
+    if (restore?.shouldRestoreOnNextFilterKey && restore.savedOffset != null) {
+      if (isInitialLoading) {
+        return;
+      }
+
+      const offset = restore.savedOffset;
+      restore.savedOffset = null;
+      restore.shouldRestoreOnNextFilterKey = false;
+      requestAnimationFrame(() => {
+        virtualizerRef.current.scrollToOffset(offset, { align: 'start' });
+      });
+      return;
+    }
+
+    virtualizerRef.current.scrollToIndex(0);
+  }, [filterKey, canVirtualize, isInitialLoading, merchantScrollRestoreRef]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: remeasure after layout switch so row heights match mobile/desktop chrome
   useEffect(() => {
@@ -180,7 +220,7 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
       role="region"
       aria-label="Transaction list"
       className={cn(
-        'flex flex-col',
+        'flex min-w-0 max-w-full flex-col overflow-x-hidden',
         isContextual ? 'absolute inset-0 min-h-0' : 'relative',
         className
       )}
@@ -235,7 +275,7 @@ export const VirtualizedTransactionList: React.FC<Props> = ({
         aria-label="Transactions"
         className={cn(
           ...uiTransactionsTableRecipes.listViewport,
-          isContextual ? 'min-h-0 flex-1 touch-pan-y' : ''
+          isContextual ? 'min-h-0 flex-1' : ''
         )}
         style={!isContextual && listHeight != null ? { height: `${listHeight}px` } : undefined}
         data-no-swipe

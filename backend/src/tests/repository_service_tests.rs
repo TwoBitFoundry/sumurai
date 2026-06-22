@@ -1758,6 +1758,90 @@ async fn given_multiple_accounts_when_get_monthly_cash_flow_aggregates_with_acco
     assert!(none_selected.is_empty());
 }
 
+#[tokio::test]
+async fn given_transactions_when_get_earliest_transaction_date_for_user_then_returns_overall_and_filtered_earliest_dates(
+) {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let checking = create_test_account(&repo, user.id).await;
+    let savings = create_test_account(&repo, user.id).await;
+
+    let checking_oldest = create_test_transaction(
+        user.id,
+        checking.id,
+        "checking-oldest".to_string(),
+        -5000,
+        NaiveDate::from_ymd_opt(2024, 2, 1).unwrap(),
+    );
+    let checking_newer = create_test_transaction(
+        user.id,
+        checking.id,
+        "checking-newer".to_string(),
+        -2500,
+        NaiveDate::from_ymd_opt(2024, 4, 15).unwrap(),
+    );
+    let savings_oldest = create_test_transaction(
+        user.id,
+        savings.id,
+        "savings-oldest".to_string(),
+        -1000,
+        NaiveDate::from_ymd_opt(2024, 3, 5).unwrap(),
+    );
+
+    repo.upsert_transactions_batch(&[checking_oldest, checking_newer, savings_oldest], &user.id)
+        .await
+        .unwrap();
+
+    let overall = repo
+        .get_earliest_transaction_date_for_user(&user.id, None)
+        .await
+        .unwrap();
+    let savings_only = repo
+        .get_earliest_transaction_date_for_user(&user.id, Some(&[savings.id]))
+        .await
+        .unwrap();
+
+    assert_eq!(overall, Some(NaiveDate::from_ymd_opt(2024, 2, 1).unwrap()));
+    assert_eq!(
+        savings_only,
+        Some(NaiveDate::from_ymd_opt(2024, 3, 5).unwrap())
+    );
+}
+
+#[tokio::test]
+async fn given_scoped_account_without_transactions_when_get_earliest_transaction_date_for_user_then_returns_none(
+) {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let checking = create_test_account(&repo, user.id).await;
+    let savings = create_test_account(&repo, user.id).await;
+
+    let transaction = create_test_transaction(
+        user.id,
+        checking.id,
+        "checking-only".to_string(),
+        -5000,
+        NaiveDate::from_ymd_opt(2024, 2, 1).unwrap(),
+    );
+
+    repo.upsert_transaction(&transaction).await.unwrap();
+
+    let result = repo
+        .get_earliest_transaction_date_for_user(&user.id, Some(&[savings.id]))
+        .await
+        .unwrap();
+
+    assert_eq!(result, None);
+}
+
 #[allow(clippy::too_many_arguments)]
 fn make_contextual_txn(
     user_id: Uuid,

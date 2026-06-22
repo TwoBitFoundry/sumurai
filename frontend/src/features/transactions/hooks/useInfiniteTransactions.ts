@@ -23,6 +23,7 @@ export function useInfiniteTransactions(
   filters: TransactionWindowFilters
 ): UseInfiniteTransactionsResult {
   const { resolvedFilters, filterKey, accountsReady } = useTransactionFilters(filters);
+  const hasExplicitAccountFilter = (filters.accountIds?.length ?? 0) > 0;
 
   const query = useInfiniteQuery({
     queryKey: ['transactions', 'infinite', filterKey],
@@ -43,7 +44,7 @@ export function useInfiniteTransactions(
       });
     },
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
-    placeholderData: keepPreviousData,
+    placeholderData: hasExplicitAccountFilter ? undefined : keepPreviousData,
     staleTime: 60 * 1000,
     gcTime: 60 * 1000,
     enabled: accountsReady || resolvedFilters.accountIds?.length === 0,

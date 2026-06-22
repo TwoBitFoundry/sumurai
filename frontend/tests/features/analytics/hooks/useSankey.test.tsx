@@ -10,6 +10,7 @@ import * as dateRanges from '@/utils/dateRanges';
 
 jest.mock('@/services/AnalyticsService', () => ({
   AnalyticsService: {
+    getDateBounds: jest.fn(),
     getSankey: jest.fn(),
   },
 }));
@@ -67,12 +68,16 @@ describe('useSankey', () => {
       switch (key) {
         case 'current-month':
           return { start: '2026-04-01', end: '2026-05-31' };
-        case 'past-3-months':
+        case 'ytd':
           return { start: '2026-02-01', end: '2026-05-31' };
         default:
           return {};
       }
     });
+    jest.mocked(AnalyticsService.getDateBounds).mockResolvedValue({
+      start_date: '2026-02-01',
+      end_date: '2026-05-31',
+    } as any);
     jest.mocked(AnalyticsService.getSankey).mockResolvedValue({
       nodes: [{ id: 'income', label: 'Income', kind: 'Income' }],
       links: [],
@@ -131,7 +136,7 @@ describe('useSankey', () => {
 
     expect(result.current.data?.currency).toBe('USD');
 
-    rerender({ range: 'past-3-months' as DateRangeKey });
+    rerender({ range: 'ytd' as DateRangeKey });
 
     await waitFor(() => {
       expect(result.current.refreshing).toBe(true);
@@ -207,6 +212,7 @@ describe('useSankey', () => {
 
     expect(result.current.loading).toBe(false);
     expect(result.current.data?.summary.income).toBe(500);
+    expect(AnalyticsService.getDateBounds).toHaveBeenLastCalledWith(['account1']);
     expect(AnalyticsService.getSankey).toHaveBeenLastCalledWith('2026-04-01', '2026-05-31', [
       'account1',
     ]);

@@ -5,6 +5,7 @@ import {
   DateRangeLabelPill,
   DateRangePillSlider,
 } from '@/features/analytics/components/DateRangePillSlider';
+import { useAnalyticsDateBounds } from '@/features/analytics/hooks/useAnalyticsDateBounds';
 import {
   BudgetMonthLabelPill,
   BudgetMonthPillSlider,
@@ -24,11 +25,14 @@ import TransactionsPage from '@/views/TransactionsPage';
 import { AppLayout } from '../layouts/AppLayout';
 import { GradientShell } from '../ui/primitives';
 import { text as uiTextRecipes } from '../ui/recipes';
-import type { DateRangeKey as DateRange } from '../utils/dateRanges';
+import type { CustomDateRangeBounds, DateRangeKey as DateRange } from '../utils/dateRanges';
+import { clampCustomDateRangeBounds, DEFAULT_DASHBOARD_DATE_RANGE } from '../utils/dateRanges';
 import type { NavigateToTransactionsDetail } from '../utils/events';
 import { NAVIGATE_TO_TRANSACTIONS_EVENT } from '../utils/events';
 import {
+  getSessionDashboardCustomDateRange,
   getSessionDashboardDateRange,
+  setSessionDashboardCustomDateRange,
   setSessionDashboardDateRange,
 } from '../utils/sessionPreferences';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -49,21 +53,62 @@ interface AuthenticatedAppProps {
   isOnline: boolean;
 }
 
+function resolveInitialDashboardDateState(): {
+  dateRange: DateRange;
+  customDateRange: CustomDateRangeBounds | null;
+} {
+  const storedRange = getSessionDashboardDateRange() ?? DEFAULT_DASHBOARD_DATE_RANGE;
+  if (storedRange !== 'custom') {
+    return { dateRange: storedRange, customDateRange: null };
+  }
+
+  const customDateRange = getSessionDashboardCustomDateRange();
+  if (!customDateRange?.start || !customDateRange?.end) {
+    return { dateRange: DEFAULT_DASHBOARD_DATE_RANGE, customDateRange: null };
+  }
+
+  return { dateRange: 'custom', customDateRange };
+}
+
 export function AuthenticatedApp({ onLogout, initialTab, isOnline }: AuthenticatedAppProps) {
   const [tab, setTab] = useState<TabKey>(initialTab ?? 'dashboard');
   const [tabTransitionDirection, setTabTransitionDirection] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRangeState] = useState<DateRange>(
-    () => getSessionDashboardDateRange() ?? 'current-month'
+    () => resolveInitialDashboardDateState().dateRange
+  );
+  const [customDateRange, setCustomDateRangeState] = useState<CustomDateRangeBounds | null>(
+    () => resolveInitialDashboardDateState().customDateRange
   );
   const setDateRange = (next: DateRange) => {
     setDateRangeState(next);
     setSessionDashboardDateRange(next);
+    if (next !== 'custom') {
+      setCustomDateRangeState(null);
+      setSessionDashboardCustomDateRange(null);
+    }
+  };
+  const setCustomDateRange = (next: CustomDateRangeBounds) => {
+    setCustomDateRangeState(next);
+    setSessionDashboardCustomDateRange(next);
   };
   const budgetMonth = useBudgetMonth();
   const transactionFilters = useTransactionFilterState();
   const { filterCategories, custom: customCategories } = useCategories();
   const { setSelectedAccountIds } = useAccountFilter();
+  const analyticsDateBounds = useAnalyticsDateBounds();
+
+  useEffect(() => {
+    const storedRange = getSessionDashboardDateRange();
+    const storedCustomDateRange = getSessionDashboardCustomDateRange();
+    if (
+      storedRange === 'custom' &&
+      (!storedCustomDateRange?.start || !storedCustomDateRange?.end)
+    ) {
+      setSessionDashboardDateRange(DEFAULT_DASHBOARD_DATE_RANGE);
+      setSessionDashboardCustomDateRange(null);
+    }
+  }, []);
 
   const handleTabChange = (next: TabKey) => {
     const currentIndex = TAB_INDEX.get(tab) ?? 0;
@@ -94,12 +139,33 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
     return () => window.removeEventListener(NAVIGATE_TO_TRANSACTIONS_EVENT, handler);
   }, [transactionFilters, setSelectedAccountIds]);
 
+  useEffect(() => {
+    if (!analyticsDateBounds.bounds || !customDateRange) {
+      return;
+    }
+
+    const clamped = clampCustomDateRangeBounds(customDateRange, analyticsDateBounds.bounds);
+    if (clamped.start === customDateRange.start && clamped.end === customDateRange.end) {
+      return;
+    }
+
+    setCustomDateRangeState(clamped);
+    setSessionDashboardCustomDateRange(clamped);
+  }, [analyticsDateBounds.bounds, customDateRange]);
+
   const bottomBarContent =
     tab === 'dashboard' ? (
       <BottomContextualBar
         topContent={
           <div className={cn('flex', 'w-full', 'justify-center')}>
-            <DateRangeLabelPill dateRange={dateRange} />
+            <DateRangeLabelPill
+              dateRange={dateRange}
+              customDateRange={customDateRange}
+              onChange={setDateRange}
+              onCustomDateRangeChange={setCustomDateRange}
+              dateBounds={analyticsDateBounds.bounds}
+              dateBoundsLoading={analyticsDateBounds.loading}
+            />
           </div>
         }
       >
@@ -176,7 +242,11 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
                 transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
               >
                 {tab === 'dashboard' && (
-                  <DashboardPage dateRange={dateRange} setDateRange={setDateRange} />
+                  <DashboardPage
+                    dateRange={dateRange}
+                    customDateRange={customDateRange}
+                    setDateRange={setDateRange}
+                  />
                 )}
                 {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
                 {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}

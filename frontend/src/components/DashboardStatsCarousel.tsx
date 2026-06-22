@@ -4,14 +4,19 @@ import { useChartContainerSize } from '@/features/analytics/hooks/useChartContai
 import { useDebouncedChartRecalc } from '@/features/analytics/hooks/useDebouncedChartRecalc';
 import { cn } from '@/ui/primitives';
 import { dashboardStatsCarousel } from '@/ui/recipes';
-import type { DateRangeKey } from '@/utils/dateRanges';
+import type { CustomDateRangeBounds, DateRangeKey } from '@/utils/dateRanges';
 
 type DashboardStatsCarouselProps = {
   dateRange: DateRangeKey;
+  customDateRange?: CustomDateRangeBounds | null;
   className?: string;
 };
 
-export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsCarouselProps) {
+export function DashboardStatsCarousel({
+  dateRange,
+  customDateRange,
+  className,
+}: DashboardStatsCarouselProps) {
   const { ref: panelStackRef, width: panelStackWidth } = useChartContainerSize();
   const sankeyContainerSizeRaw = panelStackWidth > 0 ? { width: panelStackWidth } : undefined;
   const sankeyContainerSize = useDebouncedChartRecalc(sankeyContainerSizeRaw);
@@ -35,6 +40,7 @@ export function DashboardStatsCarousel({ dateRange, className }: DashboardStatsC
           >
             <MoneyFlowSankeyChart
               dateRange={dateRange}
+              customDateRange={customDateRange}
               className={cn('h-full', 'min-h-0', 'w-full')}
               containerSize={sankeyContainerSize}
             />

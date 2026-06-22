@@ -8,8 +8,13 @@ import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { AnalyticsService } from '../../../services/AnalyticsService';
 import type { AnalyticsCashFlowPoint } from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
-import { computeDateRange, type DateRangeKey } from '../../../utils/dateRanges';
+import {
+  type CustomDateRangeBounds,
+  type DateRangeKey,
+  resolveDateRange,
+} from '../../../utils/dateRanges';
 import { chartSeriesStartDate, generateMonthRange } from '../utils/chartMonth';
+import { useAnalyticsDateBounds } from './useAnalyticsDateBounds';
 
 export type UseCashFlowResult = {
   series: AnalyticsCashFlowPoint[];
@@ -19,20 +24,26 @@ export type UseCashFlowResult = {
   reload: () => Promise<void>;
 };
 
-export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCashFlowResult {
+export function useCashFlow(
+  _months: number = 6,
+  dateRange?: DateRangeKey,
+  customRange?: CustomDateRangeBounds | null
+): UseCashFlowResult {
   const {
     selectedAccountIds,
     isAllAccountsSelected,
     allAccountIds,
     loading: accountsLoading,
   } = useAccountFilter();
+  const dateBounds = useAnalyticsDateBounds();
 
   const { start, end } = useMemo(() => {
     if (dateRange) {
-      return computeDateRange(dateRange);
+      return resolveDateRange(dateRange, customRange, dateBounds.bounds);
     }
     return { start: undefined, end: undefined };
-  }, [dateRange]);
+  }, [customRange, dateBounds.bounds, dateRange]);
+  const hasValidRange = !!dateRange && !!dateBounds.bounds && !!start && !!end;
 
   const chartStart = useMemo(() => {
     if (!start) {
@@ -44,24 +55,11 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
     return chartSeriesStartDate(start);
   }, [dateRange, start]);
 
-  const monthsToFetch = useMemo(() => {
-    if (!chartStart || !end) {
-      return months;
-    }
-    const startDate = new Date(chartStart);
-    const endDate = new Date(end);
-    const monthDiff =
-      (endDate.getFullYear() - startDate.getFullYear()) * 12 +
-      (endDate.getMonth() - startDate.getMonth()) +
-      1;
-    return Math.max(1, monthDiff);
-  }, [chartStart, end, months]);
-
   const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
 
   const query = useQuery<AnalyticsCashFlowPoint[], Error>({
-    queryKey: ['analytics', 'cash-flow', monthsToFetch, cacheKey, dateRange],
-    enabled: !accountsLoading,
+    queryKey: ['analytics', 'cash-flow', chartStart, end, cacheKey, dateRange],
+    enabled: !accountsLoading && !dateBounds.loading && hasValidRange,
     placeholderData: keepPreviousData,
     queryFn: async () => {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
@@ -70,12 +68,12 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
 
       const accountIds =
         !isAllAccountsSelected && selectedAccountIds.length > 0 ? selectedAccountIds : undefined;
-      const response = await AnalyticsService.getCashFlow(monthsToFetch, accountIds);
-      const data = response.series ?? [];
-
       if (!chartStart || !end) {
-        return data;
+        return [];
       }
+
+      const response = await AnalyticsService.getCashFlow(chartStart, end, accountIds);
+      const data = response.series ?? [];
 
       const allMonths = generateMonthRange(chartStart, end);
       const dataMap = new Map(data.map((point) => [point.month, point]));
@@ -96,22 +94,23 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
   });
 
   const loading =
+    dateBounds.loading ||
     (accountsLoading && query.data === undefined) ||
     (!accountsLoading && query.fetchStatus === 'fetching' && query.data === undefined);
 
   const reload = useCallback(async () => {
-    if (accountsLoading) {
+    if (accountsLoading || dateBounds.loading || !chartStart || !end) {
       return;
     }
 
     await query.refetch();
-  }, [accountsLoading, query]);
+  }, [accountsLoading, chartStart, dateBounds.loading, end, query]);
 
   return {
     series: query.data ?? [],
     loading,
     refreshing: query.isFetching && !query.isPending && !accountsLoading,
-    error: query.error?.message ?? null,
+    error: dateBounds.error ?? query.error?.message ?? null,
     reload,
   };
 }

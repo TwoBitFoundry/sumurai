@@ -37,16 +37,6 @@ pub struct DateRangeQueryParams {
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct MonthlyTotalsQueryParams {
-    #[schema(value_type = Option<u32>, example = 6)]
-    pub months: Option<u32>,
-    #[schema(value_type = Option<Vec<String>>)]
-    pub account_ids: Option<Vec<String>>,
-    #[schema(value_type = Option<Vec<String>>)]
-    pub exclude_account_ids: Option<Vec<String>>,
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
 pub struct DailySpendingQueryParams {
     #[schema(value_type = Option<String>, example = "2024-01")]
     pub month: Option<String>,

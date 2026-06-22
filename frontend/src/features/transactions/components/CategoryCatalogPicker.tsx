@@ -6,6 +6,7 @@ import {
   type RefObject,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { useCategories } from '@/features/transactions/hooks/useCategories';
@@ -14,6 +15,7 @@ import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import type { CustomCategory } from '@/types/api';
 import {
   cn,
+  FormLabel,
   IconButton,
   Input,
   Modal,
@@ -31,7 +33,9 @@ import {
   getTagThemeForCategory,
   validateCustomCategoryName,
 } from '@/utils/categories';
-import DeleteCustomCategoryConfirm from './DeleteCustomCategoryConfirm';
+import DeleteCustomCategoryConfirm, {
+  isDeleteCustomCategoryConfirmTarget,
+} from './DeleteCustomCategoryConfirm';
 
 interface CategoryCatalogPickerProps {
   open: boolean;
@@ -84,6 +88,7 @@ export function CategoryCatalogPicker({
   const [typedName, setTypedName] = useState('');
   const [hasInteracted, setHasInteracted] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<CustomCategory | null>(null);
+  const deleteAnchorRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -209,7 +214,10 @@ export function CategoryCatalogPicker({
                         'focus-visible:ring-offset-white',
                         'dark:focus-visible:ring-offset-slate-900'
                       )}
-                      onClick={() => setDeleteTarget(customCategory)}
+                      onClick={(event) => {
+                        deleteAnchorRef.current = event.currentTarget;
+                        setDeleteTarget(customCategory);
+                      }}
                     >
                       <span aria-hidden="true" className={cn('relative', '-top-px')}>
                         ×
@@ -227,12 +235,7 @@ export function CategoryCatalogPicker({
 
       <form className={cn('space-y-2', isMobile && modalDrawer.formFooter)} onSubmit={handleSubmit}>
         <div className={cn(modalDrawer.formField)}>
-          <label
-            htmlFor="category-catalog-picker-custom"
-            className={cn(modalDrawerSectionLabelClassName)}
-          >
-            Make Your Own
-          </label>
+          <FormLabel htmlFor="category-catalog-picker-custom">Make Your Own</FormLabel>
           <div className={cn('flex items-center gap-2')}>
             <div className={cn('min-w-0 flex-1')}>
               <Input
@@ -273,6 +276,16 @@ export function CategoryCatalogPicker({
           labelledBy="category-catalog-picker-title"
           description="Browse categories and add your own"
           data-testid="category-catalog-picker-sheet"
+          onInteractOutside={(event) => {
+            if (shouldPreventCatalogDismiss(anchorRef, event.target)) {
+              event.preventDefault();
+            }
+          }}
+          onPointerDownOutside={(event) => {
+            if (shouldPreventCatalogDismiss(anchorRef, event.target)) {
+              event.preventDefault();
+            }
+          }}
           containerClassName={cn(
             'p-[env(safe-area-inset-top)_env(safe-area-inset-right)_env(safe-area-inset-bottom)_env(safe-area-inset-left)]'
           )}
@@ -292,6 +305,7 @@ export function CategoryCatalogPicker({
         {deleteTarget ? (
           <DeleteCustomCategoryConfirm
             open
+            anchorRef={deleteAnchorRef}
             category={deleteTarget}
             onRequestClose={() => setDeleteTarget(null)}
             onSuccess={() => {
@@ -322,12 +336,12 @@ export function CategoryCatalogPicker({
             align="end"
             sideOffset={10}
             onInteractOutside={(event) => {
-              if (isDismissTargetWithinAnchor(anchorRef, event.target)) {
+              if (shouldPreventCatalogDismiss(anchorRef, event.target)) {
                 event.preventDefault();
               }
             }}
             onPointerDownOutside={(event) => {
-              if (isDismissTargetWithinAnchor(anchorRef, event.target)) {
+              if (shouldPreventCatalogDismiss(anchorRef, event.target)) {
                 event.preventDefault();
               }
             }}
@@ -353,6 +367,7 @@ export function CategoryCatalogPicker({
       {deleteTarget ? (
         <DeleteCustomCategoryConfirm
           open
+          anchorRef={deleteAnchorRef}
           category={deleteTarget}
           onRequestClose={() => setDeleteTarget(null)}
           onSuccess={() => {
@@ -369,6 +384,15 @@ export default CategoryCatalogPicker;
 
 function formatTypedCategoryDisplay(raw: string): string {
   return raw.toLowerCase().replace(/\b[a-z]/g, (char) => char.toUpperCase());
+}
+
+function shouldPreventCatalogDismiss(
+  anchorRef: RefObject<HTMLElement>,
+  target: EventTarget | null
+): boolean {
+  return (
+    isDismissTargetWithinAnchor(anchorRef, target) || isDeleteCustomCategoryConfirmTarget(target)
+  );
 }
 
 function isDismissTargetWithinAnchor(

@@ -165,4 +165,28 @@ describe('useInfiniteTransactions', () => {
     expect(travelCall?.cursor).toBeUndefined();
     expect(travelCall?.categoryPrimary).toBe('TRAVEL');
   });
+
+  it('does not keep previous rows when explicit account filters change', async () => {
+    jest
+      .mocked(TransactionService.getTransactionsPage)
+      .mockResolvedValueOnce(makePage(['tx-checking'], null, false))
+      .mockResolvedValueOnce(makePage(['tx-card'], null, false));
+
+    const { result, rerender } = renderHook(
+      ({ filters }: { filters: Parameters<typeof useInfiniteTransactions>[0] }) =>
+        useInfiniteTransactions(filters),
+      {
+        wrapper: makeWrapper(),
+        initialProps: { filters: { accountIds: ['account-checking'] } },
+      }
+    );
+
+    await waitFor(() => expect(result.current.rows.map((row) => row.id)).toEqual(['tx-checking']));
+
+    rerender({ filters: { accountIds: ['account-card'] } });
+
+    expect(result.current.rows).toEqual([]);
+
+    await waitFor(() => expect(result.current.rows.map((row) => row.id)).toEqual(['tx-card']));
+  });
 });

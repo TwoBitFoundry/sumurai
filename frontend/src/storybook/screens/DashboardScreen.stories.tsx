@@ -96,6 +96,12 @@ const handlers = [
       mixedCurrency: false,
     })
   ),
+  route('GET', '/analytics/date-bounds', () =>
+    jsonResponse({
+      start_date: '2026-01-01',
+      end_date: '2026-06-21',
+    })
+  ),
   route('GET', '/analytics/sankey', () => jsonResponse(sampleSankeySurplus)),
   route('GET', '/transactions/categories', () => jsonResponse(storyTransactionCategories)),
   route('GET', '/transactions', (request) =>
@@ -112,12 +118,26 @@ const handlers = [
 
 function DashboardShell({ children }: { children: React.ReactNode }) {
   const [dateRange, setDateRange] = useState<DateRangeKey>('current-month');
+  const [customDateRange, setCustomDateRange] = useState<null | { start: string; end: string }>(
+    null
+  );
+  const dateBounds = { start: '2026-01-01', end: '2026-06-21' } as const;
   return (
     <StoryApiScope handlers={handlers}>
       <AuthenticatedScreenShell
         currentTab="dashboard"
         bottomBarContent={
-          <BottomContextualBar topContent={<DateRangeLabelPill dateRange={dateRange} />}>
+          <BottomContextualBar
+            topContent={
+              <DateRangeLabelPill
+                dateRange={dateRange}
+                customDateRange={customDateRange}
+                dateBounds={dateBounds}
+                onChange={setDateRange}
+                onCustomDateRangeChange={setCustomDateRange}
+              />
+            }
+          >
             <DateRangePillSlider dateRange={dateRange} onChange={setDateRange} />
           </BottomContextualBar>
         }

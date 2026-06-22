@@ -7,6 +7,7 @@ import type {
   AnalyticsCashFlowPoint,
   AnalyticsCashFlowResponse,
   AnalyticsCategoryResponse,
+  AnalyticsDateBoundsResponse,
   AnalyticsMonthlyTotalsResponse,
   AnalyticsSpendingResponse,
   AnalyticsTopMerchantsResponse,
@@ -84,27 +85,42 @@ export class AnalyticsService {
   }
 
   static async getMonthlyTotals(
-    months: number,
+    startDate: string,
+    endDate: string,
     accountIds?: string[]
   ): Promise<AnalyticsMonthlyTotalsResponse[]> {
-    let endpoint = `/analytics/monthly-totals?months=${months}`;
-    const params = new URLSearchParams(`months=${months}`);
+    let endpoint = '/analytics/monthly-totals';
+    const params = new URLSearchParams();
+    params.append('start_date', startDate);
+    params.append('end_date', endDate);
     appendAccountQueryParams(params, accountIds);
     const qs = params.toString();
-    if (qs) endpoint = `/analytics/monthly-totals?${qs}`;
+    if (qs) endpoint += `?${qs}`;
     return ApiClient.get<AnalyticsMonthlyTotalsResponse[]>(endpoint);
   }
 
   static async getCashFlow(
-    months: number,
+    startDate: string,
+    endDate: string,
     accountIds?: string[]
   ): Promise<AnalyticsCashFlowResponse> {
-    let endpoint = `/analytics/cash-flow?months=${months}`;
-    const params = new URLSearchParams(`months=${months}`);
+    let endpoint = '/analytics/cash-flow';
+    const params = new URLSearchParams();
+    params.append('start_date', startDate);
+    params.append('end_date', endDate);
     appendAccountQueryParams(params, accountIds);
     const qs = params.toString();
-    if (qs) endpoint = `/analytics/cash-flow?${qs}`;
+    if (qs) endpoint += `?${qs}`;
     return ApiClient.get<AnalyticsCashFlowResponse>(endpoint);
+  }
+
+  static async getDateBounds(accountIds?: string[]): Promise<AnalyticsDateBoundsResponse> {
+    let endpoint = '/analytics/date-bounds';
+    const params = new URLSearchParams();
+    appendAccountQueryParams(params, accountIds);
+    const qs = params.toString();
+    if (qs) endpoint += `?${qs}`;
+    return ApiClient.get<AnalyticsDateBoundsResponse>(endpoint);
   }
 
   static async getSankey(

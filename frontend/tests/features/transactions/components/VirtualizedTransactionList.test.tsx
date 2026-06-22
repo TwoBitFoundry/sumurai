@@ -1,10 +1,12 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import VirtualizedTransactionList from '@/features/transactions/components/VirtualizedTransactionList';
+import { createMerchantScrollRestoreState } from '@/features/transactions/utils/merchantScrollRestore';
 import type { Transaction } from '@/types/api';
 
 const useVirtualizerMock = jest.fn();
 const measureMock = jest.fn();
 const scrollToIndexMock = jest.fn();
+const scrollToOffsetMock = jest.fn();
 
 jest.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: (options: unknown) => useVirtualizerMock(options),
@@ -50,6 +52,8 @@ function mockVirtualizer() {
     measureElement: jest.fn(),
     measure: measureMock,
     scrollToIndex: scrollToIndexMock,
+    scrollToOffset: scrollToOffsetMock,
+    scrollOffset: 0,
   });
 }
 
@@ -135,8 +139,47 @@ describe('VirtualizedTransactionList', () => {
     render(<VirtualizedTransactionList filters={{}} />);
 
     const listViewport = screen.getByRole('table', { name: 'Transactions' });
+    expect(listViewport.className).toContain('overflow-x-hidden');
+    expect(listViewport.className).toContain('touch-pan-y');
     expect(listViewport.className).toContain('[scrollbar-gutter:stable]');
     expect(listViewport.className).toContain('[scrollbar-width:thin]');
     expect(listViewport.className).toContain('[&::-webkit-scrollbar]:w-2');
+  });
+
+  it('restores the saved scroll offset when clearing a merchant filter from the list', async () => {
+    jest.mocked(useViewportBreakpoint).mockReturnValue({
+      breakpoint: 'desktop',
+      isMobile: false,
+      isTablet: false,
+      isDesktop: true,
+    });
+
+    const merchantScrollRestoreRef = {
+      current: {
+        savedOffset: 480,
+        shouldRestoreOnNextFilterKey: true,
+      },
+    };
+
+    jest.mocked(useInfiniteTransactions).mockReturnValue({
+      rows: [transaction],
+      hasNextPage: false,
+      isFetchingNextPage: false,
+      fetchNextPage: jest.fn(),
+      isInitialLoading: false,
+      filterKey: 'cleared',
+    });
+
+    render(
+      <VirtualizedTransactionList
+        filters={{}}
+        merchantScrollRestoreRef={merchantScrollRestoreRef}
+      />
+    );
+
+    await waitFor(() => {
+      expect(scrollToOffsetMock).toHaveBeenCalledWith(480, { align: 'start' });
+    });
+    expect(merchantScrollRestoreRef.current).toEqual(createMerchantScrollRestoreState());
   });
 });

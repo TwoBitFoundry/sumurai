@@ -6,7 +6,7 @@ import {
 
 export const transactionsRowRecipes = {
   shell: [
-    'group relative rounded-md border-b border-slate-200/70 transition-[box-shadow,colors] duration-150 ease-out',
+    'group relative w-full min-w-0 overflow-hidden rounded-md border-b border-slate-200/70 transition-[box-shadow,colors] duration-150 ease-out',
     'dark:border-slate-700/50',
     'hover:ring-2 hover:ring-inset hover:ring-emerald-400/60',
     'dark:hover:ring-emerald-400/50',
@@ -90,6 +90,11 @@ export const transactionsRowRecipes = {
     ...semanticBorders.floatingChrome,
   ],
   contextualFilterScroll: ['w-full', 'max-w-full', 'py-1.5'],
+  selectedCategorySticky: ['sticky', 'z-10'],
+  selectedCategoryStickyLeft: ['left-0'],
+  selectedCategoryStickyRight: ['right-0'],
+  selectedCategoryStickyLeftOffset: ['left-9', 'md:left-8', 'lg:left-7'],
+  selectedCategoryStickyRightOffset: ['right-9', 'md:right-8', 'lg:right-7'],
   contextualFilterMaskViewport: ['min-w-0', 'w-full', 'max-w-full', 'overflow-hidden'],
   contextualFilterScrollArrow: [
     'absolute',

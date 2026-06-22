@@ -1,3 +1,22 @@
+import { resetPlaidScriptStateForTests } from '@/features/plaid/plaidLinkScript';
+
+export function installStoryPlaidConnectWindow(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  resetPlaidScriptStateForTests();
+
+  window.Plaid = {
+    create: () => ({
+      open: () => {},
+      submit: () => {},
+      destroy: () => {},
+      exit: () => {},
+    }),
+  } as unknown as Window['Plaid'];
+}
+
 export function installStoryTellerConnectWindow(): void {
   if (typeof window === 'undefined') {
     return;
@@ -9,4 +28,9 @@ export function installStoryTellerConnectWindow(): void {
       destroy: () => {},
     }),
   };
+}
+
+export function installStoryProviderConnectWindows(): void {
+  installStoryPlaidConnectWindow();
+  installStoryTellerConnectWindow();
 }

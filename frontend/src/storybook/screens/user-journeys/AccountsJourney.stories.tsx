@@ -9,7 +9,7 @@ import {
   expectStoryProviderCardsVisible,
   getStoryProviderPickerButton,
 } from '@/storybook/fixtures/providerPickerStoryHelpers';
-import { installStoryTellerConnectWindow } from '@/storybook/fixtures/providerPickerStorySetup';
+import { installStoryProviderConnectWindows } from '@/storybook/fixtures/providerPickerStorySetup';
 import AccountsPage from '@/views/AccountsPage';
 import {
   buildStoryLastInstitutionDisconnectHandlers,
@@ -169,6 +169,7 @@ const meta = {
   decorators: [
     (Story) => {
       patchNavigatorOnline();
+      installStoryProviderConnectWindows();
       return <Story />;
     },
   ],
@@ -336,7 +337,6 @@ export const PlaidEmptyState: Story = {
     </AccountFilterStoryProvider>
   ),
   play: async ({ canvasElement }) => {
-    installStoryTellerConnectWindow();
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
 
@@ -416,7 +416,6 @@ export const LastInstitutionDisconnectPlaidPicker: Story = {
     </AccountFilterStoryProvider>
   ),
   play: async ({ canvasElement }) => {
-    installStoryTellerConnectWindow();
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
 
@@ -482,7 +481,6 @@ export const TellerEmptyState: Story = {
     </AccountFilterStoryProvider>
   ),
   play: async ({ canvasElement }) => {
-    installStoryTellerConnectWindow();
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
 

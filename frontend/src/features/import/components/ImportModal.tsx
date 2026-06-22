@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
+import { importFileAccept } from '@/features/import/fileTypes';
 import { transactionsRowRecipes } from '@/features/transactions/components/transactionsRowRecipes';
 import {
   type CsvColumnMapping,
@@ -67,7 +68,6 @@ interface ImportModalViewProps extends ImportModalProps {
   workflow: UseImportTransactionsResult;
 }
 
-const acceptedFormats = '.csv,.ofx,.qbo,.qfx,.qbx';
 const importFileInputLabel = 'Choose an import file (CSV, OFX, QBO, QFX, or QBX)';
 const importPanelHeadingClassName = cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary);
 
@@ -329,7 +329,7 @@ export const ImportModalView: React.FC<ImportModalViewProps> = ({
           <input
             ref={fileInputRef}
             type="file"
-            accept={acceptedFormats}
+            accept={importFileAccept}
             aria-label={importFileInputLabel}
             className="sr-only"
             disabled={busy}
@@ -437,7 +437,7 @@ function UploadPanel({
       <input
         ref={inputRef}
         type="file"
-        accept={acceptedFormats}
+        accept={importFileAccept}
         aria-label="Select import file"
         className="sr-only"
         onChange={onFileChange}

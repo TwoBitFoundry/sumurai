@@ -1,7 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
 import { CategoryCatalogPicker } from '@/features/transactions/components/CategoryCatalogPicker';
+import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 
 jest.mock('@/features/transactions/hooks/useCategories', () => ({
   useCategories: jest.fn(),
@@ -11,10 +12,12 @@ jest.mock('@/features/transactions/hooks/useCreateCustomCategory', () => ({
   useCreateCustomCategory: jest.fn(),
 }));
 
-jest.mock('@/features/transactions/components/DeleteCustomCategoryConfirm', () => ({
-  __esModule: true,
-  default: ({ open, category }: { open: boolean; category: { display_name: string } | null }) =>
-    open ? <div data-testid="delete-custom-category-confirm">{category?.display_name}</div> : null,
+jest.mock('@/features/transactions/hooks/useDeleteCustomCategory', () => ({
+  useDeleteCustomCategory: jest.fn(),
+}));
+
+jest.mock('@/hooks/useViewportBreakpoint', () => ({
+  useViewportBreakpoint: jest.fn(),
 }));
 
 const useCategoriesMock = jest.requireMock(
@@ -23,6 +26,12 @@ const useCategoriesMock = jest.requireMock(
 const useCreateCustomCategoryMock = jest.requireMock(
   '@/features/transactions/hooks/useCreateCustomCategory'
 ) as typeof import('@/features/transactions/hooks/useCreateCustomCategory');
+const useDeleteCustomCategoryMock = jest.requireMock(
+  '@/features/transactions/hooks/useDeleteCustomCategory'
+) as typeof import('@/features/transactions/hooks/useDeleteCustomCategory');
+const mockUseViewportBreakpoint = useViewportBreakpoint as jest.MockedFunction<
+  typeof useViewportBreakpoint
+>;
 
 describe('CategoryCatalogPicker', () => {
   const anchorRef = createRef<HTMLElement>();
@@ -30,8 +39,41 @@ describe('CategoryCatalogPicker', () => {
 
   beforeEach(() => {
     const anchor = document.createElement('button');
+    anchor.getBoundingClientRect = () => ({
+      top: 400,
+      left: 200,
+      width: 137,
+      height: 36,
+      bottom: 436,
+      right: 337,
+      x: 200,
+      y: 400,
+      toJSON: () => ({}),
+    });
     anchorRef.current = anchor;
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      writable: true,
+      value: 1280,
+    });
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      writable: true,
+      value: 900,
+    });
     jest.clearAllMocks();
+    mockUseViewportBreakpoint.mockReturnValue({
+      isMobile: false,
+      isTablet: false,
+      isDesktop: true,
+      breakpoint: 'desktop',
+    } as ReturnType<typeof useViewportBreakpoint>);
+    useDeleteCustomCategoryMock.useDeleteCustomCategory.mockReturnValue({
+      deleteCustomCategory: jest.fn(),
+      deleteCustomCategoryAsync: jest.fn(),
+      isPending: false,
+      error: null,
+    });
     useCategoriesMock.useCategories.mockReturnValue({
       system: ['FOOD_AND_DRINK', 'ENTERTAINMENT'],
       custom: [{ id: 'c1', display_name: 'Coffee', lookup_key: 'coffee' }],
@@ -97,6 +139,22 @@ describe('CategoryCatalogPicker', () => {
 
     await user.click(screen.getByRole('button', { name: 'Delete Coffee' }));
 
-    expect(screen.getByTestId('delete-custom-category-confirm')).toHaveTextContent('Coffee');
+    expect(screen.getByTestId('delete-custom-category-popover')).toHaveTextContent('Coffee');
+  });
+
+  it('keeps the catalog open when pressing delete inside the confirmation popover', async () => {
+    const onRequestClose = jest.fn();
+    const user = userEvent.setup();
+
+    render(<CategoryCatalogPicker open anchorRef={anchorRef} onRequestClose={onRequestClose} />);
+
+    await user.click(screen.getByRole('button', { name: 'Delete Coffee' }));
+    expect(screen.getByTestId('category-catalog-picker-popover')).toBeInTheDocument();
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Delete' }));
+
+    expect(onRequestClose).not.toHaveBeenCalled();
+    expect(screen.getByTestId('category-catalog-picker-popover')).toBeInTheDocument();
+    expect(screen.getByTestId('delete-custom-category-popover')).toBeInTheDocument();
   });
 });

@@ -113,6 +113,9 @@ describe('TransactionsFilters', () => {
     expect(entertainmentButton.className).toContain('!border-emerald-500');
     expect(entertainmentButton.className).toContain('!bg-emerald-500/20');
     expect(entertainmentButton.className).not.toContain('!bg-emerald-500/50');
+    expect(entertainmentButton.parentElement?.className).toContain('sticky');
+    expect(entertainmentButton.parentElement?.className).toContain('left-0');
+    expect(entertainmentButton.parentElement?.className).toContain('right-0');
   });
 
   it('centers inline category filters when they fit within the container', () => {
@@ -208,6 +211,52 @@ describe('TransactionsFilters', () => {
     expect(screen.getByRole('button', { name: 'Scroll categories right' }).className).toContain(
       'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]'
     );
+
+    if (scrollWidthDescriptor) {
+      Object.defineProperty(HTMLElement.prototype, 'scrollWidth', scrollWidthDescriptor);
+    }
+    if (clientWidthDescriptor) {
+      Object.defineProperty(HTMLElement.prototype, 'clientWidth', clientWidthDescriptor);
+    }
+  });
+
+  it('offsets sticky selected category filters for scroll arrow buttons', () => {
+    const scrollWidthDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'scrollWidth'
+    );
+    const clientWidthDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'clientWidth'
+    );
+
+    Object.defineProperty(HTMLElement.prototype, 'scrollWidth', {
+      configurable: true,
+      get() {
+        return 1200;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get() {
+        return 400;
+      },
+    });
+
+    render(
+      <TransactionsFilters
+        {...filterProps}
+        categories={['food_and_drink', 'entertainment', 'Bills', 'Subscriptions', 'Travel']}
+        selectedCategory="entertainment"
+        layout="inline"
+        showFilterLabel={false}
+      />
+    );
+
+    const selectedChip = screen.getByRole('button', { name: 'Entertainment' }).parentElement;
+    expect(selectedChip?.className).toContain('sticky');
+    expect(selectedChip?.className).toContain('left-0');
+    expect(selectedChip?.className).toContain('right-9');
 
     if (scrollWidthDescriptor) {
       Object.defineProperty(HTMLElement.prototype, 'scrollWidth', scrollWidthDescriptor);

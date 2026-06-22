@@ -5,6 +5,10 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 import { canCorrectCsvMapping, normalizeCsvMapping } from '@/features/import/csvMapping';
+import {
+  isSupportedImportFileName,
+  unsupportedImportFileMessage,
+} from '@/features/import/fileTypes';
 import type { CsvColumnMapping, ImportResponse, ValidateResponse } from '@/models/import';
 import { ImportService } from '@/services/ImportService';
 import { invalidateStaleCacheQueries } from '@/utils/queryInvalidation';
@@ -58,6 +62,16 @@ export function useImportTransactions(accountId: string): UseImportTransactionsR
 
   const validateFile = useCallback(
     async (file: File): Promise<ValidateResponse | null> => {
+      if (!isSupportedImportFileName(file.name)) {
+        applySelectedFile(file);
+        setImportResult(null);
+        setValidationResult(null);
+        setCsvMapping(null);
+        setError(unsupportedImportFileMessage(file.name));
+        setStatus('validation-error');
+        return null;
+      }
+
       applySelectedFile(file);
       setImportResult(null);
       setValidationResult(null);

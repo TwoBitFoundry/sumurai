@@ -36,7 +36,7 @@ import { useBudgets } from '../features/budgets/hooks/useBudgets';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import { useTransactionListLauncher } from '../features/transactions/hooks/useTransactionListLauncher';
 import { PageLayout } from '../layouts/PageLayout';
-import type { DateRangeKey as DateRange } from '../utils/dateRanges';
+import type { CustomDateRangeBounds, DateRangeKey as DateRange } from '../utils/dateRanges';
 import { fmtUSD } from '../utils/format';
 
 const dashboardLoadingCard = [
@@ -115,19 +115,20 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
 
 const DashboardPage: React.FC<{
   dateRange: DateRange;
+  customDateRange: CustomDateRangeBounds | null;
   setDateRange: (range: DateRange) => void;
-}> = ({ dateRange }) => {
+}> = ({ dateRange, customDateRange }) => {
   const { accentIndexByName } = useCategories();
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
-  const analytics = useAnalytics(dateRange);
+  const analytics = useAnalytics(dateRange, customDateRange);
   const analyticsLoading = analytics.loading;
   const analyticsRefreshing = analytics.refreshing;
   const byCat = useMemo(
     () => categoriesToDonut(analytics.categories, accentIndexByName),
     [accentIndexByName, analytics.categories]
   );
-  const cashFlow = useCashFlow(6, dateRange);
+  const cashFlow = useCashFlow(6, dateRange, customDateRange);
   const cashFlowSeries = cashFlow.series;
   const debouncedCashFlowSeries = useDebouncedChartRecalc(cashFlowSeries);
   const cashFlowLoading = cashFlow.loading;
@@ -174,7 +175,7 @@ const DashboardPage: React.FC<{
         stats={<BalancesOverviewSummary />}
       >
         <div className={cn('space-y-6')}>
-          <DashboardStatsCarousel dateRange={dateRange} />
+          <DashboardStatsCarousel dateRange={dateRange} customDateRange={customDateRange} />
 
           <div
             className={cn(

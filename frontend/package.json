@@ -56,6 +56,7 @@
     "@opentelemetry/semantic-conventions": "^1.38.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-popover": "^1.1.15",
+    "@radix-ui/react-slider": "^1.4.1",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@serwist/next": "^9.5.11",
     "@tailwindcss/postcss": "^4.2.4",

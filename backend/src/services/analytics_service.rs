@@ -2,8 +2,9 @@
 
 use crate::models::analytics::{
     BalanceCategory, BudgetSummary, CashFlowPoint, CategoryAggregate, CategorySpending,
-    DailySpending, IncomeExpenseTotals, MonthlyCashFlowAggregate, MonthlySpending, SankeyLink,
-    SankeyNode, SankeyNodeKind, SankeyResponse, SankeySummary, TopMerchant,
+    DailySpending, DateBoundsResponse, IncomeExpenseTotals, MonthlyCashFlowAggregate,
+    MonthlySpending, SankeyLink, SankeyNode, SankeyNodeKind, SankeyResponse, SankeySummary,
+    TopMerchant,
 };
 use crate::models::transaction::Transaction;
 use crate::services::repository_service::{
@@ -238,6 +239,23 @@ impl AnalyticsService {
         Ok(self.category_spending_chart(&grid))
     }
 
+    pub async fn get_date_bounds(
+        &self,
+        repository: &dyn DatabaseRepository,
+        user_id: &Uuid,
+        account_ids: Option<&[Uuid]>,
+    ) -> Result<DateBoundsResponse> {
+        let start_date = repository
+            .get_earliest_transaction_date_for_user(user_id, account_ids)
+            .await?;
+        let end_date = start_date.map(|_| chrono::Utc::now().naive_utc().date().to_string());
+
+        Ok(DateBoundsResponse {
+            start_date: start_date.map(|value| value.to_string()),
+            end_date,
+        })
+    }
+
     pub fn current_month_date_range(&self) -> (chrono::NaiveDate, chrono::NaiveDate) {
         let now = chrono::Utc::now().naive_utc().date();
         Self::get_month_range_static(now.year(), now.month())
@@ -250,85 +268,6 @@ impl AnalyticsService {
     ) -> Option<(chrono::NaiveDate, chrono::NaiveDate)> {
         chrono::NaiveDate::from_ymd_opt(year, month, 1)
             .map(|_| Self::get_month_range_static(year, month))
-    }
-
-    fn get_previous_month_info(year: i32, month: u32) -> (i32, u32) {
-        if month == 1 {
-            (year - 1, 12)
-        } else {
-            (year, month - 1)
-        }
-    }
-
-    fn months_back(year: i32, month: u32, back: u32) -> (i32, u32) {
-        let total_months = year * 12 + (month as i32) - 1 - (back as i32);
-        let new_year = total_months.div_euclid(12);
-        let new_month0 = total_months.rem_euclid(12); // 0..11
-        (new_year, (new_month0 + 1) as u32)
-    }
-
-    pub fn get_period_date_range(period: &str) -> Option<(chrono::NaiveDate, chrono::NaiveDate)> {
-        use chrono::Datelike;
-        let now = chrono::Utc::now().naive_utc().date();
-        let year = now.year();
-        let month = now.month();
-
-        match period {
-            "current-month" => Some(Self::get_month_range_static(year, month)),
-            "past-2-months" => {
-                let (sy, sm) = Self::months_back(year, month, 1);
-                Some((
-                    chrono::NaiveDate::from_ymd_opt(sy, sm, 1).unwrap(),
-                    // end of current month
-                    if month == 12 {
-                        chrono::NaiveDate::from_ymd_opt(year + 1, 1, 1)
-                            .unwrap()
-                            .pred_opt()
-                            .unwrap()
-                    } else {
-                        chrono::NaiveDate::from_ymd_opt(year, month + 1, 1)
-                            .unwrap()
-                            .pred_opt()
-                            .unwrap()
-                    },
-                ))
-            }
-            "past-6-months" => {
-                let (sy, sm) = Self::months_back(year, month, 5);
-                Some((
-                    chrono::NaiveDate::from_ymd_opt(sy, sm, 1).unwrap(),
-                    if month == 12 {
-                        chrono::NaiveDate::from_ymd_opt(year + 1, 1, 1)
-                            .unwrap()
-                            .pred_opt()
-                            .unwrap()
-                    } else {
-                        chrono::NaiveDate::from_ymd_opt(year, month + 1, 1)
-                            .unwrap()
-                            .pred_opt()
-                            .unwrap()
-                    },
-                ))
-            }
-            "past-year" => {
-                let (sy, sm) = Self::months_back(year, month, 11);
-                Some((
-                    chrono::NaiveDate::from_ymd_opt(sy, sm, 1).unwrap(),
-                    if month == 12 {
-                        chrono::NaiveDate::from_ymd_opt(year + 1, 1, 1)
-                            .unwrap()
-                            .pred_opt()
-                            .unwrap()
-                    } else {
-                        chrono::NaiveDate::from_ymd_opt(year, month + 1, 1)
-                            .unwrap()
-                            .pred_opt()
-                            .unwrap()
-                    },
-                ))
-            }
-            _ => None,
-        }
     }
 
     pub fn filter_by_date_range<'a>(
@@ -713,6 +652,16 @@ impl AnalyticsService {
         truncate_to_latest_months(&mut result, months);
 
         result
+    }
+
+    pub fn inclusive_month_count(
+        &self,
+        start_date: chrono::NaiveDate,
+        end_date: chrono::NaiveDate,
+    ) -> u32 {
+        ((end_date.year() - start_date.year()) * 12 + end_date.month() as i32
+            - start_date.month() as i32
+            + 1) as u32
     }
 
     fn is_spending_for_top_merchants(transaction: &Transaction) -> bool {
