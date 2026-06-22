@@ -71,6 +71,12 @@ const handlers = [
       ],
     })
   ),
+  route('GET', '/analytics/date-bounds', () =>
+    jsonResponse({
+      start_date: '2026-01-01',
+      end_date: '2026-06-21',
+    })
+  ),
   route('GET', '/analytics/sankey', () => jsonResponse(sampleSankeySurplus)),
   route('GET', '/analytics/spending', () => jsonResponse(storyDashboardFixtures.spendingTotal)),
   route('GET', '/analytics/categories', () => jsonResponse(storyDashboardFixtures.categories)),

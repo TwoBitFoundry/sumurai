@@ -1,6 +1,6 @@
 import { type RefObject, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { cn, Input, modalDrawerSectionLabelClassName } from '@/ui/primitives';
+import { cn, Input, modalDrawerSectionLabelClassName, RangeSlider } from '@/ui/primitives';
 import {
   floatingChromeGlass,
   modalDrawer,
@@ -8,12 +8,18 @@ import {
   effect as uiEffectRecipes,
   radius as uiRadiusRecipes,
   surface as uiSurfaceRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import type { CustomDateRangeBounds, DashboardDateBounds } from '@/utils/dateRanges';
 import {
   clampCustomDateRangeBounds,
+  dateRangeDaySpan,
   defaultCustomDateRangeBounds,
+  formatDateRangeLabel,
+  isoDateToSliderOffset,
   isValidCustomDateRange,
+  sliderOffsetToIsoDate,
   validateCustomDateRange,
 } from '@/utils/dateRanges';
 
@@ -33,6 +39,10 @@ type PopoverPosition = {
   bottom: number;
   left: number;
 };
+
+function formatDateLabel(isoDate: string): string {
+  return formatDateRangeLabel('custom', { start: isoDate, end: isoDate });
+}
 
 export function CustomDateRangePicker({
   open,
@@ -129,6 +139,24 @@ export function CustomDateRangePicker({
   );
   const validationMessage =
     hasInteracted && !isValid ? validateCustomDateRange(startDate, endDate, bounds) : null;
+  const sliderValue = useMemo<[number, number]>(() => {
+    if (!bounds) {
+      return [0, 0];
+    }
+
+    const safeBounds = clampCustomDateRangeBounds(
+      {
+        start: startDate || bounds.start,
+        end: endDate || bounds.end,
+      },
+      bounds
+    );
+
+    return [
+      isoDateToSliderOffset(safeBounds.start, bounds),
+      isoDateToSliderOffset(safeBounds.end, bounds),
+    ];
+  }, [bounds, endDate, startDate]);
 
   const handleStartChange = (nextStart: string) => {
     setHasInteracted(true);
@@ -144,6 +172,20 @@ export function CustomDateRangePicker({
     if (isValidCustomDateRange(startDate, nextEnd, bounds)) {
       onApply({ start: startDate, end: nextEnd });
     }
+  };
+
+  const handleSliderChange = (nextValue: [number, number]) => {
+    if (!bounds) {
+      return;
+    }
+
+    const nextStart = sliderOffsetToIsoDate(nextValue[0], bounds);
+    const nextEnd = sliderOffsetToIsoDate(nextValue[1], bounds);
+
+    setHasInteracted(true);
+    setStartDate(nextStart);
+    setEndDate(nextEnd);
+    onApply({ start: nextStart, end: nextEnd });
   };
 
   if (!mounted || !open || !popoverPosition) {
@@ -194,6 +236,46 @@ export function CustomDateRangePicker({
           </p>
         ) : (
           <>
+            <div className={cn('grid', 'grid-cols-2', 'gap-3')}>
+              <div className={cn('space-y-1')}>
+                <p className={cn(modalDrawerSectionLabelClassName)}>Start</p>
+                <p
+                  className={cn(
+                    uiTypographyRecipes.bodyStrong,
+                    uiTextRecipes.primary,
+                    'rounded-full',
+                    'px-3',
+                    'py-2',
+                    ...uiSurfaceRecipes.insetWell
+                  )}
+                >
+                  {formatDateLabel(startDate || bounds.start)}
+                </p>
+              </div>
+              <div className={cn('space-y-1')}>
+                <p className={cn(modalDrawerSectionLabelClassName)}>End</p>
+                <p
+                  className={cn(
+                    uiTypographyRecipes.bodyStrong,
+                    uiTextRecipes.primary,
+                    'rounded-full',
+                    'px-3',
+                    'py-2',
+                    ...uiSurfaceRecipes.insetWell
+                  )}
+                >
+                  {formatDateLabel(endDate || bounds.end)}
+                </p>
+              </div>
+            </div>
+            <RangeSlider
+              min={0}
+              max={Math.max(0, dateRangeDaySpan(bounds) - 1)}
+              value={sliderValue}
+              onValueChange={handleSliderChange}
+              startAriaLabel="Start date slider"
+              endAriaLabel="End date slider"
+            />
             <div className={cn(modalDrawer.formRow)}>
               <div className={cn(modalDrawer.formField)}>
                 <label

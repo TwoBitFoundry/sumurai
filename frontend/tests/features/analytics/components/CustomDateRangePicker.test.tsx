@@ -89,6 +89,30 @@ describe('CustomDateRangePicker', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('keeps the slider and fallback inputs in sync', () => {
+    const onApply = jest.fn();
+
+    renderCustomDateRangePicker({
+      open: true,
+      bounds,
+      value: { start: '2026-01-01', end: '2026-01-31' },
+      onApply,
+      onRequestClose: jest.fn(),
+    });
+
+    fireEvent.change(screen.getByRole('slider', { name: 'Start date slider' }), {
+      target: { value: '9' },
+    });
+
+    expect(screen.getByLabelText('Start date')).toHaveValue('2026-01-10');
+    expect(onApply).toHaveBeenLastCalledWith({ start: '2026-01-10', end: '2026-01-31' });
+
+    fireEvent.change(screen.getByLabelText('End date'), { target: { value: '2026-01-20' } });
+
+    expect(screen.getByRole('slider', { name: 'End date slider' })).toHaveValue('19');
+    expect(onApply).toHaveBeenLastCalledWith({ start: '2026-01-10', end: '2026-01-20' });
+  });
+
   it('shows validation when the start date is after the end date', () => {
     renderCustomDateRangePicker({
       open: true,

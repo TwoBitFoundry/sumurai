@@ -131,7 +131,7 @@ Goal: ship the new custom-range interaction without losing precision or accessib
 
 Tasks:
 
-- Add a small slider primitive backed by `@radix-ui/react-slider`.
+- Add a small dual-thumb slider primitive.
 - Keep the date-specific mapping logic in the analytics feature layer, not the primitive.
 - Replace the current two-input custom picker layout with:
   - selected start and end labels
@@ -144,12 +144,25 @@ Tasks:
 
 Acceptance criteria:
 
-- [ ] Slider minimum equals the fetched earliest available date for the active account scope.
-- [ ] Slider maximum equals today.
-- [ ] Thumbs cannot cross and always represent a valid inclusive date window.
-- [ ] Editing fallback date inputs updates slider positions and vice versa.
-- [ ] The custom-range label pill reflects the applied start/end dates after selection.
-- [ ] When no bounds exist, the popover explains the unavailable state and does not emit a custom request.
+- [x] Slider minimum equals the fetched earliest available date for the active account scope.
+- [x] Slider maximum equals today.
+- [x] Thumbs cannot cross and always represent a valid inclusive date window.
+- [x] Editing fallback date inputs updates slider positions and vice versa.
+- [x] The custom-range label pill reflects the applied start/end dates after selection.
+- [x] When no bounds exist, the popover explains the unavailable state and does not emit a custom request.
+
+TDD log:
+
+- Red: added primitive and picker tests that required a bounded dual-thumb control, synced fallback inputs, and an unavailable state; the initial run failed because the picker still only rendered date inputs and no reusable slider existed.
+- Green: introduced a local dual-thumb `RangeSlider` primitive, rewired the custom picker around fetched bounds plus slider offsets, and updated dashboard stories to provide date-bounds fixtures wherever the custom picker can render.
+- Refactor: kept date conversion and clamping logic in `dateRanges.ts`, left the primitive numeric-only, and reused existing floating chrome primitives so the picker shell stayed aligned with the dashboard system.
+- Verification:
+  - `bun --cwd=frontend test ./tests/ui/primitives/RangeSlider.test.tsx ./tests/features/analytics/components/CustomDateRangePicker.test.tsx ./tests/features/analytics/components/DateRangePillSlider.test.tsx`
+  - `bun --cwd=frontend run typecheck`
+  - `bun --cwd=frontend run build`
+  - `bun --cwd=frontend run test`
+  - `bun --cwd=frontend run storybook:build`
+  - `bun --cwd=frontend run test:storybook` blocked by environment `listen EPERM` on loopback bind before tests executed
 
 ### Phase 4: Regression coverage and verification
 
@@ -165,10 +178,29 @@ Tasks:
 
 Acceptance criteria:
 
-- [ ] Backend tests cover normal, filtered, empty, and invalid-range date-bounds/cash-flow cases.
-- [ ] Frontend tests cover slider mapping, clamp behavior, disabled-state behavior, and explicit-date request building.
-- [ ] The dashboard custom-range UI works with keyboard and pointer interaction.
-- [ ] Focused verification passes on both frontend and backend surfaces touched by this change.
+- [x] Backend tests cover normal, filtered, empty, and invalid-range date-bounds/cash-flow cases.
+- [x] Frontend tests cover slider mapping, clamp behavior, disabled-state behavior, and explicit-date request building.
+- [x] The dashboard custom-range UI works with keyboard and pointer interaction.
+- [x] Focused verification passes on both frontend and backend surfaces touched by this change.
+
+TDD log:
+
+- Red: expanded the regression surface across service, utility, hook, picker, and primitive tests so the slider swap could not regress the explicit-date contract or the no-bounds behavior.
+- Green: covered the new slider primitive, verified picker-to-slider synchronization, and exercised the updated analytics service and hook paths that now depend on explicit dates and fetched bounds.
+- Refactor: kept browser-only story validation separate from core component tests and used the static Storybook build to verify the added story handlers and primitive story wiring when runtime Storybook could not bind a loopback port in this environment.
+- Verification:
+  - `cargo test -p sumurai-backend --locked get_earliest_transaction_date_for_user`
+  - `cargo test -p sumurai-backend --locked get_date_bounds`
+  - `cargo test -p sumurai-backend --locked get_cash_flow`
+  - `cargo test -p sumurai-backend --locked get_monthly_totals`
+  - `cargo test -p sumurai-backend --locked openapi`
+  - `bun --cwd=frontend test ./tests/utils/dateRanges.test.ts`
+  - `bun --cwd=frontend test ./tests/features/analytics/hooks/useAnalytics.test.tsx ./tests/features/analytics/hooks/useCashFlow.test.tsx ./tests/features/analytics/hooks/useSankey.test.tsx ./tests/components/AuthenticatedApp.test.tsx ./tests/features/analytics/components/CustomDateRangePicker.test.tsx ./tests/features/analytics/components/DateRangePillSlider.test.tsx`
+  - `bun --cwd=frontend test ./tests/ui/primitives/RangeSlider.test.tsx ./tests/features/analytics/components/CustomDateRangePicker.test.tsx ./tests/features/analytics/components/DateRangePillSlider.test.tsx`
+  - `bun --cwd=frontend run typecheck`
+  - `bun --cwd=frontend run build`
+  - `bun --cwd=frontend run test`
+  - `bun --cwd=frontend run storybook:build`
 
 ## Risks
 
@@ -186,6 +218,5 @@ Acceptance criteria:
 
 ## Next actions
 
-- Implement backend date-bounds and cash-flow request contract changes first.
-- Follow with frontend hook/service normalization to explicit dates.
-- Finish with the slider UI swap and focused regression coverage.
+- If browser-mode Storybook verification is needed, rerun `bun --cwd=frontend run test:storybook` in an environment that can bind loopback ports.
+- Otherwise the planned implementation work is complete.

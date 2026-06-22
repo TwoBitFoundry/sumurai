@@ -32,6 +32,8 @@ export type { PaginationButtonProps } from './PaginationButton';
 export { PaginationButton } from './PaginationButton';
 export type { PillProps } from './Pill';
 export { Pill } from './Pill';
+export type { RangeSliderProps } from './RangeSlider';
+export { RangeSlider } from './RangeSlider';
 export type { RequirementPillProps } from './RequirementPill';
 export { RequirementPill } from './RequirementPill';
 export type { SelectProps } from './Select';
