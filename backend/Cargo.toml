@@ -1,6 +1,6 @@
 [package]
 name = "sumurai-backend"
-version = "6.13.1"
+version = "6.14.0"
 edition = "2021"
 
 [dependencies]
