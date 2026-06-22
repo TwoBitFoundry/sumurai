@@ -139,10 +139,14 @@ fn provider_sync_error_json_response(
     error: &str,
     message: &str,
     retry_after_secs: Option<String>,
+    code: Option<&str>,
 ) -> axum::response::Response {
     use axum::response::IntoResponse;
 
-    let body = axum::Json(ApiErrorResponse::new(error, message));
+    let body = match code {
+        Some(code) => axum::Json(ApiErrorResponse::with_code(error, message, code)),
+        None => axum::Json(ApiErrorResponse::new(error, message)),
+    };
     match retry_after_secs {
         Some(retry_after) => (
             status,
@@ -176,6 +180,7 @@ pub fn provider_sync_error_to_response(
                 "RATE_LIMITED",
                 &message,
                 Some(retry_after_secs),
+                None,
             )
         }
         ProviderSyncError::CredentialsMissing => {
@@ -189,6 +194,7 @@ pub fn provider_sync_error_to_response(
                 "NOT_FOUND",
                 "This institution is linked in Sumurai but provider credentials are missing. Reconnect your financial provider from Accounts.",
                 None,
+                Some("PROVIDER_CREDENTIALS_MISSING"),
             )
         }
         ProviderSyncError::CredentialAccess(e) => {
@@ -203,6 +209,7 @@ pub fn provider_sync_error_to_response(
                 "INTERNAL_SERVER_ERROR",
                 "Could not access provider credentials for this connection",
                 None,
+                None,
             )
         }
         ProviderSyncError::ProviderUnavailable(p) => {
@@ -215,6 +222,7 @@ pub fn provider_sync_error_to_response(
                 StatusCode::BAD_REQUEST,
                 "BAD_REQUEST",
                 "This provider is not available for sync",
+                None,
                 None,
             )
         }
@@ -230,6 +238,7 @@ pub fn provider_sync_error_to_response(
                 "BAD_GATEWAY",
                 "The financial provider request failed. Try again in a few minutes.",
                 None,
+                None,
             )
         }
         ProviderSyncError::AccountLookup(e) => {
@@ -243,6 +252,7 @@ pub fn provider_sync_error_to_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "INTERNAL_SERVER_ERROR",
                 "Could not load accounts for this connection",
+                None,
                 None,
             )
         }
@@ -258,6 +268,7 @@ pub fn provider_sync_error_to_response(
                 "INTERNAL_SERVER_ERROR",
                 "Could not load transactions for this connection",
                 None,
+                None,
             )
         }
         ProviderSyncError::SyncFailure(e) => {
@@ -271,6 +282,7 @@ pub fn provider_sync_error_to_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "INTERNAL_SERVER_ERROR",
                 "Sync failed unexpectedly. Try again.",
+                None,
                 None,
             )
         }

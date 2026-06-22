@@ -19,6 +19,7 @@ import {
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { usePlaidConnections } from '@/hooks/usePlaidConnections';
 import { useProviderCatalog } from '@/hooks/useProviderCatalog';
+import { ApiError, NotFoundError } from '@/services/ApiClient';
 import { DiyService } from '@/services/DiyService';
 import { PlaidService } from '@/services/PlaidService';
 import { TellerService } from '@/services/TellerService';
@@ -980,6 +981,98 @@ describe('AccountsPage', () => {
     expect(within(syncToast).getByRole('heading', { name: 'Sync institution' })).toBeVisible();
     expect(within(syncToast).getByText('Demo Bank')).toBeVisible();
     expect(within(syncToast).getByText('Synced 1 new transaction')).toBeVisible();
+  });
+
+  it('keeps the bank status as error when sync fails with app auth error', async () => {
+    const user = userEvent.setup();
+
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid'],
+        user_provider: 'plaid',
+      })
+    );
+    jest.mocked(useAccountFilter).mockReturnValue(
+      makeTellerAccountFilter({
+        accountsByBank: {
+          'Demo Bank': [
+            {
+              id: 'acc_plaid_1',
+              name: 'Checking',
+              account_type: 'depository',
+              balance_ledger: 100,
+              balance_available: 100,
+              mask: '1234',
+              provider: 'plaid',
+              institution_name: 'Demo Bank',
+              connection_id: 'conn_plaid',
+              transaction_count: 0,
+            },
+          ],
+        },
+      })
+    );
+    jest
+      .mocked(PlaidService.syncTransactions)
+      .mockRejectedValueOnce(new ApiError(403, 'Auth required', 'FORBIDDEN'));
+
+    renderAccountsPage();
+
+    await user.click(screen.getByRole('button', { name: 'Sync now' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('status', { name: 'Error' })).toBeVisible();
+    });
+    expect(screen.queryByRole('status', { name: 'Re-auth needed' })).not.toBeInTheDocument();
+  });
+
+  it('updates the bank status to re-auth needed when sync fails with missing provider credentials', async () => {
+    const user = userEvent.setup();
+
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid'],
+        user_provider: 'plaid',
+      })
+    );
+    jest.mocked(useAccountFilter).mockReturnValue(
+      makeTellerAccountFilter({
+        accountsByBank: {
+          'Demo Bank': [
+            {
+              id: 'acc_plaid_1',
+              name: 'Checking',
+              account_type: 'depository',
+              balance_ledger: 100,
+              balance_available: 100,
+              mask: '1234',
+              provider: 'plaid',
+              institution_name: 'Demo Bank',
+              connection_id: 'conn_plaid',
+              transaction_count: 0,
+            },
+          ],
+        },
+      })
+    );
+    jest
+      .mocked(PlaidService.syncTransactions)
+      .mockRejectedValueOnce(
+        new NotFoundError(
+          'This institution is linked in Sumurai but provider credentials are missing. Reconnect your financial provider from Accounts.',
+          'PROVIDER_CREDENTIALS_MISSING'
+        )
+      );
+
+    renderAccountsPage();
+
+    await user.click(screen.getByRole('button', { name: 'Sync now' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('status', { name: 'Re-auth needed' })).toBeVisible();
+    });
   });
 
   it('enables plaid connect when provider catalog is unavailable', () => {
