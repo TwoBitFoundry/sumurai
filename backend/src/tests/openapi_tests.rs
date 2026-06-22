@@ -208,6 +208,53 @@ fn given_sankey_when_generating_openapi_then_documents_endpoint_and_schemas() {
 }
 
 #[test]
+fn given_date_bounds_when_generating_openapi_then_documents_endpoint_and_schema() {
+    let spec = serde_json::to_value(init_openapi()).unwrap();
+    let path = &spec["paths"]["/api/analytics/date-bounds"]["get"];
+
+    assert_eq!(path["tags"], serde_json::json!(["Analytics"]));
+    assert_eq!(
+        path["parameters"][0]["name"],
+        serde_json::json!("account_ids")
+    );
+    assert_eq!(
+        path["parameters"][1]["name"],
+        serde_json::json!("exclude_account_ids")
+    );
+    assert_eq!(
+        path["responses"]["200"]["content"]["application/json"]["schema"]["$ref"],
+        serde_json::json!("#/components/schemas/DateBoundsResponse")
+    );
+    assert_eq!(
+        spec["components"]["schemas"]["DateBoundsResponse"]["type"],
+        serde_json::json!("object")
+    );
+}
+
+#[test]
+fn given_cash_flow_when_generating_openapi_then_documents_explicit_date_query_params() {
+    let spec = serde_json::to_value(init_openapi()).unwrap();
+    let path = &spec["paths"]["/api/analytics/cash-flow"]["get"];
+    let parameters = path["parameters"].as_array().expect("parameters array");
+
+    assert_eq!(path["tags"], serde_json::json!(["Analytics"]));
+    assert_eq!(parameters[0]["name"], serde_json::json!("start_date"));
+    assert_eq!(parameters[1]["name"], serde_json::json!("end_date"));
+    assert_eq!(parameters[2]["name"], serde_json::json!("account_ids"));
+    assert_eq!(
+        parameters[3]["name"],
+        serde_json::json!("exclude_account_ids")
+    );
+    assert!(parameters
+        .iter()
+        .all(|parameter| parameter["name"] != serde_json::json!("months")));
+    assert_eq!(
+        path["responses"]["400"]["description"],
+        serde_json::json!("Invalid date range")
+    );
+}
+
+#[test]
 #[ignore]
 fn regenerate_openapi_artifacts() {
     let spec = serde_json::to_string_pretty(&init_openapi()).unwrap();

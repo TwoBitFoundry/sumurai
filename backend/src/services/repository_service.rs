@@ -141,6 +141,11 @@ pub trait DatabaseRepository: Send + Sync {
         user_id: &Uuid,
         account_ids: Option<&[Uuid]>,
     ) -> Result<Vec<Transaction>>;
+    async fn get_earliest_transaction_date_for_user(
+        &self,
+        user_id: &Uuid,
+        account_ids: Option<&[Uuid]>,
+    ) -> Result<Option<NaiveDate>>;
     async fn get_transactions_with_account_for_user(
         &self,
         user_id: &Uuid,
@@ -2570,6 +2575,37 @@ impl DatabaseRepository for PostgresRepository {
             .into_iter()
             .map(Self::map_effective_category_transaction_row)
             .collect())
+    }
+
+    async fn get_earliest_transaction_date_for_user(
+        &self,
+        user_id: &Uuid,
+        account_ids: Option<&[Uuid]>,
+    ) -> Result<Option<NaiveDate>> {
+        if matches!(account_ids, Some([])) {
+            return Ok(None);
+        }
+
+        let user_id = *user_id;
+        let account_ids = account_ids.map(|ids| ids.to_vec());
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                let mut query = transactions::Entity::find()
+                    .select_only()
+                    .column(transactions::Column::Date)
+                    .filter(transactions::Column::UserId.eq(user_id))
+                    .order_by_asc(transactions::Column::Date);
+
+                if let Some(ref ids) = account_ids {
+                    if !ids.is_empty() {
+                        query = query.filter(transactions::Column::AccountId.is_in(ids.clone()));
+                    }
+                }
+
+                Ok(query.into_tuple::<NaiveDate>().one(txn).await?)
+            })
+        })
+        .await
     }
 
     async fn get_monthly_cash_flow_aggregates_for_user(

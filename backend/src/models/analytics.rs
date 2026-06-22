@@ -89,6 +89,13 @@ pub struct NetWorthOverTimeResponse {
     pub currency: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({"start_date": "2021-04-09", "end_date": "2026-06-21"}))]
+pub struct DateBoundsResponse {
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BalanceCategory {
     Cash,

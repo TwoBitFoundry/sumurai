@@ -1250,6 +1250,321 @@ async fn given_authenticated_user_when_get_budget_summary_then_returns_category_
 }
 
 #[tokio::test]
+async fn given_authenticated_user_when_get_date_bounds_then_returns_earliest_scoped_date_and_today()
+{
+    use crate::models::account::Account;
+    use crate::models::plaid::ProviderConnection;
+    use crate::services::repository_service::MockDatabaseRepository;
+    use chrono::NaiveDate;
+    use uuid::Uuid;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+    let checking_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440021").unwrap();
+    let savings_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440022").unwrap();
+    let mut provider_connection = ProviderConnection::new(user_id, "item_1");
+    provider_connection.provider = user.provider.clone();
+    let provider_connection_id = provider_connection.id;
+
+    let user_clone = user.clone();
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let user = user_clone.clone();
+        Box::pin(async move { Ok(Some(user)) })
+    });
+
+    mock_db.expect_get_accounts_for_user().returning(move |_| {
+        let accounts = vec![
+            Account {
+                id: checking_id,
+                user_id: Some(user_id),
+                provider_account_id: Some("plaid_acc_1".to_string()),
+                provider_connection_id: Some(provider_connection_id),
+                name: "Checking".to_string(),
+                account_type: "checking".to_string(),
+                balance_current: None,
+                mask: Some("0021".to_string()),
+                institution_name: None,
+                provider_conn_id: None,
+            },
+            Account {
+                id: savings_id,
+                user_id: Some(user_id),
+                provider_account_id: Some("plaid_acc_2".to_string()),
+                provider_connection_id: Some(provider_connection_id),
+                name: "Savings".to_string(),
+                account_type: "savings".to_string(),
+                balance_current: None,
+                mask: Some("0022".to_string()),
+                institution_name: None,
+                provider_conn_id: None,
+            },
+        ];
+        Box::pin(async move { Ok(accounts) })
+    });
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(move |_| {
+            let provider_connection = provider_connection.clone();
+            Box::pin(async move { Ok(vec![provider_connection]) })
+        });
+
+    mock_db
+        .expect_get_earliest_transaction_date_for_user()
+        .withf(move |observed_user_id, account_ids| {
+            *observed_user_id == user_id
+                && account_ids
+                    .map(|ids| ids.len() == 1 && ids[0] == checking_id)
+                    .unwrap_or(false)
+        })
+        .returning(|_, _| {
+            Box::pin(async move { Ok(Some(NaiveDate::from_ymd_opt(2021, 4, 9).unwrap())) })
+        });
+
+    mock_db
+        .expect_get_budgets_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_latest_account_balances_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request = TestFixtures::create_authenticated_get_request(
+        &format!("/api/analytics/date-bounds?account_ids={checking_id}"),
+        &token,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(payload["start_date"], "2021-04-09");
+    assert_eq!(
+        payload["end_date"],
+        chrono::Utc::now().naive_utc().date().to_string()
+    );
+}
+
+#[tokio::test]
+async fn given_scoped_account_without_transactions_when_get_date_bounds_then_returns_null_bounds() {
+    use crate::models::account::Account;
+    use crate::models::plaid::ProviderConnection;
+    use crate::services::repository_service::MockDatabaseRepository;
+    use uuid::Uuid;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+    let checking_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440031").unwrap();
+    let mut provider_connection = ProviderConnection::new(user_id, "item_1");
+    provider_connection.provider = user.provider.clone();
+    let provider_connection_id = provider_connection.id;
+
+    let user_clone = user.clone();
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let user = user_clone.clone();
+        Box::pin(async move { Ok(Some(user)) })
+    });
+
+    mock_db.expect_get_accounts_for_user().returning(move |_| {
+        let accounts = vec![Account {
+            id: checking_id,
+            user_id: Some(user_id),
+            provider_account_id: Some("plaid_acc_1".to_string()),
+            provider_connection_id: Some(provider_connection_id),
+            name: "Checking".to_string(),
+            account_type: "checking".to_string(),
+            balance_current: None,
+            mask: Some("0031".to_string()),
+            institution_name: None,
+            provider_conn_id: None,
+        }];
+        Box::pin(async move { Ok(accounts) })
+    });
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(move |_| {
+            let provider_connection = provider_connection.clone();
+            Box::pin(async move { Ok(vec![provider_connection]) })
+        });
+
+    mock_db
+        .expect_get_earliest_transaction_date_for_user()
+        .returning(|_, _| Box::pin(async move { Ok(None) }));
+
+    mock_db
+        .expect_get_budgets_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_latest_account_balances_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request = TestFixtures::create_authenticated_get_request(
+        &format!("/api/analytics/date-bounds?account_ids={checking_id}"),
+        &token,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(payload["start_date"], serde_json::Value::Null);
+    assert_eq!(payload["end_date"], serde_json::Value::Null);
+}
+
+#[tokio::test]
+async fn given_authenticated_user_when_get_cash_flow_with_explicit_dates_then_returns_requested_window(
+) {
+    use crate::models::analytics::{CashFlowResponse, MonthlyCashFlowAggregate};
+    use crate::services::repository_service::MockDatabaseRepository;
+    use chrono::NaiveDate;
+    use rust_decimal_macros::dec;
+    use uuid::Uuid;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let user_clone = user.clone();
+    let user_id = user.id;
+
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let user = user_clone.clone();
+        Box::pin(async move { Ok(Some(user)) })
+    });
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db.expect_get_accounts_for_user().returning(move |_| {
+        let account = crate::models::account::Account {
+            id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440041").unwrap(),
+            user_id: Some(user_id),
+            provider_account_id: Some("plaid_acc_1".to_string()),
+            provider_connection_id: None,
+            name: "Checking".to_string(),
+            account_type: "checking".to_string(),
+            balance_current: None,
+            mask: Some("0041".to_string()),
+            institution_name: None,
+            provider_conn_id: None,
+        };
+        Box::pin(async move { Ok(vec![account]) })
+    });
+
+    mock_db
+        .expect_get_monthly_cash_flow_aggregates_for_user()
+        .withf(|_, start_date, end_date, _| {
+            *start_date == NaiveDate::from_ymd_opt(2026, 1, 1).unwrap()
+                && *end_date == NaiveDate::from_ymd_opt(2026, 3, 31).unwrap()
+        })
+        .returning(|_, _, _, _| {
+            Box::pin(async move {
+                Ok(vec![
+                    MonthlyCashFlowAggregate {
+                        month: "2026-01".to_string(),
+                        income: dec!(5000.00),
+                        expenses: dec!(3200.00),
+                    },
+                    MonthlyCashFlowAggregate {
+                        month: "2026-03".to_string(),
+                        income: dec!(5100.00),
+                        expenses: dec!(3300.00),
+                    },
+                ])
+            })
+        });
+
+    mock_db
+        .expect_get_budgets_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_latest_account_balances_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request = TestFixtures::create_authenticated_get_request(
+        "/api/analytics/cash-flow?start_date=2026-01-01&end_date=2026-03-31",
+        &token,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let payload: CashFlowResponse = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(payload.series.len(), 2);
+    assert_eq!(payload.series[0].month, "2026-01");
+    assert_eq!(payload.series[0].income, dec!(5000.00));
+    assert_eq!(payload.series[0].expenses, dec!(3200.00));
+    assert_eq!(payload.series[0].net, dec!(1800.00));
+    assert_eq!(payload.series[1].month, "2026-03");
+}
+
+#[tokio::test]
+async fn given_end_date_before_start_date_when_get_cash_flow_then_returns_400() {
+    use crate::services::repository_service::MockDatabaseRepository;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let user = user.clone();
+        Box::pin(async move { Ok(Some(user)) })
+    });
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_accounts_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_budgets_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_latest_account_balances_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request = TestFixtures::create_authenticated_get_request(
+        "/api/analytics/cash-flow?start_date=2026-03-31&end_date=2026-01-01",
+        &token,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 400);
+}
+
+#[tokio::test]
 async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_ranking() {
     use crate::models::analytics::TopMerchant;
     use crate::models::transaction::Transaction;

@@ -52,8 +52,8 @@ use utils::webauthn_credentials::{
 
 use crate::models::analytics::{
     BalanceCategory, BalancesOverviewQuery, BalancesOverviewResponse, BudgetSummary,
-    CashFlowResponse, CategorySpending, DailySpending, IncomeExpenseTotals, MonthlySpending,
-    NetWorthOverTimeResponse, SankeyResponse, TopMerchant,
+    CashFlowResponse, CategorySpending, DailySpending, DateBoundsResponse, IncomeExpenseTotals,
+    MonthlySpending, NetWorthOverTimeResponse, SankeyResponse, TopMerchant,
 };
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, AuthMiddlewareState};
@@ -659,6 +659,10 @@ pub fn create_app(state: AppState) -> Router {
         .route(
             "/api/analytics/monthly-totals",
             get(get_authenticated_monthly_totals),
+        )
+        .route(
+            "/api/analytics/date-bounds",
+            get(get_authenticated_date_bounds),
         )
         .route("/api/analytics/cash-flow", get(get_authenticated_cash_flow))
         .route("/api/analytics/sankey", get(get_authenticated_sankey))
@@ -2990,13 +2994,62 @@ async fn get_authenticated_monthly_totals(
 
 #[utoipa::path(
     get,
+    path = "/api/analytics/date-bounds",
+    description = "Returns the earliest available transaction date in the active account scope and today's date as the maximum supported dashboard date.",
+    params(("account_ids" = Option<Vec<String>>, Query, description = "Include only these account IDs"),
+           ("exclude_account_ids" = Option<Vec<String>>, Query, description = "Exclude these account IDs (ignored when account_ids is set)")),
+    responses(
+        (status = 200, description = "Available date bounds for dashboard analytics", body = DateBoundsResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Analytics"
+)]
+async fn get_authenticated_date_bounds(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    AuthorizedQuery {
+        authorized_account_ids,
+        ..
+    }: AuthorizedQuery<BalancesOverviewQuery>,
+) -> Result<Json<DateBoundsResponse>, StatusCode> {
+    let user_id = auth_context.user_id;
+    let account_ids = authorized_account_ids
+        .as_ref()
+        .map(|ids| ids.iter().copied().collect::<Vec<_>>());
+
+    let bounds = state
+        .analytics_service
+        .get_date_bounds(
+            state.db_repository.as_ref(),
+            &user_id,
+            account_ids.as_deref(),
+        )
+        .await
+        .map_err(|error| {
+            tracing::error!(
+                "Failed to get analytics date bounds for user {}: {}",
+                user_id,
+                error
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(Json(bounds))
+}
+
+#[utoipa::path(
+    get,
     path = "/api/analytics/cash-flow",
     description = "Produces a timeline of monthly income, expenses, and net savings for dashboard charts.",
-    params(("months" = Option<i32>, Query, description = "Number of months to retrieve (default: 6)"),
+    params(("start_date" = String, Query, description = "Start date in YYYY-MM-DD format"),
+           ("end_date" = String, Query, description = "End date in YYYY-MM-DD format"),
            ("account_ids" = Option<Vec<String>>, Query, description = "Include only these account IDs"),
            ("exclude_account_ids" = Option<Vec<String>>, Query, description = "Exclude these account IDs (ignored when account_ids is set)")),
     responses(
         (status = 200, description = "Monthly cash flow data", body = CashFlowResponse),
+        (status = 400, description = "Invalid date range"),
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
@@ -3009,23 +3062,23 @@ async fn get_authenticated_cash_flow(
     AuthorizedQuery {
         query,
         authorized_account_ids,
-    }: AuthorizedQuery<MonthlyTotalsQuery>,
+    }: AuthorizedQuery<DateRangeQuery>,
 ) -> Result<Json<CashFlowResponse>, StatusCode> {
-    use chrono::Datelike;
-
     let user_id = auth_context.user_id;
-    let months = query.months.unwrap_or(6);
-    let now = Utc::now().naive_utc().date();
+    let start_date = query
+        .start_date
+        .as_ref()
+        .and_then(|value| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok())
+        .ok_or(StatusCode::BAD_REQUEST)?;
+    let end_date = query
+        .end_date
+        .as_ref()
+        .and_then(|value| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok())
+        .ok_or(StatusCode::BAD_REQUEST)?;
 
-    let current_year = now.year();
-    let current_month = now.month();
-    let total_months = current_year * 12 + (current_month as i32) - 1 - ((months - 1) as i32);
-    let start_year = total_months.div_euclid(12);
-    let start_month0 = total_months.rem_euclid(12);
-    let start_month = (start_month0 + 1) as u32;
-
-    let start_date = chrono::NaiveDate::from_ymd_opt(start_year, start_month, 1).unwrap_or(now);
-    let end_date = now;
+    if end_date < start_date {
+        return Err(StatusCode::BAD_REQUEST);
+    }
 
     let account_ids = authorized_account_ids
         .as_ref()
@@ -3059,9 +3112,12 @@ async fn get_authenticated_cash_flow(
         })?;
 
     let currency = "USD".to_string();
-    let series = state
-        .analytics_service
-        .cash_flow_from_monthly_aggregates(&aggregates, months);
+    let series = state.analytics_service.cash_flow_from_monthly_aggregates(
+        &aggregates,
+        state
+            .analytics_service
+            .inclusive_month_count(start_date, end_date),
+    );
     Ok(Json(CashFlowResponse { series, currency }))
 }
 

@@ -2,8 +2,9 @@
 
 use crate::models::analytics::{
     BalanceCategory, BudgetSummary, CashFlowPoint, CategoryAggregate, CategorySpending,
-    DailySpending, IncomeExpenseTotals, MonthlyCashFlowAggregate, MonthlySpending, SankeyLink,
-    SankeyNode, SankeyNodeKind, SankeyResponse, SankeySummary, TopMerchant,
+    DailySpending, DateBoundsResponse, IncomeExpenseTotals, MonthlyCashFlowAggregate,
+    MonthlySpending, SankeyLink, SankeyNode, SankeyNodeKind, SankeyResponse, SankeySummary,
+    TopMerchant,
 };
 use crate::models::transaction::Transaction;
 use crate::services::repository_service::{
@@ -236,6 +237,23 @@ impl AnalyticsService {
             .await?;
 
         Ok(self.category_spending_chart(&grid))
+    }
+
+    pub async fn get_date_bounds(
+        &self,
+        repository: &dyn DatabaseRepository,
+        user_id: &Uuid,
+        account_ids: Option<&[Uuid]>,
+    ) -> Result<DateBoundsResponse> {
+        let start_date = repository
+            .get_earliest_transaction_date_for_user(user_id, account_ids)
+            .await?;
+        let end_date = start_date.map(|_| chrono::Utc::now().naive_utc().date().to_string());
+
+        Ok(DateBoundsResponse {
+            start_date: start_date.map(|value| value.to_string()),
+            end_date,
+        })
     }
 
     pub fn current_month_date_range(&self) -> (chrono::NaiveDate, chrono::NaiveDate) {
@@ -713,6 +731,16 @@ impl AnalyticsService {
         truncate_to_latest_months(&mut result, months);
 
         result
+    }
+
+    pub fn inclusive_month_count(
+        &self,
+        start_date: chrono::NaiveDate,
+        end_date: chrono::NaiveDate,
+    ) -> u32 {
+        ((end_date.year() - start_date.year()) * 12 + end_date.month() as i32
+            - start_date.month() as i32
+            + 1) as u32
     }
 
     fn is_spending_for_top_merchants(transaction: &Transaction) -> bool {
