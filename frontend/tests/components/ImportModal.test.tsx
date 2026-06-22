@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ImportModalView } from '@/features/import/components/ImportModal';
+import { importFileAccept } from '@/features/import/fileTypes';
 import type { UseImportTransactionsResult } from '@/features/import/hooks/useImportTransactions';
 import type { CsvColumnMapping, ImportResponse, ValidateResponse } from '@/models/import';
 import { ThemeTestProvider } from '../utils/ThemeTestProvider';
@@ -89,6 +90,16 @@ function renderModal(activeWorkflow: UseImportTransactionsResult) {
 }
 
 describe('ImportModal', () => {
+  it('uses the same combined accept value on both file inputs', () => {
+    renderModal(workflow());
+
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    expect(fileInputs).toHaveLength(2);
+    fileInputs.forEach((input) => {
+      expect(input).toHaveAttribute('accept', importFileAccept);
+    });
+  });
+
   it('shows a tappable upload drop zone and validates selected and dropped files', async () => {
     const user = userEvent.setup();
     const activeWorkflow = workflow();
