@@ -53,17 +53,33 @@ interface AuthenticatedAppProps {
   isOnline: boolean;
 }
 
+function resolveInitialDashboardDateState(): {
+  dateRange: DateRange;
+  customDateRange: CustomDateRangeBounds | null;
+} {
+  const storedRange = getSessionDashboardDateRange() ?? DEFAULT_DASHBOARD_DATE_RANGE;
+  if (storedRange !== 'custom') {
+    return { dateRange: storedRange, customDateRange: null };
+  }
+
+  const customDateRange = getSessionDashboardCustomDateRange();
+  if (!customDateRange?.start || !customDateRange?.end) {
+    return { dateRange: DEFAULT_DASHBOARD_DATE_RANGE, customDateRange: null };
+  }
+
+  return { dateRange: 'custom', customDateRange };
+}
+
 export function AuthenticatedApp({ onLogout, initialTab, isOnline }: AuthenticatedAppProps) {
   const [tab, setTab] = useState<TabKey>(initialTab ?? 'dashboard');
   const [tabTransitionDirection, setTabTransitionDirection] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRangeState] = useState<DateRange>(() => {
-    return getSessionDashboardDateRange() ?? DEFAULT_DASHBOARD_DATE_RANGE;
-  });
-  const [customDateRange, setCustomDateRangeState] = useState<CustomDateRangeBounds | null>(() => {
-    const storedRange = getSessionDashboardDateRange() ?? DEFAULT_DASHBOARD_DATE_RANGE;
-    return storedRange === 'custom' ? getSessionDashboardCustomDateRange() : null;
-  });
+  const [dateRange, setDateRangeState] = useState<DateRange>(
+    () => resolveInitialDashboardDateState().dateRange
+  );
+  const [customDateRange, setCustomDateRangeState] = useState<CustomDateRangeBounds | null>(
+    () => resolveInitialDashboardDateState().customDateRange
+  );
   const setDateRange = (next: DateRange) => {
     setDateRangeState(next);
     setSessionDashboardDateRange(next);
@@ -81,6 +97,18 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   const { filterCategories, custom: customCategories } = useCategories();
   const { setSelectedAccountIds } = useAccountFilter();
   const analyticsDateBounds = useAnalyticsDateBounds();
+
+  useEffect(() => {
+    const storedRange = getSessionDashboardDateRange();
+    const storedCustomDateRange = getSessionDashboardCustomDateRange();
+    if (
+      storedRange === 'custom' &&
+      (!storedCustomDateRange?.start || !storedCustomDateRange?.end)
+    ) {
+      setSessionDashboardDateRange(DEFAULT_DASHBOARD_DATE_RANGE);
+      setSessionDashboardCustomDateRange(null);
+    }
+  }, []);
 
   const handleTabChange = (next: TabKey) => {
     const currentIndex = TAB_INDEX.get(tab) ?? 0;

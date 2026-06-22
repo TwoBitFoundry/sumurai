@@ -223,6 +223,17 @@ describe('AuthenticatedApp', () => {
     });
   });
 
+  it('falls back to the default preset when session stores custom without bounds', () => {
+    window.sessionStorage.setItem('sumurai.ui.dashboardDateRange', 'custom');
+
+    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
+
+    expect(screen.getByText('last-month')).toBeInTheDocument();
+    expect(screen.getByTestId('dashboard-custom-date-range')).toHaveTextContent('none');
+    expect(window.sessionStorage.getItem('sumurai.ui.dashboardDateRange')).toBe('last-month');
+    expect(window.sessionStorage.getItem('sumurai.ui.dashboardCustomDateRange')).toBeNull();
+  });
+
   it('clamps a stored custom range into the fetched bounds', async () => {
     window.sessionStorage.setItem('sumurai.ui.dashboardDateRange', 'custom');
     window.sessionStorage.setItem(

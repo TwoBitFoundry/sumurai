@@ -66,6 +66,25 @@ function resolvePickerValue(
   return dateBounds ? defaultCustomDateRangeBounds(dateBounds) : null;
 }
 
+type DateRangePickerSnapshot = {
+  dateRange: DateRange;
+  customDateRange: CustomDateRangeBounds | null;
+};
+
+function restoreDateRangeSnapshot(
+  snapshot: DateRangePickerSnapshot,
+  onChange: (range: DateRange) => void,
+  onCustomDateRangeChange: (bounds: CustomDateRangeBounds) => void
+): void {
+  if (snapshot.dateRange === 'custom' && snapshot.customDateRange) {
+    onCustomDateRangeChange(snapshot.customDateRange);
+    onChange('custom');
+    return;
+  }
+
+  onChange(snapshot.dateRange);
+}
+
 export function DateRangeLabelPill({
   dateRange,
   customDateRange = null,
@@ -82,16 +101,24 @@ export function DateRangeLabelPill({
   onCustomDateRangeChange: (bounds: CustomDateRangeBounds) => void;
 }) {
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [pickerSession, setPickerSession] = useState<{
-    openedAtRange: DateRange;
-    open: true;
-  } | null>(null);
-  const pickerOpen = pickerSession?.open === true && pickerSession.openedAtRange === dateRange;
+  const pickerSnapshotRef = useRef<DateRangePickerSnapshot | null>(null);
+  const appliedInSessionRef = useRef(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const rangeLabel = formatVisibleDateRangeLabel(dateRange, customDateRange ?? null, dateBounds);
   const pickerValue = useMemo(
     () => resolvePickerValue(dateRange, customDateRange, dateBounds),
     [customDateRange, dateBounds, dateRange]
   );
+
+  const closePicker = (options?: { restore?: boolean }) => {
+    const shouldRestore =
+      options?.restore !== false && !appliedInSessionRef.current && pickerSnapshotRef.current;
+    if (shouldRestore) {
+      restoreDateRangeSnapshot(pickerSnapshotRef.current!, onChange, onCustomDateRangeChange);
+    }
+    pickerSnapshotRef.current = null;
+    setPickerOpen(false);
+  };
 
   return (
     <>
@@ -103,10 +130,17 @@ export function DateRangeLabelPill({
         shape="pill"
         data-testid="date-range-label-pill"
         onClick={() => {
-          setPickerSession((current) => {
-            const isOpen = current?.open === true && current.openedAtRange === dateRange;
-            return isOpen ? null : { openedAtRange: dateRange, open: true };
-          });
+          if (pickerOpen) {
+            closePicker();
+            return;
+          }
+
+          pickerSnapshotRef.current = {
+            dateRange,
+            customDateRange: customDateRange ?? null,
+          };
+          appliedInSessionRef.current = false;
+          setPickerOpen(true);
         }}
         aria-haspopup="dialog"
         aria-label={`Selected date range: ${rangeLabel}. Choose custom range`}
@@ -146,10 +180,11 @@ export function DateRangeLabelPill({
         bounds={dateBounds}
         loading={dateBoundsLoading}
         onApply={(bounds) => {
+          appliedInSessionRef.current = true;
           onCustomDateRangeChange(bounds);
           onChange('custom');
         }}
-        onRequestClose={() => setPickerSession(null)}
+        onRequestClose={closePicker}
       />
     </>
   );

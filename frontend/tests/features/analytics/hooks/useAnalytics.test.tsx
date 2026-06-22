@@ -65,8 +65,6 @@ describe('useAnalytics', () => {
       switch (key) {
         case 'current-month':
           return { start: '2026-04-01', end: '2026-05-31' };
-        case 'all-time':
-          return { start: '2021-01-01', end: '2026-05-31' };
         default:
           return {};
       }

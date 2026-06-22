@@ -1,4 +1,5 @@
 import {
+  canApplyCustomDateRange,
   clampCustomDateRangeBounds,
   computeDateRange,
   dateRangeDaySpan,
@@ -50,26 +51,6 @@ describe('computeDateRange', () => {
     expect(r.start).toBe(start);
     expect(r.end).toBe(end);
   });
-
-  it('computes past year range', () => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth();
-    const start = localYmd(new Date(y, m - 11, 1));
-    const end = localYmd(new Date(y, m + 1, 0));
-    const r = computeDateRange('past-year');
-    expect(r.start).toBe(start);
-    expect(r.end).toBe(end);
-  });
-
-  it('computes all-time limited to five years', () => {
-    const now = new Date();
-    const start = localYmd(new Date(now.getFullYear() - 5, now.getMonth(), now.getDate()));
-    const end = localYmd(now);
-    const r = computeDateRange('all-time');
-    expect(r.start).toBe(start);
-    expect(r.end).toBe(end);
-  });
 });
 
 describe('formatDateRangeLabel', () => {
@@ -106,20 +87,11 @@ describe('resolveDateRange', () => {
     expect(resolveDateRange('custom')).toEqual({});
   });
 
-  it('uses fetched bounds for all-time', () => {
-    expect(resolveDateRange('all-time', null, { start: '2022-03-11', end: '2026-06-21' })).toEqual({
-      start: '2022-03-11',
+  it('clamps preset ranges into the available bounds', () => {
+    expect(resolveDateRange('ytd', null, { start: '2026-05-10', end: '2026-06-21' })).toEqual({
+      start: '2026-05-10',
       end: '2026-06-21',
     });
-  });
-
-  it('clamps preset ranges into the available bounds', () => {
-    expect(resolveDateRange('past-year', null, { start: '2026-05-10', end: '2026-06-21' })).toEqual(
-      {
-        start: '2026-05-10',
-        end: '2026-06-21',
-      }
-    );
   });
 });
 
@@ -148,6 +120,14 @@ describe('validateCustomDateRange', () => {
   it('accepts a range ending today', () => {
     expect(validateCustomDateRange('2026-01-15', bounds.end, bounds)).toBeNull();
     expect(isValidCustomDateRange('2026-01-15', bounds.end, bounds)).toBe(true);
+    expect(canApplyCustomDateRange('2026-01-15', bounds.end, bounds)).toBe(true);
+  });
+
+  it('does not treat incomplete ranges as applicable', () => {
+    expect(validateCustomDateRange('', '2026-01-31', bounds)).toBeNull();
+    expect(isValidCustomDateRange('', '2026-01-31', bounds)).toBe(true);
+    expect(canApplyCustomDateRange('', '2026-01-31', bounds)).toBe(false);
+    expect(canApplyCustomDateRange('2026-01-15', '', bounds)).toBe(false);
   });
 });
 

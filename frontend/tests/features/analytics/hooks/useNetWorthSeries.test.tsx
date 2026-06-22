@@ -181,7 +181,7 @@ describe('useNetWorthSeries', () => {
         return useNetWorthSeries(range);
       },
       {
-        initialProps: { range: 'past-2-months' as DateRangeKey },
+        initialProps: { range: 'last-month' as DateRangeKey },
         wrapper: TestWrapper,
       }
     );
@@ -196,7 +196,7 @@ describe('useNetWorthSeries', () => {
       );
     });
 
-    rerender({ range: 'past-3-months' as DateRangeKey });
+    rerender({ range: 'ytd' as DateRangeKey });
 
     await waitFor(() => {
       expect(
@@ -231,7 +231,7 @@ describe('useNetWorthSeries', () => {
         return useNetWorthSeries(range);
       },
       {
-        initialProps: { range: 'past-year' as DateRangeKey },
+        initialProps: { range: 'ytd' as DateRangeKey },
         wrapper: TestWrapper,
       }
     );

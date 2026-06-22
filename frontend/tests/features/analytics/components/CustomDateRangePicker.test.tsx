@@ -214,6 +214,23 @@ describe('CustomDateRangePicker', () => {
     expect(screen.getByLabelText('End date')).toHaveValue('2026-02-10');
   });
 
+  it('does not apply when the start date is cleared', () => {
+    const onApply = jest.fn();
+
+    renderCustomDateRangePicker({
+      open: true,
+      bounds,
+      value: { start: '2026-01-01', end: '2026-01-31' },
+      onApply,
+      onRequestClose: jest.fn(),
+    });
+
+    fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '' } });
+
+    expect(onApply).not.toHaveBeenCalled();
+    expect(screen.getByText('Enter a start and end date.')).toBeInTheDocument();
+  });
+
   it('shows validation when the start date is after the end date', () => {
     renderCustomDateRangePicker({
       open: true,

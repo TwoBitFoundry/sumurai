@@ -9,16 +9,7 @@ export type CustomDateRangeBounds = {
 
 export type DashboardDateBounds = CustomDateRangeBounds;
 
-export type DateRangeKey =
-  | 'current-month'
-  | 'last-month'
-  | 'ytd'
-  | 'custom'
-  | 'past-2-months'
-  | 'past-3-months'
-  | 'past-6-months'
-  | 'past-year'
-  | 'all-time';
+export type DateRangeKey = 'current-month' | 'last-month' | 'ytd' | 'custom';
 
 export const DEFAULT_DASHBOARD_DATE_RANGE: DateRangeKey = 'last-month';
 
@@ -27,7 +18,6 @@ export function computeDateRange(key?: DateRangeKey): { start?: string; end?: st
   const y = now.getFullYear();
   const m = now.getMonth();
   const firstOfMonth = (year: number, month0: number) => new Date(year, month0, 1);
-  const lastOfMonth = (year: number, month0: number) => new Date(year, month0 + 1, 0);
   const fmt = formatIsoDateLocal;
 
   switch (key) {
@@ -48,30 +38,6 @@ export function computeDateRange(key?: DateRangeKey): { start?: string; end?: st
     }
     case 'custom':
       return {};
-    case 'past-2-months': {
-      const start = firstOfMonth(y, m - 1);
-      const end = lastOfMonth(y, m);
-      return { start: fmt(start), end: fmt(end) };
-    }
-    case 'past-3-months': {
-      const start = firstOfMonth(y, m - 2);
-      const end = lastOfMonth(y, m);
-      return { start: fmt(start), end: fmt(end) };
-    }
-    case 'past-6-months': {
-      const start = firstOfMonth(y, m - 5);
-      const end = lastOfMonth(y, m);
-      return { start: fmt(start), end: fmt(end) };
-    }
-    case 'past-year': {
-      const start = firstOfMonth(y, m - 11);
-      const end = lastOfMonth(y, m);
-      return { start: fmt(start), end: fmt(end) };
-    }
-    case 'all-time': {
-      const fiveYearsAgo = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
-      return { start: fmt(fiveYearsAgo), end: fmt(now) };
-    }
     default:
       return {};
   }
@@ -189,6 +155,14 @@ export function isValidCustomDateRange(
   return validateCustomDateRange(start, end, bounds) === null;
 }
 
+export function canApplyCustomDateRange(
+  start: string,
+  end: string,
+  bounds?: DashboardDateBounds | null
+): boolean {
+  return Boolean(start && end) && isValidCustomDateRange(start, end, bounds);
+}
+
 export function clampCustomDateRangeBounds(
   bounds: CustomDateRangeBounds,
   dateBounds?: DashboardDateBounds | null
@@ -240,10 +214,6 @@ export function resolveDateRange(
       return clampCustomDateRangeBounds(customBounds, dateBounds);
     }
     return {};
-  }
-
-  if (key === 'all-time' && dateBounds) {
-    return dateBounds;
   }
 
   const computed = computeDateRange(key);

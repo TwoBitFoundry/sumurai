@@ -46,17 +46,7 @@ function writeCollapsibleExpandedMap(map: Record<string, boolean>): void {
   writeJson(SESSION_KEYS.collapsibleExpanded, map);
 }
 
-const DATE_RANGE_KEYS: DateRangeKey[] = [
-  'current-month',
-  'last-month',
-  'ytd',
-  'custom',
-  'past-2-months',
-  'past-3-months',
-  'past-6-months',
-  'past-year',
-  'all-time',
-];
+const DATE_RANGE_KEYS: DateRangeKey[] = ['current-month', 'last-month', 'ytd', 'custom'];
 
 function canUseSessionStorage(): boolean {
   return typeof window !== 'undefined' && typeof window.sessionStorage !== 'undefined';

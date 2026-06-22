@@ -16,11 +16,11 @@ import {
 } from '@/ui/recipes';
 import type { CustomDateRangeBounds, DashboardDateBounds } from '@/utils/dateRanges';
 import {
+  canApplyCustomDateRange,
   clampCustomDateRangeBounds,
   dateRangeDaySpan,
   defaultCustomDateRangeBounds,
   isoDateToSliderOffset,
-  isValidCustomDateRange,
   sliderOffsetToIsoDate,
   validateCustomDateRange,
 } from '@/utils/dateRanges';
@@ -147,12 +147,16 @@ export function CustomDateRangePicker({
     };
   }, [anchorRef, open]);
 
-  const isValid = useMemo(
-    () => isValidCustomDateRange(startDate, endDate, bounds),
-    [bounds, endDate, startDate]
-  );
-  const validationMessage =
-    hasInteracted && !isValid ? validateCustomDateRange(startDate, endDate, bounds) : null;
+  const validationMessage = useMemo(() => {
+    if (!hasInteracted) {
+      return null;
+    }
+    if (!startDate || !endDate) {
+      return 'Enter a start and end date.';
+    }
+    return validateCustomDateRange(startDate, endDate, bounds);
+  }, [bounds, endDate, hasInteracted, startDate]);
+  const isValid = validationMessage === null;
   const sliderValue = useMemo<[number, number]>(() => {
     if (!bounds) {
       return [0, 0];
@@ -175,7 +179,7 @@ export function CustomDateRangePicker({
   const handleStartChange = (nextStart: string) => {
     setHasInteracted(true);
     setStartDate(nextStart);
-    if (isValidCustomDateRange(nextStart, endDate, bounds)) {
+    if (canApplyCustomDateRange(nextStart, endDate, bounds)) {
       onApply({ start: nextStart, end: endDate });
     }
   };
@@ -183,7 +187,7 @@ export function CustomDateRangePicker({
   const handleEndChange = (nextEnd: string) => {
     setHasInteracted(true);
     setEndDate(nextEnd);
-    if (isValidCustomDateRange(startDate, nextEnd, bounds)) {
+    if (canApplyCustomDateRange(startDate, nextEnd, bounds)) {
       onApply({ start: startDate, end: nextEnd });
     }
   };

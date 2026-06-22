@@ -77,7 +77,7 @@ describe('useCashFlow', () => {
       switch (key) {
         case 'current-month':
           return { start: '2026-04-01', end: '2026-05-31' };
-        case 'past-3-months':
+        case 'ytd':
           return { start: '2026-02-01', end: '2026-05-31' };
         default:
           return {};
@@ -134,7 +134,7 @@ describe('useCashFlow', () => {
       { month: '2026-05', income: 900, expenses: 250, net: 650 },
     ]);
 
-    rerender({ range: 'past-3-months' as DateRangeKey });
+    rerender({ range: 'ytd' as DateRangeKey });
 
     await waitFor(() => {
       expect(result.current.refreshing).toBe(true);

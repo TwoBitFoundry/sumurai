@@ -42,7 +42,7 @@ describe('AnalyticsService (date-range endpoints)', () => {
       expect(result).toBe(1250.75);
     });
 
-    it('omits query params for all-time (no dates)', async () => {
+    it('omits query params when dates are omitted', async () => {
       jest.mocked(ApiClient.get).mockResolvedValue(0);
 
       const result = await AnalyticsService.getSpendingTotal();
@@ -84,7 +84,7 @@ describe('AnalyticsService (date-range endpoints)', () => {
       expect(result).toEqual(mockCategories);
     });
 
-    it('omits query params when no dates are provided (all-time)', async () => {
+    it('omits query params when dates are omitted', async () => {
       const mockCategories: AnalyticsCategoryResponse[] = [];
       jest.mocked(ApiClient.get).mockResolvedValue(mockCategories);
 

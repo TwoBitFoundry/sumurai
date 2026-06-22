@@ -68,7 +68,7 @@ describe('useSankey', () => {
       switch (key) {
         case 'current-month':
           return { start: '2026-04-01', end: '2026-05-31' };
-        case 'past-3-months':
+        case 'ytd':
           return { start: '2026-02-01', end: '2026-05-31' };
         default:
           return {};
@@ -136,7 +136,7 @@ describe('useSankey', () => {
 
     expect(result.current.data?.currency).toBe('USD');
 
-    rerender({ range: 'past-3-months' as DateRangeKey });
+    rerender({ range: 'ytd' as DateRangeKey });
 
     await waitFor(() => {
       expect(result.current.refreshing).toBe(true);

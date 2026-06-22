@@ -4,7 +4,6 @@ import {
   formatChartMonthLabel,
   generateMonthRange,
 } from '@/features/analytics/utils/chartMonth';
-import { computeDateRange } from '@/utils/dateRanges';
 
 describe('generateMonthRange', () => {
   it('includes March when the range starts on 2026-03-01', () => {
@@ -23,9 +22,10 @@ describe('generateMonthRange', () => {
 });
 
 describe('chartSeriesStartDate', () => {
-  it('extends past-2-months by one prior month', () => {
-    const { start, end } = computeDateRange('past-2-months');
-    const months = generateMonthRange(chartSeriesStartDate(start!), end!);
+  it('extends the range start by one prior month for chart series', () => {
+    const start = '2026-04-01';
+    const end = '2026-05-31';
+    const months = generateMonthRange(chartSeriesStartDate(start), end);
     expect(months).toHaveLength(3);
   });
 });

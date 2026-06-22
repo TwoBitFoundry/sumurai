@@ -16,6 +16,26 @@ const labelPillProps = {
   dateBounds: { start: '2026-01-01', end: '2026-06-21' },
 };
 
+function setupPickerWindow() {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: 1280,
+  });
+  Object.defineProperty(window, 'innerHeight', {
+    configurable: true,
+    writable: true,
+    value: 900,
+  });
+  window.dispatchEvent(new Event('resize'));
+}
+
+function openDateRangePicker() {
+  const pill = screen.getByRole('button', { name: /selected date range:.*choose custom range/i });
+  fireEvent.click(pill);
+  return pill;
+}
+
 describe('DateRangePillSlider', () => {
   it('renders preset labels and calls onChange with the selected range', () => {
     const onChange = jest.fn();
@@ -123,5 +143,120 @@ describe('DateRangeLabelPill', () => {
 
     const pill = screen.getByRole('button', { name: /selected date range:/i });
     expect(pill).toHaveTextContent('Custom');
+  });
+
+  it('restores the preset range when the picker is dismissed without applying', () => {
+    setupPickerWindow();
+    const onChange = jest.fn();
+    const onCustomDateRangeChange = jest.fn();
+
+    renderDateRangePillSlider(
+      <DateRangeLabelPill
+        dateRange="current-month"
+        onChange={onChange}
+        onCustomDateRangeChange={onCustomDateRangeChange}
+        dateBounds={labelPillProps.dateBounds}
+      />
+    );
+
+    openDateRangePicker();
+    fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '' } });
+    fireEvent.mouseDown(document.body);
+
+    expect(screen.queryByTestId('custom-date-range-picker-popover')).not.toBeInTheDocument();
+    expect(onChange).toHaveBeenCalledWith('current-month');
+    expect(onCustomDateRangeChange).not.toHaveBeenCalled();
+  });
+
+  it('restores the committed custom range when dismissed without applying', () => {
+    setupPickerWindow();
+    const onChange = jest.fn();
+    const onCustomDateRangeChange = jest.fn();
+    const customDateRange = { start: '2026-01-01', end: '2026-03-15' };
+
+    renderDateRangePillSlider(
+      <DateRangeLabelPill
+        dateRange="custom"
+        customDateRange={customDateRange}
+        onChange={onChange}
+        onCustomDateRangeChange={onCustomDateRangeChange}
+        dateBounds={labelPillProps.dateBounds}
+      />
+    );
+
+    openDateRangePicker();
+    fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '' } });
+    fireEvent.mouseDown(document.body);
+
+    expect(onCustomDateRangeChange).toHaveBeenCalledWith(customDateRange);
+    expect(onChange).toHaveBeenCalledWith('custom');
+  });
+
+  it('keeps the picker open after applying a custom range from a preset', () => {
+    setupPickerWindow();
+    const onChange = jest.fn();
+    const onCustomDateRangeChange = jest.fn();
+
+    const { rerender } = renderDateRangePillSlider(
+      <DateRangeLabelPill
+        dateRange="current-month"
+        onChange={onChange}
+        onCustomDateRangeChange={onCustomDateRangeChange}
+        dateBounds={labelPillProps.dateBounds}
+      />
+    );
+
+    openDateRangePicker();
+    fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2026-02-01' } });
+    fireEvent.change(screen.getByLabelText('End date'), { target: { value: '2026-02-28' } });
+
+    expect(screen.getByTestId('custom-date-range-picker-popover')).toBeInTheDocument();
+    expect(onChange).toHaveBeenCalledWith('custom');
+    expect(onCustomDateRangeChange).toHaveBeenCalledWith({
+      start: '2026-02-01',
+      end: '2026-02-28',
+    });
+
+    rerender(
+      <ControlTooltipProvider>
+        <DateRangeLabelPill
+          dateRange="custom"
+          customDateRange={{ start: '2026-02-01', end: '2026-02-28' }}
+          onChange={onChange}
+          onCustomDateRangeChange={onCustomDateRangeChange}
+          dateBounds={labelPillProps.dateBounds}
+        />
+      </ControlTooltipProvider>
+    );
+
+    expect(screen.getByTestId('custom-date-range-picker-popover')).toBeInTheDocument();
+  });
+
+  it('keeps an applied custom range when dismissed after a later invalid edit', () => {
+    setupPickerWindow();
+    const onChange = jest.fn();
+    const onCustomDateRangeChange = jest.fn();
+
+    renderDateRangePillSlider(
+      <DateRangeLabelPill
+        dateRange="current-month"
+        onChange={onChange}
+        onCustomDateRangeChange={onCustomDateRangeChange}
+        dateBounds={labelPillProps.dateBounds}
+      />
+    );
+
+    openDateRangePicker();
+    fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2026-02-01' } });
+    fireEvent.change(screen.getByLabelText('End date'), { target: { value: '2026-02-28' } });
+
+    onChange.mockClear();
+    onCustomDateRangeChange.mockClear();
+
+    fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '' } });
+    fireEvent.mouseDown(document.body);
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onCustomDateRangeChange).not.toHaveBeenCalled();
   });
 });

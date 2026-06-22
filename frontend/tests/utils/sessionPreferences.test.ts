@@ -45,8 +45,8 @@ describe('sessionPreferences', () => {
   });
 
   it('stores and restores dashboard date range', () => {
-    setSessionDashboardDateRange('past-3-months');
-    expect(getSessionDashboardDateRange()).toBe('past-3-months');
+    setSessionDashboardDateRange('ytd');
+    expect(getSessionDashboardDateRange()).toBe('ytd');
   });
 
   it('stores and restores dashboard custom date range', () => {

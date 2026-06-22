@@ -65,40 +65,12 @@ fn aggregate(category: &str, income: Decimal, expense: Decimal, count: i64) -> C
     }
 }
 
-fn months_back(year: i32, month: u32, back: u32) -> (i32, u32) {
-    let total_months = year * 12 + (month as i32) - 1 - (back as i32);
-    let new_year = total_months.div_euclid(12);
-    let new_month0 = total_months.rem_euclid(12);
-    (new_year, (new_month0 + 1) as u32)
-}
-
 fn get_period_date_range(period: &str) -> Option<(NaiveDate, NaiveDate)> {
     let now = chrono::Utc::now().naive_utc().date();
     let year = now.year();
     let month = now.month();
     match period {
         "current-month" => Some(get_month_range(year, month)),
-        "past-2-months" => {
-            let (sy, sm) = months_back(year, month, 1);
-            Some((
-                NaiveDate::from_ymd_opt(sy, sm, 1).unwrap(),
-                get_month_range(year, month).1,
-            ))
-        }
-        "past-6-months" => {
-            let (sy, sm) = months_back(year, month, 5);
-            Some((
-                NaiveDate::from_ymd_opt(sy, sm, 1).unwrap(),
-                get_month_range(year, month).1,
-            ))
-        }
-        "past-year" => {
-            let (sy, sm) = months_back(year, month, 11);
-            Some((
-                NaiveDate::from_ymd_opt(sy, sm, 1).unwrap(),
-                get_month_range(year, month).1,
-            ))
-        }
         _ => None,
     }
 }
@@ -553,7 +525,7 @@ fn given_current_month_transactions_when_calculating_spending_then_sums_correctl
 }
 
 #[test]
-fn given_transactions_with_categories_when_grouping_all_time_then_sums_by_category() {
+fn given_transactions_with_categories_when_grouping_without_period_filter_then_sums_by_category() {
     let _analytics = AnalyticsService::new();
     let txns = vec![
         create_test_transaction(
@@ -573,7 +545,7 @@ fn given_transactions_with_categories_when_grouping_all_time_then_sums_by_catego
         ),
     ];
 
-    let result = group_by_category(&txns, "all-time");
+    let result = group_by_category(&txns, "unfiltered");
     assert_eq!(result.len(), 2);
     let food = result.iter().find(|c| c.name == "Food").unwrap();
     let transport = result.iter().find(|c| c.name == "Transport").unwrap();
