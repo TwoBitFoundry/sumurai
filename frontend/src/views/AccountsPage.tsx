@@ -23,6 +23,7 @@ import { SyncAllStatusToast } from '../features/sync/components/SyncAllStatusToa
 import { SyncInstitutionStatusToast } from '../features/sync/components/SyncInstitutionStatusToast';
 import { useSyncAllOrchestrator } from '../features/sync/hooks/useSyncAllOrchestrator';
 import type { SyncAllRow } from '../features/sync/types/syncAllStatus';
+import { isProviderReconnectRequiredError } from '../features/sync/utils/isProviderReconnectRequiredError';
 import { useAccountFilter } from '../hooks/useAccountFilter';
 import { useExport } from '../hooks/useExport';
 import { useFinancialConnection } from '../hooks/useFinancialConnection';
@@ -30,7 +31,6 @@ import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { usePlaidConnections } from '../hooks/usePlaidConnections';
 import { useProviderCatalog } from '../hooks/useProviderCatalog';
 import { PageLayout } from '../layouts/PageLayout';
-import { ApiError } from '../services/ApiClient';
 import { DiyService } from '../services/DiyService';
 import { PlaidService } from '../services/PlaidService';
 import { SimpleFinService } from '../services/SimpleFinService';
@@ -623,10 +623,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       } catch (error) {
         console.warn('Failed to sync bank', error);
         const message = formatUserFacingApiError(error, `Failed to sync ${bank.name}`);
-        const nextStatus =
-          error instanceof ApiError && (error.status === 401 || error.status === 403)
-            ? 'needs_reauth'
-            : 'error';
+        const nextStatus = isProviderReconnectRequiredError(error) ? 'needs_reauth' : 'error';
         setSyncInstitutionRow({
           ...startRow,
           status: nextStatus === 'needs_reauth' ? 'auth_required' : 'error',

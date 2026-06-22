@@ -138,7 +138,7 @@ export class FetchHttpClient implements IHttpClient {
       case 403:
         return new ForbiddenError(errorMessage, errorCode ?? 'FORBIDDEN');
       case 404:
-        return new NotFoundError(errorMessage);
+        return new NotFoundError(errorMessage, errorCode ?? 'NOT_FOUND');
       case 409:
         return new ConflictError(errorMessage, errorData);
       case 429:

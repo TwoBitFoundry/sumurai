@@ -14,6 +14,7 @@ import {
 } from '@/utils/queryInvalidation';
 import type { SyncAllRow, SyncAllRowStatus } from '../types/syncAllStatus';
 import { buildSyncAllRows, type SyncAllBank } from '../utils/buildSyncAllRows';
+import { isProviderReconnectRequiredError } from '../utils/isProviderReconnectRequiredError';
 
 interface UseSyncAllOrchestratorOptions {
   banks: BankConnectionViewModel[];
@@ -35,9 +36,6 @@ const AUTO_CLOSE_DELAY_MS = 5000;
 
 const isRateLimitError = (error: unknown): error is RateLimitError | ApiError =>
   error instanceof RateLimitError || (error instanceof ApiError && error.status === 429);
-
-const isAuthRequiredError = (error: unknown): error is ApiError =>
-  error instanceof ApiError && (error.status === 401 || error.status === 403);
 
 const mapBanksToSyncRows = (banks: BankConnectionViewModel[]): SyncAllRow[] => {
   const syncBanks: SyncAllBank[] = banks
@@ -278,7 +276,7 @@ export function useSyncAllOrchestrator({
             break;
           }
 
-          const isAuthRequired = isAuthRequiredError(error);
+          const isAuthRequired = isProviderReconnectRequiredError(error);
           const detail = isAuthRequired
             ? 'Re-authenticate this institution to continue syncing.'
             : formatUserFacingApiError(error, `Failed to sync ${bank.name}`);
