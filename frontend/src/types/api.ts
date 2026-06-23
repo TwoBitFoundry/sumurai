@@ -415,6 +415,12 @@ export interface LogoutResponse {
   cleared_session: string;
 }
 
+export interface OnboardingResponse {
+  message: string;
+  onboarding_completed: boolean;
+  demo_mode_active: boolean;
+}
+
 export interface PasskeyItem {
   id: string;
   name: string;

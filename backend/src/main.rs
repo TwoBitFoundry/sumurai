@@ -559,6 +559,10 @@ pub fn create_app(state: AppState) -> Router {
             put(complete_user_onboarding),
         )
         .route(
+            "/api/auth/onboarding/demo",
+            post(activate_demo_mode_onboarding),
+        )
+        .route(
             "/api/transactions/categories",
             get(get_authenticated_transaction_categories),
         )
@@ -1173,6 +1177,7 @@ async fn complete_user_onboarding(
             Ok(Json(OnboardingCompleteResponse {
                 message: "Onboarding completed successfully".to_string(),
                 onboarding_completed: true,
+                demo_mode_active: false,
             }))
         }
         Err(e) => {
@@ -1186,6 +1191,53 @@ async fn complete_user_onboarding(
             ))
         }
     }
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/auth/onboarding/demo",
+    description = "Seeds the shared demo workspace for the authenticated user and marks onboarding complete.",
+    responses(
+        (status = 200, description = "Demo mode activated", body = OnboardingCompleteResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Authentication"
+)]
+async fn activate_demo_mode_onboarding(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<OnboardingCompleteResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+
+    let user = state
+        .db_repository
+        .get_user_by_id(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to load user {} for demo onboarding: {}", user_id, e);
+            ApiErrorResponse::internal_server_error("Failed to load user")
+        })?
+        .ok_or_else(|| ApiErrorResponse::internal_server_error("Failed to load user"))?;
+
+    services::DemoModeService::activate_demo_workspace_for_user(
+        &state.db_repository,
+        &state.cache_service,
+        &user,
+        true,
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to activate demo mode for user {}: {}", user_id, e);
+        ApiErrorResponse::internal_server_error("Failed to activate demo mode")
+    })?;
+
+    Ok(Json(OnboardingCompleteResponse {
+        message: "Demo mode activated successfully".to_string(),
+        onboarding_completed: true,
+        demo_mode_active: true,
+    }))
 }
 
 #[utoipa::path(

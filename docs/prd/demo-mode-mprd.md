@@ -260,11 +260,23 @@ financial seed path.
 - Set `user.provider = "simplefin"` when the demo workspace is activated.
 
 **Acceptance criteria**
-- [ ] Demo activation seeds one synced institution and one DIY institution.
-- [ ] The dataset contains at least 300 transactions.
-- [ ] Every system category slug is represented at least once.
-- [ ] Fake budgets exist for represented budget-eligible spend categories.
-- [ ] Every seeded transaction has raw and normalized merchant fields.
+- [x] Demo activation seeds one synced institution and one DIY institution.
+- [x] The dataset contains at least 300 transactions.
+- [x] Every system category slug is represented at least once.
+- [x] Fake budgets exist for represented budget-eligible spend categories.
+- [x] Every seeded transaction has raw and normalized merchant fields.
+
+**TDD log**
+- Red: rewrote `backend/src/tests/seed_simplefin_tests.rs` around the shared
+  service boundary to assert synced + DIY seeding, category coverage, runtime
+  offsets, recurring `OTHER` merchants, budget creation, and normalized
+  merchant persistence.
+- Green: `DemoModeService` now owns the authored demo dataset, deterministic
+  connection/account ids, runtime date shifting, merchant normalization, budget
+  seeding, and provider selection updates for demo activation.
+- Verification:
+  `cargo test -p sumurai-backend --locked seed_simplefin_tests`
+  `cargo check -p sumurai-backend --locked`
 
 ## Phase 4 — Stable runtime date offsets
 
@@ -284,12 +296,22 @@ financial seed path.
   merchants, category intent, recurrence pattern, and ordering logic.
 
 **Acceptance criteria**
-- [ ] The latest generated seeded transaction date equals the current UTC date
+- [x] The latest generated seeded transaction date equals the current UTC date
       when seeding happens after the authored baseline latest date.
-- [ ] Relative day gaps between authored transactions are preserved exactly after
+- [x] Relative day gaps between authored transactions are preserved exactly after
       shifting.
-- [ ] Recurring monthly patterns remain monthly after shifting.
-- [ ] Seeding before the authored baseline latest date applies an offset of `0`.
+- [x] Recurring monthly patterns remain monthly after shifting.
+- [x] Seeding before the authored baseline latest date applies an offset of `0`.
+
+**TDD log**
+- Red: added offset-focused assertions in
+  `backend/src/tests/seed_simplefin_tests.rs` for pre-baseline no-op behavior,
+  post-baseline offset growth, and preserved monthly day gaps in shifted demo
+  transactions.
+- Green: the authored dataset now uses fixed baseline dates with a single
+  `runtime_offset_days` rule applied uniformly before persistence.
+- Verification:
+  `cargo test -p sumurai-backend --locked seed_simplefin_tests`
 
 ## Phase 5 — Onboarding demo activation path
 
@@ -309,11 +331,26 @@ onboarding.
   real institution immediately without entering the seeded demo workspace.
 
 **Acceptance criteria**
-- [ ] The onboarding CTA label is `Try demo mode`.
-- [ ] Choosing that CTA creates the seeded demo workspace and completes
+- [x] The onboarding CTA label is `Try demo mode`.
+- [x] Choosing that CTA creates the seeded demo workspace and completes
       onboarding.
-- [ ] Linking a real institution from onboarding still works without seeding the
+- [x] Linking a real institution from onboarding still works without seeding the
       demo dataset first.
+
+**TDD log**
+- Red: added an authenticated backend handler test for
+  `POST /api/auth/onboarding/demo` and updated
+  `frontend/tests/components/onboarding/OnboardingProviderPicker.test.tsx` to
+  verify the new CTA and its dedicated auth-service call.
+- Green: onboarding now exposes a protected demo-activation endpoint, returns
+  `demo_mode_active`, calls the shared demo service, and preserves the existing
+  real-provider completion flow.
+- Verification:
+  `cargo test -p sumurai-backend --locked auth_handlers_integration_tests::given_authenticated_user_when_activating_demo_mode_then_seeds_workspace_and_marks_onboarding_complete`
+  `bun --cwd=frontend run test OnboardingProviderPicker`
+  `bun --cwd=frontend run test AuthService.integration`
+  `bun --cwd=frontend run typecheck`
+  `bun --cwd=frontend run build`
 
 ## Phase 6 — Demo badge and exit warnings
 

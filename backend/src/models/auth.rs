@@ -194,10 +194,11 @@ pub struct LogoutResponse {
 }
 
 #[derive(Serialize, ToSchema)]
-#[schema(example = json!({"message": "Onboarding completed successfully", "onboarding_completed": true}))]
+#[schema(example = json!({"message": "Onboarding completed successfully", "onboarding_completed": true, "demo_mode_active": false}))]
 pub struct OnboardingCompleteResponse {
     pub message: String,
     pub onboarding_completed: bool,
+    pub demo_mode_active: bool,
 }
 
 #[derive(Serialize, ToSchema)]
