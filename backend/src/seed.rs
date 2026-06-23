@@ -85,23 +85,23 @@ pub fn is_demo_simplefin_seeded(provider_txn_ids: &[String]) -> bool {
 pub async fn maybe_seed_demo_user(
     db: &Arc<dyn DatabaseRepository>,
     auth: &Arc<AuthService>,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<Option<User>> {
     if !std::env::var("SEED_DEMO_USER")
         .map(|v| v.eq_ignore_ascii_case("true"))
         .unwrap_or(false)
     {
-        return Ok(());
+        return Ok(None);
     }
 
     match db.get_user_by_email(DEMO_EMAIL).await {
-        Ok(Some(_)) => {
+        Ok(Some(user)) => {
             tracing::debug!("Demo user {} already exists, skipping seed", DEMO_EMAIL);
-            return Ok(());
+            return Ok(Some(user));
         }
         Ok(None) => {}
         Err(e) => {
             tracing::warn!("Could not check for demo user: {}", e);
-            return Ok(());
+            return Ok(None);
         }
     }
 
@@ -117,44 +117,23 @@ pub async fn maybe_seed_demo_user(
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: true,
-        demo_mode_active: false,
+        demo_mode_active: true,
     };
 
     if let Err(e) = db.create_user(&user).await {
         tracing::warn!("Failed to seed demo user: {}", e);
-        return Ok(());
+        return Ok(None);
     }
 
     tracing::info!("Demo user {} seeded (password login enabled)", DEMO_EMAIL);
-    Ok(())
+    Ok(Some(user))
 }
 
-pub async fn maybe_seed_demo_simplefin_data(
+pub(crate) async fn seed_demo_simplefin_workspace_for_user(
     db: &Arc<dyn DatabaseRepository>,
     cache_service: &Arc<dyn CacheService>,
+    user: &User,
 ) -> anyhow::Result<()> {
-    if !std::env::var("SEED_DEMO_USER")
-        .map(|v| v.eq_ignore_ascii_case("true"))
-        .unwrap_or(false)
-    {
-        return Ok(());
-    }
-
-    let user = match db.get_user_by_email(DEMO_EMAIL).await {
-        Ok(Some(u)) => u,
-        Ok(None) => {
-            tracing::warn!(
-                "Demo user {} not found, skipping SimpleFin seed",
-                DEMO_EMAIL
-            );
-            return Ok(());
-        }
-        Err(e) => {
-            tracing::warn!("Could not look up demo user for SimpleFin seed: {}", e);
-            return Ok(());
-        }
-    };
-
     let user_id = user.id;
     let item_id = format!("simplefin_{}_sumurai_demo", user_id);
 
@@ -484,7 +463,7 @@ pub async fn maybe_seed_demo_simplefin_data(
         .await
         .map_err(|e| anyhow::anyhow!("Failed to seed demo SimpleFin snapshot: {}", e))?;
 
-    tracing::info!("Demo SimpleFin data seeded for me@test.com");
+    tracing::info!("Demo SimpleFin data seeded for {}", user.email);
     Ok(())
 }
 

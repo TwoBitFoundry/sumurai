@@ -276,6 +276,15 @@ async fn given_register_and_finish_when_authenticated_request_then_succeeds() {
     assert!(finish_json.get("user_id").is_some());
     assert!(finish_json.get("expires_at").is_some());
 
+    let stored_user = stored_users
+        .lock()
+        .unwrap()
+        .values()
+        .next()
+        .cloned()
+        .expect("stored user");
+    assert!(stored_user.demo_mode_active);
+
     let list_request = axum::http::Request::builder()
         .method(Method::GET)
         .uri("/api/auth/passkey")

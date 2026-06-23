@@ -213,9 +213,20 @@ financial seed path.
   the same seeded demo workspace as any other demo user.
 
 **Acceptance criteria**
-- [ ] First-party new user creation persists `demo_mode_active = true`.
-- [ ] `me@test.com` no longer depends on a legacy special financial seed path.
-- [ ] Only one shared service owns demo financial seeding.
+- [x] First-party new user creation persists `demo_mode_active = true`.
+- [x] `me@test.com` no longer depends on a legacy special financial seed path.
+- [x] Only one shared service owns demo financial seeding.
+
+**TDD log**
+- Red: extended passkey registration coverage to assert newly created users are
+  demo-ready by default, and moved demo financial seed coverage to the shared
+  service boundary in `backend/src/tests/seed_simplefin_tests.rs`.
+- Green: passkey-finish signup now writes `demo_mode_active = true`,
+  `maybe_seed_demo_user` creates `me@test.com` with the same state, and startup
+  seeding now routes through `DemoModeService`.
+- Verification:
+  `cargo test -p sumurai-backend --locked passkey_registration_tests::given_register_and_finish_when_authenticated_request_then_succeeds`
+  `cargo test -p sumurai-backend --locked seed_simplefin_tests`
 
 ## Phase 3 — Shared demo activation service and dataset authoring
 

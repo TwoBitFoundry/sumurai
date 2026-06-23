@@ -328,8 +328,14 @@ async fn main() -> anyhow::Result<()> {
 
     let auth_service = Arc::new(AuthService::new(jwt_secret)?);
 
-    seed::maybe_seed_demo_user(&db_repository, &auth_service).await?;
-    crate::seed::maybe_seed_demo_simplefin_data(&db_repository, &cache_service).await?;
+    if let Some(demo_user) = seed::maybe_seed_demo_user(&db_repository, &auth_service).await? {
+        services::DemoModeService::seed_demo_workspace_for_user(
+            &db_repository,
+            &cache_service,
+            &demo_user,
+        )
+        .await?;
+    }
 
     let model_dir = CategorizationService::model_dir();
     tracing::info!(
@@ -5406,7 +5412,7 @@ async fn finish_passkey_registration(
             created_at: Utc::now(),
             updated_at: Utc::now(),
             onboarding_completed: false,
-            demo_mode_active: false,
+            demo_mode_active: true,
         };
         if let Err(e) = state.db_repository.create_user(&new_user).await {
             tracing::warn!(

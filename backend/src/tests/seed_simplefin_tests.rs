@@ -3,8 +3,10 @@ use crate::models::transaction::Transaction;
 use crate::seed;
 use crate::services::cache_service::MockCacheService;
 use crate::services::categorization::classifier_labels::deterministic_prediction;
+use crate::services::demo_mode_service::DemoModeService;
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::subscription_detection::exclusions::is_excluded;
+use crate::services::AuthService;
 use chrono::NaiveDate;
 use rust_decimal_macros::dec;
 use std::collections::HashMap;
@@ -20,7 +22,7 @@ fn demo_user() -> User {
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: true,
-        demo_mode_active: false,
+        demo_mode_active: true,
     }
 }
 
@@ -91,7 +93,7 @@ fn demo_entity_ids_are_stable_for_the_same_user_and_key() {
 }
 
 #[tokio::test]
-async fn skips_when_demo_user_not_found() {
+async fn maybe_seed_demo_user_creates_demo_ready_user() {
     std::env::set_var("SEED_DEMO_USER", "true");
 
     let mut mock_db = MockDatabaseRepository::new();
@@ -100,17 +102,23 @@ async fn skips_when_demo_user_not_found() {
         .with(mockall::predicate::eq(seed::DEMO_EMAIL))
         .times(1)
         .returning(|_| Box::pin(async { Ok(None) }));
-    mock_db
-        .expect_get_provider_transaction_ids_for_user()
-        .times(0);
+    mock_db.expect_create_user().times(1).returning(|user| {
+        assert_eq!(user.email, seed::DEMO_EMAIL);
+        assert!(user.demo_mode_active);
+        Box::pin(async { Ok(()) })
+    });
 
-    let mock_cache = MockCacheService::new();
+    let auth = Arc::new(
+        AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap(),
+    );
     let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
-    let cache: Arc<dyn crate::services::CacheService> = Arc::new(mock_cache);
 
-    seed::maybe_seed_demo_simplefin_data(&db, &cache)
+    let user = seed::maybe_seed_demo_user(&db, &auth)
         .await
-        .unwrap();
+        .unwrap()
+        .expect("demo user");
+
+    assert!(user.demo_mode_active);
 }
 
 #[tokio::test]
@@ -125,14 +133,6 @@ async fn skips_when_demo_transactions_already_seeded() {
         .collect();
 
     let mut mock_db = MockDatabaseRepository::new();
-    mock_db
-        .expect_get_user_by_email()
-        .with(mockall::predicate::eq(seed::DEMO_EMAIL))
-        .times(1)
-        .returning(move |_| {
-            let u = user.clone();
-            Box::pin(async move { Ok(Some(u)) })
-        });
     mock_db
         .expect_get_provider_transaction_ids_for_user()
         .with(mockall::predicate::eq(user_id))
@@ -153,7 +153,7 @@ async fn skips_when_demo_transactions_already_seeded() {
     let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
     let cache: Arc<dyn crate::services::CacheService> = Arc::new(mock_cache);
 
-    seed::maybe_seed_demo_simplefin_data(&db, &cache)
+    DemoModeService::seed_demo_workspace_for_user(&db, &cache, &user)
         .await
         .unwrap();
 }
@@ -184,7 +184,7 @@ async fn seeds_atomic_snapshot_with_twenty_six_transactions() {
     let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
     let cache: Arc<dyn crate::services::CacheService> = Arc::new(mock_cache);
 
-    seed::maybe_seed_demo_simplefin_data(&db, &cache)
+    DemoModeService::seed_demo_workspace_for_user(&db, &cache, &user)
         .await
         .unwrap();
 }
@@ -218,7 +218,7 @@ async fn transaction_original_merchant_names_match_raw_descriptions() {
     let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
     let cache: Arc<dyn crate::services::CacheService> = Arc::new(mock_cache);
 
-    seed::maybe_seed_demo_simplefin_data(&db, &cache)
+    DemoModeService::seed_demo_workspace_for_user(&db, &cache, &user)
         .await
         .unwrap();
 }
@@ -242,7 +242,7 @@ async fn phase8_subscription_scenarios_present_in_simplefin_seed_for_demo_user_o
     let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
     let cache: Arc<dyn crate::services::CacheService> = Arc::new(mock_cache);
 
-    seed::maybe_seed_demo_simplefin_data(&db, &cache)
+    DemoModeService::seed_demo_workspace_for_user(&db, &cache, &user)
         .await
         .unwrap();
 
