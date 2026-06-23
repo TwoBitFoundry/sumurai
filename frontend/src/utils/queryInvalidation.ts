@@ -26,6 +26,18 @@ const CONNECTION_QUERY_KEYS: Record<SyncProvider, readonly [string, string]> = {
   simplefin: ['simplefin', 'connections'],
 } as const;
 
+const APP_REFRESH_RESET_QUERY_KEYS = [
+  ['accounts'],
+  ['analytics'],
+  ['sankey'],
+  ['budgets'],
+  ['provider', 'catalog'],
+  ['plaid', 'connections'],
+  ['teller', 'connections'],
+  ['simplefin', 'connections'],
+  ['simplefin', 'ignored-institutions'],
+] as const;
+
 export async function invalidateStaleCacheQueries(
   queryClient: QueryClient,
   providers: SyncProvider[],
@@ -52,6 +64,14 @@ export async function refreshFinancialDataAfterProviderChange(
 ): Promise<void> {
   await invalidateStaleCacheQueries(queryClient, providers, options);
   await queryClient.refetchQueries({ queryKey: ['accounts'], type: 'active' });
+}
+
+export async function resetFinancialQueriesForAppRefresh(queryClient: QueryClient): Promise<void> {
+  await resetTransactionQueries(queryClient, 'remove');
+
+  await Promise.all(
+    APP_REFRESH_RESET_QUERY_KEYS.map((queryKey) => queryClient.removeQueries({ queryKey }))
+  );
 }
 
 const CATEGORIZATION_DEPENDENT_QUERY_KEYS = [['transactions'], ['analytics'], ['budgets']] as const;

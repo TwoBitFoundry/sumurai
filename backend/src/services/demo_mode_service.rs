@@ -94,11 +94,8 @@ impl DemoModeService {
     ) -> Result<bool> {
         let connections = db.get_all_provider_connections_by_user(user_id).await?;
         Ok(connections.iter().any(|connection| {
-            connection.item_id == seed::SUMURAI_DEMO_TELLER_ITEM_ID
-                || connection
-                    .institution_name
-                    .as_deref()
-                    .is_some_and(|name| name == "Sumurai Demo Bank")
+            connection.user_id == *user_id
+                && connection.item_id == seed::demo_teller_item_id(*user_id)
         }))
     }
 
@@ -168,6 +165,7 @@ impl DemoModeService {
 
         if mark_onboarding_complete {
             db.mark_onboarding_complete(&user_id).await?;
+            db.set_demo_mode_active(&user_id, true).await?;
         }
 
         Ok(())
@@ -252,7 +250,7 @@ fn build_teller_connection(user_id: Uuid, now: chrono::DateTime<Utc>) -> Provide
     ProviderConnection {
         id: seed::demo_entity_id(user_id, TELLER_CONNECTION_KEY),
         user_id,
-        item_id: seed::SUMURAI_DEMO_TELLER_ITEM_ID.to_string(),
+        item_id: seed::demo_teller_item_id(user_id),
         provider: "teller".to_string(),
         is_connected: true,
         last_sync_at: Some(now),
@@ -279,7 +277,10 @@ fn build_synced_accounts(
         Account {
             id: ids.checking,
             user_id: Some(user_id),
-            provider_account_id: Some("sumurai_demo_dep_checking".to_string()),
+            provider_account_id: Some(seed::demo_provider_account_id(
+                user_id,
+                "sumurai_demo_dep_checking",
+            )),
             provider_connection_id: Some(connection.id),
             name: "Sumurai Checking (1001)".to_string(),
             account_type: "depository".to_string(),
@@ -291,7 +292,10 @@ fn build_synced_accounts(
         Account {
             id: ids.savings,
             user_id: Some(user_id),
-            provider_account_id: Some("sumurai_demo_dep_savings".to_string()),
+            provider_account_id: Some(seed::demo_provider_account_id(
+                user_id,
+                "sumurai_demo_dep_savings",
+            )),
             provider_connection_id: Some(connection.id),
             name: "Sumurai Savings (2001)".to_string(),
             account_type: "depository".to_string(),
@@ -303,7 +307,10 @@ fn build_synced_accounts(
         Account {
             id: ids.credit,
             user_id: Some(user_id),
-            provider_account_id: Some("sumurai_demo_credit".to_string()),
+            provider_account_id: Some(seed::demo_provider_account_id(
+                user_id,
+                "sumurai_demo_credit",
+            )),
             provider_connection_id: Some(connection.id),
             name: "Sumurai Credit Card (3001)".to_string(),
             account_type: "credit".to_string(),
@@ -315,7 +322,10 @@ fn build_synced_accounts(
         Account {
             id: ids.investment,
             user_id: Some(user_id),
-            provider_account_id: Some("sumurai_demo_investment".to_string()),
+            provider_account_id: Some(seed::demo_provider_account_id(
+                user_id,
+                "sumurai_demo_investment",
+            )),
             provider_connection_id: Some(connection.id),
             name: "Sumurai Brokerage IRA (4001)".to_string(),
             account_type: "investment".to_string(),
@@ -327,7 +337,7 @@ fn build_synced_accounts(
         Account {
             id: ids.loan,
             user_id: Some(user_id),
-            provider_account_id: Some("sumurai_demo_loan".to_string()),
+            provider_account_id: Some(seed::demo_provider_account_id(user_id, "sumurai_demo_loan")),
             provider_connection_id: Some(connection.id),
             name: "Sumurai Auto Loan (5001)".to_string(),
             account_type: "loan".to_string(),
@@ -372,7 +382,10 @@ fn build_diy_accounts(user_id: Uuid, connection_id: Uuid, ids: &DiyAccountIds) -
         Account {
             id: ids.cash,
             user_id: Some(user_id),
-            provider_account_id: Some("sumurai_demo_diy_cash".to_string()),
+            provider_account_id: Some(seed::demo_provider_account_id(
+                user_id,
+                "sumurai_demo_diy_cash",
+            )),
             provider_connection_id: Some(connection_id),
             name: "DIY Cash Envelope".to_string(),
             account_type: "cash".to_string(),
@@ -384,7 +397,10 @@ fn build_diy_accounts(user_id: Uuid, connection_id: Uuid, ids: &DiyAccountIds) -
         Account {
             id: ids.travel,
             user_id: Some(user_id),
-            provider_account_id: Some("sumurai_demo_diy_travel".to_string()),
+            provider_account_id: Some(seed::demo_provider_account_id(
+                user_id,
+                "sumurai_demo_diy_travel",
+            )),
             provider_connection_id: Some(connection_id),
             name: "DIY Travel Fund".to_string(),
             account_type: "savings".to_string(),
@@ -1112,7 +1128,10 @@ async fn to_transactions(
             account_id: authored.account_id,
             user_id: Some(user_id),
             provider_account_id: None,
-            provider_transaction_id: Some(authored.provider_transaction_id.clone()),
+            provider_transaction_id: Some(seed::demo_scoped_provider_id(
+                user_id,
+                &authored.provider_transaction_id,
+            )),
             amount: authored.amount,
             date: authored.date,
             merchant_name: Some(authored.raw_merchant.clone()),

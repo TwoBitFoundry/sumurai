@@ -230,6 +230,11 @@ async fn given_authenticated_user_when_activating_demo_mode_then_seeds_workspace
         .withf(move |id| *id == user_id)
         .times(1)
         .returning(|_| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_set_demo_mode_active()
+        .withf(move |id, active| *id == user_id && *active)
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
 
     let mut mock_cache = create_auth_cookie_cache();
     mock_cache

@@ -4,7 +4,7 @@ mod tests {
     use crate::models::plaid::ProviderConnection;
     use crate::models::transaction::Transaction;
     use crate::providers::ProviderRegistry;
-    use crate::seed::SUMURAI_DEMO_TELLER_ITEM_ID;
+    use crate::seed::demo_teller_item_id;
     use crate::services::cache_service::MockCacheService;
     use crate::services::connection_service::ConnectionService;
     use crate::services::merchant_normalization::service::MerchantNormalizationService;
@@ -71,7 +71,7 @@ mod tests {
         demo_accounts: Vec<Account>,
         demo_transactions: Vec<Transaction>,
     ) -> DemoSyncHarness {
-        let mut connection = ProviderConnection::new(user_id, SUMURAI_DEMO_TELLER_ITEM_ID);
+        let mut connection = ProviderConnection::new(user_id, &demo_teller_item_id(user_id));
         connection.id = connection_id;
         connection.provider = "teller".to_string();
         connection.institution_id = Some("teller".to_string());

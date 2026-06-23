@@ -45,7 +45,7 @@ mod tests;
 mod utils;
 #[cfg(test)]
 pub use tests::test_fixtures;
-use utils::seed_password_fallback::seed_user_password_fallback;
+use utils::seed_password_fallback::{dev_password_auth_enabled, user_has_password};
 use utils::webauthn_credentials::{
     count_usable_credentials, has_usable_passkey, is_usable_credential, usable_passkeys,
 };
@@ -5864,7 +5864,7 @@ async fn login_with_password(
             ApiErrorResponse::internal_server_error("Authentication service error")
         })?;
 
-    if has_usable_passkey(&passkeys) && !seed_user_password_fallback(&user) {
+    if has_usable_passkey(&passkeys) && !dev_password_auth_enabled() {
         return Err(ApiErrorResponse::unauthorized(INVALID_CREDENTIALS));
     }
 
@@ -5926,7 +5926,7 @@ async fn login_with_password(
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
             demo_mode_active: user.demo_mode_active,
-            requires_passkey_enrollment: !seed_user_password_fallback(&user),
+            requires_passkey_enrollment: !dev_password_auth_enabled(),
         }),
     ))
 }
@@ -5981,7 +5981,7 @@ async fn begin_passkey_login(
             ApiErrorResponse::internal_server_error("Authentication service error")
         })?;
 
-    if seed_user_password_fallback(&user) {
+    if dev_password_auth_enabled() && user_has_password(&user) {
         return Ok(Json(auth_models::PasskeyLoginBeginResponse {
             session_id: String::new(),
             challenge: serde_json::Value::Null,
@@ -5992,11 +5992,7 @@ async fn begin_passkey_login(
     }
 
     let passkeys = usable_passkeys(&creds);
-    let password_available = passkeys.is_empty()
-        && user
-            .password_hash
-            .as_ref()
-            .is_some_and(|hash| !hash.is_empty());
+    let password_available = passkeys.is_empty() && user_has_password(&user);
 
     if passkeys.is_empty() {
         if password_available {

@@ -193,7 +193,7 @@ async fn given_dev_user_with_passkey_when_begin_login_then_password_available() 
 }
 
 #[tokio::test]
-async fn given_user_without_password_when_protected_request_then_403() {
+async fn given_user_without_passkey_when_protected_request_then_200_in_dev() {
     let user = User {
         id: Uuid::new_v4(),
         email: "legacy@example.com".to_string(),
@@ -227,7 +227,7 @@ async fn given_user_without_password_when_protected_request_then_403() {
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), 403);
+    assert_eq!(response.status(), 200);
 }
 
 #[tokio::test]

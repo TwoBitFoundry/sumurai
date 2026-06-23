@@ -10,7 +10,7 @@
     "postcss": "^8.5.10"
   },
   "scripts": {
-    "dev": "bun --bun next dev -p 3001 --turbo",
+    "dev": "NEXT_PUBLIC_PASSWORD_AUTH=true bun --bun next dev -p 3001 --turbo",
     "dev:webpack": "bun --bun next dev -p 3001 --webpack",
     "build": "bun --bun next build --webpack && bun ./scripts/build-sw.mjs",
     "typecheck": "tsc --noEmit --project tsconfig.ci.json",

@@ -1469,7 +1469,7 @@ describe('AccountsPage', () => {
     it('closes the provider picker after DIY account setup completes', async () => {
       const user = userEvent.setup();
       const chooseProvider = jest.fn().mockResolvedValue(undefined);
-      const dispatchProviderConnected = jest.spyOn(events, 'dispatchProviderConnected');
+      const dispatchFinancialAppRefresh = jest.spyOn(events, 'dispatchFinancialAppRefresh');
 
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
@@ -1503,11 +1503,14 @@ describe('AccountsPage', () => {
 
       await waitFor(() => {
         expect(chooseProvider).toHaveBeenCalledWith('diy');
-        expect(dispatchProviderConnected).toHaveBeenCalledTimes(1);
+        expect(dispatchFinancialAppRefresh).toHaveBeenCalledWith({
+          tab: 'accounts',
+          refreshSession: true,
+        });
         expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
       });
 
-      dispatchProviderConnected.mockRestore();
+      dispatchFinancialAppRefresh.mockRestore();
     });
 
     it('preserves the active aggregator after adding a DIY account from an existing DIY bank', async () => {
