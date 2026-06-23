@@ -59,7 +59,7 @@ describe('BudgetList', () => {
     const insetRing = container.querySelector('.hero-stat-card__inset-ring');
     expect(insetRing).toHaveClass('group-hover:opacity-100');
     expect((insetRing as HTMLElement).style.boxShadow).toBe(
-      `inset 0 0 0 2px ${heroAccents.sky.ringHex}`
+      `inset 0 0 0 2px ${heroAccents.azure.ringHex}`
     );
   });
 

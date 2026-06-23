@@ -3,9 +3,21 @@ import { effect as uiEffectRecipes } from './recipes';
 
 const glassBackdropClasses = uiEffectRecipes.glassBackdrop.join(' ');
 
+const brandAzure = generatedTokens.color['brand-azure'].$value.hex;
+const brandGlacier = generatedTokens.color['brand-glacier'].$value.hex;
+const brandTeal = generatedTokens.color['brand-teal'].$value.hex;
+const brandMint = generatedTokens.color['brand-mint'].$value.hex;
+const brandOcean = generatedTokens.color['brand-ocean'].$value.hex;
+const brandNavy = generatedTokens.color['brand-navy'].$value.hex;
+const brandIce = generatedTokens.color['brand-ice'].$value.hex;
+const brandCrimson = generatedTokens.color['brand-crimson'].$value.hex;
+const brandSignalRed = generatedTokens.color['brand-signal-red'].$value.hex;
+const brandAmber = generatedTokens.color['brand-amber'].$value.hex;
+const brandAmberDark = generatedTokens.color['brand-amber-dark'].$value.hex;
+
 export type ThemeMode = 'light' | 'dark';
 export type ThemePreference = 'system' | ThemeMode;
-export type HeroAccent = 'slate' | 'emerald' | 'sky' | 'violet' | 'amber' | 'rose';
+export type HeroAccent = 'slate' | 'teal' | 'azure' | 'ocean' | 'amber' | 'crimson';
 export type SemanticTone = 'success' | 'info' | 'warning' | 'danger';
 
 export type ThemeColors = {
@@ -170,156 +182,70 @@ export const status = {
 } as const;
 
 export const accountTypeDot = {
-  cash: '#38bdf8',
-  credit: '#f59e0b',
-  investments: '#94a3b8',
-  loan: '#a78bfa',
+  cash: brandTeal,
+  credit: brandCrimson,
+  investments: brandAzure,
+  loan: brandAmber,
 } as const;
 
 const categoryTagTypography = 'text-[0.6rem] font-bold uppercase tracking-[0.18em]';
 const categoryInlineLabelTypography =
   'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]';
 
+const categoryAccent = (
+  key: string,
+  lightVar: string,
+  darkVar: string,
+  ringHex: string
+): CategoryTheme => ({
+  key,
+  tag: `${categoryTagTypography} text-[var(${lightVar})] dark:text-[var(${darkVar})] border border-[color:color-mix(in_srgb,var(${lightVar})_20%,transparent)] dark:border-transparent bg-[color:color-mix(in_srgb,var(${lightVar})_20%,transparent)] dark:bg-[color:color-mix(in_srgb,var(${darkVar})_14%,transparent)]`,
+  inlineLabel: `${categoryInlineLabelTypography} text-[var(${lightVar})] dark:text-[var(${darkVar})]`,
+  chipSurface: `!border !border-[color:color-mix(in_srgb,var(${lightVar})_20%,transparent)] dark:!border-transparent !bg-[color:color-mix(in_srgb,var(${lightVar})_20%,transparent)] dark:!bg-[color:color-mix(in_srgb,var(${darkVar})_14%,transparent)]`,
+  chipSurfaceSelected: `!border !border-[var(${lightVar})] dark:!border-transparent !bg-[color:color-mix(in_srgb,var(${lightVar})_20%,transparent)] dark:!bg-[color:color-mix(in_srgb,var(${darkVar})_14%,transparent)]`,
+  dot: `bg-[color:color-mix(in_srgb,var(${lightVar})_90%,transparent)] dark:bg-[color:color-mix(in_srgb,var(${darkVar})_85%,transparent)]`,
+  ring: `ring-[var(${darkVar})]`,
+  ringHex,
+});
+
 export const categoryAccents: CategoryTheme[] = [
-  {
-    key: 'sky',
-    tag: `${categoryTagTypography} text-sky-500 dark:text-sky-300 border border-sky-200/70 dark:border-transparent bg-sky-500/20 dark:bg-sky-400/14`,
-    inlineLabel: `${categoryInlineLabelTypography} text-sky-500 dark:text-sky-300`,
-    chipSurface:
-      '!border !border-sky-200/60 dark:!border-transparent !bg-sky-500/20 dark:!bg-sky-400/14',
-    chipSurfaceSelected:
-      '!border !border-sky-500 dark:!border-transparent !bg-sky-500/20 dark:!bg-sky-400/14',
-    dot: 'bg-sky-500/90 dark:bg-sky-300/85',
-    ring: 'ring-sky-400',
-    ringHex: '#38bdf8',
-  },
-  {
-    key: 'emerald',
-    tag: `${categoryTagTypography} text-emerald-500 dark:text-emerald-300 border border-emerald-200/70 dark:border-transparent bg-emerald-500/20 dark:bg-emerald-400/14`,
-    inlineLabel: `${categoryInlineLabelTypography} text-emerald-500 dark:text-emerald-300`,
-    chipSurface:
-      '!border !border-emerald-200/60 dark:!border-transparent !bg-emerald-500/20 dark:!bg-emerald-400/14',
-    chipSurfaceSelected:
-      '!border !border-emerald-500 dark:!border-transparent !bg-emerald-500/20 dark:!bg-emerald-400/14',
-    dot: 'bg-emerald-500/90 dark:bg-emerald-300/80',
-    ring: 'ring-emerald-400',
-    ringHex: '#34d399',
-  },
-  {
-    key: 'cyan',
-    tag: `${categoryTagTypography} text-cyan-500 dark:text-cyan-300 border border-cyan-200/70 dark:border-transparent bg-cyan-500/20 dark:bg-cyan-400/14`,
-    inlineLabel: `${categoryInlineLabelTypography} text-cyan-500 dark:text-cyan-300`,
-    chipSurface:
-      '!border !border-cyan-200/60 dark:!border-transparent !bg-cyan-500/20 dark:!bg-cyan-400/14',
-    chipSurfaceSelected:
-      '!border !border-cyan-500 dark:!border-transparent !bg-cyan-500/20 dark:!bg-cyan-400/14',
-    dot: 'bg-cyan-500/90 dark:bg-cyan-300/80',
-    ring: 'ring-cyan-400',
-    ringHex: '#22d3ee',
-  },
-  {
-    key: 'violet',
-    tag: `${categoryTagTypography} text-violet-500 dark:text-violet-300 border border-violet-200/70 dark:border-transparent bg-violet-500/20 dark:bg-violet-400/14`,
-    inlineLabel: `${categoryInlineLabelTypography} text-violet-500 dark:text-violet-300`,
-    chipSurface:
-      '!border !border-violet-200/60 dark:!border-transparent !bg-violet-500/20 dark:!bg-violet-400/14',
-    chipSurfaceSelected:
-      '!border !border-violet-500 dark:!border-transparent !bg-violet-500/20 dark:!bg-violet-400/14',
-    dot: 'bg-violet-500/90 dark:bg-violet-300/80',
-    ring: 'ring-violet-400',
-    ringHex: '#a78bfa',
-  },
-  {
-    key: 'amber',
-    tag: `${categoryTagTypography} text-amber-500 dark:text-amber-300 border border-amber-200/70 dark:border-transparent bg-amber-500/20 dark:bg-amber-400/14`,
-    inlineLabel: `${categoryInlineLabelTypography} text-amber-500 dark:text-amber-300`,
-    chipSurface:
-      '!border !border-amber-200/60 dark:!border-transparent !bg-amber-500/20 dark:!bg-amber-400/14',
-    chipSurfaceSelected:
-      '!border !border-amber-500 dark:!border-transparent !bg-amber-500/20 dark:!bg-amber-400/14',
-    dot: 'bg-amber-500/90 dark:bg-amber-300/85',
-    ring: 'ring-amber-400',
-    ringHex: '#fbbf24',
-  },
-  {
-    key: 'rose',
-    tag: `${categoryTagTypography} text-rose-500 dark:text-rose-300 border border-rose-200/70 dark:border-transparent bg-rose-500/20 dark:bg-rose-400/14`,
-    inlineLabel: `${categoryInlineLabelTypography} text-rose-500 dark:text-rose-300`,
-    chipSurface:
-      '!border !border-rose-200/60 dark:!border-transparent !bg-rose-500/20 dark:!bg-rose-400/14',
-    chipSurfaceSelected:
-      '!border !border-rose-500 dark:!border-transparent !bg-rose-500/20 dark:!bg-rose-400/14',
-    dot: 'bg-rose-500/90 dark:bg-rose-300/80',
-    ring: 'ring-rose-400',
-    ringHex: '#fb7185',
-  },
-  {
-    key: 'indigo',
-    tag: `${categoryTagTypography} text-indigo-500 dark:text-indigo-300 border border-indigo-200/70 dark:border-transparent bg-indigo-500/20 dark:bg-indigo-400/14`,
-    inlineLabel: `${categoryInlineLabelTypography} text-indigo-500 dark:text-indigo-300`,
-    chipSurface:
-      '!border !border-indigo-200/60 dark:!border-transparent !bg-indigo-500/20 dark:!bg-indigo-400/14',
-    chipSurfaceSelected:
-      '!border !border-indigo-500 dark:!border-transparent !bg-indigo-500/20 dark:!bg-indigo-400/14',
-    dot: 'bg-indigo-500/90 dark:bg-indigo-300/80',
-    ring: 'ring-indigo-400',
-    ringHex: '#818cf8',
-  },
-  {
-    key: 'fuchsia',
-    tag: `${categoryTagTypography} text-fuchsia-500 dark:text-fuchsia-300 border border-fuchsia-200/70 dark:border-transparent bg-fuchsia-500/20 dark:bg-fuchsia-400/14`,
-    inlineLabel: `${categoryInlineLabelTypography} text-fuchsia-500 dark:text-fuchsia-300`,
-    chipSurface:
-      '!border !border-fuchsia-200/60 dark:!border-transparent !bg-fuchsia-500/20 dark:!bg-fuchsia-400/14',
-    chipSurfaceSelected:
-      '!border !border-fuchsia-500 dark:!border-transparent !bg-fuchsia-500/20 dark:!bg-fuchsia-400/14',
-    dot: 'bg-fuchsia-500/90 dark:bg-fuchsia-300/80',
-    ring: 'ring-fuchsia-400',
-    ringHex: '#e879f9',
-  },
-  {
-    key: 'teal',
-    tag: `${categoryTagTypography} text-teal-500 dark:text-teal-300 border border-teal-200/70 dark:border-transparent bg-teal-500/20 dark:bg-teal-400/14`,
-    inlineLabel: `${categoryInlineLabelTypography} text-teal-500 dark:text-teal-300`,
-    chipSurface:
-      '!border !border-teal-200/60 dark:!border-transparent !bg-teal-500/20 dark:!bg-teal-400/14',
-    chipSurfaceSelected:
-      '!border !border-teal-500 dark:!border-transparent !bg-teal-500/20 dark:!bg-teal-400/14',
-    dot: 'bg-teal-500/90 dark:bg-teal-300/80',
-    ring: 'ring-teal-400',
-    ringHex: '#2dd4bf',
-  },
-  {
-    key: 'lime',
-    tag: `${categoryTagTypography} text-lime-500 dark:text-lime-300 border border-lime-200/70 dark:border-transparent bg-lime-500/20 dark:bg-lime-400/14`,
-    inlineLabel: `${categoryInlineLabelTypography} text-lime-500 dark:text-lime-300`,
-    chipSurface:
-      '!border !border-lime-200/60 dark:!border-transparent !bg-lime-500/20 dark:!bg-lime-400/14',
-    chipSurfaceSelected:
-      '!border !border-lime-500 dark:!border-transparent !bg-lime-500/20 dark:!bg-lime-400/14',
-    dot: 'bg-lime-500/90 dark:bg-lime-300/80',
-    ring: 'ring-lime-400',
-    ringHex: '#a3e635',
-  },
+  categoryAccent('azure', '--color-brand-azure', '--color-brand-glacier', brandGlacier),
+  categoryAccent('teal', '--color-brand-teal', '--color-brand-mint', brandMint),
+  categoryAccent('glacier', '--color-brand-glacier', '--color-brand-glacier', brandGlacier),
+  categoryAccent('ocean', '--color-brand-ocean', '--color-brand-ocean', brandOcean),
+  categoryAccent('amber', '--color-brand-amber', '--color-brand-amber-dark', brandAmberDark),
+  categoryAccent('crimson', '--color-brand-crimson', '--color-brand-signal-red', brandSignalRed),
+  categoryAccent('navy', '--color-brand-navy', '--color-brand-navy', brandNavy),
+  categoryAccent('mint', '--color-brand-mint', '--color-brand-mint', brandMint),
+  categoryAccent('ice', '--color-brand-ice', '--color-brand-ice', brandIce),
+  categoryAccent(
+    'signal-red',
+    '--color-brand-signal-red',
+    '--color-brand-signal-red',
+    brandSignalRed
+  ),
 ];
 
 const categoryLabelHex = {
-  sky: { light: '#0ea5e9', dark: '#7dd3fc' },
-  emerald: { light: '#10b981', dark: '#6ee7b7' },
-  cyan: { light: '#06b6d4', dark: '#67e8f9' },
-  violet: { light: '#8b5cf6', dark: '#c4b5fd' },
-  amber: { light: '#f59e0b', dark: '#fcd34d' },
-  rose: { light: '#f43f5e', dark: '#fda4af' },
-  indigo: { light: '#6366f1', dark: '#a5b4fc' },
-  fuchsia: { light: '#d946ef', dark: '#f0abfc' },
-  teal: { light: '#14b8a6', dark: '#5eead4' },
-  lime: { light: '#84cc16', dark: '#bef264' },
+  azure: { light: brandAzure, dark: brandGlacier },
+  teal: { light: brandTeal, dark: brandMint },
+  glacier: { light: brandGlacier, dark: brandGlacier },
+  ocean: { light: brandOcean, dark: brandOcean },
+  amber: { light: brandAmber, dark: brandAmberDark },
+  crimson: { light: brandCrimson, dark: brandSignalRed },
+  navy: { light: brandNavy, dark: brandNavy },
+  mint: { light: brandMint, dark: brandMint },
+  ice: { light: brandIce, dark: brandIce },
+  'signal-red': { light: brandSignalRed, dark: brandSignalRed },
 } as const satisfies Record<string, Record<ThemeMode, string>>;
 
 export function getCategoryLabelHex(theme: CategoryTheme, mode: ThemeMode): string {
   const colors = categoryLabelHex[theme.key as keyof typeof categoryLabelHex];
   return colors?.[mode] ?? theme.ringHex;
 }
+
+const heroPill = (lightVar: string, darkVar: string, lightText: string, darkText: string) =>
+  `border border-[color:color-mix(in_srgb,var(${lightVar})_20%,transparent)] dark:border-[color:color-mix(in_srgb,var(${darkVar})_25%,transparent)] text-[var(${lightText})] dark:text-[var(${darkText})] bg-[linear-gradient(135deg,color-mix(in_srgb,var(${lightVar})_22%,transparent),color-mix(in_srgb,var(${lightVar})_8%,transparent))] dark:bg-[linear-gradient(135deg,color-mix(in_srgb,var(${darkVar})_22%,transparent),color-mix(in_srgb,var(${darkVar})_8%,transparent))] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`;
 
 export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
   slate: {
@@ -335,80 +261,112 @@ export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
     defaultDot: 'bg-slate-400/85 dark:bg-slate-200/80',
     glowRgb: '100,116,139',
   },
-  emerald: {
-    border: 'border-emerald-300',
-    borderDark: 'dark:border-emerald-600',
-    hoverBorder: 'hover:border-emerald-400',
-    hoverBorderDark: 'dark:hover:border-emerald-500',
-    ringHex: '#34d399',
-    gradFrom: '#34d399',
-    gradVia: '#10b981',
-    icon: 'text-emerald-500 dark:text-emerald-400',
-    defaultPill: `border border-emerald-200/70 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-200 bg-[linear-gradient(135deg,_rgba(16,185,129,0.22),_rgba(16,185,129,0.08))] dark:bg-[linear-gradient(135deg,_rgba(34,197,94,0.22),_rgba(34,197,94,0.08))] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
-    defaultDot: 'bg-emerald-500/90 dark:bg-emerald-300/80',
-    glowRgb: '16,185,129',
+  teal: {
+    border: 'border-[color:color-mix(in_srgb,var(--color-brand-teal)_40%,transparent)]',
+    borderDark: 'dark:border-[color:color-mix(in_srgb,var(--color-brand-mint)_35%,transparent)]',
+    hoverBorder: 'hover:border-[var(--color-brand-teal)]',
+    hoverBorderDark: 'dark:hover:border-[var(--color-brand-mint)]',
+    ringHex: brandMint,
+    gradFrom: brandMint,
+    gradVia: brandTeal,
+    icon: 'text-[var(--color-brand-teal)] dark:text-[var(--color-brand-mint)]',
+    defaultPill: heroPill(
+      '--color-brand-teal',
+      '--color-brand-mint',
+      '--color-brand-teal',
+      '--color-brand-mint'
+    ),
+    defaultDot:
+      'bg-[color:color-mix(in_srgb,var(--color-brand-teal)_90%,transparent)] dark:bg-[color:color-mix(in_srgb,var(--color-brand-mint)_80%,transparent)]',
+    glowRgb: '0,194,162',
   },
-  sky: {
-    border: 'border-sky-300',
-    borderDark: 'dark:border-sky-600',
-    hoverBorder: 'hover:border-sky-400',
-    hoverBorderDark: 'dark:hover:border-sky-500',
-    ringHex: '#93c5fd',
-    gradFrom: '#38bdf8',
-    gradVia: '#0ea5e9',
-    icon: 'text-sky-500 dark:text-sky-400',
-    defaultPill: `border border-sky-200/70 dark:border-sky-500/40 text-sky-700 dark:text-sky-200 bg-[linear-gradient(135deg,_rgba(14,165,233,0.2),_rgba(14,165,233,0.08))] dark:bg-[linear-gradient(135deg,_rgba(56,189,248,0.2),_rgba(56,189,248,0.08))] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
-    defaultDot: 'bg-sky-500/90 dark:bg-sky-300/80',
-    glowRgb: '14,165,233',
+  azure: {
+    border: 'border-[color:color-mix(in_srgb,var(--color-brand-azure)_40%,transparent)]',
+    borderDark: 'dark:border-[color:color-mix(in_srgb,var(--color-brand-glacier)_35%,transparent)]',
+    hoverBorder: 'hover:border-[var(--color-brand-azure)]',
+    hoverBorderDark: 'dark:hover:border-[var(--color-brand-glacier)]',
+    ringHex: brandGlacier,
+    gradFrom: brandGlacier,
+    gradVia: brandAzure,
+    icon: 'text-[var(--color-brand-azure)] dark:text-[var(--color-brand-glacier)]',
+    defaultPill: heroPill(
+      '--color-brand-azure',
+      '--color-brand-glacier',
+      '--color-brand-azure',
+      '--color-brand-glacier'
+    ),
+    defaultDot:
+      'bg-[color:color-mix(in_srgb,var(--color-brand-azure)_90%,transparent)] dark:bg-[color:color-mix(in_srgb,var(--color-brand-glacier)_80%,transparent)]',
+    glowRgb: '13,138,204',
   },
-  violet: {
-    border: 'border-violet-300',
-    borderDark: 'dark:border-violet-600',
-    hoverBorder: 'hover:border-violet-400',
-    hoverBorderDark: 'dark:hover:border-violet-500',
-    ringHex: '#a78bfa',
-    gradFrom: '#a78bfa',
-    gradVia: '#7c3aed',
-    icon: 'text-violet-500 dark:text-violet-400',
-    defaultPill: `border border-violet-200/70 dark:border-violet-500/40 text-violet-700 dark:text-violet-200 bg-[linear-gradient(135deg,_rgba(139,92,246,0.22),_rgba(139,92,246,0.08))] dark:bg-[linear-gradient(135deg,_rgba(167,139,250,0.22),_rgba(167,139,250,0.08))] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
-    defaultDot: 'bg-violet-500/90 dark:bg-violet-300/80',
-    glowRgb: '167,139,250',
+  ocean: {
+    border: 'border-[color:color-mix(in_srgb,var(--color-brand-ocean)_40%,transparent)]',
+    borderDark: 'dark:border-[color:color-mix(in_srgb,var(--color-brand-navy)_50%,transparent)]',
+    hoverBorder: 'hover:border-[var(--color-brand-ocean)]',
+    hoverBorderDark: 'dark:hover:border-[var(--color-brand-navy)]',
+    ringHex: brandOcean,
+    gradFrom: brandOcean,
+    gradVia: brandNavy,
+    icon: 'text-[var(--color-brand-ocean)] dark:text-[var(--color-brand-glacier)]',
+    defaultPill: heroPill(
+      '--color-brand-ocean',
+      '--color-brand-navy',
+      '--color-brand-ocean',
+      '--color-brand-glacier'
+    ),
+    defaultDot:
+      'bg-[color:color-mix(in_srgb,var(--color-brand-ocean)_90%,transparent)] dark:bg-[color:color-mix(in_srgb,var(--color-brand-glacier)_80%,transparent)]',
+    glowRgb: '32,66,140',
   },
   amber: {
     border: 'border-amber-300',
     borderDark: 'dark:border-amber-600',
     hoverBorder: 'hover:border-amber-400',
     hoverBorderDark: 'dark:hover:border-amber-500',
-    ringHex: '#fbbf24',
-    gradFrom: '#fbbf24',
-    gradVia: '#f59e0b',
-    icon: 'text-amber-500 dark:text-amber-400',
-    defaultPill: `border border-amber-200/70 dark:border-amber-500/40 text-amber-700 dark:text-amber-200 bg-[linear-gradient(135deg,_rgba(245,158,11,0.22),_rgba(245,158,11,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,191,36,0.22),_rgba(251,191,36,0.08))] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
-    defaultDot: 'bg-amber-500/90 dark:bg-amber-300/85',
+    ringHex: brandAmberDark,
+    gradFrom: brandAmberDark,
+    gradVia: brandAmber,
+    icon: 'text-[var(--color-brand-amber)] dark:text-[var(--color-brand-amber-dark)]',
+    defaultPill: heroPill(
+      '--color-brand-amber',
+      '--color-brand-amber-dark',
+      '--color-brand-amber',
+      '--color-brand-amber-dark'
+    ),
+    defaultDot:
+      'bg-[color:color-mix(in_srgb,var(--color-brand-amber)_90%,transparent)] dark:bg-[color:color-mix(in_srgb,var(--color-brand-amber-dark)_85%,transparent)]',
     glowRgb: '251,191,36',
   },
-  rose: {
-    border: 'border-rose-300',
-    borderDark: 'dark:border-rose-600',
-    hoverBorder: 'hover:border-rose-400',
-    hoverBorderDark: 'dark:hover:border-rose-500',
-    ringHex: '#f43f5e',
-    gradFrom: '#fb7185',
-    gradVia: '#f43f5e',
-    icon: 'text-rose-500 dark:text-rose-400',
-    defaultPill: `border border-rose-200/70 dark:border-rose-500/40 text-rose-700 dark:text-rose-200 bg-[linear-gradient(135deg,_rgba(244,63,94,0.22),_rgba(244,63,94,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,113,133,0.22),_rgba(251,113,133,0.08))] ${glassBackdropClasses} ring-1 ring-white/65 dark:ring-white/12`,
-    defaultDot: 'bg-rose-500/90 dark:bg-rose-300/80',
-    glowRgb: '244,63,94',
+  crimson: {
+    border: 'border-[color:color-mix(in_srgb,var(--color-brand-crimson)_40%,transparent)]',
+    borderDark:
+      'dark:border-[color:color-mix(in_srgb,var(--color-brand-signal-red)_35%,transparent)]',
+    hoverBorder: 'hover:border-[var(--color-brand-crimson)]',
+    hoverBorderDark: 'dark:hover:border-[var(--color-brand-signal-red)]',
+    ringHex: brandCrimson,
+    gradFrom: brandSignalRed,
+    gradVia: brandCrimson,
+    icon: 'text-[var(--color-brand-crimson)] dark:text-[var(--color-brand-signal-red)]',
+    defaultPill: heroPill(
+      '--color-brand-crimson',
+      '--color-brand-signal-red',
+      '--color-brand-crimson',
+      '--color-brand-signal-red'
+    ),
+    defaultDot:
+      'bg-[color:color-mix(in_srgb,var(--color-brand-crimson)_90%,transparent)] dark:bg-[color:color-mix(in_srgb,var(--color-brand-signal-red)_80%,transparent)]',
+    glowRgb: '184,40,18',
   },
 };
 
 export const featurePalettes = {
   welcome: {
-    sky: {
-      gradient: 'from-sky-400/55 via-sky-500/25 to-sky-500/5',
-      ring: 'ring-sky-300/35',
-      iconLight: 'text-sky-700',
-      iconDark: 'text-sky-100',
+    azure: {
+      gradient:
+        'from-[color:color-mix(in_srgb,var(--color-brand-glacier)_55%,transparent)] via-[color:color-mix(in_srgb,var(--color-brand-azure)_25%,transparent)] to-[color:color-mix(in_srgb,var(--color-brand-azure)_5%,transparent)]',
+      ring: 'ring-[color:color-mix(in_srgb,var(--color-brand-glacier)_35%,transparent)]',
+      iconLight: 'text-[var(--color-brand-ocean)]',
+      iconDark: 'text-[var(--color-brand-ice)]',
       glow: '${glassDropShadowClasses}',
     },
     amber: {
@@ -418,19 +376,21 @@ export const featurePalettes = {
       iconDark: 'text-amber-100',
       glow: '${glassDropShadowClasses}',
     },
-    purple: {
-      gradient: 'from-purple-400/55 via-purple-500/25 to-purple-500/5',
-      ring: 'ring-purple-300/35',
-      iconLight: 'text-purple-700',
-      iconDark: 'text-purple-100',
+    ocean: {
+      gradient:
+        'from-[color:color-mix(in_srgb,var(--color-brand-ocean)_55%,transparent)] via-[color:color-mix(in_srgb,var(--color-brand-navy)_25%,transparent)] to-[color:color-mix(in_srgb,var(--color-brand-navy)_5%,transparent)]',
+      ring: 'ring-[color:color-mix(in_srgb,var(--color-brand-ocean)_35%,transparent)]',
+      iconLight: 'text-[var(--color-brand-navy)]',
+      iconDark: 'text-[var(--color-brand-ice)]',
       glow: '${glassDropShadowClasses}',
     },
   },
   providerFeature: {
-    emerald: {
-      gradient: 'from-emerald-400/55 via-emerald-500/25 to-emerald-500/5',
-      ring: 'ring-emerald-300/35',
-      icon: 'text-emerald-700 dark:text-emerald-100',
+    teal: {
+      gradient:
+        'from-[color:color-mix(in_srgb,var(--color-brand-mint)_55%,transparent)] via-[color:color-mix(in_srgb,var(--color-brand-teal)_25%,transparent)] to-[color:color-mix(in_srgb,var(--color-brand-teal)_5%,transparent)]',
+      ring: 'ring-[color:color-mix(in_srgb,var(--color-brand-mint)_35%,transparent)]',
+      icon: 'text-[var(--color-brand-teal)] dark:text-[var(--color-brand-mint)]',
       glow: '${glassDropShadowClasses}',
     },
     amber: {
@@ -439,10 +399,11 @@ export const featurePalettes = {
       icon: 'text-amber-700 dark:text-amber-100',
       glow: '${glassDropShadowClasses}',
     },
-    purple: {
-      gradient: 'from-purple-400/55 via-purple-500/25 to-purple-500/5',
-      ring: 'ring-purple-300/35',
-      icon: 'text-purple-700 dark:text-purple-100',
+    ocean: {
+      gradient:
+        'from-[color:color-mix(in_srgb,var(--color-brand-ocean)_55%,transparent)] via-[color:color-mix(in_srgb,var(--color-brand-navy)_25%,transparent)] to-[color:color-mix(in_srgb,var(--color-brand-navy)_5%,transparent)]',
+      ring: 'ring-[color:color-mix(in_srgb,var(--color-brand-ocean)_35%,transparent)]',
+      icon: 'text-[var(--color-brand-navy)] dark:text-[var(--color-brand-ice)]',
       glow: '${glassDropShadowClasses}',
     },
   },
@@ -454,32 +415,36 @@ export const featurePalettes = {
       iconDark: 'text-amber-200',
       glow: '${glassDropShadowClasses}',
     },
-    sky: {
-      gradient: 'from-sky-400/55 via-sky-500/25 to-sky-500/5',
-      ring: 'ring-sky-300/35',
-      iconLight: 'text-sky-700',
-      iconDark: 'text-sky-200',
+    azure: {
+      gradient:
+        'from-[color:color-mix(in_srgb,var(--color-brand-glacier)_55%,transparent)] via-[color:color-mix(in_srgb,var(--color-brand-azure)_25%,transparent)] to-[color:color-mix(in_srgb,var(--color-brand-azure)_5%,transparent)]',
+      ring: 'ring-[color:color-mix(in_srgb,var(--color-brand-glacier)_35%,transparent)]',
+      iconLight: 'text-[var(--color-brand-ocean)]',
+      iconDark: 'text-[var(--color-brand-ice)]',
       glow: '${glassDropShadowClasses}',
     },
-    violet: {
-      gradient: 'from-violet-400/55 via-violet-500/25 to-violet-500/5',
-      ring: 'ring-violet-300/35',
-      iconLight: 'text-violet-700',
-      iconDark: 'text-violet-200',
+    ocean: {
+      gradient:
+        'from-[color:color-mix(in_srgb,var(--color-brand-ocean)_55%,transparent)] via-[color:color-mix(in_srgb,var(--color-brand-navy)_25%,transparent)] to-[color:color-mix(in_srgb,var(--color-brand-navy)_5%,transparent)]',
+      ring: 'ring-[color:color-mix(in_srgb,var(--color-brand-ocean)_35%,transparent)]',
+      iconLight: 'text-[var(--color-brand-navy)]',
+      iconDark: 'text-[var(--color-brand-ice)]',
       glow: '${glassDropShadowClasses}',
     },
-    fuchsia: {
-      gradient: 'from-fuchsia-400/55 via-fuchsia-500/25 to-fuchsia-500/5',
-      ring: 'ring-fuchsia-300/35',
-      iconLight: 'text-fuchsia-700',
-      iconDark: 'text-fuchsia-200',
+    crimson: {
+      gradient:
+        'from-[color:color-mix(in_srgb,var(--color-brand-signal-red)_55%,transparent)] via-[color:color-mix(in_srgb,var(--color-brand-crimson)_25%,transparent)] to-[color:color-mix(in_srgb,var(--color-brand-crimson)_5%,transparent)]',
+      ring: 'ring-[color:color-mix(in_srgb,var(--color-brand-signal-red)_35%,transparent)]',
+      iconLight: 'text-[var(--color-brand-crimson)]',
+      iconDark: 'text-[var(--color-brand-signal-red)]',
       glow: '${glassDropShadowClasses}',
     },
-    emerald: {
-      gradient: 'from-emerald-400/55 via-emerald-500/25 to-emerald-500/5',
-      ring: 'ring-emerald-300/35',
-      iconLight: 'text-emerald-700',
-      iconDark: 'text-emerald-100',
+    teal: {
+      gradient:
+        'from-[color:color-mix(in_srgb,var(--color-brand-mint)_55%,transparent)] via-[color:color-mix(in_srgb,var(--color-brand-teal)_25%,transparent)] to-[color:color-mix(in_srgb,var(--color-brand-teal)_5%,transparent)]',
+      ring: 'ring-[color:color-mix(in_srgb,var(--color-brand-mint)_35%,transparent)]',
+      iconLight: 'text-[var(--color-brand-teal)]',
+      iconDark: 'text-[var(--color-brand-mint)]',
       glow: '${glassDropShadowClasses}',
     },
   },
@@ -529,18 +494,18 @@ export function getCategoryAccent(name?: string | null, index?: number): Categor
 
 export function getHeroAccentForCategoryKey(categoryKey: string): HeroAccent {
   const map: Record<string, HeroAccent> = {
-    sky: 'sky',
-    emerald: 'emerald',
-    cyan: 'sky',
-    violet: 'violet',
+    azure: 'azure',
+    glacier: 'azure',
+    teal: 'teal',
+    mint: 'teal',
+    ocean: 'ocean',
+    navy: 'ocean',
+    ice: 'ocean',
     amber: 'amber',
-    rose: 'rose',
-    indigo: 'violet',
-    fuchsia: 'violet',
-    teal: 'emerald',
-    lime: 'emerald',
+    crimson: 'crimson',
+    'signal-red': 'crimson',
   };
-  return map[categoryKey] ?? 'emerald';
+  return map[categoryKey] ?? 'teal';
 }
 
 export function getHeroAccentTheme(accent: HeroAccent): HeroAccentTheme {

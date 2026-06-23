@@ -1,10 +1,10 @@
 import { describe, expect, it, jest } from 'bun:test';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { TransactionsFilters } from '@/features/transactions/components/TransactionsFilters';
 import { HORIZONTAL_SCROLL_RAIL_STEP_PX } from '@/hooks/useHorizontalScrollRail';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
+import { getCategoryAccentByIndex } from '@/ui/tokens';
 
 jest.mock('@/hooks/useViewportBreakpoint', () => ({
   useViewportBreakpoint: jest.fn(),
@@ -65,9 +65,14 @@ describe('TransactionsFilters', () => {
     expect(foodButton.className).toContain('rounded-full');
     expect(foodButton.className).toContain('cursor-pointer');
     expect(foodButton.className).toContain('py-0');
-    expect(foodButton.className).toContain('text-sky-500');
-    expect(foodButton.className).toContain('!bg-sky-500/20');
-    expect(foodButton.className).toContain('!border-sky-200/60');
+    const azureTheme = getCategoryAccentByIndex(0);
+    expect(foodButton.className).toContain('text-[var(--color-brand-azure)]');
+    expect(foodButton.className).toContain(
+      azureTheme.chipSurface.split(' ').find((c) => c.startsWith('!bg-')) ?? ''
+    );
+    expect(foodButton.className).toContain(
+      azureTheme.chipSurface.split(' ').find((c) => c.startsWith('!border')) ?? ''
+    );
     expect(foodButton.className).not.toContain('linear-gradient');
     expect(foodButton.className).not.toContain('text-slate-800');
     expect(foodButton.className).not.toContain('h-11');
@@ -108,10 +113,15 @@ describe('TransactionsFilters', () => {
       'aria-pressed',
       'true'
     );
+    const tealTheme = getCategoryAccentByIndex(1);
     const entertainmentButton = screen.getByRole('button', { name: 'Entertainment' });
-    expect(entertainmentButton.className).toContain('ring-emerald-400');
-    expect(entertainmentButton.className).toContain('!border-emerald-500');
-    expect(entertainmentButton.className).toContain('!bg-emerald-500/20');
+    expect(entertainmentButton.className).toContain(tealTheme.ring);
+    expect(entertainmentButton.className).toContain(
+      tealTheme.chipSurfaceSelected.split(' ').find((c) => c.startsWith('!border')) ?? ''
+    );
+    expect(entertainmentButton.className).toContain(
+      tealTheme.chipSurfaceSelected.split(' ').find((c) => c.startsWith('!bg-')) ?? ''
+    );
     expect(entertainmentButton.className).not.toContain('!bg-emerald-500/50');
     expect(entertainmentButton.parentElement?.className).toContain('sticky');
     expect(entertainmentButton.parentElement?.className).toContain('left-0');
@@ -162,10 +172,13 @@ describe('TransactionsFilters', () => {
       />
     );
 
+    const tealTheme = getCategoryAccentByIndex(1);
     const entertainmentButton = screen.getByRole('button', { name: 'Entertainment' });
-    expect(entertainmentButton.className).toContain('text-emerald-500');
-    expect(entertainmentButton.className).toContain('ring-emerald-400');
-    expect(entertainmentButton.className).toContain('!border-emerald-500');
+    expect(entertainmentButton.className).toContain('text-[var(--color-brand-teal)]');
+    expect(entertainmentButton.className).toContain(tealTheme.ring);
+    expect(entertainmentButton.className).toContain(
+      tealTheme.chipSurfaceSelected.split(' ').find((c) => c.startsWith('!border')) ?? ''
+    );
     expect(entertainmentButton.className).not.toContain('linear-gradient');
   });
 

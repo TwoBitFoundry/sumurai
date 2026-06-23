@@ -26,7 +26,7 @@ import { ProviderSelectionSection } from './ProviderSelectionSection';
 const providerBadgeAccentIndex = new Map<string, number>([['provider-badge', 0]]);
 
 const providerCardHoverRingStyle = {
-  boxShadow: `inset 0 0 0 2px ${heroAccents.sky.ringHex}`,
+  boxShadow: `inset 0 0 0 2px ${heroAccents.azure.ringHex}`,
 } as CSSProperties;
 
 const privacyLinkClasses = cn(

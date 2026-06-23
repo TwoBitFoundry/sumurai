@@ -11,7 +11,7 @@ import { useCategories } from '../../features/transactions/hooks/useCategories';
 import { getTagThemeForCategory } from '../../utils/categories';
 import { heroStatSemanticThemes } from './heroStatSemanticThemes';
 
-type Accent = 'emerald' | 'sky' | 'violet' | 'amber' | 'slate' | 'rose';
+type Accent = 'teal' | 'azure' | 'ocean' | 'amber' | 'slate' | 'crimson';
 type Tone = 'success' | 'info' | 'warning' | 'danger';
 
 export type HeroPill = {
@@ -91,18 +91,18 @@ export const heroStatCardRecipes = {
 } as const;
 
 function accentFromIndex(index?: number): Accent {
-  if (!index || index < 1) return 'emerald';
+  if (!index || index < 1) return 'teal';
   switch (index % 4) {
     case 1:
-      return 'emerald';
+      return 'teal';
     case 2:
-      return 'sky';
+      return 'azure';
     case 3:
-      return 'violet';
+      return 'ocean';
     case 0:
       return 'amber';
     default:
-      return 'emerald';
+      return 'teal';
   }
 }
 

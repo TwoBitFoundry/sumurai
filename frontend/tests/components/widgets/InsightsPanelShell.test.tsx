@@ -12,7 +12,7 @@ function expectGlassInsightsSurface(surface: Element | null | undefined) {
 describe('InsightsPanelShell', () => {
   it('renders a sticky wrapper with a glass clipped inner shell', () => {
     render(
-      <InsightsPanelShell testId="insights-shell" accent="violet">
+      <InsightsPanelShell testId="insights-shell" accent="ocean">
         <div data-testid="insights-content">Content</div>
       </InsightsPanelShell>
     );

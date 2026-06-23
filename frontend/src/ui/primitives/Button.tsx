@@ -106,7 +106,7 @@ export const buttonRecipes = {
     'group relative',
     'overflow-visible',
     ...semanticBorders.glass,
-    'bg-[var(--color-brand-sky)]',
+    'bg-[var(--color-brand-azure)]',
     'text-white',
     'dark:border-[var(--color-border-glass)]',
     ...buttonCta.glow,

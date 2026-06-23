@@ -176,7 +176,7 @@ describe('DashboardPage', () => {
 
     expect(insetRing).toHaveClass('opacity-100');
     expect((insetRing as HTMLElement).style.boxShadow).toBe(
-      `inset 0 0 0 2px ${heroAccents.violet.ringHex}`
+      `inset 0 0 0 2px ${heroAccents.ocean.ringHex}`
     );
   });
 });

@@ -125,8 +125,8 @@ describe('TransactionInsightsPanel', () => {
     await expandTransactionInsights(user);
     const volumeAmount = screen.getByText('-$1,200.00');
     const typicalAmount = screen.getByText('-$45.50');
-    expect(volumeAmount.className).toContain('text-red-600');
-    expect(typicalAmount.className).toContain('text-red-600');
+    expect(volumeAmount.className).toContain('text-[var(--color-brand-crimson)]');
+    expect(typicalAmount.className).toContain('text-[var(--color-brand-crimson)]');
   });
 
   it('renders zero volume as unsigned $0.00 with muted styling', async () => {
@@ -155,8 +155,8 @@ describe('TransactionInsightsPanel', () => {
     expect(zeroAmounts).toHaveLength(2);
     for (const amount of zeroAmounts) {
       expect(amount.className).toContain('text-slate-600');
-      expect(amount.className).not.toContain('text-red-600');
-      expect(amount.className).not.toContain('text-emerald-600');
+      expect(amount.className).not.toContain('text-[var(--color-brand-crimson)]');
+      expect(amount.className).not.toContain('text-[var(--color-brand-teal)]');
     }
     expect(screen.queryByText('-$0.00')).not.toBeInTheDocument();
   });
@@ -176,7 +176,7 @@ describe('TransactionInsightsPanel', () => {
     renderPanel({ insights, isLoading: false, resetKey: 'k1' });
     await expandTransactionInsights(user);
     const amount = screen.getByText('$500.00');
-    expect(amount.className).toContain('text-emerald-600');
+    expect(amount.className).toContain('text-[var(--color-brand-teal)]');
   });
 
   it('renders Card 1 title Category Total for state B', async () => {
@@ -195,7 +195,7 @@ describe('TransactionInsightsPanel', () => {
     );
     expect(
       screen.getByTestId('insight-card-category-total').querySelector('svg')?.parentElement
-    ).toHaveClass('text-emerald-500');
+    ).toHaveClass('text-[var(--color-brand-teal)]');
   });
 
   it('renders state C label Merchant view', async () => {
@@ -402,7 +402,7 @@ describe('TransactionInsightsPanel', () => {
     expect(screen.getByText('1.8×')).toBeInTheDocument();
     expect(screen.getByText('vs')).toBeInTheDocument();
     const comparisonAmount = screen.getByText('-$25.00');
-    expect(comparisonAmount.className).toContain('text-red-600');
+    expect(comparisonAmount.className).toContain('text-[var(--color-brand-crimson)]');
     expect(comparisonAmount.className).not.toContain('font-caption');
   });
 

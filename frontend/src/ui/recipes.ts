@@ -18,11 +18,11 @@ export const text = {
   subtle: 'text-slate-500 dark:text-slate-500',
   label: 'text-slate-600 dark:text-slate-400',
   inverse: 'text-white dark:text-white',
-  accent: 'text-sky-600 dark:text-sky-300',
-  danger: 'text-red-600 dark:text-red-300',
-  success: 'text-emerald-600 dark:text-emerald-300',
+  accent: 'text-[var(--color-brand-azure)] dark:text-[var(--color-brand-glacier)]',
+  danger: 'text-[var(--color-brand-crimson)] dark:text-red-300',
+  success: 'text-[var(--color-brand-teal)] dark:text-[var(--color-brand-mint)]',
   warning: 'text-amber-600 dark:text-amber-300',
-  info: 'text-sky-600 dark:text-sky-300',
+  info: 'text-[var(--color-brand-azure)] dark:text-[var(--color-brand-glacier)]',
 } as const satisfies Record<SemanticTextRole, string>;
 
 export const placeholder = {
@@ -134,13 +134,13 @@ export const scroll = {
 } as const;
 
 export const buttonCta = {
-  gradient: ['bg-[var(--color-brand-sky)]'],
+  gradient: ['bg-[var(--color-brand-azure)]'],
   glow: [...effect.accentOutlineGlowCta],
   hover: ['hover:-translate-y-0.5', 'disabled:hover:translate-y-0'],
 } as const;
 
 export const successCta = {
-  gradient: ['bg-[var(--color-brand-emerald)]'],
+  gradient: ['bg-[var(--color-brand-teal)]'],
   glow: [...effect.successGlow],
   hover: ['hover:-translate-y-[2px]', 'active:scale-[0.98]', 'disabled:active:scale-100'],
   focus: [
@@ -238,7 +238,7 @@ export const status = {
 
 export const focus = {
   visible:
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-slate-900',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-glacier)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-[var(--color-brand-azure)] dark:focus-visible:ring-offset-slate-900',
   danger:
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-red-400/75 dark:focus-visible:ring-offset-slate-900',
   darkOffset: 'dark:focus:ring-offset-[var(--color-surface-glass-panel)]',
@@ -285,11 +285,11 @@ export const budgetProgress = {
     'duration-500',
     'ease-out',
   ],
-  fillWithin: ['bg-[var(--color-brand-sky)]', ...effect.successGlow],
+  fillWithin: ['bg-[var(--color-brand-azure)]', ...effect.successGlow],
   fillOver: [
     'bg-gradient-to-r',
-    'from-[var(--color-brand-rose)]',
-    'via-[var(--color-brand-rose)]',
+    'from-[var(--color-brand-crimson)]',
+    'via-[var(--color-brand-crimson)]',
     'to-[var(--color-text-danger)]',
     ...effect.dangerGlow,
   ],
@@ -673,10 +673,10 @@ export const checkboxControl = {
     'peer-focus-visible:outline-none',
     'peer-focus-visible:ring-2',
     'peer-focus-visible:ring-[var(--color-border-hover-accent)]',
-    'peer-checked:border-[var(--color-brand-sky)]',
-    'peer-checked:bg-[var(--color-brand-sky)]',
-    'dark:peer-checked:border-[var(--color-brand-sky)]',
-    'dark:peer-checked:bg-[var(--color-brand-sky)]',
+    'peer-checked:border-[var(--color-brand-azure)]',
+    'peer-checked:bg-[var(--color-brand-azure)]',
+    'dark:peer-checked:border-[var(--color-brand-azure)]',
+    'dark:peer-checked:bg-[var(--color-brand-azure)]',
   ],
   icon: [
     'pointer-events-none',

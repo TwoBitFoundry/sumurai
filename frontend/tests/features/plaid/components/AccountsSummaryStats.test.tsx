@@ -21,7 +21,7 @@ describe('AccountsSummaryStats', () => {
     window.sessionStorage.clear();
   });
 
-  it('renders an InsightsPanel shell with violet accent', () => {
+  it('renders an InsightsPanel shell with ocean accent', () => {
     render(<AccountsSummaryStats summary={defaultSummary} lastSyncValue="12m ago" />);
 
     const shell = screen.getByTestId('accounts-summary-shell');

@@ -226,7 +226,7 @@ export function TransactionInsightsPanel({
   const toggle = (id: string) => setFlipped((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const state: InsightState = displayState;
-  const cardAccent = 'emerald' as const;
+  const cardAccent = 'teal' as const;
   const copy = INSIGHT_COPY[state];
   const stateLabel = STATE_LABEL[state];
 
@@ -259,7 +259,7 @@ export function TransactionInsightsPanel({
     ) : undefined;
 
   return (
-    <InsightsPanelShell testId="transaction-insights-shell" accent="emerald">
+    <InsightsPanelShell testId="transaction-insights-shell" accent="teal">
       <InsightsExpandablePanel
         testId="transaction-insights-panel"
         bodyId="transaction-insights-panel-body"

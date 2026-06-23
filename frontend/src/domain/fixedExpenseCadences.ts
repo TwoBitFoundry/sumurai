@@ -20,11 +20,11 @@ export const FIXED_EXPENSE_CADENCE_ORDER: FixedExpenseCadenceKey[] = [
 ];
 
 export const FIXED_EXPENSE_CADENCE_ACCENT = {
-  weekly: 'sky',
-  biweekly: 'sky',
-  monthly: 'sky',
-  quarterly: 'sky',
-  annual: 'sky',
+  weekly: 'azure',
+  biweekly: 'azure',
+  monthly: 'azure',
+  quarterly: 'azure',
+  annual: 'azure',
 } as const satisfies Record<FixedExpenseCadenceKey, HeroAccent>;
 
 export function normalizeFixedExpenseCadence(cadence: string): FixedExpenseCadenceKey | null {

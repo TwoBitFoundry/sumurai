@@ -188,10 +188,7 @@ const TransactionsPage: React.FC<{
                 uiTextRecipes.primary
               )}
             >
-              <span
-                className={cn(...controlIconWell.lg, heroAccents.emerald.icon)}
-                aria-hidden="true"
-              >
+              <span className={cn(...controlIconWell.lg, heroAccents.teal.icon)} aria-hidden="true">
                 <ReceiptText />
               </span>
               Transactions

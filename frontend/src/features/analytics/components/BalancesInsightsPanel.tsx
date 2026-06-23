@@ -39,7 +39,7 @@ export function BalancesInsightsPanel({
   const { expanded, toggleExpanded } = useSessionCollapsible('balances-insights');
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
   const { isMobile } = useViewportBreakpoint();
-  const shellAccent = heroAccents.violet;
+  const shellAccent = heroAccents.ocean;
 
   if (lastResetKey !== resetKey) {
     setLastResetKey(resetKey);
@@ -144,7 +144,7 @@ export function BalancesInsightsPanel({
   ];
 
   return (
-    <InsightsPanelShell testId="balances-insights-shell" accent="violet">
+    <InsightsPanelShell testId="balances-insights-shell" accent="ocean">
       <InsightsExpandablePanel
         testId="balances-insights-panel"
         bodyId="balances-insights-panel-body"
@@ -192,7 +192,7 @@ export function BalancesInsightsPanel({
                         )}
                       >
                         <span
-                          className={cn(...heroStatCardRecipes.iconWell, heroAccents.emerald.icon)}
+                          className={cn(...heroStatCardRecipes.iconWell, heroAccents.teal.icon)}
                           aria-hidden
                         >
                           <ArrowUpRight />
@@ -250,7 +250,7 @@ export function BalancesInsightsPanel({
                         )}
                       >
                         <span
-                          className={cn(...heroStatCardRecipes.iconWell, heroAccents.rose.icon)}
+                          className={cn(...heroStatCardRecipes.iconWell, heroAccents.crimson.icon)}
                           aria-hidden
                         >
                           <ArrowDownLeft />
@@ -333,7 +333,7 @@ export function BalancesInsightsPanel({
                 </span>
               }
               question="How much income have you received year to date?"
-              accent="emerald"
+              accent="teal"
               flipped={!!flipped['income-ytd']}
               onToggle={() => toggle('income-ytd')}
               outlined={false}
@@ -360,7 +360,7 @@ export function BalancesInsightsPanel({
                 </span>
               }
               question="How much have you spent year to date?"
-              accent="rose"
+              accent="crimson"
               flipped={!!flipped['expenses-ytd']}
               onToggle={() => toggle('expenses-ytd')}
               outlined={false}

@@ -78,7 +78,7 @@ export function InsightCard({
   value,
   suffix,
   question,
-  accent = 'sky',
+  accent = 'azure',
   flipped,
   onToggle,
   outlined = true,

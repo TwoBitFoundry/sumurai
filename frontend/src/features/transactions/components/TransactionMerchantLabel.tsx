@@ -92,8 +92,8 @@ function MerchantInteractiveLine({
             className={cn(
               lineClassName,
               'cursor-pointer',
-              'hover:text-emerald-600',
-              'dark:hover:text-emerald-300'
+              'hover:text-[var(--color-brand-teal)]',
+              'dark:hover:text-[var(--color-brand-mint)]'
             )}
           >
             {normalizedMerchant}

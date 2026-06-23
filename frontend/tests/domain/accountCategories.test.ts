@@ -51,9 +51,9 @@ describe('accountCategories', () => {
 
   it('uses dashboard hero accents for category icons', () => {
     expect(ACCOUNT_GROUP_ACCENT).toEqual({
-      cash: 'emerald',
-      credit: 'rose',
-      investments: 'sky',
+      cash: 'teal',
+      credit: 'crimson',
+      investments: 'azure',
       loans: 'amber',
     });
   });

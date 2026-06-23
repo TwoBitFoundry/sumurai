@@ -149,7 +149,7 @@ describe('AppTitleBar', () => {
     );
 
     const settingsButton = screen.getByRole('button', { name: 'Settings' });
-    expect(settingsButton.className).toContain('bg-[var(--color-brand-sky)]');
+    expect(settingsButton.className).toContain('bg-[var(--color-brand-azure)]');
     expect(settingsButton.className).toContain('text-white');
     expect(settingsButton.className).not.toContain(
       'bg-[color:color-mix(in_srgb,var(--color-surface-card)'
@@ -161,7 +161,7 @@ describe('AppTitleBar', () => {
 
     const settingsButton = screen.getByRole('button', { name: 'Settings' });
     expect(settingsButton.className).toContain('bg-transparent');
-    expect(settingsButton.className).not.toContain('bg-[var(--color-brand-sky)]');
+    expect(settingsButton.className).not.toContain('bg-[var(--color-brand-azure)]');
   });
 
   it('shows the demo mode badge under the title when demo mode is active', () => {

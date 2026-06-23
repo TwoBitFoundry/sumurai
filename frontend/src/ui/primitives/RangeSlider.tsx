@@ -95,7 +95,7 @@ export function RangeSlider({
           )}
         />
         <Slider.Range
-          className={cn('absolute', 'h-full', 'rounded-full', 'bg-[var(--color-brand-sky)]')}
+          className={cn('absolute', 'h-full', 'rounded-full', 'bg-[var(--color-brand-azure)]')}
         />
       </Slider.Track>
       <Slider.Thumb

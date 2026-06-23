@@ -47,7 +47,7 @@ const budgetBarSlotClass = cn(
 );
 
 const budgetHeroHoverRingStyle = {
-  boxShadow: `inset 0 0 0 2px ${heroAccents.sky.ringHex}`,
+  boxShadow: `inset 0 0 0 2px ${heroAccents.azure.ringHex}`,
 } as CSSProperties;
 
 const budgetRowShell = [

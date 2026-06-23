@@ -29,7 +29,7 @@ describe('design token text recipes', () => {
   it('maps representative text roles to paired light and dark classes', () => {
     expect(uiTextRecipes.primary).toBe('text-slate-900 dark:text-slate-100');
     expect(uiTextRecipes.body).toBe('text-slate-700 dark:text-slate-300');
-    expect(uiTextRecipes.danger).toBe('text-red-600 dark:text-red-300');
+    expect(uiTextRecipes.danger).toBe('text-[var(--color-brand-crimson)] dark:text-red-300');
   });
 
   it('exposes placeholder text recipes aligned with muted intent', () => {

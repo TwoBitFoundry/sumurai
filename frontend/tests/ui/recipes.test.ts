@@ -64,7 +64,7 @@ describe('shared UI recipes', () => {
       'drop-shadow-[0_8px_32px_color-mix(in_srgb,var(--color-effect-glass-shadow)_22%,transparent)]',
     ]);
     expect(effect.tabBarDropShadow[0]).toContain('--color-effect-glass-shadow');
-    expect(focus.visible).toContain('focus-visible:ring-sky-400');
+    expect(focus.visible).toContain('focus-visible:ring-[var(--color-brand-glacier)]');
     expect(font.badge).toBe(
       'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]'
     );
@@ -92,21 +92,21 @@ describe('shared UI recipes', () => {
   });
 
   it('exposes flat sky CTA and progress fill recipes', () => {
-    expect(buttonCta.gradient).toEqual(['bg-[var(--color-brand-sky)]']);
+    expect(buttonCta.gradient).toEqual(['bg-[var(--color-brand-azure)]']);
     expect(buttonCta.glow).toEqual([...effect.accentOutlineGlowCta]);
     expect(budgetProgress.shell).toEqual(['overflow-visible', 'py-2', '-my-2']);
     expect(budgetProgress.track.join(' ')).toContain('overflow-visible');
     expect(budgetProgress.track.join(' ')).not.toContain('overflow-hidden');
-    expect(budgetProgress.fillWithin).toContain('bg-[var(--color-brand-sky)]');
-    expect(budgetProgress.fillWithin).not.toContain('brand-violet');
+    expect(budgetProgress.fillWithin).toContain('bg-[var(--color-brand-azure)]');
+    expect(budgetProgress.fillWithin).not.toContain('brand-navy');
     expect(budgetProgress.fillWithin).toEqual([
-      'bg-[var(--color-brand-sky)]',
+      'bg-[var(--color-brand-azure)]',
       ...effect.successGlow,
     ]);
     expect(budgetProgress.fillOver).toEqual([
       'bg-gradient-to-r',
-      'from-[var(--color-brand-rose)]',
-      'via-[var(--color-brand-rose)]',
+      'from-[var(--color-brand-crimson)]',
+      'via-[var(--color-brand-crimson)]',
       'to-[var(--color-text-danger)]',
       ...effect.dangerGlow,
     ]);
@@ -116,7 +116,7 @@ describe('shared UI recipes', () => {
   });
 
   it('exposes the success and drawer modal recipes', () => {
-    expect(successCta.gradient).toEqual(['bg-[var(--color-brand-emerald)]']);
+    expect(successCta.gradient).toEqual(['bg-[var(--color-brand-teal)]']);
     expect(modalDrawer.formRow).toContain('items-end');
     expect(modalDrawer.contentMotion).toContain('modal-drawer-content');
     expect(modalDrawer.overlayMotion).toContain('modal-drawer-overlay');

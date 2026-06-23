@@ -38,7 +38,7 @@ const accountTriggerFocusRing = [
 ] as const;
 
 const accountHeroHoverRingStyle = {
-  boxShadow: `inset 0 0 0 2px ${heroAccents.violet.ringHex}`,
+  boxShadow: `inset 0 0 0 2px ${heroAccents.ocean.ringHex}`,
 } as CSSProperties;
 
 const accountMaskClasses = cn(

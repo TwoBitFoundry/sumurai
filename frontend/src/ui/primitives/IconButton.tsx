@@ -24,7 +24,7 @@ export const iconButtonRecipes = {
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]',
   ],
   primary: [
-    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} bg-[var(--color-brand-sky)] text-white disabled:cursor-not-allowed`,
+    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} bg-[var(--color-brand-azure)] text-white disabled:cursor-not-allowed`,
     ...buttonCta.glow,
     'transition-all duration-200 ease-out hover:-translate-y-[2px] active:scale-[0.98] disabled:active:scale-100 disabled:hover:translate-y-0',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-[#0f172a]',

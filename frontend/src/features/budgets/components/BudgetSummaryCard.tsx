@@ -21,7 +21,7 @@ interface BudgetSummaryCardProps {
   totalSpent: number;
 }
 
-const summaryAccent = heroAccents.sky;
+const summaryAccent = heroAccents.azure;
 
 const amountValueClass = cn(
   'shrink-0',

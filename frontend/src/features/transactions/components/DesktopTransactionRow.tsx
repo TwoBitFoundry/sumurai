@@ -139,7 +139,7 @@ export const DesktopTransactionRow: React.FC<Props> = ({
               uiTypographyRecipes.body,
               uiTextRecipes.muted,
               'cursor-pointer text-left transition-colors duration-500',
-              'hover:text-emerald-600 dark:hover:text-emerald-300',
+              'hover:text-[var(--color-brand-teal)] dark:hover:text-[var(--color-brand-mint)]',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-slate-900'
             )}
           >
