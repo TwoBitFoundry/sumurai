@@ -11,8 +11,23 @@ pub const DEMO_EMAIL: &str = "me@test.com";
 const DEMO_PASSWORD: &str = "Test1234!";
 pub const SUMURAI_DEMO_TELLER_ITEM_ID: &str = "teller_sumurai_demo";
 
+pub fn demo_scoped_provider_id(user_id: Uuid, key: &str) -> String {
+    format!("{key}_{user_id}")
+}
+
+pub fn demo_teller_item_id(user_id: Uuid) -> String {
+    demo_scoped_provider_id(user_id, SUMURAI_DEMO_TELLER_ITEM_ID)
+}
+
+pub fn demo_provider_account_id(user_id: Uuid, account_key: &str) -> String {
+    demo_scoped_provider_id(user_id, account_key)
+}
+
 pub fn is_demo_teller_item_id(item_id: &str) -> bool {
-    item_id == SUMURAI_DEMO_TELLER_ITEM_ID
+    let prefix = format!("{SUMURAI_DEMO_TELLER_ITEM_ID}_");
+    item_id
+        .strip_prefix(&prefix)
+        .is_some_and(|suffix| Uuid::parse_str(suffix).is_ok())
 }
 
 fn seed_demo_user_enabled() -> bool {

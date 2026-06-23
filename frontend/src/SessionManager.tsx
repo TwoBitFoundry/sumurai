@@ -1,5 +1,6 @@
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { AuthenticationError } from '@/services/ApiClient';
 import { cn } from '@/ui/primitives';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { AuthService } from './services/authService';
@@ -24,6 +25,7 @@ export function SessionExpiryModal({
   onSessionRefreshed,
 }: SessionExpiryModalProps) {
   if (!isOpen) return null;
+  const isExpired = timeRemaining <= 0;
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -33,29 +35,31 @@ export function SessionExpiryModal({
 
   const handleStayLoggedIn = async () => {
     try {
-      const success = await refreshUserSession();
-      if (success) {
+      const result = await refreshUserSession();
+      if (result === 'success') {
         onStayLoggedIn();
       } else {
         handleSessionExpired();
       }
     } catch (error) {
       console.error('Session refresh failed:', error);
-      handleSessionExpired();
     }
   };
 
-  const refreshUserSession = async (): Promise<boolean> => {
+  const refreshUserSession = async (): Promise<'success' | 'authentication-error'> => {
     try {
       const result = await AuthService.refreshToken();
       if (result?.expires_at) {
         onSessionRefreshed?.(result.expires_at);
-        return true;
+        return 'success';
       }
-    } catch {
-      // fall-through to false
+      return 'authentication-error';
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        return 'authentication-error';
+      }
+      throw error;
     }
-    return false;
   };
 
   const handleSessionExpired = () => {
@@ -88,19 +92,23 @@ export function SessionExpiryModal({
             id="session-expiry-heading"
             className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}
           >
-            Session expiring
+            {isExpired ? 'Session expired' : 'Session expiring'}
           </h2>
-          <div className={cn('text-3xl', 'font-mono', uiTextRecipes.danger)}>
-            {formatTime(timeRemaining)}
-          </div>
+          {isExpired ? null : (
+            <div className={cn('text-3xl', 'font-mono', uiTextRecipes.danger)}>
+              {formatTime(timeRemaining)}
+            </div>
+          )}
           <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
-            Your session will expire in {Math.ceil(timeRemaining / 60)} minutes.
+            {isExpired
+              ? 'We could not confirm your session. Try again when connectivity returns, or log out now.'
+              : `Your session will expire in ${Math.ceil(timeRemaining / 60)} minutes.`}
           </p>
         </div>
 
         <div className="space-y-3">
           <Button type="button" onClick={handleStayLoggedIn} className="w-full" size="lg">
-            Stay logged in
+            {isExpired ? 'Try again' : 'Stay logged in'}
           </Button>
           <Button
             type="button"
@@ -111,9 +119,11 @@ export function SessionExpiryModal({
           >
             Logout now
           </Button>
-          <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.subtle)}>
-            Do nothing to auto-logout when the timer reaches zero.
-          </p>
+          {isExpired ? null : (
+            <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.subtle)}>
+              Do nothing to auto-logout when the timer reaches zero.
+            </p>
+          )}
         </div>
       </GlassCard>
     </Modal>
@@ -166,8 +176,8 @@ export function SessionManager({
     }
 
     if (isTokenExpired(expiresAt)) {
-      AuthService.clearToken();
-      onLogout();
+      setTimeRemaining(0);
+      setShowExpiryModal(true);
       return;
     }
 
@@ -177,7 +187,7 @@ export function SessionManager({
       setTimeRemaining(timeUntilExpiry);
       setShowExpiryModal(true);
     }
-  }, [expiresAt, onLogout]);
+  }, [expiresAt]);
 
   useEffect(() => {
     if (!expiresAt) {
@@ -199,8 +209,7 @@ export function SessionManager({
       setTimeRemaining((prev) => {
         const newTime = prev - 1;
         if (newTime <= 0) {
-          AuthService.clearToken();
-          onLogout();
+          setShowExpiryModal(true);
           return 0;
         }
         return newTime;
@@ -208,7 +217,7 @@ export function SessionManager({
     }, SESSION_CHECK_INTERVAL);
 
     return () => clearTimeout(timer);
-  }, [timeRemaining, showExpiryModal, onLogout]);
+  }, [timeRemaining, showExpiryModal]);
 
   const handleStayLoggedIn = () => {
     setShowExpiryModal(false);

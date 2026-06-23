@@ -33,6 +33,10 @@ fn provider_id(txn: &Transaction) -> &str {
     txn.provider_transaction_id.as_deref().unwrap_or("")
 }
 
+fn scoped_demo_provider_id(user_id: Uuid, key: &str) -> String {
+    seed::demo_scoped_provider_id(user_id, key)
+}
+
 fn expect_shared_demo_seed_mocks(
     mock_db: &mut MockDatabaseRepository,
     mock_cache: &mut MockCacheService,
@@ -146,6 +150,31 @@ fn demo_entity_ids_are_stable_for_the_same_user_and_key() {
 }
 
 #[test]
+fn demo_provider_ids_are_unique_per_user() {
+    let user_a = Uuid::new_v4();
+    let user_b = Uuid::new_v4();
+    assert_ne!(
+        seed::demo_teller_item_id(user_a),
+        seed::demo_teller_item_id(user_b)
+    );
+    assert_ne!(
+        seed::demo_provider_account_id(user_a, "sumurai_demo_dep_checking"),
+        seed::demo_provider_account_id(user_b, "sumurai_demo_dep_checking")
+    );
+}
+
+#[test]
+fn is_demo_teller_item_id_requires_user_scoped_item_id() {
+    assert!(!seed::is_demo_teller_item_id(
+        seed::SUMURAI_DEMO_TELLER_ITEM_ID
+    ));
+    let user_id = Uuid::new_v4();
+    assert!(seed::is_demo_teller_item_id(&seed::demo_teller_item_id(
+        user_id
+    )));
+}
+
+#[test]
 fn runtime_offset_stays_zero_before_authored_latest_date() {
     let current_date = NaiveDate::from_ymd_opt(2026, 6, 10).unwrap();
     assert_eq!(runtime_offset_days(current_date), 0);
@@ -232,14 +261,15 @@ async fn maybe_seed_demo_dev_workspace_skips_when_demo_workspace_exists() {
                 Box::pin(async move { Ok(Some(user)) })
             }
         });
+    let user_id = user.id;
     mock_db
         .expect_get_all_provider_connections_by_user()
-        .with(mockall::predicate::eq(user.id))
+        .with(mockall::predicate::eq(user_id))
         .times(1)
-        .returning(|_| {
+        .returning(move |_| {
             let mut connection = crate::models::plaid::ProviderConnection::new(
-                Uuid::new_v4(),
-                seed::SUMURAI_DEMO_TELLER_ITEM_ID,
+                user_id,
+                &seed::demo_teller_item_id(user_id),
             );
             connection.provider = "teller".to_string();
             connection.mark_connected("Sumurai Demo Bank");
@@ -311,6 +341,7 @@ async fn transaction_merchants_are_normalized_for_every_seeded_row() {
 #[tokio::test]
 async fn seeded_demo_dataset_preserves_category_coverage_and_date_offsets() {
     let user = demo_user();
+    let user_id = user.id;
     let (mut mock_db, mut mock_cache) = (MockDatabaseRepository::new(), MockCacheService::new());
     expect_shared_demo_seed_mocks(&mut mock_db, &mut mock_cache, &user, None);
     let captured = capture_snapshot_bundle(&mut mock_db);
@@ -344,19 +375,19 @@ async fn seeded_demo_dataset_preserves_category_coverage_and_date_offsets() {
     assert_eq!(latest_date, expected_latest);
 
     let gym_first = by_provider_id
-        .get(AUTHORED_DEMO_PROVIDER_TXN_IDS[19])
+        .get(scoped_demo_provider_id(user_id, AUTHORED_DEMO_PROVIDER_TXN_IDS[19]).as_str())
         .unwrap()
         .date;
     let gym_second = by_provider_id
-        .get(AUTHORED_DEMO_PROVIDER_TXN_IDS[20])
+        .get(scoped_demo_provider_id(user_id, AUTHORED_DEMO_PROVIDER_TXN_IDS[20]).as_str())
         .unwrap()
         .date;
     let gym_third = by_provider_id
-        .get(AUTHORED_DEMO_PROVIDER_TXN_IDS[21])
+        .get(scoped_demo_provider_id(user_id, AUTHORED_DEMO_PROVIDER_TXN_IDS[21]).as_str())
         .unwrap()
         .date;
     let gym_fourth = by_provider_id
-        .get(AUTHORED_DEMO_PROVIDER_TXN_IDS[22])
+        .get(scoped_demo_provider_id(user_id, AUTHORED_DEMO_PROVIDER_TXN_IDS[22]).as_str())
         .unwrap()
         .date;
     assert_eq!(gym_second - gym_first, Duration::days(28));
@@ -367,6 +398,7 @@ async fn seeded_demo_dataset_preserves_category_coverage_and_date_offsets() {
 #[tokio::test]
 async fn seeded_demo_dataset_keeps_expected_subscription_and_other_examples() {
     let user = demo_user();
+    let user_id = user.id;
     let (mut mock_db, mut mock_cache) = (MockDatabaseRepository::new(), MockCacheService::new());
     expect_shared_demo_seed_mocks(&mut mock_db, &mut mock_cache, &user, None);
     let captured = capture_snapshot_bundle(&mut mock_db);
@@ -383,18 +415,18 @@ async fn seeded_demo_dataset_keeps_expected_subscription_and_other_examples() {
         txns.iter().map(|txn| (provider_id(txn), txn)).collect();
 
     let netflix = by_provider_id
-        .get(AUTHORED_DEMO_PROVIDER_TXN_IDS[5])
+        .get(scoped_demo_provider_id(user_id, AUTHORED_DEMO_PROVIDER_TXN_IDS[5]).as_str())
         .unwrap();
     assert_eq!(netflix.amount, dec!(-15.49));
     assert_eq!(netflix.category_primary, "SUBSCRIPTION");
 
     let atm = by_provider_id
-        .get(AUTHORED_DEMO_PROVIDER_TXN_IDS[3])
+        .get(scoped_demo_provider_id(user_id, AUTHORED_DEMO_PROVIDER_TXN_IDS[3]).as_str())
         .unwrap();
     assert_eq!(atm.category_primary, "BANK_FEES");
 
     let transfer = by_provider_id
-        .get(AUTHORED_DEMO_PROVIDER_TXN_IDS[16])
+        .get(scoped_demo_provider_id(user_id, AUTHORED_DEMO_PROVIDER_TXN_IDS[16]).as_str())
         .unwrap();
     assert_eq!(transfer.category_primary, "TRANSFER_OUT");
 
@@ -404,8 +436,10 @@ async fn seeded_demo_dataset_keeps_expected_subscription_and_other_examples() {
         .count();
     assert!(repeated_other >= 12);
 
-    for provider_id in &AUTHORED_DEMO_PROVIDER_TXN_IDS[23..=25] {
-        let excluded = by_provider_id.get(provider_id).unwrap();
+    for authored_id in &AUTHORED_DEMO_PROVIDER_TXN_IDS[23..=25] {
+        let excluded = by_provider_id
+            .get(scoped_demo_provider_id(user_id, authored_id).as_str())
+            .unwrap();
         assert_eq!(excluded.amount, dec!(-6.45));
         let raw = excluded.original_merchant_name.as_deref().unwrap_or("");
         assert!(raw.contains("STARBUCKS"));

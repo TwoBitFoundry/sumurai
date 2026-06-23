@@ -26,7 +26,7 @@ import {
   type AccountFilterMessage,
   canUseBroadcastChannel,
 } from '@/utils/accountFilterChannel';
-import { ACCOUNTS_CHANGED_EVENT } from '@/utils/events';
+import { FINANCIAL_STATE_CHANGED_EVENT, type FinancialStateChangedDetail } from '@/utils/events';
 
 const EMPTY_PROVIDER_ACCOUNTS: ProviderAccount[] = [];
 
@@ -160,13 +160,18 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
   }, [allAccountIds]);
 
   useEffect(() => {
-    const handleAccountsChanged = () => {
+    const handleFinancialStateChanged = (event: Event) => {
+      const detail = (event as CustomEvent<FinancialStateChangedDetail>).detail;
+      if (detail?.mode !== 'accounts' && detail?.mode !== 'app') {
+        return;
+      }
       void queryClient.invalidateQueries({ queryKey: ['accounts'] });
       void resetTransactionQueries(queryClient, 'remove');
     };
 
-    window.addEventListener(ACCOUNTS_CHANGED_EVENT, handleAccountsChanged);
-    return () => window.removeEventListener(ACCOUNTS_CHANGED_EVENT, handleAccountsChanged);
+    window.addEventListener(FINANCIAL_STATE_CHANGED_EVENT, handleFinancialStateChanged);
+    return () =>
+      window.removeEventListener(FINANCIAL_STATE_CHANGED_EVENT, handleFinancialStateChanged);
   }, [queryClient]);
 
   const toggleBank = useCallback(

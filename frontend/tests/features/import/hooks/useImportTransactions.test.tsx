@@ -4,17 +4,12 @@ import React from 'react';
 import { useImportTransactions } from '@/features/import/hooks/useImportTransactions';
 import type { CsvColumnMapping, ImportResponse, ValidateResponse } from '@/models/import';
 import { ImportService } from '@/services/ImportService';
-import { invalidateStaleCacheQueries } from '@/utils/queryInvalidation';
 
 jest.mock('@/services/ImportService', () => ({
   ImportService: {
     validate: jest.fn(),
     importFile: jest.fn(),
   },
-}));
-
-jest.mock('@/utils/queryInvalidation', () => ({
-  invalidateStaleCacheQueries: jest.fn().mockResolvedValue(undefined),
 }));
 
 const validateResponse: ValidateResponse = {
@@ -245,12 +240,12 @@ describe('useImportTransactions', () => {
     expect(result.current.error).toBe('No transaction rows were found in the CSV file.');
   });
 
-  it('imports from preview, records success, and invalidates provider caches', async () => {
+  it('imports from preview and records success', async () => {
     const file = makeFile();
     const importing = deferred<ImportResponse>();
     jest.mocked(ImportService.validate).mockResolvedValue(validateResponse);
     jest.mocked(ImportService.importFile).mockReturnValue(importing.promise);
-    const { queryClient, wrapper } = setup();
+    const { wrapper } = setup();
 
     const { result } = renderHook(() => useImportTransactions('account-1'), { wrapper });
 
@@ -274,9 +269,6 @@ describe('useImportTransactions', () => {
       'account-1',
       validateResponse.suggested_csv_mapping
     );
-    expect(invalidateStaleCacheQueries).toHaveBeenCalledWith(queryClient, ['plaid', 'teller'], {
-      resetTransactions: 'reset',
-    });
     expect(result.current.status).toBe('success');
     expect(result.current.importResult).toBe(importResponse);
     expect(result.current.error).toBeNull();

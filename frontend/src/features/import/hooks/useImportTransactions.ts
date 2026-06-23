@@ -1,8 +1,3 @@
-/**
- * Drives transaction import upload and result handling.
- */
-
-import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 import { canCorrectCsvMapping, normalizeCsvMapping } from '@/features/import/csvMapping';
 import {
@@ -11,7 +6,6 @@ import {
 } from '@/features/import/fileTypes';
 import type { CsvColumnMapping, ImportResponse, ValidateResponse } from '@/models/import';
 import { ImportService } from '@/services/ImportService';
-import { invalidateStaleCacheQueries } from '@/utils/queryInvalidation';
 
 export type ImportWorkflowStatus =
   | 'idle'
@@ -40,7 +34,6 @@ const DEFAULT_VALIDATION_ERROR = 'We could not validate this file.';
 const DEFAULT_IMPORT_ERROR = 'We could not import this file.';
 
 export function useImportTransactions(accountId: string): UseImportTransactionsResult {
-  const queryClient = useQueryClient();
   const [status, setStatus] = useState<ImportWorkflowStatus>('idle');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [validationResult, setValidationResult] = useState<ValidateResponse | null>(null);
@@ -135,9 +128,6 @@ export function useImportTransactions(accountId: string): UseImportTransactionsR
       try {
         const result = await ImportService.importFile(fileToImport, accountId, mappingToImport);
         setImportResult(result);
-        await invalidateStaleCacheQueries(queryClient, ['plaid', 'teller'], {
-          resetTransactions: 'reset',
-        });
         setStatus('success');
         return result;
       } catch (err: unknown) {
@@ -146,7 +136,7 @@ export function useImportTransactions(accountId: string): UseImportTransactionsR
         return null;
       }
     },
-    [accountId, applySelectedFile, queryClient, setCsvMapping]
+    [accountId, applySelectedFile, setCsvMapping]
   );
 
   const reset = useCallback(() => {

@@ -1,4 +1,3 @@
-import type { QueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { BankConnectionViewModel } from '@/features/plaid/components/ConnectionsList';
 import { ApiError, RateLimitError } from '@/services/ApiClient';
@@ -6,12 +5,9 @@ import { PlaidService } from '@/services/PlaidService';
 import { SimpleFinService } from '@/services/SimpleFinService';
 import { TellerService } from '@/services/TellerService';
 import type { FinancialProvider, Transaction } from '@/types/api';
+import { dispatchFinancialAppRefresh } from '@/utils/events';
 import { formatUserFacingApiError } from '@/utils/formatUserFacingApiError';
-import {
-  isSyncProvider,
-  refreshFinancialDataAfterProviderChange,
-  type SyncProvider,
-} from '@/utils/queryInvalidation';
+import { isSyncProvider } from '@/utils/queryInvalidation';
 import type { SyncAllRow, SyncAllRowStatus } from '../types/syncAllStatus';
 import { buildSyncAllRows, type SyncAllBank } from '../utils/buildSyncAllRows';
 import { isProviderReconnectRequiredError } from '../utils/isProviderReconnectRequiredError';
@@ -20,7 +16,6 @@ interface UseSyncAllOrchestratorOptions {
   banks: BankConnectionViewModel[];
   primaryProvider: FinancialProvider;
   isOnline: boolean;
-  queryClient: QueryClient;
   onError?: (message: string | null) => void;
 }
 
@@ -84,6 +79,9 @@ const buildRateLimitedRows = (rows: SyncAllRow[], retryAfterSeconds: number | nu
 const hasFinishedSuccessState = (rows: SyncAllRow[]): boolean =>
   rows.every((row) => row.status === 'synced' || row.status === 'skipped_hidden');
 
+const hasAppliedSuccessfulSync = (rows: SyncAllRow[]): boolean =>
+  rows.some((row) => row.status === 'synced');
+
 const updateRow = (
   rows: SyncAllRow[],
   rowId: string,
@@ -108,7 +106,6 @@ export function useSyncAllOrchestrator({
   banks,
   primaryProvider,
   isOnline,
-  queryClient,
   onError,
 }: UseSyncAllOrchestratorOptions): UseSyncAllOrchestratorResult {
   const [syncAllRows, setSyncAllRows] = useState<SyncAllRow[]>([]);
@@ -132,20 +129,17 @@ export function useSyncAllOrchestrator({
   const closeSyncAllModal = useCallback(() => {
     clearAutoCloseTimer();
     setSyncAllModalOpen(false);
-  }, [clearAutoCloseTimer]);
-
-  const refreshProviders = useCallback(
-    async (providers: FinancialProvider[]) => {
-      await refreshFinancialDataAfterProviderChange(queryClient, providers as SyncProvider[]);
-    },
-    [queryClient]
-  );
+    if (hasAppliedSuccessfulSync(syncAllRows)) {
+      dispatchFinancialAppRefresh({ tab: 'accounts' });
+    }
+  }, [clearAutoCloseTimer, syncAllRows]);
 
   const scheduleAutoClose = useCallback(() => {
     clearAutoCloseTimer();
     autoCloseTimerRef.current = window.setTimeout(() => {
       setSyncAllModalOpen(false);
       autoCloseTimerRef.current = null;
+      dispatchFinancialAppRefresh({ tab: 'accounts' });
     }, AUTO_CLOSE_DELAY_MS);
   }, [clearAutoCloseTimer]);
 
@@ -217,8 +211,6 @@ export function useSyncAllOrchestrator({
         });
         setSyncAllRows(currentRows);
 
-        await refreshProviders(['simplefin']);
-
         if (hasFinishedSuccessState(currentRows)) {
           scheduleAutoClose();
         }
@@ -258,7 +250,6 @@ export function useSyncAllOrchestrator({
           }
 
           setSyncAllRows(currentRows);
-          await refreshProviders([bank.provider]);
         } catch (error: unknown) {
           if (isRateLimitError(error)) {
             const retryAfterSeconds =
@@ -316,7 +307,6 @@ export function useSyncAllOrchestrator({
     isOnline,
     onError,
     primaryProvider,
-    refreshProviders,
     scheduleAutoClose,
     syncingAll,
   ]);

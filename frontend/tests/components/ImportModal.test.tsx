@@ -4,6 +4,7 @@ import { ImportModalView } from '@/features/import/components/ImportModal';
 import { importFileAccept } from '@/features/import/fileTypes';
 import type { UseImportTransactionsResult } from '@/features/import/hooks/useImportTransactions';
 import type { CsvColumnMapping, ImportResponse, ValidateResponse } from '@/models/import';
+import * as events from '@/utils/events';
 import { ThemeTestProvider } from '../utils/ThemeTestProvider';
 
 const completeMapping: CsvColumnMapping = {
@@ -374,5 +375,37 @@ describe('ImportModal', () => {
     expect(screen.getByText('1 truncated')).toBeVisible();
     expect(screen.getByText('1 row warning')).toBeVisible();
     expect(screen.getByText(importResult.errors[0])).toBeVisible();
+  });
+
+  it('refreshes the app after finishing a successful import', async () => {
+    const user = userEvent.setup();
+    const onClose = jest.fn();
+    const onImportSuccess = jest.fn();
+    const dispatchFinancialAppRefresh = jest.spyOn(events, 'dispatchFinancialAppRefresh');
+
+    render(
+      <ThemeTestProvider>
+        <ImportModalView
+          account={{ id: 'account-1', name: 'Checking', mask: '1234' }}
+          isOpen
+          onClose={onClose}
+          onImportSuccess={onImportSuccess}
+          workflow={workflow({
+            status: 'success',
+            selectedFile: new File(['csv'], 'bank.csv'),
+            validationResult: csvValidation,
+            importResult,
+          })}
+        />
+      </ThemeTestProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: /done/i }));
+
+    expect(onImportSuccess).toHaveBeenCalledWith(importResult.imported_count, '1234');
+    expect(onClose).toHaveBeenCalled();
+    expect(dispatchFinancialAppRefresh).toHaveBeenCalledWith({ tab: 'accounts' });
+
+    dispatchFinancialAppRefresh.mockRestore();
   });
 });

@@ -1,13 +1,3 @@
-/**
- * Application events used to signal cross-feature data changes.
- */
-
-export const ACCOUNTS_CHANGED_EVENT = 'accounts-changed';
-
-export const dispatchAccountsChanged = () => {
-  window.dispatchEvent(new Event(ACCOUNTS_CHANGED_EVENT));
-};
-
 export const NAVIGATE_TO_TRANSACTIONS_EVENT = 'sumurai:navigate-to-transactions';
 
 export interface NavigateToTransactionsDetail {
@@ -20,8 +10,39 @@ export const dispatchNavigateToTransactions = (detail: NavigateToTransactionsDet
   window.dispatchEvent(new CustomEvent(NAVIGATE_TO_TRANSACTIONS_EVENT, { detail }));
 };
 
-export const PROVIDER_CONNECTED_EVENT = 'sumurai:provider-connected';
+export const FINANCIAL_STATE_CHANGED_EVENT = 'sumurai:financial-state-changed';
+
+export type FinancialStateRefreshTab =
+  | 'dashboard'
+  | 'transactions'
+  | 'budgets'
+  | 'accounts'
+  | 'settings';
+
+export interface FinancialStateChangedDetail {
+  mode: 'accounts' | 'app';
+  tab?: FinancialStateRefreshTab;
+  refreshSession?: boolean;
+}
+
+export const dispatchFinancialAccountsRefresh = () => {
+  window.dispatchEvent(
+    new CustomEvent<FinancialStateChangedDetail>(FINANCIAL_STATE_CHANGED_EVENT, {
+      detail: { mode: 'accounts' },
+    })
+  );
+};
+
+export const dispatchFinancialAppRefresh = (detail: Omit<FinancialStateChangedDetail, 'mode'>) => {
+  window.dispatchEvent(
+    new CustomEvent<FinancialStateChangedDetail>(FINANCIAL_STATE_CHANGED_EVENT, {
+      detail: { mode: 'app', ...detail },
+    })
+  );
+};
+
+export const dispatchAccountsChanged = dispatchFinancialAccountsRefresh;
 
 export const dispatchProviderConnected = () => {
-  window.dispatchEvent(new Event(PROVIDER_CONNECTED_EVENT));
+  dispatchFinancialAppRefresh({ tab: 'accounts', refreshSession: true });
 };

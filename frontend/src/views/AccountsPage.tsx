@@ -38,7 +38,7 @@ import { SimpleFinService } from '../services/SimpleFinService';
 import { TellerService } from '../services/TellerService';
 import type { FinancialProvider } from '../types/api';
 import type { ProviderCatalogue } from '../types/providerCatalog';
-import { dispatchAccountsChanged, dispatchProviderConnected } from '../utils/events';
+import { dispatchFinancialAccountsRefresh, dispatchFinancialAppRefresh } from '../utils/events';
 import { formatUserFacingApiError } from '../utils/formatUserFacingApiError';
 import { getProviderCardConfig, resolvePickerVisibleProviders } from '../utils/providerCards';
 import {
@@ -354,7 +354,6 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
       banks: banksWithSync,
       primaryProvider,
       isOnline,
-      queryClient,
       onError: (message) => {
         if (message) {
           pushAccountsToast(message, 'error');
@@ -376,7 +375,7 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
     async (provider: FinancialProvider) => {
       try {
         await providerCatalog.chooseProvider(provider);
-        dispatchProviderConnected();
+        dispatchFinancialAppRefresh({ tab: 'accounts', refreshSession: true });
         setIsProviderPickerOpen(false);
       } catch (error) {
         console.warn('Failed to select provider after SimpleFIN connection', error);
@@ -474,7 +473,7 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
 
   const handleDiyInstitutionComplete = useCallback(
     async (_connectionId: string) => {
-      const createdFromProviderPicker = diyModalTarget?.connectionId == null;
+      const createdNewInstitution = diyModalTarget?.connectionId == null;
       const shouldSelectDiy = activeAggregator == null;
 
       try {
@@ -486,11 +485,11 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
         pushAccountsToast('Unable to select provider right now', 'error');
       }
 
-      if (createdFromProviderPicker) {
-        dispatchProviderConnected();
+      if (createdNewInstitution) {
+        dispatchFinancialAppRefresh({ tab: 'accounts', refreshSession: true });
+      } else {
+        dispatchFinancialAccountsRefresh();
       }
-
-      dispatchAccountsChanged();
 
       try {
         await providerCatalog.refresh();
@@ -545,7 +544,7 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
       void providerCatalog
         .chooseProvider(pickerConnectingProvider)
         .then(() => {
-          dispatchProviderConnected();
+          dispatchFinancialAppRefresh({ tab: 'accounts', refreshSession: true });
         })
         .catch(() => pushAccountsToast('Unable to select provider right now', 'error'))
         .finally(() => {
@@ -716,7 +715,7 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
           return;
         }
 
-        dispatchAccountsChanged();
+        dispatchFinancialAppRefresh({ tab: 'accounts' });
         if (disconnectingLastBank && isSyncProvider(bank.provider)) {
           queryClient.setQueryData<ProviderCatalogue>(['provider', 'catalog'], (prev) =>
             prev ? { ...prev, user_provider: null } : prev
@@ -770,7 +769,7 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
           type: 'active',
         });
         await refreshBankData('simplefin', { resetTransactions: 'remove' });
-        dispatchAccountsChanged();
+        dispatchFinancialAccountsRefresh();
         connectionFlow.setError(null);
         onError?.(null);
 

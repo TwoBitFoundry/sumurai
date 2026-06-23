@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Loader2,
+  Upload,
   UploadCloud,
   X,
 } from 'lucide-react';
@@ -30,10 +31,11 @@ import {
   Pill,
   Select,
 } from '@/ui/primitives';
-import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import {
+  control,
   border as uiBorderRecipes,
   checkboxControl as uiCheckboxControlRecipes,
+  insightsPanel as uiInsightsPanelRecipes,
   radius as uiRadiusRecipes,
   status as uiStatusRecipes,
   surface as uiSurfaceRecipes,
@@ -41,6 +43,7 @@ import {
   transactionsTable as uiTransactionsTableRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
+import { dispatchFinancialAppRefresh } from '@/utils/events';
 import { fmtUSD } from '@/utils/format';
 import {
   isMappingComplete,
@@ -187,6 +190,7 @@ export const ImportModalView: React.FC<ImportModalViewProps> = ({
       onImportSuccess?.(workflow.importResult.imported_count, account.mask);
     }
     handleClose();
+    dispatchFinancialAppRefresh({ tab: 'accounts' });
   };
 
   const handleMappingChange = (field: keyof CsvColumnMapping, value: string) => {
@@ -343,7 +347,6 @@ export const ImportModalView: React.FC<ImportModalViewProps> = ({
               <FooterActions
                 workflow={workflow}
                 canImport={canImport}
-                onClose={handleClose}
                 onChooseFile={() => fileInputRef.current?.click()}
                 onImport={handleImport}
                 onDone={handleDone}
@@ -657,25 +660,34 @@ function MappingPanel({
     >
       <ImportPanelHeading
         leading={
-          <IconButton
+          <button
             type="button"
-            variant="ghost"
             aria-expanded={expanded}
             aria-label={expanded ? 'Collapse column mapping' : 'Expand column mapping'}
             onClick={onToggle}
-            className={cn(appTitleBarRecipes.settingsIdle)}
+            className={cn(
+              'inline-flex',
+              'shrink-0',
+              'items-center',
+              'justify-center',
+              'rounded-[length:var(--radius-standard)]',
+              'focus-visible:outline-none',
+              'focus-visible:ring-2',
+              'focus-visible:ring-[var(--color-border-focus-active)]',
+              'focus-visible:ring-offset-2',
+              'focus-visible:ring-offset-white',
+              'dark:focus-visible:ring-offset-[#0f172a]'
+            )}
           >
-            <ChevronDown
-              className={cn(
-                'h-4',
-                'w-4',
-                'transition-transform',
-                'duration-200',
-                expanded && 'rotate-180'
-              )}
+            <span
+              className={cn(...uiInsightsPanelRecipes.summaryChevronColumnCenter)}
               aria-hidden="true"
-            />
-          </IconButton>
+            >
+              <ChevronDown
+                className={cn(...uiInsightsPanelRecipes.summaryChevron, expanded && 'rotate-180')}
+              />
+            </span>
+          </button>
         }
       >
         Column mapping
@@ -1009,14 +1021,12 @@ function SuccessPanel({ result }: { result: ImportResponse }) {
 function FooterActions({
   workflow,
   canImport,
-  onClose,
   onChooseFile,
   onImport,
   onDone,
 }: {
   workflow: UseImportTransactionsResult;
   canImport: boolean;
-  onClose: () => void;
   onChooseFile: () => void;
   onImport: () => void;
   onDone: () => void;
@@ -1031,35 +1041,22 @@ function FooterActions({
 
   if (workflow.status === 'preview') {
     return (
-      <>
-        <Button type="button" variant="secondary" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="button" variant="primary" onClick={onImport} disabled={!canImport}>
-          Import
-        </Button>
-      </>
+      <Button type="button" variant="primary" onClick={onImport} disabled={!canImport}>
+        <Upload className={cn(control.glyph.md)} aria-hidden="true" />
+        <span>Import</span>
+      </Button>
     );
   }
 
   if (workflow.status === 'idle') {
     return (
-      <>
-        <Button type="button" variant="secondary" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="button" variant="primary" onClick={onChooseFile}>
-          Choose file
-        </Button>
-      </>
+      <Button type="button" variant="primary" onClick={onChooseFile}>
+        Choose file
+      </Button>
     );
   }
 
-  return (
-    <Button type="button" variant="secondary" onClick={onClose}>
-      Cancel
-    </Button>
-  );
+  return null;
 }
 
 function importDestinationLine(

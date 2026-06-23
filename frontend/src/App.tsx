@@ -22,7 +22,8 @@ import { BrowserStorageAdapter } from './services/boundaries';
 import { AppFooter, AppTitleBar, GlassCard, GradientShell } from './ui/primitives';
 import { ControlTooltipProvider } from './ui/primitives/ControlHoverLabel';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from './ui/recipes';
-import { PROVIDER_CONNECTED_EVENT } from './utils/events';
+import { FINANCIAL_STATE_CHANGED_EVENT, type FinancialStateChangedDetail } from './utils/events';
+import { resetFinancialQueriesForAppRefresh } from './utils/queryInvalidation';
 
 AuthService.configure({
   storage: new BrowserStorageAdapter(),
@@ -65,53 +66,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
 
   const isOnline = useOnlineStatus();
 
-  useEffect(() => {
-    const handler = () => setShowEnrollmentModal(true);
-    window.addEventListener('sumurai:enrollment-required', handler);
-    return () => window.removeEventListener('sumurai:enrollment-required', handler);
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    const establishSession = async () => {
-      try {
-        const refreshResponse = await AuthService.refreshToken();
-        if (!active) {
-          return;
-        }
-        setIsAuthenticated(true);
-        setShowOnboarding(!refreshResponse.onboarding_completed);
-        setSessionExpiresAt(refreshResponse.expires_at);
-        setDemoModeActive(refreshResponse.demo_mode_active);
-        if (refreshResponse.email) {
-          queryClient.setQueryData(['user', 'email'], refreshResponse.email);
-        }
-      } catch (error) {
-        if (active) {
-          setIsAuthenticated(false);
-          setShowOnboarding(false);
-          setSessionExpiresAt(null);
-          setDemoModeActive(false);
-        }
-        if (!(error instanceof AuthenticationError)) {
-          console.warn('Auth validation error:', error);
-        }
-        AuthService.clearToken();
-      } finally {
-        if (active) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    establishSession();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const handleAuthSuccess = useCallback(
+  const applyAuthenticatedSession = useCallback(
     (authResponse: {
       user_id: string;
       email?: string;
@@ -128,6 +83,78 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
       }
     },
     []
+  );
+
+  const resetUnauthenticatedSession = useCallback(() => {
+    setIsAuthenticated(false);
+    setShowOnboarding(false);
+    setSessionExpiresAt(null);
+    setDemoModeActive(false);
+    AuthService.clearToken();
+  }, []);
+
+  const refreshAuthenticatedSession = useCallback(
+    async (options?: { onAuthenticationError?: () => void }) => {
+      try {
+        const refreshResponse = await AuthService.refreshToken();
+        applyAuthenticatedSession(refreshResponse);
+        return refreshResponse;
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          options?.onAuthenticationError?.();
+          resetUnauthenticatedSession();
+        } else {
+          console.warn('Auth validation error:', error);
+        }
+        throw error;
+      }
+    },
+    [applyAuthenticatedSession, resetUnauthenticatedSession]
+  );
+
+  useEffect(() => {
+    const handler = () => setShowEnrollmentModal(true);
+    window.addEventListener('sumurai:enrollment-required', handler);
+    return () => window.removeEventListener('sumurai:enrollment-required', handler);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const establishSession = async () => {
+      try {
+        await refreshAuthenticatedSession();
+        if (!active) {
+          return;
+        }
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    establishSession();
+
+    return () => {
+      active = false;
+    };
+  }, [refreshAuthenticatedSession]);
+
+  const handleAuthSuccess = useCallback(
+    (authResponse: {
+      user_id: string;
+      email?: string;
+      expires_at: string;
+      onboarding_completed: boolean;
+      demo_mode_active: boolean;
+    }) => {
+      applyAuthenticatedSession(authResponse);
+    },
+    [applyAuthenticatedSession]
   );
 
   const handleEnrollmentRequired = useCallback(
@@ -219,14 +246,32 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   }, []);
 
   useEffect(() => {
-    const handler = () => {
-      setRemountTab('accounts');
-      setMainAppKey((prev) => prev + 1);
-      setDemoModeActive(false);
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<FinancialStateChangedDetail>).detail;
+      if (detail?.mode !== 'app') {
+        return;
+      }
+
+      void (async () => {
+        try {
+          await resetFinancialQueriesForAppRefresh(queryClient);
+          if (detail.refreshSession) {
+            await refreshAuthenticatedSession({
+              onAuthenticationError: () => {
+                setAuthScreen('login');
+              },
+            });
+          }
+          if (detail.tab) {
+            setRemountTab(detail.tab);
+          }
+          setMainAppKey((prev) => prev + 1);
+        } catch {}
+      })();
     };
-    window.addEventListener(PROVIDER_CONNECTED_EVENT, handler);
-    return () => window.removeEventListener(PROVIDER_CONNECTED_EVENT, handler);
-  }, []);
+    window.addEventListener(FINANCIAL_STATE_CHANGED_EVENT, handler);
+    return () => window.removeEventListener(FINANCIAL_STATE_CHANGED_EVENT, handler);
+  }, [refreshAuthenticatedSession]);
 
   if (isLoading) {
     return (

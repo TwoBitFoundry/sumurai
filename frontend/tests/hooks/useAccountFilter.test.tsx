@@ -3,7 +3,7 @@ import { AccountFilterTestProvider } from '@tests/utils/AccountFilterTestProvide
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
-import { ACCOUNTS_CHANGED_EVENT } from '@/utils/events';
+import { FINANCIAL_STATE_CHANGED_EVENT } from '@/utils/events';
 
 type BroadcastChannelListener = (event: MessageEvent) => void;
 
@@ -206,7 +206,11 @@ describe('AccountFilterProvider', () => {
         });
 
         await act(async () => {
-          window.dispatchEvent(new Event(ACCOUNTS_CHANGED_EVENT));
+          window.dispatchEvent(
+            new CustomEvent(FINANCIAL_STATE_CHANGED_EVENT, {
+              detail: { mode: 'accounts' },
+            })
+          );
         });
 
         await waitFor(() => {
@@ -460,7 +464,11 @@ describe('AccountFilterProvider', () => {
         });
 
         await act(async () => {
-          window.dispatchEvent(new Event(ACCOUNTS_CHANGED_EVENT));
+          window.dispatchEvent(
+            new CustomEvent(FINANCIAL_STATE_CHANGED_EVENT, {
+              detail: { mode: 'accounts' },
+            })
+          );
         });
 
         await waitFor(() => {

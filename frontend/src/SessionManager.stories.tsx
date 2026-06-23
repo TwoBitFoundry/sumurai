@@ -89,9 +89,12 @@ export const ExpiredSession: Story = {
   ),
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
     await expect(canvas.getByText(/protected dashboard/i)).toBeVisible();
     await waitFor(() => {
-      expect(args.onLogout).toHaveBeenCalledTimes(1);
+      expect(body.getByRole('heading', { name: /session expired/i })).toBeVisible();
     });
+    await expect(body.getByRole('button', { name: /try again/i })).toBeVisible();
+    await expect(args.onLogout).not.toHaveBeenCalled();
   },
 };

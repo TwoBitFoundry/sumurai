@@ -24,7 +24,8 @@ fn demo_user() -> User {
 }
 
 fn demo_connection(user_id: Uuid) -> ProviderConnection {
-    let mut connection = ProviderConnection::new(user_id, crate::seed::SUMURAI_DEMO_TELLER_ITEM_ID);
+    let mut connection =
+        ProviderConnection::new(user_id, &crate::seed::demo_teller_item_id(user_id));
     connection.provider = "teller".to_string();
     connection.mark_connected("Sumurai Demo Bank");
     connection
@@ -135,7 +136,9 @@ async fn given_active_demo_mode_when_exiting_then_clears_financial_data_and_demo
         .expect_disconnect_provider_connection_cascade()
         .with(
             mockall::predicate::eq(user_id),
-            mockall::predicate::eq(crate::seed::SUMURAI_DEMO_TELLER_ITEM_ID),
+            mockall::predicate::function(move |item_id: &str| {
+                item_id == crate::seed::demo_teller_item_id(user_id)
+            }),
         )
         .times(1)
         .returning(|_, _| Box::pin(async { Ok((12, 3)) }));
