@@ -39,11 +39,11 @@ const queryClient = new QueryClient({
   },
 });
 
-function renderAccountsPage() {
+function renderAccountsPage({ demoModeActive = false }: { demoModeActive?: boolean } = {}) {
   return render(
     <ThemeTestProvider>
       <QueryClientProvider client={queryClient}>
-        <AccountsPage />
+        <AccountsPage demoModeActive={demoModeActive} />
       </QueryClientProvider>
     </ThemeTestProvider>
   );
@@ -835,7 +835,31 @@ describe('AccountsPage', () => {
     expect(within(modal).getByText('new institution')).toBeVisible();
   });
 
-  it('opens the DIY institution modal from a DIY bank row add-account action', async () => {
+  it('shows a demo exit warning before creating a new institution from the provider picker', async () => {
+    const user = userEvent.setup();
+
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid', 'teller', 'diy'],
+        user_provider: null,
+      })
+    );
+
+    renderAccountsPage({ demoModeActive: true });
+
+    await user.click(screen.getByRole('button', { name: /^link account$/i }));
+    await user.click(screen.getAllByRole('button', { name: 'Connect' })[0]);
+
+    expect(screen.getByTestId('demo-exit-warning-modal')).toBeInTheDocument();
+    expect(screen.queryByTestId('diy-institution-modal')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(screen.getByTestId('diy-institution-modal')).toBeInTheDocument();
+  });
+
+  it('opens the DIY institution modal from a DIY bank row add-account action without a demo exit warning', async () => {
     const user = userEvent.setup();
 
     jest.mocked(useOnlineStatus).mockReturnValue(true);
@@ -866,10 +890,11 @@ describe('AccountsPage', () => {
       })
     );
 
-    renderAccountsPage();
+    renderAccountsPage({ demoModeActive: true });
 
     await user.click(screen.getByRole('button', { name: 'Add account' }));
 
+    expect(screen.queryByTestId('demo-exit-warning-modal')).not.toBeInTheDocument();
     const modal = screen.getByTestId('diy-institution-modal');
     expect(modal).toBeInTheDocument();
     expect(within(modal).getByText('DIY Bank')).toBeVisible();

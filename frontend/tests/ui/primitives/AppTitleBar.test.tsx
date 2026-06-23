@@ -164,6 +164,20 @@ describe('AppTitleBar', () => {
     expect(settingsButton.className).not.toContain('bg-[var(--color-brand-sky)]');
   });
 
+  it('shows the demo mode badge when demo mode is active', () => {
+    renderAppTitleBar(<AppTitleBar {...baseProps} isOnline demoModeActive onLogout={jest.fn()} />);
+
+    expect(screen.getByText('Demo mode')).toBeInTheDocument();
+  });
+
+  it('hides the demo mode badge when demo mode is inactive', () => {
+    renderAppTitleBar(
+      <AppTitleBar {...baseProps} isOnline demoModeActive={false} onLogout={jest.fn()} />
+    );
+
+    expect(screen.queryByText('Demo mode')).not.toBeInTheDocument();
+  });
+
   it('renders settings and logout actions for authenticated users', async () => {
     const onTabChange = jest.fn();
     const user = userEvent.setup();

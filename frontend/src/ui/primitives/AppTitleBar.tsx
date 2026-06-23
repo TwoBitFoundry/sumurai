@@ -25,6 +25,7 @@ import {
   radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
+import { Badge } from './Badge';
 import { Button } from './Button';
 import { ControlHoverLabel } from './ControlHoverLabel';
 import { IconButton } from './IconButton';
@@ -172,6 +173,7 @@ export interface AppTitleBarProps {
   onLogout?: () => void;
   currentTab?: TabKey;
   onTabChange?: (tab: TabKey) => void;
+  demoModeActive?: boolean;
 }
 
 export const AppTitleBar = ({
@@ -180,6 +182,7 @@ export const AppTitleBar = ({
   onLogout,
   currentTab,
   onTabChange,
+  demoModeActive = false,
   ref,
 }: AppTitleBarProps & { ref?: React.RefObject<HTMLElement | null> }) => {
   const canGoToDashboard = state === 'authenticated' && onTabChange != null;
@@ -291,6 +294,11 @@ export const AppTitleBar = ({
           {primaryTabs}
 
           <div className={cn(...appTitleBarRecipes.actions)}>
+            {state === 'authenticated' && demoModeActive ? (
+              <Badge variant="primary" size="sm" data-testid="demo-mode-badge">
+                Demo mode
+              </Badge>
+            ) : null}
             <ControlHoverLabel label={isOnline ? 'Online' : 'Offline'}>
               <span
                 className={cn(...appTitleBarRecipes.statusFrame)}

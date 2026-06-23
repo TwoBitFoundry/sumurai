@@ -75,7 +75,7 @@ export function AuthenticatedApp({
   onLogout,
   initialTab,
   isOnline,
-  demoModeActive: _demoModeActive,
+  demoModeActive,
 }: AuthenticatedAppProps) {
   const [tab, setTab] = useState<TabKey>(initialTab ?? 'dashboard');
   const [tabTransitionDirection, setTabTransitionDirection] = useState(0);
@@ -224,6 +224,7 @@ export function AuthenticatedApp({
             onLogout={onLogout}
             isOnline={isOnline}
             bottomBarContent={bottomBarContent}
+            demoModeActive={demoModeActive}
           >
             {error && (
               <Alert variant="error" title="Error" className={cn('mb-6')}>
@@ -256,7 +257,9 @@ export function AuthenticatedApp({
                 )}
                 {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
                 {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}
-                {tab === 'accounts' && <AccountsPage onError={setError} />}
+                {tab === 'accounts' && (
+                  <AccountsPage onError={setError} demoModeActive={demoModeActive} />
+                )}
                 {tab === 'settings' && <SettingsPage onLogout={onLogout} />}
               </motion.section>
             </AnimatePresence>

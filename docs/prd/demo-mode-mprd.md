@@ -375,10 +375,22 @@ onboarding.
   - Disconnecting seeded institutions
 
 **Acceptance criteria**
-- [ ] Demo badge is visible globally whenever `demo_mode_active = true` and
+- [x] Demo badge is visible globally whenever `demo_mode_active = true` and
       onboarding is complete.
-- [ ] New-institution actions in Accounts show the warning in demo mode.
-- [ ] Add-account inside the seeded DIY institution does not show the warning.
+- [x] New-institution actions in Accounts show the warning in demo mode.
+- [x] Add-account inside the seeded DIY institution does not show the warning.
+
+**TDD log**
+- Red: extended `frontend/tests/ui/primitives/AppTitleBar.test.tsx` for global
+  demo badge visibility and `frontend/tests/views/AccountsPage.test.tsx` for
+  new-institution warning gating versus seeded DIY add-account bypass.
+- Green: wired `demoModeActive` through `AuthenticatedApp`, `AppLayout`, and
+  `AppTitleBar`; added `DemoExitWarningModal` and gated Accounts new-institution
+  actions behind the shared warning flow.
+- Verification:
+  `bun --cwd=frontend run test`
+  `bun --cwd=frontend run typecheck`
+  `bun --cwd=frontend run build`
 
 ## Phase 7 — Fresh-start teardown on first real institution
 
