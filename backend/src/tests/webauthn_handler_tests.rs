@@ -445,6 +445,7 @@ fn make_user() -> User {
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: false,
+        demo_mode_active: false,
     }
 }
 

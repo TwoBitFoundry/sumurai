@@ -51,6 +51,7 @@ interface AuthenticatedAppProps {
   onLogout: () => void;
   initialTab?: TabKey;
   isOnline: boolean;
+  demoModeActive: boolean;
 }
 
 function resolveInitialDashboardDateState(): {
@@ -70,7 +71,12 @@ function resolveInitialDashboardDateState(): {
   return { dateRange: 'custom', customDateRange };
 }
 
-export function AuthenticatedApp({ onLogout, initialTab, isOnline }: AuthenticatedAppProps) {
+export function AuthenticatedApp({
+  onLogout,
+  initialTab,
+  isOnline,
+  demoModeActive,
+}: AuthenticatedAppProps) {
   const [tab, setTab] = useState<TabKey>(initialTab ?? 'dashboard');
   const [tabTransitionDirection, setTabTransitionDirection] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -218,6 +224,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
             onLogout={onLogout}
             isOnline={isOnline}
             bottomBarContent={bottomBarContent}
+            demoModeActive={demoModeActive}
           >
             {error && (
               <Alert variant="error" title="Error" className={cn('mb-6')}>
@@ -250,7 +257,9 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
                 )}
                 {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
                 {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}
-                {tab === 'accounts' && <AccountsPage onError={setError} />}
+                {tab === 'accounts' && (
+                  <AccountsPage onError={setError} demoModeActive={demoModeActive} />
+                )}
                 {tab === 'settings' && <SettingsPage onLogout={onLogout} />}
               </motion.section>
             </AnimatePresence>

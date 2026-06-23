@@ -269,6 +269,7 @@ fn build_simplefin_connection_service(
     let upserted_account_ids = Arc::new(Mutex::new(HashSet::new()));
 
     let mut mock_db = MockDatabaseRepository::new();
+    crate::test_fixtures::apply_demo_mode_exit_mock_defaults(&mut mock_db);
     mock_db
         .expect_get_simplefin_root_credential()
         .returning(|_| Box::pin(async { Ok(None) }));
@@ -367,6 +368,7 @@ fn build_simplefin_connect_normalization_service(
     let captured_transactions = Arc::new(Mutex::new(Vec::<Transaction>::new()));
 
     let mut mock_db = MockDatabaseRepository::new();
+    crate::test_fixtures::apply_demo_mode_exit_mock_defaults(&mut mock_db);
     mock_db
         .expect_get_simplefin_root_credential()
         .returning(|_| Box::pin(async { Ok(None) }));
@@ -1009,6 +1011,7 @@ async fn build_simplefin_handler_app(
     );
     let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
         db_repository.clone(),
+        connection_service.clone(),
     ));
 
     let state = AppState {

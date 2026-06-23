@@ -5,22 +5,35 @@ use uuid::Uuid;
 use crate::models::account::Account;
 use crate::models::diy::CreateDiyAccountRequest;
 use crate::models::plaid::ProviderConnection;
+use crate::services::connection_service::ConnectionService;
 use crate::services::repository_service::DatabaseRepository;
 
 pub struct DiyService {
     db_repository: Arc<dyn DatabaseRepository>,
+    connection_service: Arc<ConnectionService>,
 }
 
 impl DiyService {
-    pub fn new(db_repository: Arc<dyn DatabaseRepository>) -> Self {
-        Self { db_repository }
+    pub fn new(
+        db_repository: Arc<dyn DatabaseRepository>,
+        connection_service: Arc<ConnectionService>,
+    ) -> Self {
+        Self {
+            db_repository,
+            connection_service,
+        }
     }
 
     pub async fn create_institution(
         &self,
         user_id: Uuid,
+        jwt_id: &str,
         name: &str,
     ) -> Result<ProviderConnection> {
+        self.connection_service
+            .exit_demo_mode_before_new_institution(&user_id, jwt_id)
+            .await?;
+
         let normalized_name = name.trim();
         let connections = self
             .db_repository

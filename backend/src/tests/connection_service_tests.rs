@@ -487,6 +487,7 @@ async fn given_existing_user_provider_when_connecting_teller_then_overwrites_act
     )]));
 
     let mut mock_db = MockDatabaseRepository::new();
+    crate::test_fixtures::apply_demo_mode_exit_mock_defaults(&mut mock_db);
     mock_db
         .expect_update_user_provider()
         .with(

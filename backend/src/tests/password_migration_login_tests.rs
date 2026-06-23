@@ -19,6 +19,7 @@ fn legacy_user_with_password(hash: String) -> User {
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: true,
+        demo_mode_active: false,
     }
 }
 
@@ -189,6 +190,7 @@ async fn given_passkey_only_user_when_password_login_then_401() {
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: true,
+        demo_mode_active: false,
     };
     let email = user.email.clone();
 

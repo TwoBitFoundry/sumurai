@@ -62,6 +62,7 @@ async fn demo_user_with_password() -> User {
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: true,
+        demo_mode_active: false,
     }
 }
 
@@ -203,6 +204,7 @@ async fn given_other_user_without_passkey_when_protected_request_then_403() {
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: true,
+        demo_mode_active: false,
     };
     let (_, token) = TestFixtures::create_authenticated_user_with_token_for_user(user.clone());
 

@@ -12,10 +12,12 @@ fn given_new_user_when_created_with_provider_then_has_provider_field() {
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: false,
+        demo_mode_active: true,
     };
 
     assert_eq!(user.provider, "teller");
     assert_eq!(user.active_provider(), Some("teller"));
+    assert!(user.demo_mode_active);
 }
 
 #[test]
@@ -28,10 +30,12 @@ fn given_user_with_plaid_provider_when_checked_then_has_plaid() {
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: false,
+        demo_mode_active: false,
     };
 
     assert_eq!(user.provider, "plaid");
     assert_eq!(user.active_provider(), Some("plaid"));
+    assert!(!user.demo_mode_active);
 }
 
 #[test]
@@ -44,6 +48,7 @@ fn given_user_with_empty_provider_when_checked_then_returns_none() {
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: false,
+        demo_mode_active: false,
     };
 
     assert_eq!(user.active_provider(), None);
@@ -59,8 +64,10 @@ fn given_user_when_serialized_then_includes_provider() {
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: false,
+        demo_mode_active: true,
     };
 
     let json_str = serde_json::to_string(&user).unwrap();
     assert!(json_str.contains("\"provider\":\"teller\""));
+    assert!(json_str.contains("\"demo_mode_active\":true"));
 }

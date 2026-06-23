@@ -128,6 +128,12 @@ jest.mock('@/services/authService', () => ({
     completeOnboarding: jest.fn().mockResolvedValue({
       message: 'ok',
       onboarding_completed: true,
+      demo_mode_active: false,
+    }),
+    activateDemoModeOnboarding: jest.fn().mockResolvedValue({
+      message: 'ok',
+      onboarding_completed: true,
+      demo_mode_active: true,
     }),
   },
 }));
@@ -138,6 +144,7 @@ describe('OnboardingProviderPicker', () => {
     plaidInitiateConnectionMock.mockClear();
     tellerInitiateConnectionMock.mockClear();
     jest.mocked(AuthService.completeOnboarding).mockClear();
+    jest.mocked(AuthService.activateDemoModeOnboarding).mockClear();
   });
 
   it('auto-completes onboarding when a provider connection succeeds', async () => {
@@ -171,10 +178,10 @@ describe('OnboardingProviderPicker', () => {
       </ThemeTestProvider>
     );
 
-    await user.click(screen.getByRole('button', { name: /skip for now/i }));
+    await user.click(screen.getByRole('button', { name: /try demo mode/i }));
 
     expect(chooseProviderMock).not.toHaveBeenCalled();
-    expect(AuthService.completeOnboarding).toHaveBeenCalledTimes(1);
+    expect(AuthService.activateDemoModeOnboarding).toHaveBeenCalledTimes(1);
 
     await waitFor(() => {
       expect(onComplete).toHaveBeenCalledTimes(1);
@@ -243,6 +250,7 @@ describe('OnboardingProviderPicker', () => {
 
     await waitFor(() => {
       expect(chooseProviderMock).toHaveBeenCalledWith('diy');
+      expect(AuthService.completeOnboarding).toHaveBeenCalledTimes(1);
       expect(onComplete).toHaveBeenCalledTimes(1);
     });
   });

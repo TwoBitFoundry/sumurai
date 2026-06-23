@@ -20,6 +20,7 @@ pub struct Model {
     pub created_at: Option<DateTimeWithTimeZone>,
     pub updated_at: Option<DateTimeWithTimeZone>,
     pub onboarding_completed: bool,
+    pub demo_mode_active: bool,
     pub provider: String,
 }
 
@@ -31,6 +32,7 @@ pub enum Column {
     CreatedAt,
     UpdatedAt,
     OnboardingCompleted,
+    DemoModeActive,
     Provider,
 }
 
@@ -70,6 +72,7 @@ impl ColumnTrait for Column {
             Self::CreatedAt => ColumnType::TimestampWithTimeZone.def().null(),
             Self::UpdatedAt => ColumnType::TimestampWithTimeZone.def().null(),
             Self::OnboardingCompleted => ColumnType::Boolean.def(),
+            Self::DemoModeActive => ColumnType::Boolean.def(),
             Self::Provider => ColumnType::String(StringLen::N(20u32)).def(),
         }
     }

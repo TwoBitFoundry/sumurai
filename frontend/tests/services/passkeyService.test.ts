@@ -94,6 +94,7 @@ describe('PasskeyService', () => {
       user_id: 'user-1',
       expires_at: '2026-01-01T00:00:00Z',
       onboarding_completed: false,
+      demo_mode_active: true,
     };
     const credential = mockPublicKeyCredential('create');
     jest.spyOn(ApiClient, 'post').mockResolvedValueOnce(finishResponse);
@@ -152,6 +153,7 @@ describe('PasskeyService', () => {
       user_id: 'user-1',
       expires_at: '2026-01-01T00:00:00Z',
       onboarding_completed: false,
+      demo_mode_active: false,
     };
     const credential = mockPublicKeyCredential('get');
     jest.spyOn(ApiClient, 'post').mockResolvedValueOnce(authResponse);
@@ -177,6 +179,7 @@ describe('PasskeyService', () => {
       user_id: 'user-1',
       expires_at: '2026-01-01T00:00:00Z',
       onboarding_completed: true,
+      demo_mode_active: false,
     };
     const credential = mockPublicKeyCredential('get');
     installNavigatorCredentials(credential, credential);
@@ -224,6 +227,7 @@ describe('PasskeyService', () => {
       user_id: 'user-2',
       expires_at: '2026-01-01T00:00:00Z',
       onboarding_completed: false,
+      demo_mode_active: true,
     };
     const credential = mockPublicKeyCredential('create');
     installNavigatorCredentials(credential, credential);

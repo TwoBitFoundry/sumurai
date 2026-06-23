@@ -2,6 +2,7 @@ import { SpanStatusCode, trace } from '@opentelemetry/api';
 import type {
   AuthResponse,
   LogoutResponse,
+  OnboardingResponse,
   PasswordLoginRequest,
   RefreshResponse,
 } from '@/types/api';
@@ -102,10 +103,12 @@ export class AuthService {
     }
   }
 
-  static async completeOnboarding(): Promise<{ message: string; onboarding_completed: boolean }> {
-    return ApiClient.put<{ message: string; onboarding_completed: boolean }>(
-      '/auth/onboarding/complete'
-    );
+  static async completeOnboarding(): Promise<OnboardingResponse> {
+    return ApiClient.put<OnboardingResponse>('/auth/onboarding/complete');
+  }
+
+  static async activateDemoModeOnboarding(): Promise<OnboardingResponse> {
+    return ApiClient.post<OnboardingResponse>('/auth/onboarding/demo');
   }
 
   static async loginWithPassword(email: string, password: string): Promise<AuthResponse> {

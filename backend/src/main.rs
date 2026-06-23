@@ -329,7 +329,7 @@ async fn main() -> anyhow::Result<()> {
     let auth_service = Arc::new(AuthService::new(jwt_secret)?);
 
     seed::maybe_seed_demo_user(&db_repository, &auth_service).await?;
-    crate::seed::maybe_seed_demo_simplefin_data(&db_repository, &cache_service).await?;
+    seed::maybe_seed_demo_dev_workspace(&db_repository, &cache_service).await?;
 
     let model_dir = CategorizationService::model_dir();
     tracing::info!(
@@ -452,6 +452,7 @@ async fn main() -> anyhow::Result<()> {
 
     let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
         db_repository.clone(),
+        connection_service.clone(),
     ));
 
     let state = AppState {
@@ -551,6 +552,10 @@ pub fn create_app(state: AppState) -> Router {
         .route(
             "/api/auth/onboarding/complete",
             put(complete_user_onboarding),
+        )
+        .route(
+            "/api/auth/onboarding/demo",
+            post(activate_demo_mode_onboarding),
         )
         .route(
             "/api/transactions/categories",
@@ -1137,6 +1142,7 @@ async fn refresh_user_session(
             email: user.email.clone(),
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
+            demo_mode_active: user.demo_mode_active,
             requires_passkey_enrollment: false,
         }),
     ))
@@ -1166,6 +1172,7 @@ async fn complete_user_onboarding(
             Ok(Json(OnboardingCompleteResponse {
                 message: "Onboarding completed successfully".to_string(),
                 onboarding_completed: true,
+                demo_mode_active: false,
             }))
         }
         Err(e) => {
@@ -1179,6 +1186,53 @@ async fn complete_user_onboarding(
             ))
         }
     }
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/auth/onboarding/demo",
+    description = "Seeds the shared demo workspace for the authenticated user and marks onboarding complete.",
+    responses(
+        (status = 200, description = "Demo mode activated", body = OnboardingCompleteResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Authentication"
+)]
+async fn activate_demo_mode_onboarding(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<OnboardingCompleteResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+
+    let user = state
+        .db_repository
+        .get_user_by_id(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to load user {} for demo onboarding: {}", user_id, e);
+            ApiErrorResponse::internal_server_error("Failed to load user")
+        })?
+        .ok_or_else(|| ApiErrorResponse::internal_server_error("Failed to load user"))?;
+
+    services::DemoModeService::activate_demo_workspace_for_user(
+        &state.db_repository,
+        &state.cache_service,
+        &user,
+        true,
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to activate demo mode for user {}: {}", user_id, e);
+        ApiErrorResponse::internal_server_error("Failed to activate demo mode")
+    })?;
+
+    Ok(Json(OnboardingCompleteResponse {
+        message: "Demo mode activated successfully".to_string(),
+        onboarding_completed: true,
+        demo_mode_active: true,
+    }))
 }
 
 #[utoipa::path(
@@ -4196,7 +4250,7 @@ async fn create_diy_institution(
 
     match state
         .diy_service
-        .create_institution(user_id, req.name.trim())
+        .create_institution(user_id, &auth_context.jwt_id, req.name.trim())
         .await
     {
         Ok(connection) => Ok(Json(crate::models::diy::CreateDiyInstitutionResponse {
@@ -5405,6 +5459,7 @@ async fn finish_passkey_registration(
             created_at: Utc::now(),
             updated_at: Utc::now(),
             onboarding_completed: false,
+            demo_mode_active: true,
         };
         if let Err(e) = state.db_repository.create_user(&new_user).await {
             tracing::warn!(
@@ -5515,6 +5570,7 @@ async fn finish_passkey_registration(
         email: user.email.clone(),
         expires_at: auth_token.expires_at.to_rfc3339(),
         onboarding_completed: user.onboarding_completed,
+        demo_mode_active: user.demo_mode_active,
         requires_passkey_enrollment: false,
     })
     .map_err(|e| {
@@ -5752,6 +5808,7 @@ async fn login_with_password(
             email: user.email.clone(),
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
+            demo_mode_active: user.demo_mode_active,
             requires_passkey_enrollment: !seed_user_password_fallback(&user),
         }),
     ))
@@ -6086,6 +6143,7 @@ async fn finish_passkey_login(
             email: user.email.clone(),
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
+            demo_mode_active: user.demo_mode_active,
             requires_passkey_enrollment: false,
         }),
     ))

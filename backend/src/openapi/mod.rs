@@ -135,6 +135,7 @@ use utoipa::OpenApi;
         crate::logout_user,
         crate::delete_user_account,
         crate::complete_user_onboarding,
+        crate::activate_demo_mode_onboarding,
         crate::health_check,
         crate::list_categories,
         crate::create_custom_category,

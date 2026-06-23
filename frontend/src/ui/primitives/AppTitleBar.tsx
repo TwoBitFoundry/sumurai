@@ -49,6 +49,7 @@ export const appTitleBarRecipes = {
       uiRadiusRecipes.standard,
     ],
     wordmark: [uiTypographyRecipes.pageTitle, 'leading-none'],
+    wordmarkStack: ['flex', 'min-w-0', 'flex-col', 'gap-0.5'],
     fontFamily: { fontFamily: "'Cal Sans', system-ui, sans-serif" },
   },
   settingsIdle: buttonChrome.settingsIdle.join(' '),
@@ -172,6 +173,7 @@ export interface AppTitleBarProps {
   onLogout?: () => void;
   currentTab?: TabKey;
   onTabChange?: (tab: TabKey) => void;
+  demoModeActive?: boolean;
 }
 
 export const AppTitleBar = ({
@@ -180,9 +182,24 @@ export const AppTitleBar = ({
   onLogout,
   currentTab,
   onTabChange,
+  demoModeActive = false,
   ref,
 }: AppTitleBarProps & { ref?: React.RefObject<HTMLElement | null> }) => {
   const canGoToDashboard = state === 'authenticated' && onTabChange != null;
+
+  const demoModeBadge =
+    state === 'authenticated' && demoModeActive ? (
+      <span
+        data-testid="demo-mode-badge"
+        className={cn(
+          'min-w-0 max-w-full truncate',
+          uiTypographyRecipes.badge,
+          ...semanticStatus.info.text
+        )}
+      >
+        Demo mode
+      </span>
+    ) : null;
 
   const logoMark = (
     <>
@@ -196,7 +213,10 @@ export const AppTitleBar = ({
           unoptimized
         />
       </div>
-      <span className={cn(...appTitleBarRecipes.logo.wordmark)}>Sumurai</span>
+      <div className={cn(...appTitleBarRecipes.logo.wordmarkStack)}>
+        <span className={cn(...appTitleBarRecipes.logo.wordmark)}>Sumurai</span>
+        {demoModeBadge}
+      </div>
     </>
   );
 

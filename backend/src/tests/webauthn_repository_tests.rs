@@ -40,6 +40,7 @@ async fn create_test_user(repo: &PostgresRepository) -> User {
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: false,
+        demo_mode_active: false,
     };
     repo.create_user(&user).await.unwrap();
     user

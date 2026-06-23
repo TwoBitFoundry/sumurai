@@ -19,7 +19,8 @@ use crate::services::categorization::categorization_service::Categorizer;
 use crate::services::categorization::classifier_labels::apply_deterministic_categories;
 use crate::services::merchant_normalization::service::MerchantNormalizationService;
 use crate::services::{
-    cache_service::CacheService, repository_service::DatabaseRepository, sync_service::SyncService,
+    cache_service::CacheService, demo_mode_service::DemoModeService,
+    repository_service::DatabaseRepository, sync_service::SyncService,
 };
 use anyhow::{Error, Result};
 use chrono::NaiveDate;
@@ -252,6 +253,22 @@ impl ConnectionService {
             .await
     }
 
+    pub async fn exit_demo_mode_before_new_institution(
+        &self,
+        user_id: &Uuid,
+        jwt_id: &str,
+    ) -> Result<()> {
+        DemoModeService::exit_demo_mode_if_active(
+            &self.db_repository,
+            &self.cache_service,
+            self,
+            user_id,
+            jwt_id,
+        )
+        .await?;
+        Ok(())
+    }
+
     pub async fn disconnect_owned_connection(
         &self,
         connection: &ProviderConnection,
@@ -353,6 +370,10 @@ impl ConnectionService {
         let provider = self
             .resolve_provider("teller")
             .ok_or_else(|| TellerConnectError::InvalidProvider("teller".to_string()))?;
+
+        self.exit_demo_mode_before_new_institution(user_id, jwt_id)
+            .await
+            .map_err(TellerConnectError::ConnectionPersistence)?;
 
         let item_id = format!("teller_{}", request.enrollment_id);
         self.db_repository
@@ -559,6 +580,10 @@ impl ConnectionService {
         request: &ProviderConnectRequest,
     ) -> Result<ProviderConnectResponse, SimpleFinConnectError> {
         if let Some(service) = self.simplefin_connection_service.as_ref() {
+            self.exit_demo_mode_before_new_institution(user_id, jwt_id)
+                .await
+                .map_err(SimpleFinConnectError::ConnectionPersistence)?;
+
             let response = service.connect(user_id, jwt_id, request).await?;
             if let Err(error) = self.set_user_provider(user_id, "simplefin").await {
                 tracing::warn!(
@@ -579,6 +604,10 @@ impl ConnectionService {
         let provider = self
             .resolve_provider("simplefin")
             .ok_or_else(|| SimpleFinConnectError::InvalidProvider("simplefin".to_string()))?;
+
+        self.exit_demo_mode_before_new_institution(user_id, jwt_id)
+            .await
+            .map_err(SimpleFinConnectError::ConnectionPersistence)?;
 
         let credentials = self
             .resolve_simplefin_credentials_for_connect(
@@ -803,6 +832,13 @@ impl ConnectionService {
             .exchange_public_token(public_token)
             .await
             .map_err(ExchangeTokenError::ExchangeFailed)?;
+
+        if let Err(error) = self
+            .exit_demo_mode_before_new_institution(user_id, jwt_id)
+            .await
+        {
+            return Err(ExchangeTokenError::ExchangeFailed(error));
+        }
 
         let institution_info = match provider.as_ref().get_institution_info(&credentials).await {
             Ok(info) => info,
@@ -1544,6 +1580,13 @@ impl ConnectionService {
         reference_date: Option<NaiveDate>,
     ) -> Result<SyncTransactionsResponse, TellerSyncError> {
         let sync_timestamp = Utc::now();
+
+        if crate::seed::is_demo_teller_item_id(&connection.item_id) {
+            return self
+                .sync_demo_teller_connection(user_id, jwt_id, connection, sync_timestamp)
+                .await;
+        }
+
         let (sync_start_date, sync_end_date) =
             SyncService::calculate_sync_date_range_static(connection.last_sync_at, reference_date);
 
@@ -1809,6 +1852,75 @@ impl ConnectionService {
         Ok(SyncTransactionsResponse {
             transactions: synced_transactions,
             metadata,
+            simplefin_institution_results: None,
+            bridge_warnings: None,
+        })
+    }
+
+    async fn sync_demo_teller_connection(
+        &self,
+        user_id: &Uuid,
+        jwt_id: &str,
+        connection: &ProviderConnection,
+        sync_timestamp: chrono::DateTime<Utc>,
+    ) -> Result<SyncTransactionsResponse, TellerSyncError> {
+        let accounts: Vec<Account> = self
+            .db_repository
+            .get_accounts_for_user(user_id)
+            .await
+            .map_err(TellerSyncError::AccountLookup)?
+            .into_iter()
+            .filter(|account| account.provider_connection_id == Some(connection.id))
+            .collect();
+
+        let account_ids: HashSet<Uuid> = accounts.iter().map(|account| account.id).collect();
+
+        let mut transactions: Vec<Transaction> = self
+            .db_repository
+            .get_transactions_for_user(user_id)
+            .await
+            .map_err(TellerSyncError::TransactionLookup)?
+            .into_iter()
+            .filter(|transaction| account_ids.contains(&transaction.account_id))
+            .collect();
+
+        for transaction in &mut transactions {
+            transaction.merchant_name = transaction.original_merchant_name.clone();
+        }
+
+        if let Err(error) = self
+            .merchant_normalization_service
+            .normalize_batch(&mut transactions)
+            .await
+        {
+            tracing::warn!("Demo sync normalization failed: {}", error);
+        }
+
+        let _ = self
+            .db_repository
+            .upsert_transactions_batch(&transactions, user_id)
+            .await;
+
+        for transaction in &transactions {
+            let _ = self
+                .cache_service
+                .add_transaction(jwt_id, transaction)
+                .await;
+        }
+
+        let transaction_count = transactions.len() as i32;
+        let account_count = accounts.len() as i32;
+
+        Ok(SyncTransactionsResponse {
+            transactions,
+            metadata: SyncMetadata {
+                transaction_count,
+                account_count,
+                sync_timestamp: sync_timestamp.to_rfc3339(),
+                start_date: String::new(),
+                end_date: String::new(),
+                connection_updated: false,
+            },
             simplefin_institution_results: None,
             bridge_warnings: None,
         })

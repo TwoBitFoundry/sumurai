@@ -42,6 +42,7 @@ async fn given_user_with_passkeys_when_reset_passkeys_then_credentials_removed()
         created_at: Set(Some(Utc::now().into())),
         updated_at: Set(Some(Utc::now().into())),
         onboarding_completed: Set(true),
+        demo_mode_active: Set(false),
         provider: Set(String::new()),
     }
     .insert(&db)

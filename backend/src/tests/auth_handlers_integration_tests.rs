@@ -1,3 +1,4 @@
+use crate::services::demo_mode_service::MIN_DEMO_DIY_TRANSACTION_COUNT;
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::test_fixtures::TestFixtures;
 use axum::body::to_bytes;
@@ -148,6 +149,115 @@ async fn given_valid_auth_cookie_when_refreshing_then_returns_replacement_cookie
         response_json.get("onboarding_completed").unwrap(),
         &json!(false)
     );
+    assert_eq!(
+        response_json.get("demo_mode_active").unwrap(),
+        &json!(false)
+    );
+}
+
+#[tokio::test]
+async fn given_authenticated_user_when_activating_demo_mode_then_seeds_workspace_and_marks_onboarding_complete(
+) {
+    let mut user = TestFixtures::create_authenticated_user_with_token().0;
+    user.provider = String::new();
+    user.demo_mode_active = true;
+    let (user, token) = TestFixtures::create_authenticated_user_with_token_for_user(user);
+    let user_id = user.id;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_user_by_id()
+        .withf(move |id| *id == user_id)
+        .times(1)
+        .returning(move |_| {
+            let user = user.clone();
+            Box::pin(async move { Ok(Some(user)) })
+        });
+    mock_db
+        .expect_upsert_provider_snapshot_bundle()
+        .times(1)
+        .returning(|_, connection, accounts, transactions| {
+            assert_eq!(connection.provider, "teller");
+            assert_eq!(accounts.len(), 5);
+            assert!(
+                transactions.len()
+                    >= crate::services::demo_mode_service::MIN_DEMO_TRANSACTION_COUNT
+            );
+            Box::pin(async { Ok(()) })
+        });
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .times(2)
+        .returning(|| Box::pin(async { Ok(vec![]) }));
+    mock_db
+        .expect_save_provider_connection()
+        .times(1)
+        .returning(|connection| {
+            assert_eq!(connection.provider, "diy");
+            assert!(connection.transaction_count >= MIN_DEMO_DIY_TRANSACTION_COUNT as i32);
+            let id = connection.id;
+            Box::pin(async move { Ok(id) })
+        });
+    mock_db
+        .expect_upsert_transactions_batch()
+        .times(1)
+        .returning(|transactions, _| {
+            assert!(transactions.len() >= MIN_DEMO_DIY_TRANSACTION_COUNT);
+            Box::pin(async { Ok(()) })
+        });
+    mock_db
+        .expect_upsert_account()
+        .times(2)
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_get_budgets_for_user()
+        .times(13)
+        .returning(|_| Box::pin(async { Ok(Vec::new()) }));
+    mock_db
+        .expect_create_budget_for_user()
+        .times(12)
+        .returning(|budget| {
+            let budget = budget.clone();
+            Box::pin(async move { Ok(budget) })
+        });
+    mock_db
+        .expect_update_user_provider()
+        .withf(move |id, provider| *id == user_id && provider == "teller")
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_mark_onboarding_complete()
+        .withf(move |id| *id == user_id)
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(()) }));
+
+    let mut mock_cache = create_auth_cookie_cache();
+    mock_cache
+        .expect_is_session_valid()
+        .returning(|_| Box::pin(async { Ok(true) }));
+
+    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
+        .await
+        .unwrap();
+
+    let request = axum::http::Request::builder()
+        .method(Method::POST)
+        .uri("/api/auth/onboarding/demo")
+        .header("Cookie", format!("auth_token={}", token))
+        .body(axum::body::Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let response_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(
+        response_json.get("onboarding_completed").unwrap(),
+        &json!(true)
+    );
+    assert_eq!(response_json.get("demo_mode_active").unwrap(), &json!(true));
 }
 
 #[tokio::test]

@@ -17,6 +17,7 @@ interface AppLayoutProps {
   isOnline: boolean;
   className?: string;
   bottomBarContent?: ReactNode;
+  demoModeActive?: boolean;
 }
 
 export function AppLayout({
@@ -27,6 +28,7 @@ export function AppLayout({
   isOnline,
   className,
   bottomBarContent,
+  demoModeActive = false,
 }: AppLayoutProps) {
   const mainBottomPadding = bottomBarContent
     ? cn(appLayout.mainBottomPaddingStackedMobile, appLayout.mainBottomPaddingStackedTablet)
@@ -55,6 +57,7 @@ export function AppLayout({
           onLogout={onLogout}
           currentTab={currentTab}
           onTabChange={onTabChange}
+          demoModeActive={demoModeActive}
         />
 
         <main

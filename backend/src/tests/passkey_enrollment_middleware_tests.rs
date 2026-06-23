@@ -35,6 +35,7 @@ fn legacy_user() -> User {
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: true,
+        demo_mode_active: false,
     }
 }
 
@@ -47,6 +48,7 @@ fn passkey_only_user() -> User {
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: true,
+        demo_mode_active: false,
     }
 }
 

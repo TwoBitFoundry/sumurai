@@ -9,6 +9,7 @@ import { ToastStack } from '../components/toastStack/ToastStack';
 import { mapStoredAccountTypeToUiType } from '../domain/accountCategories';
 import { compareInstitutionNames } from '../domain/institutionSort';
 import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToastStack';
+import { DemoExitWarningModal } from '../features/demo/DemoExitWarningModal';
 import { DiyInstitutionModal } from '../features/diy/DiyInstitutionModal';
 import AccountsSummaryStats from '../features/plaid/components/AccountsSummaryStats';
 import ConnectButton from '../features/plaid/components/ConnectButton';
@@ -72,6 +73,7 @@ const formatRelativeTime = (iso: string): string => {
 
 interface AccountsPageProps {
   onError?: (message: string | null) => void;
+  demoModeActive?: boolean;
 }
 
 type DiyModalTarget = {
@@ -98,7 +100,7 @@ const mapSyncRowStatusToBankStatus = (status: SyncAllRow['status']): BankStatus 
   return null;
 };
 
-const AccountsPage = ({ onError }: AccountsPageProps) => {
+const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) => {
   const queryClient = useQueryClient();
   const isOnline = useOnlineStatus();
   const accountFilter = useAccountFilter();
@@ -265,6 +267,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const { pushToast: pushAccountsToast, ...accountsToastStack } = useAccountsToastStack(null);
   const [syncInstitutionRow, setSyncInstitutionRow] = useState<SyncAllRow | null>(null);
   const [diyModalTarget, setDiyModalTarget] = useState<DiyModalTarget | null>(null);
+  const [demoExitWarningOpen, setDemoExitWarningOpen] = useState(false);
+  const pendingDemoExitActionRef = useRef<(() => void | Promise<void>) | null>(null);
   const [isProviderPickerOpen, setIsProviderPickerOpen] = useState(false);
   const [pickerConnectingProvider, setPickerConnectingProvider] = useState<SyncProvider | null>(
     null
@@ -384,7 +388,34 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     [providerCatalog, pushAccountsToast]
   );
 
-  const openDiyInstitutionModal = useCallback((target: DiyModalTarget | null = null) => {
+  const runAfterDemoExitWarning = useCallback(
+    (action: () => void | Promise<void>, requiresWarning: boolean) => {
+      if (!demoModeActive || !requiresWarning) {
+        void action();
+        return;
+      }
+
+      pendingDemoExitActionRef.current = action;
+      setDemoExitWarningOpen(true);
+    },
+    [demoModeActive]
+  );
+
+  const handleDemoExitConfirm = useCallback(() => {
+    setDemoExitWarningOpen(false);
+    const action = pendingDemoExitActionRef.current;
+    pendingDemoExitActionRef.current = null;
+    if (action) {
+      void action();
+    }
+  }, []);
+
+  const handleDemoExitCancel = useCallback(() => {
+    setDemoExitWarningOpen(false);
+    pendingDemoExitActionRef.current = null;
+  }, []);
+
+  const setDiyModalTargetDirect = useCallback((target: DiyModalTarget | null = null) => {
     setDiyModalTarget(
       target ?? {
         connectionId: null,
@@ -393,34 +424,48 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     );
   }, []);
 
+  const openDiyInstitutionModal = useCallback(
+    (target: DiyModalTarget | null = null) => {
+      runAfterDemoExitWarning(() => setDiyModalTargetDirect(target), target?.connectionId == null);
+    },
+    [runAfterDemoExitWarning, setDiyModalTargetDirect]
+  );
+
   const startProviderPickerConnection = useCallback(
     async (provider: FinancialProvider) => {
-      if (provider === 'diy') {
-        openDiyInstitutionModal();
-        return;
-      }
+      runAfterDemoExitWarning(async () => {
+        if (provider === 'diy') {
+          setDiyModalTargetDirect();
+          return;
+        }
 
-      if (!isSyncProvider(provider)) {
-        return;
-      }
+        if (!isSyncProvider(provider)) {
+          return;
+        }
 
-      setIsProviderPickerOpen(true);
+        setIsProviderPickerOpen(true);
 
-      if (provider === 'simplefin') {
+        if (provider === 'simplefin') {
+          setPickerConnectingProvider(provider);
+          return;
+        }
+
         setPickerConnectingProvider(provider);
-        return;
-      }
 
-      setPickerConnectingProvider(provider);
+        if (provider === 'plaid') {
+          await plaidPickerConnectionFlow.initiateConnection();
+          return;
+        }
 
-      if (provider === 'plaid') {
-        await plaidPickerConnectionFlow.initiateConnection();
-        return;
-      }
-
-      await tellerPickerConnectionFlow.initiateConnection();
+        await tellerPickerConnectionFlow.initiateConnection();
+      }, true);
     },
-    [openDiyInstitutionModal, plaidPickerConnectionFlow, tellerPickerConnectionFlow]
+    [
+      plaidPickerConnectionFlow,
+      runAfterDemoExitWarning,
+      setDiyModalTargetDirect,
+      tellerPickerConnectionFlow,
+    ]
   );
 
   const closeDiyInstitutionModal = useCallback(() => {
@@ -987,6 +1032,11 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         existingInstitutionAccounts={diyModalTarget?.existingAccounts ?? []}
         onClose={closeDiyInstitutionModal}
         onComplete={handleDiyInstitutionComplete}
+      />
+      <DemoExitWarningModal
+        isOpen={demoExitWarningOpen}
+        onConfirm={handleDemoExitConfirm}
+        onCancel={handleDemoExitCancel}
       />
     </div>
   );

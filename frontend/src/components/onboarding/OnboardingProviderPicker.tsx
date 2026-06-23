@@ -76,6 +76,16 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
     }
   }, [onComplete]);
 
+  const activateDemoAndExit = useCallback(async () => {
+    setIsCompleting(true);
+    try {
+      await AuthService.activateDemoModeOnboarding();
+      onComplete();
+    } finally {
+      setIsCompleting(false);
+    }
+  }, [onComplete]);
+
   const handleConnectComplete = useCallback(
     async (provider: (typeof providerCatalog.availableProviders)[number]) => {
       try {
@@ -171,10 +181,10 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
                   type="button"
                   variant="secondary"
                   size="md"
-                  onClick={() => void completeAndExit()}
+                  onClick={() => void activateDemoAndExit()}
                   disabled={isCompleting}
                 >
-                  Skip for now
+                  Try demo mode
                 </Button>
               }
             />

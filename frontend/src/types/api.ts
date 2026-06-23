@@ -388,6 +388,7 @@ export interface AuthResponse {
   email?: string;
   expires_at: string;
   onboarding_completed: boolean;
+  demo_mode_active: boolean;
   requires_passkey_enrollment?: boolean;
 }
 
@@ -406,11 +407,18 @@ export interface RefreshResponse {
   email?: string;
   expires_at: string;
   onboarding_completed: boolean;
+  demo_mode_active: boolean;
 }
 
 export interface LogoutResponse {
   message: string;
   cleared_session: string;
+}
+
+export interface OnboardingResponse {
+  message: string;
+  onboarding_completed: boolean;
+  demo_mode_active: boolean;
 }
 
 export interface PasskeyItem {

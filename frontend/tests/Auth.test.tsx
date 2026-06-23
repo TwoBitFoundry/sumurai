@@ -138,6 +138,7 @@ describe('Auth screens', () => {
       user_id: 'legacy-user',
       expires_at: '2099-01-01T00:00:00Z',
       onboarding_completed: true,
+      demo_mode_active: false,
       requires_passkey_enrollment: true,
     });
     const onEnrollmentRequired = jest.fn();
@@ -154,6 +155,7 @@ describe('Auth screens', () => {
         user_id: 'legacy-user',
         expires_at: '2099-01-01T00:00:00Z',
         onboarding_completed: true,
+        demo_mode_active: false,
         requires_passkey_enrollment: true,
       },
       'legacy@example.com'
@@ -175,6 +177,7 @@ describe('Auth screens', () => {
       user_id: 'seed-user',
       expires_at: '2099-01-01T00:00:00Z',
       onboarding_completed: true,
+      demo_mode_active: true,
       requires_passkey_enrollment: false,
     });
     const onEnrollmentRequired = jest.fn();
@@ -195,6 +198,7 @@ describe('Auth screens', () => {
       user_id: 'seed-user',
       expires_at: '2099-01-01T00:00:00Z',
       onboarding_completed: true,
+      demo_mode_active: true,
       requires_passkey_enrollment: false,
     });
     expect(onEnrollmentRequired).not.toHaveBeenCalled();

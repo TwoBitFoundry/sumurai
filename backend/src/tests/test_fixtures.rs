@@ -102,6 +102,7 @@ pub(crate) fn apply_passkey_enrollment_mock_defaults(mock_db: &mut MockDatabaseR
                     created_at: Utc::now(),
                     updated_at: Utc::now(),
                     onboarding_completed: true,
+                    demo_mode_active: false,
                 }))
             })
         });
@@ -111,6 +112,27 @@ pub(crate) fn apply_passkey_enrollment_mock_defaults(mock_db: &mut MockDatabaseR
         .returning(|user_id| {
             let credential = test_passkey_for_user(*user_id);
             Box::pin(async move { Ok(vec![credential]) })
+        });
+}
+
+pub(crate) fn apply_demo_mode_exit_mock_defaults(mock_db: &mut MockDatabaseRepository) {
+    mock_db
+        .expect_get_user_by_id()
+        .times(0..)
+        .returning(|user_id| {
+            let user_id = *user_id;
+            Box::pin(async move {
+                Ok(Some(User {
+                    id: user_id,
+                    email: format!("test-{}@example.com", user_id),
+                    password_hash: None,
+                    provider: String::new(),
+                    created_at: Utc::now(),
+                    updated_at: Utc::now(),
+                    onboarding_completed: true,
+                    demo_mode_active: false,
+                }))
+            })
         });
 }
 
@@ -430,6 +452,7 @@ impl TestFixtures {
         );
         let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
             db_repository.clone(),
+            connection_service.clone(),
         ));
 
         let state = AppState {
@@ -590,6 +613,7 @@ impl TestFixtures {
         );
         let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
             db_repository.clone(),
+            connection_service.clone(),
         ));
 
         let state = AppState {
@@ -705,6 +729,7 @@ impl TestFixtures {
         );
         let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
             db_repository.clone(),
+            connection_service.clone(),
         ));
 
         let state = AppState {
@@ -753,6 +778,7 @@ impl TestFixtures {
             created_at: Utc::now(),
             updated_at: Utc::now(),
             onboarding_completed: false,
+            demo_mode_active: false,
         };
 
         let auth_token = auth_service.generate_token(user_id).unwrap();

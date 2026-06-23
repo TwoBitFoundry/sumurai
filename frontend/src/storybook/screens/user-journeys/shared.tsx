@@ -276,7 +276,18 @@ export const storyPickerEmptyHandlers: StoryApiRoute[] = [
 export const storyOnboardingPickerHandlers: StoryApiRoute[] = [
   ...storyPickerEmptyHandlers,
   route('PUT', '/auth/onboarding/complete', () =>
-    jsonResponse({ message: 'Onboarding completed', onboarding_completed: true })
+    jsonResponse({
+      message: 'Onboarding completed',
+      onboarding_completed: true,
+      demo_mode_active: false,
+    })
+  ),
+  route('POST', '/auth/onboarding/demo', () =>
+    jsonResponse({
+      message: 'Demo mode activated',
+      onboarding_completed: true,
+      demo_mode_active: true,
+    })
   ),
   route('POST', '/providers/select', () => jsonResponse({ user_provider: 'simplefin' })),
 ];

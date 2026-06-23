@@ -4,24 +4,17 @@ mod tests {
     use crate::models::plaid::ProviderConnection;
     use crate::models::transaction::Transaction;
     use crate::providers::ProviderRegistry;
-    use crate::seed::SUMURAI_DEMO_ORG_CONN_ID;
+    use crate::seed::SUMURAI_DEMO_TELLER_ITEM_ID;
     use crate::services::cache_service::MockCacheService;
-    use crate::services::connection_service::SyncConnectionParams;
+    use crate::services::connection_service::ConnectionService;
     use crate::services::merchant_normalization::service::MerchantNormalizationService;
     use crate::services::repository_service::MockDatabaseRepository;
-    use crate::services::simplefin_connection_service::SimpleFinConnectionService;
-    use crate::services::simplefin_org_service::SimpleFinOrganizationService;
-    use crate::services::sync_service::SyncService;
+    use crate::test_fixtures::{build_credential_resolvers, noop_categorizer};
     use crate::utils::merchant_name::normalize_merchant_for_match;
     use chrono::{NaiveDate, Utc};
     use rust_decimal::Decimal;
-    use std::collections::HashMap;
     use std::sync::{Arc, Mutex};
     use uuid::Uuid;
-
-    fn demo_item_id(user_id: &Uuid) -> String {
-        format!("simplefin_{}_sumurai_demo", user_id)
-    }
 
     fn demo_account(id: Uuid, connection_id: Uuid, user_id: Uuid) -> Account {
         Account {
@@ -66,8 +59,7 @@ mod tests {
     }
 
     struct DemoSyncHarness {
-        service: SimpleFinConnectionService,
-        sync_service: Arc<SyncService>,
+        service: ConnectionService,
         user_id: Uuid,
         connection: ProviderConnection,
         captured_transactions: Arc<Mutex<Vec<Transaction>>>,
@@ -79,19 +71,14 @@ mod tests {
         demo_accounts: Vec<Account>,
         demo_transactions: Vec<Transaction>,
     ) -> DemoSyncHarness {
-        let item_id = demo_item_id(&user_id);
-
-        let mut connection = ProviderConnection::new(user_id, &item_id);
+        let mut connection = ProviderConnection::new(user_id, SUMURAI_DEMO_TELLER_ITEM_ID);
         connection.id = connection_id;
-        connection.institution_id = Some(SUMURAI_DEMO_ORG_CONN_ID.to_string());
+        connection.provider = "teller".to_string();
+        connection.institution_id = Some("teller".to_string());
 
         let captured = Arc::new(Mutex::new(Vec::<Transaction>::new()));
 
         let mut mock_db = MockDatabaseRepository::new();
-
-        mock_db
-            .expect_list_simplefin_hidden_orgs()
-            .returning(|_| Box::pin(async { Ok(Default::default()) }));
 
         mock_db.expect_get_accounts_for_user().returning(move |_| {
             let accounts = demo_accounts.clone();
@@ -135,32 +122,23 @@ mod tests {
             Arc::new(mock_db);
         let cache_service: Arc<dyn crate::services::cache_service::CacheService> =
             Arc::new(mock_cache);
-        let merchant_normalization_service = Arc::new(MerchantNormalizationService::new(
+        let _merchant_normalization_service = Arc::new(MerchantNormalizationService::new(
             Arc::clone(&db_repository),
             Arc::clone(&cache_service),
-        ));
-
-        let org_service = Arc::new(SimpleFinOrganizationService::new(
-            Arc::clone(&db_repository),
-            Arc::clone(&cache_service),
-            merchant_normalization_service,
         ));
 
         let provider_registry = Arc::new(ProviderRegistry::new());
 
-        let service = SimpleFinConnectionService::new(
+        let service = ConnectionService::new(
             Arc::clone(&db_repository),
             Arc::clone(&cache_service),
-            provider_registry.clone(),
-            HashMap::new(),
-            org_service,
+            provider_registry,
+            noop_categorizer(),
+            build_credential_resolvers(db_repository),
         );
-
-        let sync_service = Arc::new(SyncService::new(provider_registry));
 
         DemoSyncHarness {
             service,
-            sync_service,
             user_id,
             connection,
             captured_transactions: captured,
@@ -187,20 +165,9 @@ mod tests {
 
         let mut harness = build_demo_sync_harness(user_id, connection_id, accounts, transactions);
 
-        let params = SyncConnectionParams {
-            provider: "simplefin",
-            user_id: &harness.user_id,
-            jwt_id: "jwt_demo",
-        };
-
         let result = harness
             .service
-            .sync(
-                params,
-                harness.sync_service.as_ref(),
-                &mut harness.connection,
-                None,
-            )
+            .sync_teller_connection(&harness.user_id, "jwt_demo", &mut harness.connection, None)
             .await;
 
         assert!(
@@ -228,20 +195,9 @@ mod tests {
 
         let mut harness = build_demo_sync_harness(user_id, connection_id, accounts, transactions);
 
-        let params = SyncConnectionParams {
-            provider: "simplefin",
-            user_id: &harness.user_id,
-            jwt_id: "jwt_demo",
-        };
-
         harness
             .service
-            .sync(
-                params,
-                harness.sync_service.as_ref(),
-                &mut harness.connection,
-                None,
-            )
+            .sync_teller_connection(&harness.user_id, "jwt_demo", &mut harness.connection, None)
             .await
             .unwrap();
 
@@ -286,20 +242,9 @@ mod tests {
         let mut harness =
             build_demo_sync_harness(user_id, demo_connection_id, accounts, transactions);
 
-        let params = SyncConnectionParams {
-            provider: "simplefin",
-            user_id: &harness.user_id,
-            jwt_id: "jwt_demo",
-        };
-
         let result = harness
             .service
-            .sync(
-                params,
-                harness.sync_service.as_ref(),
-                &mut harness.connection,
-                None,
-            )
+            .sync_teller_connection(&harness.user_id, "jwt_demo", &mut harness.connection, None)
             .await
             .unwrap();
 
