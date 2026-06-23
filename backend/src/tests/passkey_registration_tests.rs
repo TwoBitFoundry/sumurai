@@ -1,3 +1,5 @@
+#![cfg(not(feature = "dev-seed"))]
+
 use crate::models::auth::{User, WebAuthnCredential};
 use crate::services::cache_service::MockCacheService;
 use crate::services::repository_service::MockDatabaseRepository;

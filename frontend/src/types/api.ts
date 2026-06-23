@@ -450,6 +450,7 @@ export interface RegisterBeginResponse {
 export interface RegisterRequest {
   email: string;
   name: string;
+  password?: string;
 }
 
 export interface FixedExpenseSummary {

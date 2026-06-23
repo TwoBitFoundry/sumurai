@@ -115,4 +115,12 @@ export class AuthService {
     const body: PasswordLoginRequest = { email, password };
     return ApiClient.post<AuthResponse>('/auth/login/password', body);
   }
+
+  static async registerWithPassword(
+    email: string,
+    password: string,
+    name: string
+  ): Promise<AuthResponse> {
+    return ApiClient.post<AuthResponse>('/auth/register', { email, password, name });
+  }
 }

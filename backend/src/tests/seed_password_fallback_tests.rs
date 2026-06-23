@@ -1,7 +1,6 @@
 #![cfg(feature = "dev-seed")]
 
 use crate::models::auth::User;
-use crate::seed::DEMO_EMAIL;
 use crate::services::cache_service::MockCacheService;
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::AuthService;
@@ -51,12 +50,12 @@ fn mock_cache_for_auth() -> MockCacheService {
     cache
 }
 
-async fn demo_user_with_password() -> User {
+async fn user_with_password(email: &str) -> User {
     let auth_service =
         AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap();
     User {
         id: Uuid::new_v4(),
-        email: DEMO_EMAIL.to_string(),
+        email: email.to_string(),
         password_hash: Some(auth_service.hash_password("Test1234!").unwrap()),
         provider: String::new(),
         created_at: Utc::now(),
@@ -67,8 +66,8 @@ async fn demo_user_with_password() -> User {
 }
 
 #[tokio::test]
-async fn given_seed_user_without_passkey_when_protected_request_then_200() {
-    let user = demo_user_with_password().await;
+async fn given_dev_user_without_passkey_when_protected_request_then_200() {
+    let user = user_with_password("dev-user@example.com").await;
     let (_, token) = TestFixtures::create_authenticated_user_with_token_for_user(user.clone());
 
     let mut mock_db = MockDatabaseRepository::new();
@@ -96,8 +95,8 @@ async fn given_seed_user_without_passkey_when_protected_request_then_200() {
 }
 
 #[tokio::test]
-async fn given_seed_user_with_passkey_when_password_login_then_200() {
-    let user = demo_user_with_password().await;
+async fn given_dev_user_with_passkey_when_password_login_then_200() {
+    let user = user_with_password("dev-user@example.com").await;
     let user_id = user.id;
     let email = user.email.clone();
     let cred = test_passkey_for_user(user_id);
@@ -122,7 +121,7 @@ async fn given_seed_user_with_passkey_when_password_login_then_200() {
         .unwrap();
 
     let body = json!({
-        "email": DEMO_EMAIL,
+        "email": "dev-user@example.com",
         "password": "Test1234!"
     });
     let request = axum::http::Request::builder()
@@ -147,10 +146,9 @@ async fn given_seed_user_with_passkey_when_password_login_then_200() {
 }
 
 #[tokio::test]
-async fn given_seed_user_with_passkey_when_begin_login_then_password_available() {
-    let user = demo_user_with_password().await;
+async fn given_dev_user_with_passkey_when_begin_login_then_password_available() {
+    let user = user_with_password("dev-user@example.com").await;
     let user_id = user.id;
-    let email = user.email.clone();
     let cred = test_passkey_for_user(user_id);
 
     let mut mock_db = MockDatabaseRepository::new();
@@ -175,7 +173,7 @@ async fn given_seed_user_with_passkey_when_begin_login_then_password_available()
         .header("content-type", "application/json")
         .header("X-Forwarded-For", "198.51.100.8")
         .body(axum::body::Body::from(
-            serde_json::to_vec(&json!({"email": DEMO_EMAIL})).unwrap(),
+            serde_json::to_vec(&json!({"email": "dev-user@example.com"})).unwrap(),
         ))
         .unwrap();
 
@@ -195,11 +193,11 @@ async fn given_seed_user_with_passkey_when_begin_login_then_password_available()
 }
 
 #[tokio::test]
-async fn given_other_user_without_passkey_when_protected_request_then_403() {
+async fn given_user_without_password_when_protected_request_then_403() {
     let user = User {
         id: Uuid::new_v4(),
         email: "legacy@example.com".to_string(),
-        password_hash: Some("argon2_hash".to_string()),
+        password_hash: None,
         provider: String::new(),
         created_at: Utc::now(),
         updated_at: Utc::now(),
@@ -230,4 +228,54 @@ async fn given_other_user_without_passkey_when_protected_request_then_403() {
 
     let response = app.oneshot(request).await.unwrap();
     assert_eq!(response.status(), 403);
+}
+
+#[tokio::test]
+async fn given_password_register_when_registering_then_200_and_cookie() {
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_user_by_email()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_db
+        .expect_create_user()
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(()) }));
+
+    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache_for_login())
+        .await
+        .unwrap();
+
+    let request = axum::http::Request::builder()
+        .method(Method::POST)
+        .uri("/api/auth/register")
+        .header("X-Forwarded-For", "198.51.100.31")
+        .header("content-type", "application/json")
+        .body(axum::body::Body::from(
+            serde_json::to_vec(&json!({
+                "email": "new-dev-user@example.com",
+                "name": "Dev User",
+                "password": "Test1234!"
+            }))
+            .unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let set_cookie = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    assert!(set_cookie.contains("auth_token="));
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        payload
+            .get("requires_passkey_enrollment")
+            .and_then(|v| v.as_bool()),
+        Some(false)
+    );
 }

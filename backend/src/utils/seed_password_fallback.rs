@@ -1,19 +1,15 @@
 use crate::models::auth::User;
 
+pub fn dev_password_auth_enabled() -> bool {
+    cfg!(feature = "dev-seed")
+}
+
 pub fn seed_user_password_fallback(user: &User) -> bool {
-    #[cfg(feature = "dev-seed")]
-    {
-        user.email.eq_ignore_ascii_case(crate::seed::DEMO_EMAIL)
-            && user
-                .password_hash
-                .as_ref()
-                .is_some_and(|hash| !hash.is_empty())
-    }
-    #[cfg(not(feature = "dev-seed"))]
-    {
-        let _ = user;
-        false
-    }
+    dev_password_auth_enabled()
+        && user
+            .password_hash
+            .as_ref()
+            .is_some_and(|hash| !hash.is_empty())
 }
 
 #[cfg(test)]
@@ -46,15 +42,11 @@ mod tests {
 
     #[cfg(feature = "dev-seed")]
     #[test]
-    fn seed_password_fallback_enabled_for_demo_user_with_password() {
+    fn seed_password_fallback_enabled_for_any_user_with_password() {
         let user = demo_user_with_password();
         assert!(seed_user_password_fallback(&user));
-    }
 
-    #[cfg(feature = "dev-seed")]
-    #[test]
-    fn seed_password_fallback_disabled_for_other_users() {
-        let user = User {
+        let other_user = User {
             id: Uuid::new_v4(),
             email: "other@example.com".to_string(),
             password_hash: Some("hash".to_string()),
@@ -64,7 +56,7 @@ mod tests {
             onboarding_completed: true,
             demo_mode_active: false,
         };
-        assert!(!seed_user_password_fallback(&user));
+        assert!(seed_user_password_fallback(&other_user));
     }
 
     #[cfg(feature = "dev-seed")]

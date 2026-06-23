@@ -932,7 +932,38 @@ async fn register_user(
     State(state): State<AppState>,
     headers: HeaderMap,
     Json(req): Json<auth_models::RegisterRequest>,
-) -> Result<Json<auth_models::RegisterBeginResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+) -> Result<Response, (StatusCode, Json<ApiErrorResponse>)> {
+    #[cfg(feature = "dev-seed")]
+    {
+        let _ = headers;
+        let password = req
+            .password
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .ok_or_else(|| {
+                ApiErrorResponse::bad_request("Password is required to register in development")
+            })?;
+        let email = req.email.trim().to_lowercase();
+        return Ok(
+            register_user_with_password(state, email, password.to_string())
+                .await?
+                .into_response(),
+        );
+    }
+
+    #[cfg(not(feature = "dev-seed"))]
+    {
+        register_user_with_passkey(state, headers, req).await
+    }
+}
+
+#[cfg(not(feature = "dev-seed"))]
+async fn register_user_with_passkey(
+    state: AppState,
+    headers: HeaderMap,
+    req: auth_models::RegisterRequest,
+) -> Result<Response, (StatusCode, Json<ApiErrorResponse>)> {
     if req.password.is_some() {
         return Err(ApiErrorResponse::bad_request(
             "Password registration is no longer supported; enroll a passkey instead",
@@ -1011,7 +1042,93 @@ async fn register_user(
         user_id: user_id.to_string(),
         session_id,
         challenge: challenge_json,
-    }))
+    })
+    .into_response())
+}
+
+#[cfg(feature = "dev-seed")]
+async fn register_user_with_password(
+    state: AppState,
+    email: String,
+    password: String,
+) -> Result<(HeaderMap, Json<auth_models::AuthResponse>), (StatusCode, Json<ApiErrorResponse>)> {
+    if let Ok(Some(_)) = state.db_repository.get_user_by_email(&email).await {
+        return Err(ApiErrorResponse::conflict(
+            "Email address is already registered",
+        ));
+    }
+
+    let password_hash = state.auth_service.hash_password(&password).map_err(|e| {
+        tracing::error!("Password hashing failed: {}", e);
+        ApiErrorResponse::internal_server_error("Failed to process password")
+    })?;
+
+    let user_id = Uuid::new_v4();
+    let user = User {
+        id: user_id,
+        email: email.clone(),
+        password_hash: Some(password_hash),
+        provider: String::new(),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+        onboarding_completed: false,
+        demo_mode_active: true,
+    };
+
+    if let Err(e) = state.db_repository.create_user(&user).await {
+        tracing::warn!(
+            auth_operation = "register",
+            auth_result = "failure",
+            failure_reason = "user_creation_failed",
+            user_id = %user_id,
+            error = %e,
+            "User creation failed"
+        );
+        return Err(ApiErrorResponse::conflict(
+            "Email address is already registered",
+        ));
+    }
+
+    let auth_token = state.auth_service.generate_token(user_id).map_err(|e| {
+        tracing::error!("Token generation failed for user {}: {}", user_id, e);
+        ApiErrorResponse::internal_server_error("Failed to generate authentication token")
+    })?;
+
+    let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
+    if ttl > 0 {
+        if let Err(e) = state
+            .cache_service
+            .set_session_valid(&auth_token.jwt_id, ttl)
+            .await
+        {
+            tracing::warn!("Failed to set session validity in cache: {}", e);
+        }
+        if let Err(e) = state
+            .cache_service
+            .set_jwt_token(&auth_token.jwt_id, &auth_token.token, ttl)
+            .await
+        {
+            tracing::warn!("Failed to cache JWT token: {}", e);
+        }
+    }
+
+    tracing::info!("User {} registered with password in development", user_id);
+
+    Ok((
+        auth_cookie_headers(build_auth_cookie(
+            &auth_token.token,
+            auth_token.expires_at,
+            &state.config,
+        )),
+        Json(auth_models::AuthResponse {
+            user_id: user_id.to_string(),
+            email,
+            expires_at: auth_token.expires_at.to_rfc3339(),
+            onboarding_completed: false,
+            demo_mode_active: true,
+            requires_passkey_enrollment: false,
+        }),
+    ))
 }
 
 #[utoipa::path(
