@@ -133,6 +133,7 @@ pub trait DatabaseRepository: Send + Sync {
     async fn get_user_by_email(&self, email: &str) -> Result<Option<User>>;
     async fn get_user_by_id(&self, user_id: &Uuid) -> Result<Option<User>>;
     async fn mark_onboarding_complete(&self, user_id: &Uuid) -> Result<()>;
+    async fn set_demo_mode_active(&self, user_id: &Uuid, active: bool) -> Result<()>;
     async fn update_user_provider(&self, user_id: &Uuid, provider: &str) -> Result<()>;
 
     async fn get_transactions_for_user(&self, user_id: &Uuid) -> Result<Vec<Transaction>>;
@@ -376,6 +377,11 @@ pub trait DatabaseRepository: Send + Sync {
         user_id: &Uuid,
         normalized_merchant: &str,
     ) -> Result<()>;
+
+    async fn delete_all_transaction_category_overrides_for_user(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<i32>;
 
     async fn get_transaction_by_id_for_user(
         &self,
@@ -1351,6 +1357,20 @@ impl DatabaseRepository for PostgresRepository {
         let db = self.conn();
         users::Entity::update_many()
             .col_expr(users::Column::OnboardingCompleted, Expr::value(true))
+            .col_expr(
+                users::Column::UpdatedAt,
+                Expr::value(Self::to_db_time(chrono::Utc::now())),
+            )
+            .filter(users::Column::Id.eq(*user_id))
+            .exec(&db)
+            .await?;
+        Ok(())
+    }
+
+    async fn set_demo_mode_active(&self, user_id: &Uuid, active: bool) -> Result<()> {
+        let db = self.conn();
+        users::Entity::update_many()
+            .col_expr(users::Column::DemoModeActive, Expr::value(active))
             .col_expr(
                 users::Column::UpdatedAt,
                 Expr::value(Self::to_db_time(chrono::Utc::now())),
@@ -3217,6 +3237,23 @@ impl DatabaseRepository for PostgresRepository {
                     .exec(txn)
                     .await?;
                 Ok(())
+            })
+        })
+        .await
+    }
+
+    async fn delete_all_transaction_category_overrides_for_user(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<i32> {
+        let user_id = *user_id;
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                let result = transaction_category_overrides::Entity::delete_many()
+                    .filter(transaction_category_overrides::Column::UserId.eq(user_id))
+                    .exec(txn)
+                    .await?;
+                Ok(result.rows_affected as i32)
             })
         })
         .await

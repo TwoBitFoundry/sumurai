@@ -222,6 +222,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     const handler = () => {
       setRemountTab('accounts');
       setMainAppKey((prev) => prev + 1);
+      setDemoModeActive(false);
     };
     window.addEventListener(PROVIDER_CONNECTED_EVENT, handler);
     return () => window.removeEventListener(PROVIDER_CONNECTED_EVENT, handler);

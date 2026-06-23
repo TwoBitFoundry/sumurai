@@ -5,6 +5,7 @@ use crate::models::transaction::Transaction;
 use crate::seed;
 use crate::services::budget_service::BudgetService;
 use crate::services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
+use crate::services::connection_service::ConnectionService;
 use crate::services::merchant_normalization::service::MerchantNormalizationService;
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::CacheService;
@@ -102,6 +103,64 @@ impl DemoModeService {
         }
 
         Ok(())
+    }
+
+    pub async fn exit_demo_mode_if_active(
+        db: &Arc<dyn DatabaseRepository>,
+        cache_service: &Arc<dyn CacheService>,
+        connection_service: &ConnectionService,
+        user_id: &Uuid,
+        jwt_id: &str,
+    ) -> Result<bool> {
+        let Some(user) = db.get_user_by_id(user_id).await? else {
+            return Ok(false);
+        };
+
+        if !user.demo_mode_active {
+            return Ok(false);
+        }
+
+        let connections = db.get_all_provider_connections_by_user(user_id).await?;
+        for connection in connections {
+            connection_service
+                .disconnect_connection_by_id(&connection.id, user_id, jwt_id)
+                .await?;
+        }
+
+        let budgets = db.get_budgets_for_user(*user_id).await?;
+        for budget in budgets {
+            db.delete_budget_for_user(budget.id, *user_id).await?;
+        }
+
+        let custom_categories = db.list_custom_categories_for_user(user_id).await?;
+        for category in custom_categories {
+            db.delete_custom_category(user_id, &category.id).await?;
+        }
+
+        db.delete_all_transaction_category_overrides_for_user(user_id)
+            .await?;
+
+        let hidden_orgs = db.list_simplefin_hidden_orgs(user_id).await?;
+        for org_conn_id in hidden_orgs {
+            db.remove_simplefin_hidden_org(user_id, &org_conn_id)
+                .await?;
+        }
+
+        db.delete_simplefin_root_credential(user_id).await?;
+        db.set_demo_mode_active(user_id, false).await?;
+
+        if let Err(error) = cache_service
+            .invalidate_pattern(&format!("{}_*", jwt_id))
+            .await
+        {
+            tracing::warn!(
+                "Failed to invalidate cache after demo mode exit for user {}: {}",
+                user_id,
+                error
+            );
+        }
+
+        Ok(true)
     }
 }
 

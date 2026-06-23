@@ -149,6 +149,7 @@ async fn build_test_app(
     );
     let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
         db_repository.clone(),
+        connection_service.clone(),
     ));
 
     let state = AppState {

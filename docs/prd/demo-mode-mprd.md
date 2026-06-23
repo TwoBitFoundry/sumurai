@@ -422,13 +422,25 @@ created.
   reload.
 
 **Acceptance criteria**
-- [ ] Connecting a new real institution from demo mode wipes demo data and
+- [x] Connecting a new real institution from demo mode wipes demo data and
       leaves only the new institution.
-- [ ] Creating a new DIY institution from demo mode wipes demo data and leaves
+- [x] Creating a new DIY institution from demo mode wipes demo data and leaves
       only the new DIY institution.
-- [ ] Adding an account to the seeded DIY institution preserves demo mode and
+- [x] Adding an account to the seeded DIY institution preserves demo mode and
       existing demo data.
-- [ ] `demo_mode_active` is `false` after successful demo exit.
+- [x] `demo_mode_active` is `false` after successful demo exit.
+
+**TDD log**
+- Red: added `backend/src/tests/demo_mode_teardown_tests.rs` for inactive-demo
+  no-op and active-demo financial teardown plus `demo_mode_active` clearing.
+- Green: `DemoModeService::exit_demo_mode_if_active` now disconnects seeded
+  connections, clears budgets/overrides/custom categories/SimpleFIN records,
+  and flips `demo_mode_active`; wired into provider connect, token exchange,
+  and DIY institution creation; frontend clears demo state on provider connect.
+- Verification:
+  `cargo test -p sumurai-backend --locked demo_mode_teardown`
+  `cargo test -p sumurai-backend --locked`
+  `bun --cwd=frontend run test`
 
 ## Phase 8 — Test coverage and validation
 

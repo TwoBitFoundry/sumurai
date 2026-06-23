@@ -458,6 +458,7 @@ async fn main() -> anyhow::Result<()> {
 
     let diy_service = Arc::new(crate::services::diy_service::DiyService::new(
         db_repository.clone(),
+        connection_service.clone(),
     ));
 
     let state = AppState {
@@ -4255,7 +4256,7 @@ async fn create_diy_institution(
 
     match state
         .diy_service
-        .create_institution(user_id, req.name.trim())
+        .create_institution(user_id, &auth_context.jwt_id, req.name.trim())
         .await
     {
         Ok(connection) => Ok(Json(crate::models::diy::CreateDiyInstitutionResponse {

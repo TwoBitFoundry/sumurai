@@ -19,7 +19,8 @@ use crate::services::categorization::categorization_service::Categorizer;
 use crate::services::categorization::classifier_labels::apply_deterministic_categories;
 use crate::services::merchant_normalization::service::MerchantNormalizationService;
 use crate::services::{
-    cache_service::CacheService, repository_service::DatabaseRepository, sync_service::SyncService,
+    cache_service::CacheService, demo_mode_service::DemoModeService,
+    repository_service::DatabaseRepository, sync_service::SyncService,
 };
 use anyhow::{Error, Result};
 use chrono::NaiveDate;
@@ -252,6 +253,22 @@ impl ConnectionService {
             .await
     }
 
+    pub async fn exit_demo_mode_before_new_institution(
+        &self,
+        user_id: &Uuid,
+        jwt_id: &str,
+    ) -> Result<()> {
+        DemoModeService::exit_demo_mode_if_active(
+            &self.db_repository,
+            &self.cache_service,
+            self,
+            user_id,
+            jwt_id,
+        )
+        .await?;
+        Ok(())
+    }
+
     pub async fn disconnect_owned_connection(
         &self,
         connection: &ProviderConnection,
@@ -353,6 +370,10 @@ impl ConnectionService {
         let provider = self
             .resolve_provider("teller")
             .ok_or_else(|| TellerConnectError::InvalidProvider("teller".to_string()))?;
+
+        self.exit_demo_mode_before_new_institution(user_id, jwt_id)
+            .await
+            .map_err(TellerConnectError::ConnectionPersistence)?;
 
         let item_id = format!("teller_{}", request.enrollment_id);
         self.db_repository
@@ -559,6 +580,10 @@ impl ConnectionService {
         request: &ProviderConnectRequest,
     ) -> Result<ProviderConnectResponse, SimpleFinConnectError> {
         if let Some(service) = self.simplefin_connection_service.as_ref() {
+            self.exit_demo_mode_before_new_institution(user_id, jwt_id)
+                .await
+                .map_err(SimpleFinConnectError::ConnectionPersistence)?;
+
             let response = service.connect(user_id, jwt_id, request).await?;
             if let Err(error) = self.set_user_provider(user_id, "simplefin").await {
                 tracing::warn!(
@@ -579,6 +604,10 @@ impl ConnectionService {
         let provider = self
             .resolve_provider("simplefin")
             .ok_or_else(|| SimpleFinConnectError::InvalidProvider("simplefin".to_string()))?;
+
+        self.exit_demo_mode_before_new_institution(user_id, jwt_id)
+            .await
+            .map_err(SimpleFinConnectError::ConnectionPersistence)?;
 
         let credentials = self
             .resolve_simplefin_credentials_for_connect(
@@ -803,6 +832,13 @@ impl ConnectionService {
             .exchange_public_token(public_token)
             .await
             .map_err(ExchangeTokenError::ExchangeFailed)?;
+
+        if let Err(error) = self
+            .exit_demo_mode_before_new_institution(user_id, jwt_id)
+            .await
+        {
+            return Err(ExchangeTokenError::ExchangeFailed(error));
+        }
 
         let institution_info = match provider.as_ref().get_institution_info(&credentials).await {
             Ok(info) => info,
