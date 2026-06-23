@@ -102,9 +102,8 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
       } catch (error) {
         if (error instanceof AuthenticationError) {
           options?.onAuthenticationError?.();
-        }
-        resetUnauthenticatedSession();
-        if (!(error instanceof AuthenticationError)) {
+          resetUnauthenticatedSession();
+        } else {
           console.warn('Auth validation error:', error);
         }
         throw error;

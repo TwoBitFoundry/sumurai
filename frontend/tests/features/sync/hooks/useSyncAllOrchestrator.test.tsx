@@ -7,7 +7,7 @@ import { RateLimitError } from '@/services/ApiClient';
 import { PlaidService } from '@/services/PlaidService';
 import { SimpleFinService } from '@/services/SimpleFinService';
 import { TellerService } from '@/services/TellerService';
-import { refreshFinancialDataAfterProviderChange } from '@/utils/queryInvalidation';
+import * as events from '@/utils/events';
 
 jest.mock('@/services/PlaidService', () => ({
   PlaidService: {
@@ -27,10 +27,6 @@ jest.mock('@/services/TellerService', () => ({
   },
 }));
 
-jest.mock('@/utils/queryInvalidation', () => ({
-  refreshFinancialDataAfterProviderChange: jest.fn().mockResolvedValue(undefined),
-}));
-
 jest.mock('@/utils/formatUserFacingApiError', () => ({
   formatUserFacingApiError: jest.fn((_error: unknown, fallback: string) => fallback),
 }));
@@ -38,7 +34,6 @@ jest.mock('@/utils/formatUserFacingApiError', () => ({
 const plaidSyncTransactions = jest.mocked(PlaidService.syncTransactions);
 const simpleFinSyncBridge = jest.mocked(SimpleFinService.syncBridge);
 const tellerSyncTransactions = jest.mocked(TellerService.syncTransactions);
-const refreshAfterProviderChange = jest.mocked(refreshFinancialDataAfterProviderChange);
 
 const makeBank = (
   id: string,
@@ -72,6 +67,7 @@ describe('useSyncAllOrchestrator', () => {
       },
     });
     jest.clearAllMocks();
+    jest.spyOn(events, 'dispatchFinancialAppRefresh').mockImplementation(jest.fn());
   });
 
   it('maps a SimpleFIN bridge response onto modal rows with a single request', async () => {
@@ -126,7 +122,6 @@ describe('useSyncAllOrchestrator', () => {
           ],
           primaryProvider: 'simplefin',
           isOnline: true,
-          queryClient,
           onError: jest.fn(),
         }),
       { wrapper }
@@ -151,7 +146,7 @@ describe('useSyncAllOrchestrator', () => {
       status: 'auth_required',
       detail: 'Auth required',
     });
-    expect(refreshAfterProviderChange).toHaveBeenCalledWith(queryClient, ['simplefin']);
+    expect(events.dispatchFinancialAppRefresh).not.toHaveBeenCalled();
   });
 
   it('matches SimpleFIN rows by connection id when institution names differ', async () => {
@@ -187,7 +182,6 @@ describe('useSyncAllOrchestrator', () => {
           ],
           primaryProvider: 'simplefin',
           isOnline: true,
-          queryClient,
           onError: jest.fn(),
         }),
       { wrapper }
@@ -240,7 +234,7 @@ describe('useSyncAllOrchestrator', () => {
       { status: 'rate_limited', retryAfterSeconds: 3600 },
       { status: 'rate_limited', retryAfterSeconds: 3600 },
     ]);
-    expect(refreshAfterProviderChange).not.toHaveBeenCalled();
+    expect(events.dispatchFinancialAppRefresh).not.toHaveBeenCalled();
   });
 
   it('stops a mixed Plaid batch after a mid-batch rate limit', async () => {
@@ -258,7 +252,6 @@ describe('useSyncAllOrchestrator', () => {
           banks: [makeBank('bank-1', 'plaid', 'conn-1'), makeBank('bank-2', 'plaid', 'conn-2')],
           primaryProvider: 'plaid',
           isOnline: true,
-          queryClient,
           onError,
         }),
       { wrapper }
@@ -286,7 +279,13 @@ describe('useSyncAllOrchestrator', () => {
       },
     ]);
     expect(onError).not.toHaveBeenCalled();
-    expect(refreshAfterProviderChange).toHaveBeenCalledTimes(1);
+    expect(events.dispatchFinancialAppRefresh).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current.closeSyncAllModal();
+    });
+
+    expect(events.dispatchFinancialAppRefresh).toHaveBeenCalledWith({ tab: 'accounts' });
   });
 
   it('syncs Teller banks sequentially and closes the modal after success', async () => {
@@ -299,7 +298,6 @@ describe('useSyncAllOrchestrator', () => {
           banks: [makeBank('bank-1', 'teller', 'conn-1'), makeBank('bank-2', 'teller', 'conn-2')],
           primaryProvider: 'teller',
           isOnline: true,
-          queryClient,
           onError: jest.fn(),
         }),
       { wrapper }
@@ -314,6 +312,7 @@ describe('useSyncAllOrchestrator', () => {
     expect(tellerSyncTransactions).toHaveBeenNthCalledWith(2, 'conn-2');
     expect(result.current.syncAllRows).toMatchObject([{ status: 'synced' }, { status: 'synced' }]);
     expect(result.current.syncAllModalOpen).toBe(true);
+    expect(events.dispatchFinancialAppRefresh).not.toHaveBeenCalled();
 
     await act(async () => {
       jest.advanceTimersByTime(5000);
@@ -322,6 +321,7 @@ describe('useSyncAllOrchestrator', () => {
     await waitFor(() => {
       expect(result.current.syncAllModalOpen).toBe(false);
     });
+    expect(events.dispatchFinancialAppRefresh).toHaveBeenCalledWith({ tab: 'accounts' });
 
     jest.useRealTimers();
   });

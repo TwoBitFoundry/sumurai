@@ -43,6 +43,7 @@ import {
   transactionsTable as uiTransactionsTableRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
+import { dispatchFinancialAppRefresh } from '@/utils/events';
 import { fmtUSD } from '@/utils/format';
 import {
   isMappingComplete,
@@ -189,6 +190,7 @@ export const ImportModalView: React.FC<ImportModalViewProps> = ({
       onImportSuccess?.(workflow.importResult.imported_count, account.mask);
     }
     handleClose();
+    dispatchFinancialAppRefresh({ tab: 'accounts' });
   };
 
   const handleMappingChange = (field: keyof CsvColumnMapping, value: string) => {

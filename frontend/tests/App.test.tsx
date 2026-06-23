@@ -231,6 +231,49 @@ describe('App onboarding gate', () => {
 
     resetFinancialQueriesForAppRefresh.mockRestore();
   });
+
+  it('keeps the last valid authenticated state when app refresh fails for a non-auth reason', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const refreshTokenMock = jest.mocked(AuthService.refreshToken);
+    const resetFinancialQueriesForAppRefresh = jest
+      .spyOn(queryInvalidation, 'resetFinancialQueriesForAppRefresh')
+      .mockResolvedValue(undefined);
+    refreshTokenMock.mockReset();
+    refreshTokenMock
+      .mockResolvedValueOnce({
+        user_id: 'user-1',
+        expires_at: '2099-01-01T00:00:00.000Z',
+        onboarding_completed: true,
+        demo_mode_active: true,
+      })
+      .mockRejectedValueOnce(new Error('network down'));
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('demo-mode-active')).toHaveTextContent('true');
+    });
+
+    await act(async () => {
+      window.dispatchEvent(
+        new CustomEvent(FINANCIAL_STATE_CHANGED_EVENT, {
+          detail: { mode: 'app', tab: 'accounts', refreshSession: true },
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(refreshTokenMock).toHaveBeenCalledTimes(2);
+      expect(resetFinancialQueriesForAppRefresh).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('demo-mode-active')).toHaveTextContent('true');
+      expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument();
+    });
+
+    expect(warnSpy).toHaveBeenCalledWith('Auth validation error:', expect.any(Error));
+
+    resetFinancialQueriesForAppRefresh.mockRestore();
+    warnSpy.mockRestore();
+  });
 });
 
 describe('App auth bootstrap', () => {

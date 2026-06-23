@@ -354,7 +354,6 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
       banks: banksWithSync,
       primaryProvider,
       isOnline,
-      queryClient,
       onError: (message) => {
         if (message) {
           pushAccountsToast(message, 'error');
@@ -716,7 +715,7 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
           return;
         }
 
-        dispatchFinancialAccountsRefresh();
+        dispatchFinancialAppRefresh({ tab: 'accounts' });
         if (disconnectingLastBank && isSyncProvider(bank.provider)) {
           queryClient.setQueryData<ProviderCatalogue>(['provider', 'catalog'], (prev) =>
             prev ? { ...prev, user_provider: null } : prev
