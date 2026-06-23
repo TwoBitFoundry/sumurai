@@ -102,6 +102,7 @@ pub(crate) fn apply_passkey_enrollment_mock_defaults(mock_db: &mut MockDatabaseR
                     created_at: Utc::now(),
                     updated_at: Utc::now(),
                     onboarding_completed: true,
+                    demo_mode_active: false,
                 }))
             })
         });
@@ -753,6 +754,7 @@ impl TestFixtures {
             created_at: Utc::now(),
             updated_at: Utc::now(),
             onboarding_completed: false,
+            demo_mode_active: false,
         };
 
         let auth_token = auth_service.generate_token(user_id).unwrap();

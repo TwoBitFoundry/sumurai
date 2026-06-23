@@ -122,6 +122,7 @@ describe('ApiClient with Injected IHttpClient', () => {
         user_id: 'user-123',
         expires_at: '2025-12-31T00:00:00Z',
         onboarding_completed: true,
+        demo_mode_active: false,
       });
 
       mockHttp.get
@@ -162,6 +163,7 @@ describe('ApiClient with Injected IHttpClient', () => {
         user_id: 'user-123',
         expires_at: '2025-12-31T00:00:00Z',
         onboarding_completed: true,
+        demo_mode_active: false,
       });
 
       mockHttp.get
@@ -177,6 +179,7 @@ describe('ApiClient with Injected IHttpClient', () => {
         user_id: 'user-123',
         expires_at: '2025-12-31T00:00:00Z',
         onboarding_completed: true,
+        demo_mode_active: false,
       });
 
       const blob = new Blob(['exported'], { type: 'text/csv' });

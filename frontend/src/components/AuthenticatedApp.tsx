@@ -51,6 +51,7 @@ interface AuthenticatedAppProps {
   onLogout: () => void;
   initialTab?: TabKey;
   isOnline: boolean;
+  demoModeActive: boolean;
 }
 
 function resolveInitialDashboardDateState(): {
@@ -70,7 +71,12 @@ function resolveInitialDashboardDateState(): {
   return { dateRange: 'custom', customDateRange };
 }
 
-export function AuthenticatedApp({ onLogout, initialTab, isOnline }: AuthenticatedAppProps) {
+export function AuthenticatedApp({
+  onLogout,
+  initialTab,
+  isOnline,
+  demoModeActive: _demoModeActive,
+}: AuthenticatedAppProps) {
   const [tab, setTab] = useState<TabKey>(initialTab ?? 'dashboard');
   const [tabTransitionDirection, setTabTransitionDirection] = useState(0);
   const [error, setError] = useState<string | null>(null);

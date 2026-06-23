@@ -33,6 +33,7 @@ mod tests {
             created_at: Utc::now(),
             updated_at: Utc::now(),
             onboarding_completed: true,
+            demo_mode_active: false,
         }
     }
 
@@ -61,6 +62,7 @@ mod tests {
             created_at: Utc::now(),
             updated_at: Utc::now(),
             onboarding_completed: true,
+            demo_mode_active: false,
         };
         assert!(!seed_user_password_fallback(&user));
     }
@@ -76,6 +78,7 @@ mod tests {
             created_at: Utc::now(),
             updated_at: Utc::now(),
             onboarding_completed: true,
+            demo_mode_active: false,
         };
         assert!(!seed_user_password_fallback(&user));
     }

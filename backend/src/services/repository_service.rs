@@ -1318,6 +1318,7 @@ impl DatabaseRepository for PostgresRepository {
             created_at: Set(Some(Self::to_db_time(user.created_at))),
             updated_at: Set(Some(Self::to_db_time(user.updated_at))),
             onboarding_completed: Set(user.onboarding_completed),
+            demo_mode_active: Set(user.demo_mode_active),
             provider: Set(user.provider.clone()),
         })
         .exec(&db)

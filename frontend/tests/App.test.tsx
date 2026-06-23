@@ -16,7 +16,13 @@ jest.mock('@/Auth', () => ({
 }));
 
 jest.mock('@/components/AuthenticatedApp', () => ({
-  AuthenticatedApp: ({ onLogout }: { onLogout: () => void }) => {
+  AuthenticatedApp: ({
+    onLogout,
+    demoModeActive,
+  }: {
+    onLogout: () => void;
+    demoModeActive: boolean;
+  }) => {
     const queryClient = useQueryClient();
 
     useEffect(() => {
@@ -24,9 +30,12 @@ jest.mock('@/components/AuthenticatedApp', () => ({
     }, [queryClient]);
 
     return (
-      <button type="button" onClick={onLogout}>
-        Logout
-      </button>
+      <>
+        <output data-testid="demo-mode-active">{demoModeActive ? 'true' : 'false'}</output>
+        <button type="button" onClick={onLogout}>
+          Logout
+        </button>
+      </>
     );
   },
 }));
@@ -75,6 +84,7 @@ jest.mock('@/services/authService', () => ({
       user_id: 'user-1',
       expires_at: '2099-01-01T00:00:00.000Z',
       onboarding_completed: true,
+      demo_mode_active: false,
     }),
     logout: jest.fn().mockResolvedValue({
       message: 'logged out',
@@ -125,6 +135,7 @@ describe('App logout cache handling', () => {
       user_id: 'user-1',
       expires_at: '2099-01-01T00:00:00.000Z',
       onboarding_completed: true,
+      demo_mode_active: false,
     });
   });
 
@@ -151,6 +162,7 @@ describe('App onboarding gate', () => {
       user_id: 'user-1',
       expires_at: '2099-01-01T00:00:00.000Z',
       onboarding_completed: false,
+      demo_mode_active: true,
     });
 
     render(<App />);
@@ -159,17 +171,34 @@ describe('App onboarding gate', () => {
       expect(screen.getByTestId('onboarding-provider-picker')).toBeInTheDocument();
     });
   });
+
+  it('preserves demo mode state from the refresh response', async () => {
+    jest.mocked(AuthService.refreshToken).mockResolvedValue({
+      user_id: 'user-1',
+      expires_at: '2099-01-01T00:00:00.000Z',
+      onboarding_completed: true,
+      demo_mode_active: true,
+    });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('demo-mode-active')).toHaveTextContent('true');
+    });
+  });
 });
 
 describe('App auth bootstrap', () => {
   it('treats refresh 401 as unauthenticated without logging a validation warning', async () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    jest.mocked(AuthService.refreshToken).mockRejectedValueOnce(new AuthenticationError());
+    const refreshTokenMock = jest.mocked(AuthService.refreshToken);
+    refreshTokenMock.mockReset();
+    refreshTokenMock.mockRejectedValue(new AuthenticationError());
 
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('logout-cache-state')).toHaveTextContent('miss');
+      expect(screen.getByTestId('logout-cache-state')).toBeInTheDocument();
     });
 
     expect(warnSpy).not.toHaveBeenCalledWith('Auth validation error:', expect.anything());

@@ -20,6 +20,7 @@ fn demo_user() -> User {
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: true,
+        demo_mode_active: false,
     }
 }
 

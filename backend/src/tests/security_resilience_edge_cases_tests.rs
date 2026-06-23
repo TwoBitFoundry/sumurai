@@ -83,6 +83,7 @@ async fn given_concurrent_user_creation_with_same_email_when_race_condition_occu
                 created_at: Utc::now(),
                 updated_at: Utc::now(),
                 onboarding_completed: false,
+                demo_mode_active: false,
             };
             repo_clone.create_user(&user).await
         });

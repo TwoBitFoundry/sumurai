@@ -1137,6 +1137,7 @@ async fn refresh_user_session(
             email: user.email.clone(),
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
+            demo_mode_active: user.demo_mode_active,
             requires_passkey_enrollment: false,
         }),
     ))
@@ -5405,6 +5406,7 @@ async fn finish_passkey_registration(
             created_at: Utc::now(),
             updated_at: Utc::now(),
             onboarding_completed: false,
+            demo_mode_active: false,
         };
         if let Err(e) = state.db_repository.create_user(&new_user).await {
             tracing::warn!(
@@ -5515,6 +5517,7 @@ async fn finish_passkey_registration(
         email: user.email.clone(),
         expires_at: auth_token.expires_at.to_rfc3339(),
         onboarding_completed: user.onboarding_completed,
+        demo_mode_active: user.demo_mode_active,
         requires_passkey_enrollment: false,
     })
     .map_err(|e| {
@@ -5752,6 +5755,7 @@ async fn login_with_password(
             email: user.email.clone(),
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
+            demo_mode_active: user.demo_mode_active,
             requires_passkey_enrollment: !seed_user_password_fallback(&user),
         }),
     ))
@@ -6086,6 +6090,7 @@ async fn finish_passkey_login(
             email: user.email.clone(),
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
+            demo_mode_active: user.demo_mode_active,
             requires_passkey_enrollment: false,
         }),
     ))

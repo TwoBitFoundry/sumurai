@@ -34,6 +34,7 @@ impl From<entity::users::Model> for User {
             created_at: opt_fixed_to_utc_required(m.created_at),
             updated_at: opt_fixed_to_utc_required(m.updated_at),
             onboarding_completed: m.onboarding_completed,
+            demo_mode_active: m.demo_mode_active,
         }
     }
 }
@@ -178,6 +179,7 @@ mod tests {
             created_at: Some(now),
             updated_at: Some(now),
             onboarding_completed: true,
+            demo_mode_active: false,
         };
         let user = User::from(m);
         assert_eq!(user.id, id);
@@ -198,6 +200,7 @@ mod tests {
             created_at: None,
             updated_at: None,
             onboarding_completed: false,
+            demo_mode_active: true,
         };
         let user = User::from(m);
         assert!(user.created_at >= before);

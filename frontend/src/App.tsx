@@ -60,6 +60,8 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [mainAppKey, setMainAppKey] = useState(0);
   const [remountTab, setRemountTab] = useState<TabKey>(initialTab ?? 'dashboard');
   const [sessionExpiresAt, setSessionExpiresAt] = useState<string | null>(null);
+  const [demoModeActive, setDemoModeActive] = useState(false);
+  const [pendingDemoModeActive, setPendingDemoModeActive] = useState(false);
 
   const isOnline = useOnlineStatus();
 
@@ -80,6 +82,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
         setIsAuthenticated(true);
         setShowOnboarding(!refreshResponse.onboarding_completed);
         setSessionExpiresAt(refreshResponse.expires_at);
+        setDemoModeActive(refreshResponse.demo_mode_active);
         if (refreshResponse.email) {
           queryClient.setQueryData(['user', 'email'], refreshResponse.email);
         }
@@ -88,6 +91,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
           setIsAuthenticated(false);
           setShowOnboarding(false);
           setSessionExpiresAt(null);
+          setDemoModeActive(false);
         }
         if (!(error instanceof AuthenticationError)) {
           console.warn('Auth validation error:', error);
@@ -113,10 +117,12 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
       email?: string;
       expires_at: string;
       onboarding_completed: boolean;
+      demo_mode_active: boolean;
     }) => {
       setIsAuthenticated(true);
       setShowOnboarding(!authResponse.onboarding_completed);
       setSessionExpiresAt(authResponse.expires_at);
+      setDemoModeActive(authResponse.demo_mode_active);
       if (authResponse.email) {
         queryClient.setQueryData(['user', 'email'], authResponse.email);
       }
@@ -126,19 +132,30 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
 
   const handleEnrollmentRequired = useCallback(
     (
-      authResponse: { user_id: string; expires_at: string; onboarding_completed: boolean },
+      authResponse: {
+        user_id: string;
+        expires_at: string;
+        onboarding_completed: boolean;
+        demo_mode_active: boolean;
+      },
       email: string
     ) => {
       setEnrollmentLockedEmail(email);
       setPendingOnboarding(!authResponse.onboarding_completed);
       setPendingExpiresAt(authResponse.expires_at);
+      setPendingDemoModeActive(authResponse.demo_mode_active);
       setNeedsPasskeyEnrollment(true);
     },
     []
   );
 
   const handleEnrollmentComplete = useCallback(
-    (authResponse?: { user_id: string; expires_at: string; onboarding_completed: boolean }) => {
+    (authResponse?: {
+      user_id: string;
+      expires_at: string;
+      onboarding_completed: boolean;
+      demo_mode_active: boolean;
+    }) => {
       setNeedsPasskeyEnrollment(false);
       setShowEnrollmentModal(false);
       setPendingRecoveryEnrollment(null);
@@ -147,16 +164,20 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
       if (authResponse) {
         setShowOnboarding(!authResponse.onboarding_completed);
         setSessionExpiresAt(authResponse.expires_at);
+        setDemoModeActive(authResponse.demo_mode_active);
         setPendingOnboarding(false);
         setPendingExpiresAt(null);
+        setPendingDemoModeActive(false);
       } else {
         setShowOnboarding(pendingOnboarding);
         setSessionExpiresAt(pendingExpiresAt);
+        setDemoModeActive(pendingDemoModeActive);
         setPendingOnboarding(false);
         setPendingExpiresAt(null);
+        setPendingDemoModeActive(false);
       }
     },
-    [pendingOnboarding, pendingExpiresAt]
+    [pendingDemoModeActive, pendingOnboarding, pendingExpiresAt]
   );
 
   const handleRecoveryEnrollmentStarted = useCallback(
@@ -184,8 +205,10 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     setShowEnrollmentModal(false);
     setShowOnboarding(false);
     setSessionExpiresAt(null);
+    setDemoModeActive(false);
     setPendingOnboarding(false);
     setPendingExpiresAt(null);
+    setPendingDemoModeActive(false);
     setAuthScreen('login');
   }, []);
 
@@ -276,6 +299,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
             onLogout={handleLogout}
             initialTab={remountTab}
             isOnline={isOnline}
+            demoModeActive={demoModeActive}
           />
         </TransactionListLauncherProvider>
       </AccountFilterProvider>

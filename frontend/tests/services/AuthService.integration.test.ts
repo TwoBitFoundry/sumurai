@@ -135,6 +135,7 @@ describe('AuthService with Injected Boundaries', () => {
         user_id: 'user-123',
         expires_at: '2025-12-31T00:00:00Z',
         onboarding_completed: true,
+        demo_mode_active: false,
       };
       mockHttpClient.post.mockResolvedValueOnce(refreshResponse);
 
@@ -153,6 +154,7 @@ describe('AuthService with Injected Boundaries', () => {
         user_id: 'user-123',
         expires_at: '2025-12-31T00:00:00Z',
         onboarding_completed: true,
+        demo_mode_active: false,
       };
       mockHttpClient.post.mockResolvedValue(refreshResponse);
 

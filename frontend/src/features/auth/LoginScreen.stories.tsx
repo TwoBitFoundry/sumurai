@@ -148,6 +148,7 @@ export const SignInSuccess: Story = {
             user_id: 'story-user',
             expires_at: '2026-05-07T18:30:00.000Z',
             onboarding_completed: true,
+            demo_mode_active: false,
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         );

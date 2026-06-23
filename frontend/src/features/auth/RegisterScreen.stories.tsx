@@ -57,6 +57,7 @@ function buildRegisterStoryFetch(originalFetch: typeof globalThis.fetch) {
           user_id: 'story-user',
           expires_at: '2026-05-07T18:30:00.000Z',
           onboarding_completed: false,
+          demo_mode_active: true,
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );

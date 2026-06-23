@@ -44,6 +44,7 @@ export const ExpiryModal: Story = {
       user_id: 'story-user',
       expires_at: '2026-05-07T18:30:00.000Z',
       onboarding_completed: true,
+      demo_mode_active: false,
     });
     try {
       await expect(body.getByRole('heading', { name: /session expiring/i })).toBeVisible();

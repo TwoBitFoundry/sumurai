@@ -117,6 +117,7 @@ pub async fn maybe_seed_demo_user(
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: true,
+        demo_mode_active: false,
     };
 
     if let Err(e) = db.create_user(&user).await {

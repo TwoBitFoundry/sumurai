@@ -148,6 +148,10 @@ async fn given_valid_auth_cookie_when_refreshing_then_returns_replacement_cookie
         response_json.get("onboarding_completed").unwrap(),
         &json!(false)
     );
+    assert_eq!(
+        response_json.get("demo_mode_active").unwrap(),
+        &json!(false)
+    );
 }
 
 #[tokio::test]

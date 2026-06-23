@@ -21,6 +21,7 @@ async fn given_duplicate_email_when_register_then_returns_409_with_expected_mess
             created_at: Utc::now(),
             updated_at: Utc::now(),
             onboarding_completed: false,
+            demo_mode_active: false,
         };
         Box::pin(async move { Ok(Some(existing)) })
     });
