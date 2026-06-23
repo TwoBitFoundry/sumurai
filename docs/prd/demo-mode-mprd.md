@@ -471,14 +471,25 @@ the right boundaries.
   - Accounts exit warning behavior on new-institution actions only
 
 **Acceptance criteria**
-- [ ] Focused backend and frontend tests cover the new state machine and dataset
+- [x] Focused backend and frontend tests cover the new state machine and dataset
       contract.
-- [ ] Validation passes with:
+- [x] Validation passes with:
       `cargo test -p sumurai-backend --locked`,
       `cargo check --workspace --locked --all-targets`,
       `bun --cwd=frontend run test`,
       `bun --cwd=frontend run typecheck`,
       `bun --cwd=frontend run build`.
+
+**TDD log**
+- Verification only: reran the full backend and frontend validation suite after
+  phases 1–7; existing boundary tests across auth, seeding, onboarding, demo
+  badge/warnings, and teardown cover the state machine and dataset contract.
+- Verification:
+  `cargo test -p sumurai-backend --locked`
+  `cargo check --workspace --locked --all-targets`
+  `bun --cwd=frontend run test`
+  `bun --cwd=frontend run typecheck`
+  `bun --cwd=frontend run build`
 
 ## Next actions
 
