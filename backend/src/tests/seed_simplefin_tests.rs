@@ -3,7 +3,10 @@ use crate::models::budget::Budget;
 use crate::models::transaction::Transaction;
 use crate::seed;
 use crate::services::cache_service::MockCacheService;
-use crate::services::demo_mode_service::{runtime_offset_days, DemoModeService};
+use crate::services::demo_mode_service::{
+    runtime_offset_days, DemoModeService, AUTHORED_DEMO_PROVIDER_TXN_IDS,
+    MIN_DEMO_DIY_TRANSACTION_COUNT, MIN_DEMO_TRANSACTION_COUNT,
+};
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::subscription_detection::exclusions::is_excluded;
 use crate::services::AuthService;
@@ -34,6 +37,7 @@ fn expect_shared_demo_seed_mocks(
     mock_db: &mut MockDatabaseRepository,
     mock_cache: &mut MockCacheService,
     user: &User,
+    capture_diy_transactions: Option<Arc<Mutex<Vec<Transaction>>>>,
 ) {
     let user_id = user.id;
     mock_db
@@ -43,9 +47,32 @@ fn expect_shared_demo_seed_mocks(
         .expect_save_provider_connection()
         .times(1)
         .returning(|connection| {
+            assert_eq!(connection.provider, "diy");
+            assert!(connection.transaction_count >= MIN_DEMO_DIY_TRANSACTION_COUNT as i32);
             let id = connection.id;
             Box::pin(async move { Ok(id) })
         });
+    if let Some(captured) = capture_diy_transactions {
+        let captured_clone = Arc::clone(&captured);
+        mock_db
+            .expect_upsert_transactions_batch()
+            .times(1)
+            .returning(move |transactions, _| {
+                *captured_clone.lock().unwrap() = transactions.to_vec();
+                Box::pin(async { Ok(()) })
+            });
+    } else {
+        mock_db
+            .expect_upsert_transactions_batch()
+            .times(1)
+            .returning(|transactions, _| {
+                assert!(transactions.len() >= MIN_DEMO_DIY_TRANSACTION_COUNT);
+                for transaction in transactions {
+                    assert!(provider_id(transaction).starts_with("sumurai_demo_diy_"));
+                }
+                Box::pin(async { Ok(()) })
+            });
+    }
     mock_db
         .expect_upsert_account()
         .times(2)
@@ -66,7 +93,7 @@ fn expect_shared_demo_seed_mocks(
         .expect_update_user_provider()
         .with(
             mockall::predicate::eq(user_id),
-            mockall::predicate::eq("simplefin"),
+            mockall::predicate::eq("teller"),
         )
         .times(1)
         .returning(|_, _| Box::pin(async { Ok(()) }));
@@ -104,28 +131,6 @@ fn capture_seeded_budgets(mock_db: &mut MockDatabaseRepository) -> Arc<Mutex<Vec
             Box::pin(async move { Ok(budget) })
         });
     captured
-}
-
-#[test]
-fn demo_simplefin_seeded_requires_full_dataset_contract() {
-    assert!(!seed::is_demo_simplefin_seeded(&[]));
-    assert!(!seed::is_demo_simplefin_seeded(
-        &seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS
-            .iter()
-            .map(|id| (*id).to_string())
-            .collect::<Vec<_>>()
-    ));
-
-    let mut ids = seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS
-        .iter()
-        .map(|id| (*id).to_string())
-        .collect::<Vec<_>>();
-    ids.extend(
-        (0..(seed::MIN_DEMO_TRANSACTION_COUNT - seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS.len()))
-            .map(|index| format!("sumurai_demo_generated_{index:03}")),
-    );
-
-    assert!(seed::is_demo_simplefin_seeded(&ids));
 }
 
 #[test]
@@ -182,21 +187,90 @@ async fn maybe_seed_demo_user_creates_demo_ready_user() {
 }
 
 #[tokio::test]
+async fn maybe_seed_demo_user_skips_existing_user() {
+    std::env::set_var("SEED_DEMO_USER", "true");
+
+    let existing = demo_user();
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_user_by_email()
+        .with(mockall::predicate::eq(seed::DEMO_EMAIL))
+        .times(1)
+        .returning({
+            let existing = existing.clone();
+            move |_| {
+                let existing = existing.clone();
+                Box::pin(async move { Ok(Some(existing)) })
+            }
+        });
+
+    let auth = Arc::new(
+        AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap(),
+    );
+    let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
+
+    assert!(seed::maybe_seed_demo_user(&db, &auth)
+        .await
+        .unwrap()
+        .is_none());
+}
+
+#[tokio::test]
+async fn maybe_seed_demo_dev_workspace_skips_when_demo_workspace_exists() {
+    std::env::set_var("SEED_DEMO_USER", "true");
+
+    let user = demo_user();
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_user_by_email()
+        .with(mockall::predicate::eq(seed::DEMO_EMAIL))
+        .times(1)
+        .returning({
+            let user = user.clone();
+            move |_| {
+                let user = user.clone();
+                Box::pin(async move { Ok(Some(user)) })
+            }
+        });
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user.id))
+        .times(1)
+        .returning(|_| {
+            let mut connection = crate::models::plaid::ProviderConnection::new(
+                Uuid::new_v4(),
+                seed::SUMURAI_DEMO_TELLER_ITEM_ID,
+            );
+            connection.provider = "teller".to_string();
+            connection.mark_connected("Sumurai Demo Bank");
+            Box::pin(async move { Ok(vec![connection]) })
+        });
+
+    let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
+    let cache: Arc<dyn crate::services::cache_service::CacheService> =
+        Arc::new(MockCacheService::new());
+
+    seed::maybe_seed_demo_dev_workspace(&db, &cache)
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
 async fn seeds_demo_dataset_with_synced_and_diy_accounts() {
     let user = demo_user();
     let (mut mock_db, mut mock_cache) = (MockDatabaseRepository::new(), MockCacheService::new());
-    expect_shared_demo_seed_mocks(&mut mock_db, &mut mock_cache, &user);
+    expect_shared_demo_seed_mocks(&mut mock_db, &mut mock_cache, &user, None);
     mock_db
         .expect_upsert_provider_snapshot_bundle()
         .times(1)
         .returning(|_, connection, accounts, transactions| {
-            assert_eq!(connection.provider, "simplefin");
+            assert_eq!(connection.provider, "teller");
             assert_eq!(
                 connection.institution_name.as_deref(),
                 Some("Sumurai Demo Bank")
             );
             assert_eq!(accounts.len(), 5);
-            assert!(transactions.len() >= seed::MIN_DEMO_TRANSACTION_COUNT);
+            assert!(transactions.len() >= MIN_DEMO_TRANSACTION_COUNT);
             Box::pin(async { Ok(()) })
         });
 
@@ -212,7 +286,7 @@ async fn seeds_demo_dataset_with_synced_and_diy_accounts() {
 async fn transaction_merchants_are_normalized_for_every_seeded_row() {
     let user = demo_user();
     let (mut mock_db, mut mock_cache) = (MockDatabaseRepository::new(), MockCacheService::new());
-    expect_shared_demo_seed_mocks(&mut mock_db, &mut mock_cache, &user);
+    expect_shared_demo_seed_mocks(&mut mock_db, &mut mock_cache, &user, None);
     mock_db
         .expect_upsert_provider_snapshot_bundle()
         .times(1)
@@ -238,7 +312,7 @@ async fn transaction_merchants_are_normalized_for_every_seeded_row() {
 async fn seeded_demo_dataset_preserves_category_coverage_and_date_offsets() {
     let user = demo_user();
     let (mut mock_db, mut mock_cache) = (MockDatabaseRepository::new(), MockCacheService::new());
-    expect_shared_demo_seed_mocks(&mut mock_db, &mut mock_cache, &user);
+    expect_shared_demo_seed_mocks(&mut mock_db, &mut mock_cache, &user, None);
     let captured = capture_snapshot_bundle(&mut mock_db);
 
     let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
@@ -270,19 +344,19 @@ async fn seeded_demo_dataset_preserves_category_coverage_and_date_offsets() {
     assert_eq!(latest_date, expected_latest);
 
     let gym_first = by_provider_id
-        .get(seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[19])
+        .get(AUTHORED_DEMO_PROVIDER_TXN_IDS[19])
         .unwrap()
         .date;
     let gym_second = by_provider_id
-        .get(seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[20])
+        .get(AUTHORED_DEMO_PROVIDER_TXN_IDS[20])
         .unwrap()
         .date;
     let gym_third = by_provider_id
-        .get(seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[21])
+        .get(AUTHORED_DEMO_PROVIDER_TXN_IDS[21])
         .unwrap()
         .date;
     let gym_fourth = by_provider_id
-        .get(seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[22])
+        .get(AUTHORED_DEMO_PROVIDER_TXN_IDS[22])
         .unwrap()
         .date;
     assert_eq!(gym_second - gym_first, Duration::days(28));
@@ -294,7 +368,7 @@ async fn seeded_demo_dataset_preserves_category_coverage_and_date_offsets() {
 async fn seeded_demo_dataset_keeps_expected_subscription_and_other_examples() {
     let user = demo_user();
     let (mut mock_db, mut mock_cache) = (MockDatabaseRepository::new(), MockCacheService::new());
-    expect_shared_demo_seed_mocks(&mut mock_db, &mut mock_cache, &user);
+    expect_shared_demo_seed_mocks(&mut mock_db, &mut mock_cache, &user, None);
     let captured = capture_snapshot_bundle(&mut mock_db);
 
     let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
@@ -309,18 +383,18 @@ async fn seeded_demo_dataset_keeps_expected_subscription_and_other_examples() {
         txns.iter().map(|txn| (provider_id(txn), txn)).collect();
 
     let netflix = by_provider_id
-        .get(seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[5])
+        .get(AUTHORED_DEMO_PROVIDER_TXN_IDS[5])
         .unwrap();
     assert_eq!(netflix.amount, dec!(-15.49));
     assert_eq!(netflix.category_primary, "SUBSCRIPTION");
 
     let atm = by_provider_id
-        .get(seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[3])
+        .get(AUTHORED_DEMO_PROVIDER_TXN_IDS[3])
         .unwrap();
     assert_eq!(atm.category_primary, "BANK_FEES");
 
     let transfer = by_provider_id
-        .get(seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[16])
+        .get(AUTHORED_DEMO_PROVIDER_TXN_IDS[16])
         .unwrap();
     assert_eq!(transfer.category_primary, "TRANSFER_OUT");
 
@@ -330,13 +404,55 @@ async fn seeded_demo_dataset_keeps_expected_subscription_and_other_examples() {
         .count();
     assert!(repeated_other >= 12);
 
-    for provider_id in &seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[23..=25] {
+    for provider_id in &AUTHORED_DEMO_PROVIDER_TXN_IDS[23..=25] {
         let excluded = by_provider_id.get(provider_id).unwrap();
         assert_eq!(excluded.amount, dec!(-6.45));
         let raw = excluded.original_merchant_name.as_deref().unwrap_or("");
         assert!(raw.contains("STARBUCKS"));
     }
     assert!(is_excluded("starbucks"));
+}
+
+#[tokio::test]
+async fn seeded_diy_institution_includes_transactions() {
+    let user = demo_user();
+    let user_id = user.id;
+    let (mut mock_db, mut mock_cache) = (MockDatabaseRepository::new(), MockCacheService::new());
+    let captured_diy = Arc::new(Mutex::new(Vec::<Transaction>::new()));
+    expect_shared_demo_seed_mocks(
+        &mut mock_db,
+        &mut mock_cache,
+        &user,
+        Some(Arc::clone(&captured_diy)),
+    );
+    mock_db
+        .expect_upsert_provider_snapshot_bundle()
+        .times(1)
+        .returning(|_, _, _, _| Box::pin(async { Ok(()) }));
+
+    let cash_account_id = seed::demo_entity_id(user_id, "account:sumurai_demo_diy_cash");
+    let travel_account_id = seed::demo_entity_id(user_id, "account:sumurai_demo_diy_travel");
+
+    let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
+    let cache: Arc<dyn crate::services::CacheService> = Arc::new(mock_cache);
+
+    DemoModeService::seed_demo_workspace_for_user(&db, &cache, &user)
+        .await
+        .unwrap();
+
+    let diy_txns = captured_diy.lock().unwrap().clone();
+    assert!(diy_txns.len() >= MIN_DEMO_DIY_TRANSACTION_COUNT);
+    assert!(diy_txns.iter().any(|txn| txn.account_id == cash_account_id));
+    assert!(diy_txns
+        .iter()
+        .any(|txn| txn.account_id == travel_account_id));
+
+    for txn in &diy_txns {
+        assert!(txn.original_merchant_name.is_some());
+        assert!(txn.merchant_name.is_some());
+        assert!(txn.normalized_merchant.is_some());
+        assert!(provider_id(txn).starts_with("sumurai_demo_diy_"));
+    }
 }
 
 #[tokio::test]
@@ -354,8 +470,20 @@ async fn seeds_budgets_for_budgetable_demo_categories() {
         .expect_save_provider_connection()
         .times(1)
         .returning(|connection| {
+            assert_eq!(connection.provider, "diy");
+            assert!(connection.transaction_count >= MIN_DEMO_DIY_TRANSACTION_COUNT as i32);
             let id = connection.id;
             Box::pin(async move { Ok(id) })
+        });
+    mock_db
+        .expect_upsert_transactions_batch()
+        .times(1)
+        .returning(|transactions, _| {
+            assert!(transactions.len() >= MIN_DEMO_DIY_TRANSACTION_COUNT);
+            for transaction in transactions {
+                assert!(provider_id(transaction).starts_with("sumurai_demo_diy_"));
+            }
+            Box::pin(async { Ok(()) })
         });
     mock_db
         .expect_upsert_account()

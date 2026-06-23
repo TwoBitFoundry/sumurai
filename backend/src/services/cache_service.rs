@@ -73,6 +73,7 @@ pub trait CacheService: Send + Sync {
     async fn invalidate_session(&self, jwt_id: &str) -> Result<()>;
 
     async fn clear_jwt_scoped_data(&self, jwt_id: &str) -> Result<()>;
+    async fn clear_jwt_scoped_financial_data(&self, jwt_id: &str) -> Result<()>;
 
     async fn is_auth_ip_banned(&self, ip: &str) -> Result<bool>;
 
@@ -322,6 +323,22 @@ impl RedisCache {
         Ok(())
     }
 
+    pub async fn clear_jwt_scoped_financial_data(&self, jwt_id: &str) -> Result<()> {
+        self.clear_transactions(jwt_id).await?;
+        self.clear_budgets(jwt_id).await?;
+        self.invalidate_pattern(&format!("{jwt_id}{BANK_CONNECTION_SUFFIX}*"))
+            .await?;
+        self.invalidate_pattern(&format!("{jwt_id}{BANK_ACCOUNTS_SUFFIX}*"))
+            .await?;
+        self.invalidate_pattern(&format!("{jwt_id}{ACCESS_TOKEN_SUFFIX}_*"))
+            .await?;
+        self.invalidate_pattern(&format!("{jwt_id}_balances_overview*"))
+            .await?;
+        self.invalidate_pattern(&format!("{jwt_id}_net_worth_over_time_*"))
+            .await?;
+        Ok(())
+    }
+
     pub async fn is_auth_ip_banned(&self, ip: &str) -> Result<bool> {
         let mut conn = self.connection_manager.clone();
         let key = AuthIpBanPolicy::ban_key(ip);
@@ -493,6 +510,10 @@ impl CacheService for RedisCache {
 
     async fn clear_jwt_scoped_data(&self, jwt_id: &str) -> Result<()> {
         self.clear_jwt_scoped_data(jwt_id).await
+    }
+
+    async fn clear_jwt_scoped_financial_data(&self, jwt_id: &str) -> Result<()> {
+        self.clear_jwt_scoped_financial_data(jwt_id).await
     }
 
     async fn is_auth_ip_banned(&self, ip: &str) -> Result<bool> {

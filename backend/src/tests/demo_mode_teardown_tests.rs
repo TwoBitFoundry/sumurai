@@ -15,7 +15,7 @@ fn demo_user() -> User {
         id: Uuid::new_v4(),
         email: "demo@example.com".to_string(),
         password_hash: None,
-        provider: "simplefin".to_string(),
+        provider: "teller".to_string(),
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: true,
@@ -24,8 +24,8 @@ fn demo_user() -> User {
 }
 
 fn demo_connection(user_id: Uuid) -> ProviderConnection {
-    let mut connection = ProviderConnection::new(user_id, "simplefin_sumurai_demo");
-    connection.provider = "simplefin".to_string();
+    let mut connection = ProviderConnection::new(user_id, crate::seed::SUMURAI_DEMO_TELLER_ITEM_ID);
+    connection.provider = "teller".to_string();
     connection.mark_connected("Sumurai Demo Bank");
     connection
 }
@@ -101,7 +101,7 @@ async fn given_active_demo_mode_when_exiting_then_clears_financial_data_and_demo
     mock_db
         .expect_get_all_provider_connections_by_user()
         .with(mockall::predicate::eq(user_id))
-        .times(3..)
+        .times(2..)
         .returning({
             let connection = connection.clone();
             let call_count = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -132,9 +132,13 @@ async fn given_active_demo_mode_when_exiting_then_clears_financial_data_and_demo
             }
         });
     mock_db
-        .expect_disconnect_simplefin_org()
+        .expect_disconnect_provider_connection_cascade()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq(crate::seed::SUMURAI_DEMO_TELLER_ITEM_ID),
+        )
         .times(1)
-        .returning(|_, _, _, _| Box::pin(async { Ok((12, 3)) }));
+        .returning(|_, _| Box::pin(async { Ok((12, 3)) }));
     mock_db
         .expect_update_user_provider()
         .with(mockall::predicate::eq(user_id), mockall::predicate::eq(""))
@@ -195,8 +199,14 @@ async fn given_active_demo_mode_when_exiting_then_clears_financial_data_and_demo
     mock_cache
         .expect_delete_access_token()
         .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_cache.expect_invalidate_session().times(0);
     mock_cache
         .expect_invalidate_pattern()
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_clear_jwt_scoped_financial_data()
+        .with(mockall::predicate::eq("jwt-1"))
+        .times(1)
         .returning(|_| Box::pin(async { Ok(()) }));
 
     let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);

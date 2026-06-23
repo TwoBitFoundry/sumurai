@@ -328,14 +328,8 @@ async fn main() -> anyhow::Result<()> {
 
     let auth_service = Arc::new(AuthService::new(jwt_secret)?);
 
-    if let Some(demo_user) = seed::maybe_seed_demo_user(&db_repository, &auth_service).await? {
-        services::DemoModeService::seed_demo_workspace_for_user(
-            &db_repository,
-            &cache_service,
-            &demo_user,
-        )
-        .await?;
-    }
+    seed::maybe_seed_demo_user(&db_repository, &auth_service).await?;
+    seed::maybe_seed_demo_dev_workspace(&db_repository, &cache_service).await?;
 
     let model_dir = CategorizationService::model_dir();
     tracing::info!(

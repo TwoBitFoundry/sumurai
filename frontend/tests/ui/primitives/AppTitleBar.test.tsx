@@ -164,10 +164,22 @@ describe('AppTitleBar', () => {
     expect(settingsButton.className).not.toContain('bg-[var(--color-brand-sky)]');
   });
 
-  it('shows the demo mode badge when demo mode is active', () => {
+  it('shows the demo mode badge under the title when demo mode is active', () => {
     renderAppTitleBar(<AppTitleBar {...baseProps} isOnline demoModeActive onLogout={jest.fn()} />);
 
-    expect(screen.getByText('Demo mode')).toBeInTheDocument();
+    const badge = screen.getByTestId('demo-mode-badge');
+    expect(badge).toBeInTheDocument();
+    expect(badge.tagName).toBe('SPAN');
+    expect(badge.className).toContain('font-label');
+    expect(badge.className).toContain('uppercase');
+    expect(badge.className).toContain('--color-status-info-text');
+    expect(badge.className).not.toContain('--color-status-info-strong-surface');
+    expect(badge.className).not.toContain('--color-status-info-border');
+    expect(badge.className).not.toContain('border');
+    expect(screen.getByText('Sumurai').parentElement).toContainElement(badge);
+
+    const actions = screen.getByRole('status', { name: 'Online' }).closest('div');
+    expect(actions).not.toContainElement(badge);
   });
 
   it('hides the demo mode badge when demo mode is inactive', () => {

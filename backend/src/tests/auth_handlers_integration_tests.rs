@@ -1,3 +1,4 @@
+use crate::services::demo_mode_service::MIN_DEMO_DIY_TRANSACTION_COUNT;
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::test_fixtures::TestFixtures;
 use axum::body::to_bytes;
@@ -176,21 +177,33 @@ async fn given_authenticated_user_when_activating_demo_mode_then_seeds_workspace
         .expect_upsert_provider_snapshot_bundle()
         .times(1)
         .returning(|_, connection, accounts, transactions| {
-            assert_eq!(connection.provider, "simplefin");
+            assert_eq!(connection.provider, "teller");
             assert_eq!(accounts.len(), 5);
-            assert!(transactions.len() >= crate::seed::MIN_DEMO_TRANSACTION_COUNT);
+            assert!(
+                transactions.len()
+                    >= crate::services::demo_mode_service::MIN_DEMO_TRANSACTION_COUNT
+            );
             Box::pin(async { Ok(()) })
         });
     mock_db
         .expect_get_active_merchant_aliases()
-        .times(1)
+        .times(2)
         .returning(|| Box::pin(async { Ok(vec![]) }));
     mock_db
         .expect_save_provider_connection()
         .times(1)
         .returning(|connection| {
+            assert_eq!(connection.provider, "diy");
+            assert!(connection.transaction_count >= MIN_DEMO_DIY_TRANSACTION_COUNT as i32);
             let id = connection.id;
             Box::pin(async move { Ok(id) })
+        });
+    mock_db
+        .expect_upsert_transactions_batch()
+        .times(1)
+        .returning(|transactions, _| {
+            assert!(transactions.len() >= MIN_DEMO_DIY_TRANSACTION_COUNT);
+            Box::pin(async { Ok(()) })
         });
     mock_db
         .expect_upsert_account()
@@ -209,7 +222,7 @@ async fn given_authenticated_user_when_activating_demo_mode_then_seeds_workspace
         });
     mock_db
         .expect_update_user_provider()
-        .withf(move |id, provider| *id == user_id && provider == "simplefin")
+        .withf(move |id, provider| *id == user_id && provider == "teller")
         .times(1)
         .returning(|_, _| Box::pin(async { Ok(()) }));
     mock_db

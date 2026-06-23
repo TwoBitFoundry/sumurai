@@ -1,6 +1,7 @@
 use crate::models::auth::User;
+use crate::services::demo_mode_service::DemoModeService;
 use crate::services::repository_service::DatabaseRepository;
-use crate::services::AuthService;
+use crate::services::{AuthService, CacheService};
 use chrono::Utc;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
@@ -8,37 +9,17 @@ use uuid::Uuid;
 
 pub const DEMO_EMAIL: &str = "me@test.com";
 const DEMO_PASSWORD: &str = "Test1234!";
-pub const SUMURAI_DEMO_ORG_CONN_ID: &str = "sumurai_demo";
-pub const MIN_DEMO_TRANSACTION_COUNT: usize = 300;
+pub const SUMURAI_DEMO_TELLER_ITEM_ID: &str = "teller_sumurai_demo";
 
-pub const DEMO_SIMPLEFIN_PROVIDER_TXN_IDS: [&str; 26] = [
-    "sumurai_demo_txn_01",
-    "sumurai_demo_txn_02",
-    "sumurai_demo_txn_03",
-    "sumurai_demo_txn_04",
-    "sumurai_demo_txn_05",
-    "sumurai_demo_txn_06",
-    "sumurai_demo_txn_07",
-    "sumurai_demo_txn_08",
-    "sumurai_demo_txn_09",
-    "sumurai_demo_txn_10",
-    "sumurai_demo_txn_11",
-    "sumurai_demo_txn_12",
-    "sumurai_demo_txn_13",
-    "sumurai_demo_txn_14",
-    "sumurai_demo_txn_15",
-    "sumurai_demo_txn_16",
-    "sumurai_demo_txn_17",
-    "sumurai_demo_txn_18",
-    "sumurai_demo_txn_19",
-    "sumurai_demo_gym_01",
-    "sumurai_demo_gym_02",
-    "sumurai_demo_gym_03",
-    "sumurai_demo_gym_04",
-    "sumurai_demo_excl_01",
-    "sumurai_demo_excl_02",
-    "sumurai_demo_excl_03",
-];
+pub fn is_demo_teller_item_id(item_id: &str) -> bool {
+    item_id == SUMURAI_DEMO_TELLER_ITEM_ID
+}
+
+fn seed_demo_user_enabled() -> bool {
+    std::env::var("SEED_DEMO_USER")
+        .map(|v| v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false)
+}
 
 fn demo_seed_hash(user_id: Uuid, key: &str, salt: &str) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
@@ -68,34 +49,18 @@ pub fn demo_entity_id(user_id: Uuid, key: &str) -> Uuid {
     )
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
-pub fn is_demo_simplefin_seeded(provider_txn_ids: &[String]) -> bool {
-    let demo_count = provider_txn_ids
-        .iter()
-        .filter(|id| id.starts_with("sumurai_demo_"))
-        .count();
-
-    demo_count >= MIN_DEMO_TRANSACTION_COUNT
-        && DEMO_SIMPLEFIN_PROVIDER_TXN_IDS
-            .iter()
-            .all(|expected| provider_txn_ids.iter().any(|id| id == expected))
-}
-
 pub async fn maybe_seed_demo_user(
     db: &Arc<dyn DatabaseRepository>,
     auth: &Arc<AuthService>,
 ) -> anyhow::Result<Option<User>> {
-    if !std::env::var("SEED_DEMO_USER")
-        .map(|v| v.eq_ignore_ascii_case("true"))
-        .unwrap_or(false)
-    {
+    if !seed_demo_user_enabled() {
         return Ok(None);
     }
 
     match db.get_user_by_email(DEMO_EMAIL).await {
-        Ok(Some(user)) => {
+        Ok(Some(_)) => {
             tracing::debug!("Demo user {} already exists, skipping seed", DEMO_EMAIL);
-            return Ok(Some(user));
+            return Ok(None);
         }
         Ok(None) => {}
         Err(e) => {
@@ -126,4 +91,33 @@ pub async fn maybe_seed_demo_user(
 
     tracing::info!("Demo user {} seeded (password login enabled)", DEMO_EMAIL);
     Ok(Some(user))
+}
+
+pub async fn maybe_seed_demo_dev_workspace(
+    db: &Arc<dyn DatabaseRepository>,
+    cache_service: &Arc<dyn CacheService>,
+) -> anyhow::Result<()> {
+    if !seed_demo_user_enabled() {
+        return Ok(());
+    }
+
+    let Some(user) = db.get_user_by_email(DEMO_EMAIL).await? else {
+        tracing::debug!(
+            "Demo user {} not found, skipping demo workspace seed",
+            DEMO_EMAIL
+        );
+        return Ok(());
+    };
+
+    if DemoModeService::is_demo_workspace_seeded(db, &user.id).await? {
+        tracing::debug!(
+            "Demo workspace already present for {}, skipping seed",
+            DEMO_EMAIL
+        );
+        return Ok(());
+    }
+
+    DemoModeService::seed_demo_workspace_for_user(db, cache_service, &user).await?;
+    tracing::info!("Demo workspace seeded for {}", DEMO_EMAIL);
+    Ok(())
 }

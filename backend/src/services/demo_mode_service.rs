@@ -17,12 +17,42 @@ use std::str::FromStr;
 use std::sync::Arc;
 use uuid::Uuid;
 
-const SIMPLEFIN_CONNECTION_KEY: &str = "connection:sumurai_demo";
-const SIMPLEFIN_ITEM_KEY: &str = "simplefin_sumurai_demo";
+const TELLER_CONNECTION_KEY: &str = "connection:sumurai_demo";
 const DIY_CONNECTION_KEY: &str = "connection:sumurai_demo_diy";
 const DIY_ITEM_KEY: &str = "diy_sumurai_demo";
 const DIY_INSTITUTION_NAME: &str = "Sumurai Demo DIY";
 const MIN_BUDGET_AMOUNT: &str = "50.00";
+pub const MIN_DEMO_TRANSACTION_COUNT: usize = 300;
+pub const MIN_DEMO_DIY_TRANSACTION_COUNT: usize = 40;
+
+pub const AUTHORED_DEMO_PROVIDER_TXN_IDS: [&str; 26] = [
+    "sumurai_demo_txn_01",
+    "sumurai_demo_txn_02",
+    "sumurai_demo_txn_03",
+    "sumurai_demo_txn_04",
+    "sumurai_demo_txn_05",
+    "sumurai_demo_txn_06",
+    "sumurai_demo_txn_07",
+    "sumurai_demo_txn_08",
+    "sumurai_demo_txn_09",
+    "sumurai_demo_txn_10",
+    "sumurai_demo_txn_11",
+    "sumurai_demo_txn_12",
+    "sumurai_demo_txn_13",
+    "sumurai_demo_txn_14",
+    "sumurai_demo_txn_15",
+    "sumurai_demo_txn_16",
+    "sumurai_demo_txn_17",
+    "sumurai_demo_txn_18",
+    "sumurai_demo_txn_19",
+    "sumurai_demo_gym_01",
+    "sumurai_demo_gym_02",
+    "sumurai_demo_gym_03",
+    "sumurai_demo_gym_04",
+    "sumurai_demo_excl_01",
+    "sumurai_demo_excl_02",
+    "sumurai_demo_excl_03",
+];
 
 struct SyncedAccountIds {
     checking: Uuid,
@@ -30,6 +60,11 @@ struct SyncedAccountIds {
     credit: Uuid,
     investment: Uuid,
     loan: Uuid,
+}
+
+struct DiyAccountIds {
+    cash: Uuid,
+    travel: Uuid,
 }
 
 struct AuthoredTransaction {
@@ -53,6 +88,20 @@ impl DemoModeService {
         Self::activate_demo_workspace_for_user(db, cache_service, user, false).await
     }
 
+    pub async fn is_demo_workspace_seeded(
+        db: &Arc<dyn DatabaseRepository>,
+        user_id: &Uuid,
+    ) -> Result<bool> {
+        let connections = db.get_all_provider_connections_by_user(user_id).await?;
+        Ok(connections.iter().any(|connection| {
+            connection.item_id == seed::SUMURAI_DEMO_TELLER_ITEM_ID
+                || connection
+                    .institution_name
+                    .as_deref()
+                    .is_some_and(|name| name == "Sumurai Demo Bank")
+        }))
+    }
+
     pub async fn activate_demo_workspace_for_user(
         db: &Arc<dyn DatabaseRepository>,
         cache_service: &Arc<dyn CacheService>,
@@ -65,9 +114,9 @@ impl DemoModeService {
             MerchantNormalizationService::new(Arc::clone(db), Arc::clone(cache_service));
 
         let synced_accounts = synced_account_ids(user_id);
-        let simplefin_connection = build_simplefin_connection(user_id, now);
+        let teller_connection = build_teller_connection(user_id, now);
         let synced_account_rows =
-            build_simplefin_accounts(user_id, &simplefin_connection, &synced_accounts);
+            build_synced_accounts(user_id, &teller_connection, &synced_accounts);
         let mut authored_transactions = build_authored_transactions(&synced_accounts);
         let offset_days = runtime_offset_days(Utc::now().date_naive());
         apply_runtime_offset(&mut authored_transactions, offset_days);
@@ -77,7 +126,7 @@ impl DemoModeService {
         ensure_category_coverage(&transactions)?;
         ensure_transaction_contract(&transactions)?;
 
-        let mut connection = simplefin_connection.clone();
+        let mut connection = teller_connection.clone();
         connection.transaction_count = transactions.len() as i32;
         connection.account_count = synced_account_rows.len() as i32;
         db.upsert_provider_snapshot_bundle(
@@ -89,14 +138,33 @@ impl DemoModeService {
         .await?;
 
         let diy_connection = build_diy_connection(user_id, now);
-        let diy_connection_id = db.save_provider_connection(&diy_connection).await?;
-        let diy_accounts = build_diy_accounts(user_id, diy_connection_id);
+        let diy_account_ids = diy_account_ids(user_id);
+        let diy_accounts = build_diy_accounts(user_id, diy_connection.id, &diy_account_ids);
+        let mut diy_authored_transactions = build_authored_diy_transactions(&diy_account_ids);
+        apply_runtime_offset(&mut diy_authored_transactions, offset_days);
+        let diy_transactions = to_transactions(
+            user_id,
+            now,
+            &diy_authored_transactions,
+            &normalization_service,
+        )
+        .await?;
+        ensure_diy_transaction_contract(&diy_transactions)?;
+
+        let mut diy_connection = diy_connection;
+        diy_connection.transaction_count = diy_transactions.len() as i32;
+        diy_connection.account_count = diy_accounts.len() as i32;
+        db.save_provider_connection(&diy_connection).await?;
         for account in &diy_accounts {
             db.upsert_account(account).await?;
         }
+        db.upsert_transactions_batch(&diy_transactions, &user_id)
+            .await?;
 
-        seed_budgets(db, user_id, &transactions).await?;
-        db.update_user_provider(&user_id, "simplefin").await?;
+        let mut all_transactions = transactions;
+        all_transactions.extend(diy_transactions);
+        seed_budgets(db, user_id, &all_transactions).await?;
+        db.update_user_provider(&user_id, "teller").await?;
 
         if mark_onboarding_complete {
             db.mark_onboarding_complete(&user_id).await?;
@@ -149,10 +217,7 @@ impl DemoModeService {
         db.delete_simplefin_root_credential(user_id).await?;
         db.set_demo_mode_active(user_id, false).await?;
 
-        if let Err(error) = cache_service
-            .invalidate_pattern(&format!("{}_*", jwt_id))
-            .await
-        {
+        if let Err(error) = cache_service.clear_jwt_scoped_financial_data(jwt_id).await {
             tracing::warn!(
                 "Failed to invalidate cache after demo mode exit for user {}: {}",
                 user_id,
@@ -183,17 +248,17 @@ fn synced_account_ids(user_id: Uuid) -> SyncedAccountIds {
     }
 }
 
-fn build_simplefin_connection(user_id: Uuid, now: chrono::DateTime<Utc>) -> ProviderConnection {
+fn build_teller_connection(user_id: Uuid, now: chrono::DateTime<Utc>) -> ProviderConnection {
     ProviderConnection {
-        id: seed::demo_entity_id(user_id, SIMPLEFIN_CONNECTION_KEY),
+        id: seed::demo_entity_id(user_id, TELLER_CONNECTION_KEY),
         user_id,
-        item_id: format!("simplefin_{user_id}_{SIMPLEFIN_ITEM_KEY}"),
-        provider: "simplefin".to_string(),
+        item_id: seed::SUMURAI_DEMO_TELLER_ITEM_ID.to_string(),
+        provider: "teller".to_string(),
         is_connected: true,
         last_sync_at: Some(now),
         connected_at: Some(now),
         disconnected_at: None,
-        institution_id: Some(seed::SUMURAI_DEMO_ORG_CONN_ID.to_string()),
+        institution_id: Some("teller".to_string()),
         institution_name: Some("Sumurai Demo Bank".to_string()),
         institution_logo_url: None,
         sync_cursor: None,
@@ -204,7 +269,7 @@ fn build_simplefin_connection(user_id: Uuid, now: chrono::DateTime<Utc>) -> Prov
     }
 }
 
-fn build_simplefin_accounts(
+fn build_synced_accounts(
     user_id: Uuid,
     connection: &ProviderConnection,
     ids: &SyncedAccountIds,
@@ -295,10 +360,17 @@ fn build_diy_connection(user_id: Uuid, now: chrono::DateTime<Utc>) -> ProviderCo
     }
 }
 
-fn build_diy_accounts(user_id: Uuid, connection_id: Uuid) -> Vec<Account> {
+fn diy_account_ids(user_id: Uuid) -> DiyAccountIds {
+    DiyAccountIds {
+        cash: seed::demo_entity_id(user_id, "account:sumurai_demo_diy_cash"),
+        travel: seed::demo_entity_id(user_id, "account:sumurai_demo_diy_travel"),
+    }
+}
+
+fn build_diy_accounts(user_id: Uuid, connection_id: Uuid, ids: &DiyAccountIds) -> Vec<Account> {
     vec![
         Account {
-            id: seed::demo_entity_id(user_id, "account:sumurai_demo_diy_cash"),
+            id: ids.cash,
             user_id: Some(user_id),
             provider_account_id: Some("sumurai_demo_diy_cash".to_string()),
             provider_connection_id: Some(connection_id),
@@ -310,7 +382,7 @@ fn build_diy_accounts(user_id: Uuid, connection_id: Uuid) -> Vec<Account> {
             provider_conn_id: None,
         },
         Account {
-            id: seed::demo_entity_id(user_id, "account:sumurai_demo_diy_travel"),
+            id: ids.travel,
             user_id: Some(user_id),
             provider_account_id: Some("sumurai_demo_diy_travel".to_string()),
             provider_connection_id: Some(connection_id),
@@ -324,6 +396,92 @@ fn build_diy_accounts(user_id: Uuid, connection_id: Uuid) -> Vec<Account> {
     ]
 }
 
+fn build_authored_diy_transactions(ids: &DiyAccountIds) -> Vec<AuthoredTransaction> {
+    let mut transactions = Vec::new();
+    let authored_latest = authored_latest_transaction_date();
+    let month_starts = authored_month_starts();
+
+    push_transaction(
+        &mut transactions,
+        "sumurai_demo_diy_cash_latest_01".to_string(),
+        ids.cash,
+        "FARMERS MARKET CASH",
+        "-42.50",
+        authored_latest,
+        "FOOD_AND_DRINK",
+        None,
+    );
+    push_transaction(
+        &mut transactions,
+        "sumurai_demo_diy_cash_latest_02".to_string(),
+        ids.cash,
+        "CORNER STORE CASH",
+        "-18.75",
+        authored_latest - Duration::days(3),
+        "SHOPPING",
+        None,
+    );
+
+    for (index, month_start) in month_starts.iter().enumerate() {
+        let month_number = index + 1;
+        push_transaction(
+            &mut transactions,
+            format!("sumurai_demo_diy_envelope_{month_number:02}"),
+            ids.cash,
+            "CASH ENVELOPE GROCERIES",
+            "-85.00",
+            *month_start + Duration::days(3),
+            "FOOD_AND_DRINK",
+            None,
+        );
+        push_transaction(
+            &mut transactions,
+            format!("sumurai_demo_diy_travel_save_{month_number:02}"),
+            ids.travel,
+            "MONTHLY TRAVEL FUND DEPOSIT",
+            "150.00",
+            *month_start + Duration::days(1),
+            "TRANSFER_IN",
+            None,
+        );
+        push_transaction(
+            &mut transactions,
+            format!("sumurai_demo_diy_travel_out_{month_number:02}"),
+            ids.cash,
+            "TRANSFER TO TRAVEL FUND",
+            "-150.00",
+            *month_start + Duration::days(1),
+            "TRANSFER_OUT",
+            None,
+        );
+
+        if month_number.is_multiple_of(3) {
+            push_transaction(
+                &mut transactions,
+                format!("sumurai_demo_diy_flight_{month_number:02}"),
+                ids.travel,
+                "ALASKA AIR DIY TRIP",
+                "-289.00",
+                *month_start + Duration::days(12),
+                "TRAVEL",
+                None,
+            );
+            push_transaction(
+                &mut transactions,
+                format!("sumurai_demo_diy_hotel_{month_number:02}"),
+                ids.travel,
+                "HOTEL LUCIA DIY STAY",
+                "-198.50",
+                *month_start + Duration::days(14),
+                "TRAVEL",
+                None,
+            );
+        }
+    }
+
+    transactions
+}
+
 fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransaction> {
     let mut transactions = Vec::new();
     let authored_latest = authored_latest_transaction_date();
@@ -331,7 +489,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
 
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[0].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[0].to_string(),
         ids.checking,
         "SQ *BLUE BOTTLE COFFEE",
         "-4.75",
@@ -341,7 +499,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[1].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[1].to_string(),
         ids.checking,
         "PAYROLL DIRECT DEPOSIT SUMURAI INC",
         "2500.00",
@@ -351,7 +509,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[2].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[2].to_string(),
         ids.checking,
         "CHECK # 1042 PAID",
         "-150.00",
@@ -361,7 +519,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[3].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[3].to_string(),
         ids.checking,
         "ATM WITHDRAWAL 123 MAIN ST",
         "-60.00",
@@ -371,7 +529,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[4].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[4].to_string(),
         ids.checking,
         "ZELLE PAYMENT TO ALEX SMITH",
         "-75.00",
@@ -381,7 +539,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[5].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[5].to_string(),
         ids.checking,
         "NETFLIX.COM 866-579-7172 CA",
         "-15.49",
@@ -391,7 +549,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[6].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[6].to_string(),
         ids.checking,
         "COSTCO WHSE #573 PORTLAND OR 06/01",
         "-127.83",
@@ -401,7 +559,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[7].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[7].to_string(),
         ids.checking,
         "POS DEBIT STARBUCKS #12345 SEATTLE WA 06/03",
         "-6.45",
@@ -411,7 +569,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[8].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[8].to_string(),
         ids.checking,
         "WALMART SUPERCENTER 4321 06/04",
         "-89.23",
@@ -421,7 +579,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[9].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[9].to_string(),
         ids.checking,
         "TARGET STORE #1234 PORTLAND OR",
         "-43.12",
@@ -431,7 +589,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[10].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[10].to_string(),
         ids.checking,
         "AMAZON.COM LLC",
         "-34.99",
@@ -441,7 +599,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[11].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[11].to_string(),
         ids.checking,
         "AMZN MKTP US*1A2B3C4D",
         "-22.50",
@@ -451,7 +609,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[12].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[12].to_string(),
         ids.checking,
         "SHELL OIL 59401234 DEBIT PURCHASE",
         "-52.00",
@@ -461,7 +619,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[13].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[13].to_string(),
         ids.checking,
         "UBER* TRIPS HELP.UBER.COM CA",
         "-18.75",
@@ -471,7 +629,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[14].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[14].to_string(),
         ids.checking,
         "RANDOMCO MERCHANT PORTLAND OR 12345",
         "-29.99",
@@ -481,7 +639,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[15].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[15].to_string(),
         ids.credit,
         "WHOLEFDS MKT #10452 PORTLAND OR",
         "-67.43",
@@ -491,7 +649,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[16].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[16].to_string(),
         ids.savings,
         "ONLINE TRANSFER TO CHECKING",
         "-200.00",
@@ -501,7 +659,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[17].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[17].to_string(),
         ids.investment,
         "DIVIDEND REINVESTMENT VANGUARD",
         "12.50",
@@ -511,7 +669,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[18].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[18].to_string(),
         ids.loan,
         "AUTOPAY LOAN PAYMENT",
         "-348.00",
@@ -521,7 +679,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[19].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[19].to_string(),
         ids.checking,
         "PDXFIT GYM PORTLAND OR MONTHLY",
         "-29.99",
@@ -531,7 +689,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[20].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[20].to_string(),
         ids.checking,
         "PDXFIT GYM PORTLAND OR MONTHLY",
         "-29.99",
@@ -541,7 +699,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[21].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[21].to_string(),
         ids.checking,
         "PDXFIT GYM PORTLAND OR MONTHLY",
         "-29.99",
@@ -551,7 +709,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[22].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[22].to_string(),
         ids.checking,
         "PDXFIT GYM PORTLAND OR MONTHLY",
         "-29.99",
@@ -561,7 +719,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[23].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[23].to_string(),
         ids.checking,
         "POS DEBIT STARBUCKS #12345 SEATTLE WA",
         "-6.45",
@@ -571,7 +729,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[24].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[24].to_string(),
         ids.checking,
         "POS DEBIT STARBUCKS #12345 SEATTLE WA",
         "-6.45",
@@ -581,7 +739,7 @@ fn build_authored_transactions(ids: &SyncedAccountIds) -> Vec<AuthoredTransactio
     );
     push_transaction(
         &mut transactions,
-        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[25].to_string(),
+        AUTHORED_DEMO_PROVIDER_TXN_IDS[25].to_string(),
         ids.checking,
         "POS DEBIT STARBUCKS #12345 SEATTLE WA",
         "-6.45",
@@ -997,6 +1155,27 @@ fn ensure_category_coverage(transactions: &[Transaction]) -> Result<()> {
     ))
 }
 
+fn ensure_diy_transaction_contract(transactions: &[Transaction]) -> Result<()> {
+    if transactions.len() < MIN_DEMO_DIY_TRANSACTION_COUNT {
+        return Err(anyhow::anyhow!(
+            "Demo DIY dataset only generated {} transactions",
+            transactions.len()
+        ));
+    }
+    if transactions.iter().any(|transaction| {
+        transaction.original_merchant_name.is_none()
+            || transaction
+                .normalized_merchant
+                .as_deref()
+                .is_none_or(str::is_empty)
+    }) {
+        return Err(anyhow::anyhow!(
+            "Demo DIY dataset did not populate merchant normalization fields"
+        ));
+    }
+    Ok(())
+}
+
 fn ensure_transaction_contract(transactions: &[Transaction]) -> Result<()> {
     let max_date = transactions
         .iter()
@@ -1008,7 +1187,7 @@ fn ensure_transaction_contract(transactions: &[Transaction]) -> Result<()> {
     } else {
         authored_latest_transaction_date()
     };
-    if transactions.len() < seed::MIN_DEMO_TRANSACTION_COUNT {
+    if transactions.len() < MIN_DEMO_TRANSACTION_COUNT {
         return Err(anyhow::anyhow!(
             "Demo dataset only generated {} transactions",
             transactions.len()
