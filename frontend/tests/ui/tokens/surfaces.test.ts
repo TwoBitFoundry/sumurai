@@ -4,6 +4,7 @@ import { surface as uiSurfaceRecipes } from '@/ui/recipes';
 const expectedRoles = [
   'appShell',
   'glassPanel',
+  'chartGlassHoverPanel',
   'solidPanel',
   'card',
   'elevatedCard',
@@ -52,12 +53,13 @@ describe('design token surface recipes', () => {
       'bg-[var(--color-surface-app-shell)]',
       'dark:bg-[var(--color-surface-app-shell)]',
     ]);
-    expect(uiSurfaceRecipes.glassPanel).toEqual([
-      'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)]',
-      'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
+    expect(uiSurfaceRecipes.glassPanel).toEqual(['bg-transparent', 'dark:bg-transparent']);
+    expect(uiSurfaceRecipes.chartGlassHoverPanel).toEqual([
+      'bg-transparent',
+      'dark:bg-transparent',
     ]);
     expect(uiSurfaceRecipes.card).toEqual([
-      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
+      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
       'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
     ]);
     expect(uiSurfaceRecipes.overlay).toEqual([

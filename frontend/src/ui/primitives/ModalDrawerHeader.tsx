@@ -1,6 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import type React from 'react';
+import { brandNeutral } from '@/ui/recipes';
 import { Button } from './Button';
 import { cn } from './utils';
 
@@ -44,7 +45,8 @@ export function ModalDrawerHeader({
 }
 
 export const modalDrawerSectionLabelClassName = cn(
-  'text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'
+  'text-sm font-semibold uppercase tracking-[0.18em]',
+  brandNeutral.textSubtle
 );
 
 export default ModalDrawerHeader;

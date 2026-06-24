@@ -52,6 +52,17 @@ describe('AccountRow', () => {
     expect(screen.getByText('tx').parentElement).toHaveTextContent('0tx');
   });
 
+  it('uses a solid account shell without glass backdrop effects', () => {
+    const { container } = renderAccountRow(12);
+
+    const card = container.firstElementChild;
+    expect(card?.className).toContain('bg-[var(--color-surface-card)]');
+    expect(card?.className).toContain('dark:bg-[var(--color-brand-navy)]');
+    expect(card?.className).not.toContain('bg-transparent');
+    expect(card?.className).not.toContain('backdrop-blur-md');
+    expect(card?.className).not.toContain('backdrop-saturate');
+  });
+
   it('uses the ocean hero inset ring on hover', () => {
     const { container } = renderAccountRow(12);
 

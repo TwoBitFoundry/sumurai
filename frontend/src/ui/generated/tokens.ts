@@ -157,17 +157,6 @@ export const generatedTokens = {
         "hex": "#fbbf24"
       }
     },
-    "text-primary": {
-      "$value": {
-        "colorSpace": "srgb",
-        "components": [
-          0.059,
-          0.09,
-          0.165
-        ],
-        "hex": "#0f172a"
-      }
-    },
     "text-primary-dark": {
       "$value": {
         "colorSpace": "srgb",
@@ -177,94 +166,6 @@ export const generatedTokens = {
           0.988
         ],
         "hex": "#f8fafc"
-      }
-    },
-    "text-body": {
-      "$value": {
-        "colorSpace": "srgb",
-        "components": [
-          0.2,
-          0.255,
-          0.333
-        ],
-        "hex": "#334155"
-      }
-    },
-    "text-body-dark": {
-      "$value": {
-        "colorSpace": "srgb",
-        "components": [
-          0.796,
-          0.835,
-          0.882
-        ],
-        "hex": "#cbd5e1"
-      }
-    },
-    "text-muted": {
-      "$value": {
-        "colorSpace": "srgb",
-        "components": [
-          0.278,
-          0.333,
-          0.412
-        ],
-        "hex": "#475569"
-      }
-    },
-    "text-muted-dark": {
-      "$value": {
-        "colorSpace": "srgb",
-        "components": [
-          0.58,
-          0.639,
-          0.722
-        ],
-        "hex": "#94a3b8"
-      }
-    },
-    "text-subtle": {
-      "$value": {
-        "colorSpace": "srgb",
-        "components": [
-          0.58,
-          0.639,
-          0.722
-        ],
-        "hex": "#94a3b8"
-      }
-    },
-    "text-subtle-dark": {
-      "$value": {
-        "colorSpace": "srgb",
-        "components": [
-          0.392,
-          0.455,
-          0.545
-        ],
-        "hex": "#64748b"
-      }
-    },
-    "text-label": {
-      "$value": {
-        "colorSpace": "srgb",
-        "components": [
-          0.392,
-          0.455,
-          0.545
-        ],
-        "hex": "#64748b"
-      }
-    },
-    "text-label-dark": {
-      "$value": {
-        "colorSpace": "srgb",
-        "components": [
-          0.58,
-          0.639,
-          0.722
-        ],
-        "hex": "#94a3b8"
       }
     },
     "text-danger-dark": {
@@ -320,28 +221,6 @@ export const generatedTokens = {
           0.051
         ],
         "hex": "#05070d"
-      }
-    },
-    "surface-glass-panel": {
-      "$value": {
-        "colorSpace": "srgb",
-        "components": [
-          1,
-          1,
-          1
-        ],
-        "hex": "#ffffff"
-      }
-    },
-    "surface-glass-panel-dark": {
-      "$value": {
-        "colorSpace": "srgb",
-        "components": [
-          0.059,
-          0.09,
-          0.165
-        ],
-        "hex": "#0f172a"
       }
     },
     "surface-solid-panel": {
@@ -1151,11 +1030,11 @@ export const generatedTokens = {
       "$value": {
         "colorSpace": "srgb",
         "components": [
-          0.004,
-          0.118,
-          0.357
+          0.051,
+          0.541,
+          0.8
         ],
-        "hex": "#011e5b"
+        "hex": "#0d8acc"
       }
     },
     "semantic-dark-cash": {
@@ -1206,11 +1085,110 @@ export const generatedTokens = {
       "$value": {
         "colorSpace": "srgb",
         "components": [
-          0.125,
-          0.259,
-          0.549
+          0.235,
+          0.733,
+          0.996
         ],
-        "hex": "#20428c"
+        "hex": "#3cbbfe"
+      }
+    },
+    "text-primary": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.004,
+          0.118,
+          0.357
+        ],
+        "hex": "#011e5b"
+      }
+    },
+    "text-body": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.004,
+          0.118,
+          0.357
+        ],
+        "hex": "#011e5b"
+      }
+    },
+    "text-body-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.922,
+          0.937,
+          0.961
+        ],
+        "hex": "#ebeff5"
+      }
+    },
+    "text-muted": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.004,
+          0.118,
+          0.357
+        ],
+        "hex": "#011e5b"
+      }
+    },
+    "text-muted-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.922,
+          0.937,
+          0.961
+        ],
+        "hex": "#ebeff5"
+      }
+    },
+    "text-subtle": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.004,
+          0.118,
+          0.357
+        ],
+        "hex": "#011e5b"
+      }
+    },
+    "text-subtle-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.922,
+          0.937,
+          0.961
+        ],
+        "hex": "#ebeff5"
+      }
+    },
+    "text-label": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.004,
+          0.118,
+          0.357
+        ],
+        "hex": "#011e5b"
+      }
+    },
+    "text-label-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.922,
+          0.937,
+          0.961
+        ],
+        "hex": "#ebeff5"
       }
     },
     "text-inverse": {
@@ -1310,6 +1288,28 @@ export const generatedTokens = {
           0.996
         ],
         "hex": "#3cbbfe"
+      }
+    },
+    "surface-glass-panel": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          1,
+          1,
+          1
+        ],
+        "hex": "#ffffff"
+      }
+    },
+    "surface-glass-panel-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.067,
+          0.102,
+          0.184
+        ],
+        "hex": "#111a2f"
       }
     },
     "border-focus-active": {

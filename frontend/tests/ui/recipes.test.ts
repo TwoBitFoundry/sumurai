@@ -4,6 +4,8 @@ import {
   border,
   budgetProgress,
   buttonCta,
+  categoryFilterChip,
+  categoryPill,
   chartFloatingGlass,
   chartTooltip,
   chrome,
@@ -45,16 +47,20 @@ describe('shared UI recipes', () => {
         'info',
       ])
     );
-    expect(text.primary).toBe('text-slate-900 dark:text-slate-100');
-    expect(placeholder.muted).toBe('placeholder:text-slate-400 dark:placeholder:text-slate-500');
+    expect(text.primary).toBe('text-[var(--color-text-primary)]');
+    expect(placeholder.muted).toContain('var(--color-brand-fog)');
     expect(semanticTextRecipes).toBe(text);
     expect(semanticPlaceholderTextRecipes).toBe(placeholder);
   });
 
   it('exposes the shared surface, border, effect, focus, font, and chrome recipes', () => {
     expect(surface.card).toEqual([
-      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
+      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
       'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
+    ]);
+    expect(surface.solidCard).toEqual([
+      'bg-[var(--color-surface-card)]',
+      'dark:bg-[var(--color-brand-navy)]',
     ]);
     expect(border.glass).toEqual([
       'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
@@ -89,6 +95,31 @@ describe('shared UI recipes', () => {
     expect(controlIconWell.sm).toContain(control.glyph.sm);
     expect(controlIconWell.md).toContain(control.glyph.md);
     expect(controlIconWell.lg).toContain(control.glyph.lg);
+  });
+
+  it('exposes category accent pill recipes with paired text and surfaces', () => {
+    expect(categoryPill.text).toEqual([
+      'text-[var(--category-accent)]',
+      'dark:text-[var(--category-accent-bright)]',
+    ]);
+    expect(categoryPill.chipSurface.join(' ')).toContain(
+      'color-mix(in_srgb,var(--category-accent)_22%,var(--color-surface-card))'
+    );
+    expect(categoryPill.chipSurface.join(' ')).toContain(
+      'color-mix(in_srgb,var(--category-accent-bright)_28%,transparent)'
+    );
+    expect(categoryPill.chipSurfaceSelected.join(' ')).toContain(
+      '!border-[var(--category-accent)]'
+    );
+  });
+
+  it('exposes glass category filter chip surfaces with backdrop blur and transparent accent fills', () => {
+    expect(categoryFilterChip.surface).toEqual(expect.arrayContaining([...effect.glassBackdrop]));
+    expect(categoryFilterChip.surface.join(' ')).toContain(
+      'color-mix(in_srgb,var(--category-accent)_12%,transparent)'
+    );
+    expect(categoryFilterChip.surface.join(' ')).not.toContain('--color-surface-card');
+    expect(categoryFilterChip.surfaceSelected.join(' ')).toContain('backdrop-blur-md');
   });
 
   it('exposes flat sky CTA and progress fill recipes', () => {
@@ -175,7 +206,7 @@ describe('shared UI recipes', () => {
     expect(alert.shell.join(' ')).toContain('dark:border-0');
     expect(alert.shell.join(' ')).not.toContain('drop-shadow-');
     expect(alert.tone.solid).toContain('backdrop-blur-md');
-    expect(alert.tone.solid).toContain('backdrop-saturate-[150%]');
+    expect(alert.tone.solid).toContain('backdrop-saturate-[135%]');
   });
 
   it('exposes auth layout recipes for mobile, tablet, and desktop tiers', () => {
@@ -199,7 +230,9 @@ describe('shared UI recipes', () => {
       dashboardCategoryCard.shellInteractive,
     ]) {
       expect(shell).not.toEqual(expect.arrayContaining([...effect.glassDropShadow]));
-      expect(shell).toEqual(expect.arrayContaining([...surface.card]));
+      expect(shell).toEqual(expect.arrayContaining([...surface.solidCard]));
+      expect(shell).not.toEqual(expect.arrayContaining([...surface.glassPanel]));
+      expect(shell).not.toEqual(expect.arrayContaining([...effect.glassBackdrop]));
       expect(shell.some((token) => token.startsWith('drop-shadow-['))).toBe(false);
       expect(shell.some((token) => token.startsWith('shadow-['))).toBe(false);
     }
@@ -209,8 +242,7 @@ describe('shared UI recipes', () => {
     expect(chartFloatingGlass.shell).toEqual(
       expect.arrayContaining([
         'border',
-        'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_58%,transparent)]',
-        'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
+        ...surface.chartGlassHoverPanel,
         ...border.glass,
         ...effect.glassDropShadow,
       ])

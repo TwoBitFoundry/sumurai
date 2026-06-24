@@ -11,12 +11,42 @@ export type SemanticTextRole =
   | 'warning'
   | 'info';
 
+export const brandNeutral = {
+  textBody:
+    'text-[color:color-mix(in_srgb,var(--color-brand-navy)_82%,var(--color-brand-fog))] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_86%,var(--color-brand-navy))]',
+  textMuted:
+    'text-[color:color-mix(in_srgb,var(--color-brand-navy)_68%,var(--color-brand-fog))] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_72%,var(--color-brand-navy))]',
+  textSubtle:
+    'text-[color:color-mix(in_srgb,var(--color-brand-navy)_52%,var(--color-brand-fog))] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_58%,var(--color-brand-navy))]',
+  textLabel:
+    'text-[color:color-mix(in_srgb,var(--color-brand-navy)_68%,var(--color-brand-fog))] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_72%,var(--color-brand-navy))]',
+  placeholderMuted:
+    'placeholder:text-[color:color-mix(in_srgb,var(--color-brand-navy)_44%,var(--color-brand-fog))] dark:placeholder:text-[color:color-mix(in_srgb,var(--color-brand-fog)_50%,var(--color-brand-navy))]',
+  borderSubtle:
+    'border-[color:color-mix(in_srgb,var(--color-brand-fog)_72%,var(--color-brand-navy))] dark:border-[color:color-mix(in_srgb,var(--color-brand-navy)_45%,transparent)]',
+  surfaceTint:
+    'bg-[color:color-mix(in_srgb,var(--color-brand-fog)_82%,transparent)] dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_40%,transparent)]',
+  surfaceSolidLight: 'bg-[var(--color-brand-fog)]',
+  surfaceSolidDark: 'dark:bg-[var(--color-brand-navy)]',
+  ringOffset: 'ring-offset-[var(--color-brand-fog)] dark:ring-offset-[var(--color-brand-navy)]',
+  glassVignetteLight:
+    'from-[color:color-mix(in_srgb,var(--color-brand-fog)_70%,transparent)] via-[color:color-mix(in_srgb,var(--color-brand-fog)_38%,transparent)]',
+  glassVignetteDark:
+    'dark:from-[color:color-mix(in_srgb,var(--color-brand-navy)_68%,transparent)] dark:via-[color:color-mix(in_srgb,var(--color-brand-navy)_42%,transparent)]',
+  textHoverStrong:
+    'hover:text-[color:color-mix(in_srgb,var(--color-brand-navy)_92%,var(--color-brand-fog))] dark:hover:text-[color:color-mix(in_srgb,var(--color-brand-fog)_94%,var(--color-brand-navy))]',
+  decorativeDot:
+    'bg-[color:color-mix(in_srgb,var(--color-brand-fog)_85%,var(--color-brand-navy))] dark:bg-[color:color-mix(in_srgb,var(--color-brand-fog)_55%,var(--color-brand-navy))]',
+  footerFadeDark:
+    'dark:from-[color:color-mix(in_srgb,var(--color-brand-navy)_60%,transparent)] dark:to-[color:color-mix(in_srgb,var(--color-brand-navy)_80%,transparent)]',
+} as const;
+
 export const text = {
-  primary: 'text-slate-900 dark:text-slate-100',
-  body: 'text-slate-700 dark:text-slate-300',
-  muted: 'text-slate-600 dark:text-slate-400',
-  subtle: 'text-slate-500 dark:text-slate-500',
-  label: 'text-slate-600 dark:text-slate-400',
+  primary: 'text-[var(--color-text-primary)]',
+  body: brandNeutral.textBody,
+  muted: brandNeutral.textMuted,
+  subtle: brandNeutral.textSubtle,
+  label: brandNeutral.textLabel,
   inverse: 'text-white dark:text-white',
   accent: 'text-[var(--color-brand-azure)] dark:text-[var(--color-brand-glacier)]',
   danger: 'text-[var(--color-brand-crimson)] dark:text-red-300',
@@ -26,19 +56,14 @@ export const text = {
 } as const satisfies Record<SemanticTextRole, string>;
 
 export const placeholder = {
-  muted: 'placeholder:text-slate-400 dark:placeholder:text-slate-500',
+  muted: brandNeutral.placeholderMuted,
 } as const;
 
 export const surface = {
   appShell: ['bg-[var(--color-surface-app-shell)]', 'dark:bg-[var(--color-surface-app-shell)]'],
-  glassPanel: [
-    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
-  ],
-  floatingChromePanel: [
-    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_26%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
-  ],
+  glassPanel: ['bg-transparent', 'dark:bg-transparent'],
+  chartGlassHoverPanel: ['bg-transparent', 'dark:bg-transparent'],
+  floatingChromePanel: ['bg-transparent', 'dark:bg-transparent'],
   solidPanel: [
     'bg-[var(--color-surface-solid-panel)]',
     'dark:bg-[var(--color-surface-solid-panel)]',
@@ -48,9 +73,10 @@ export const surface = {
     'dark:bg-[var(--color-surface-elevated-card)]',
   ],
   card: [
-    'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
+    'bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
     'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
   ],
+  solidCard: ['bg-[var(--color-surface-card)]', 'dark:bg-[var(--color-brand-navy)]'],
   hoverRow: ['bg-[var(--color-surface-hover-row)]', 'dark:bg-[var(--color-surface-hover-row)]'],
   mutedChip: ['bg-[var(--color-surface-muted-chip)]', 'dark:bg-[var(--color-surface-muted-chip)]'],
   insetWell: ['bg-[var(--color-surface-inset-well)]', 'dark:bg-[var(--color-surface-inset-well)]'],
@@ -117,7 +143,7 @@ export const effect = {
   accentOutlineGlowHover: [
     'hover:ring-2 hover:ring-inset hover:ring-[color:color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
   ],
-  glassBackdrop: ['backdrop-blur-md', 'backdrop-saturate-[150%]'],
+  glassBackdrop: ['backdrop-blur-md', 'backdrop-saturate-[135%]'],
 } as const;
 
 export const scroll = {
@@ -236,11 +262,69 @@ export const status = {
   },
 } as const;
 
+export type CategoryAccentRecipe = {
+  surface: readonly string[];
+  border: readonly string[];
+  chipSurface: readonly string[];
+  chipSurfaceSelected: readonly string[];
+  text: readonly string[];
+  dot: readonly string[];
+  ring: readonly string[];
+};
+
+export const categoryPill = {
+  surface: [
+    'bg-[color:color-mix(in_srgb,var(--category-accent)_22%,var(--color-surface-card))]',
+    'dark:bg-[color:color-mix(in_srgb,var(--category-accent-bright)_28%,transparent)]',
+  ],
+  border: [
+    'border-[color:color-mix(in_srgb,var(--category-accent)_32%,var(--color-surface-card))]',
+    'dark:border-transparent',
+  ],
+  chipSurface: [
+    '!border',
+    '!border-[color:color-mix(in_srgb,var(--category-accent)_28%,var(--color-surface-card))]',
+    'dark:!border-transparent',
+    '!bg-[color:color-mix(in_srgb,var(--category-accent)_22%,var(--color-surface-card))]',
+    'dark:!bg-[color:color-mix(in_srgb,var(--category-accent-bright)_28%,transparent)]',
+  ],
+  chipSurfaceSelected: [
+    '!border',
+    '!border-[var(--category-accent)]',
+    'dark:!border-transparent',
+    '!bg-[color:color-mix(in_srgb,var(--category-accent)_30%,var(--color-surface-card))]',
+    'dark:!bg-[color:color-mix(in_srgb,var(--category-accent-bright)_34%,transparent)]',
+  ],
+  text: ['text-[var(--category-accent)]', 'dark:text-[var(--category-accent-bright)]'],
+  dot: ['bg-[var(--category-accent)]', 'dark:bg-[var(--category-accent-bright)]'],
+  ring: [
+    'ring-[color:color-mix(in_srgb,var(--category-accent)_55%,var(--color-surface-card))]',
+    'dark:ring-[color:color-mix(in_srgb,var(--category-accent-bright)_55%,transparent)]',
+  ],
+} as const satisfies CategoryAccentRecipe;
+
+export const categoryFilterChip = {
+  surface: [
+    ...effect.glassBackdrop,
+    '!border',
+    '!border-[color:color-mix(in_srgb,var(--category-accent)_30%,transparent)]',
+    'dark:!border-[color:color-mix(in_srgb,var(--category-accent-bright)_24%,transparent)]',
+    '!bg-[color:color-mix(in_srgb,var(--category-accent)_12%,transparent)]',
+    'dark:!bg-[color:color-mix(in_srgb,var(--category-accent-bright)_16%,transparent)]',
+  ],
+  surfaceSelected: [
+    ...effect.glassBackdrop,
+    '!border',
+    '!border-[var(--category-accent)]',
+    'dark:!border-[var(--category-accent-bright)]',
+    '!bg-[color:color-mix(in_srgb,var(--category-accent)_20%,transparent)]',
+    'dark:!bg-[color:color-mix(in_srgb,var(--category-accent-bright)_24%,transparent)]',
+  ],
+} as const;
+
 export const focus = {
-  visible:
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-glacier)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-[var(--color-brand-azure)] dark:focus-visible:ring-offset-slate-900',
-  danger:
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-red-400/75 dark:focus-visible:ring-offset-slate-900',
+  visible: `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-glacier)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-brand-fog)] dark:focus-visible:ring-[var(--color-brand-azure)] dark:focus-visible:ring-offset-[var(--color-brand-navy)]`,
+  danger: `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-brand-fog)] dark:focus-visible:ring-red-400/75 dark:focus-visible:ring-offset-[var(--color-brand-navy)]`,
   darkOffset: 'dark:focus:ring-offset-[var(--color-surface-glass-panel)]',
   visibleDarkOffset: 'dark:focus-visible:ring-offset-[var(--color-surface-glass-panel)]',
   ringOffsetLightOnDark: [
@@ -260,6 +344,7 @@ export const font = {
   captionStrong: 'font-caption text-[0.875rem] font-semibold leading-[1.5] tracking-normal',
   label: 'font-label text-[0.75rem] font-semibold uppercase leading-none tracking-[0.14em]',
   badge: 'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]',
+  categoryTag: 'text-[0.6rem] font-bold uppercase tracking-[0.18em]',
 } as const;
 
 export const budgetProgress = {
@@ -298,13 +383,12 @@ export const budgetProgress = {
     'items-center',
     'justify-between',
     'text-[0.75rem]',
-    'text-slate-600',
-    'dark:text-slate-400',
+    brandNeutral.textMuted,
     'transition-colors',
     'duration-300',
   ],
   captionPercent: ['font-medium', 'tracking-wide'],
-  captionWithin: ['font-semibold', 'text-slate-700', 'dark:text-slate-300'],
+  captionWithin: ['font-semibold', brandNeutral.textBody],
   captionOver: ['font-semibold', 'text-red-600', 'dark:text-red-300'],
 } as const;
 
@@ -345,14 +429,11 @@ export const insightsPanel = {
     'inset-0',
     radius.standard,
     'bg-gradient-to-b',
-    'from-white/72',
-    'via-white/28',
+    'from-transparent',
+    'via-transparent',
     'to-transparent',
     'transition-colors',
     'duration-500',
-    'dark:from-slate-900/68',
-    'dark:via-slate-900/34',
-    'dark:to-transparent',
   ],
   labelDivider: [
     'border-[var(--color-border-strong)]',
@@ -374,8 +455,7 @@ export const insightsPanel = {
     'shrink-0',
     'transition-transform',
     'duration-200',
-    'text-slate-500',
-    'dark:text-slate-500',
+    brandNeutral.textSubtle,
   ],
   summaryToggleShell: ['relative'],
   summaryToggleOverlay: ['absolute', 'inset-0', 'z-0', 'cursor-pointer'],
@@ -397,18 +477,18 @@ export const dashboardCategoryCard = {
   shell: [
     `${radius.standard} border transition-all duration-300 text-left`,
     ...border.subtle,
-    ...surface.card,
+    ...surface.solidCard,
   ],
   shellActive: [
     `${radius.standard} border transition-all duration-300`,
-    ...surface.card,
+    ...surface.solidCard,
     '!border-[var(--color-border-hover-accent)]',
     'dark:!border-[var(--color-border-hover-accent)]',
   ],
   shellInteractive: [
     `${radius.standard} border transition-all duration-300`,
     ...border.subtle,
-    ...surface.card,
+    ...surface.solidCard,
     'hover:!border-[var(--color-border-hover-accent)]',
     'dark:hover:!border-[var(--color-border-hover-accent)]',
   ],
@@ -465,12 +545,12 @@ export const modalDrawer = {
     'mt-auto',
     'border-t',
     'border-black/10',
-    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_96%,white)]',
+    'bg-transparent',
     'px-5',
     'pb-[max(1rem,env(safe-area-inset-bottom))]',
     'pt-4',
     'dark:border-white/10',
-    'dark:bg-[#0f172a]/98',
+    'dark:bg-transparent',
   ],
   formRow: ['flex', 'items-end', 'gap-2'],
   formField: ['min-w-0', 'flex-1', 'space-y-1'],
@@ -478,14 +558,8 @@ export const modalDrawer = {
 } as const;
 
 export const chartFloatingGlass = {
-  backdrop: [...floatingChromeGlass.backdrop],
-  shell: [
-    'border',
-    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_58%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
-    ...border.glass,
-    ...effect.glassDropShadow,
-  ],
+  backdrop: [...effect.glassBackdrop],
+  shell: ['border', ...surface.chartGlassHoverPanel, ...border.glass, ...effect.glassDropShadow],
 } as const;
 
 export const chartTooltip = {
@@ -585,6 +659,10 @@ export const sankeyChart = {
 } as const;
 
 export const netWorthLineChart = {
+  stroke: {
+    light: 'var(--color-brand-azure)',
+    dark: 'var(--color-brand-glacier)',
+  },
   curveGlow: {
     blurStdDeviation: 4,
     strokeWidth: 6,
@@ -634,8 +712,8 @@ export const transactionsTable = {
   footer: [
     'border-t px-4 py-4 transition-colors duration-500',
     ...border.subtle,
-    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_12%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
+    'bg-transparent',
+    'dark:bg-transparent',
     ...effect.glassBackdrop,
   ],
 } as const;

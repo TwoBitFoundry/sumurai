@@ -20,15 +20,18 @@ import {
   netWorthLineGlowFilterId,
 } from '@/features/analytics/components/NetWorthGlowLineCurve';
 import { cn } from '@/ui/primitives';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
-import { chart, getThemeColors } from '@/ui/tokens';
+import {
+  netWorthLineChart,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
+import { chart } from '@/ui/tokens';
 import { useTheme } from '../context/ThemeContext';
 
 export const NetWorthOverTimeWidget: React.FC = () => {
   const { mode } = useTheme();
-  const colors = getThemeColors(mode);
   const glowFilterId = netWorthLineGlowFilterId(useId().replace(/[^a-zA-Z0-9_-]/g, ''));
-  const netWorthStroke = colors.semantic.netWorth;
+  const netWorthStroke = netWorthLineChart.stroke[mode];
   const mockData = [
     { date: '2024-01', netWorth: 10000 },
     { date: '2024-02', netWorth: 10500 },

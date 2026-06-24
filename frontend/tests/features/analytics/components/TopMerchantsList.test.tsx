@@ -35,9 +35,10 @@ describe('TopMerchantsList', () => {
     );
 
     const merchantRow = screen.getByText('Expedia').closest('.hero-stat-card');
-    expect(merchantRow?.className).toContain(
-      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]'
-    );
+    expect(merchantRow?.className).toContain('bg-[var(--color-surface-card)]');
+    expect(merchantRow?.className).toContain('dark:bg-[var(--color-brand-navy)]');
+    expect(merchantRow?.className).not.toContain('bg-transparent');
+    expect(merchantRow?.className).not.toContain('backdrop-blur-md');
     expect(merchantRow?.className).not.toMatch(/drop-shadow-\[/);
     expect(merchantRow?.className).toContain('border-[var(--color-border-subtle)]');
   });

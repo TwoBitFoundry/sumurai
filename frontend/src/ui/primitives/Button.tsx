@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 import {
+  brandNeutral,
   buttonChrome,
   buttonCta,
   chrome,
@@ -33,8 +34,8 @@ export const connectButtonRecipes = {
   base: [
     `inline-flex items-center gap-2 rounded-full px-5 py-2 ${uiTypographyRecipes.captionStrong} whitespace-nowrap`,
     'transition-all duration-200',
-    'focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
-    'dark:focus-visible:ring-offset-slate-900',
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-brand-fog)]',
+    'dark:focus-visible:ring-offset-[var(--color-brand-navy)]',
     'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0',
   ],
   secondary: [
@@ -42,7 +43,7 @@ export const connectButtonRecipes = {
     ...semanticSurfaces.mutedChip,
     semanticTextRecipes.muted,
     'hover:border-[var(--color-border-default)] hover:bg-[var(--color-surface-hover-row)] hover:text-[var(--color-text-primary)]',
-    'dark:text-[#cbd5e1]',
+    'dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_86%,var(--color-brand-navy))]',
     'dark:hover:border-[var(--color-border-default)] dark:hover:bg-[var(--color-surface-hover-row)] dark:hover:text-white',
   ],
 } as const;
@@ -55,7 +56,7 @@ export const buttonRecipes = {
     'transition-all duration-200 ease-out',
     'active:scale-[0.98]',
     'disabled:active:scale-100',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-slate-900',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-brand-fog)] dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-[var(--color-brand-navy)]',
     'disabled:cursor-not-allowed disabled:opacity-60',
   ],
   primary: [
@@ -69,9 +70,9 @@ export const buttonRecipes = {
     ...semanticSurfaces.card,
     semanticTextRecipes.muted,
     'hover:-translate-y-0.5',
-    'hover:border-[var(--color-border-default)] hover:bg-[var(--color-surface-hover-row)] hover:text-slate-900',
+    'hover:border-[var(--color-border-default)] hover:bg-[var(--color-surface-hover-row)] hover:text-[var(--color-text-primary)]',
     'disabled:hover:translate-y-0',
-    'dark:text-slate-300',
+    'dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_86%,var(--color-brand-navy))]',
     'dark:hover:border-[var(--color-border-default)] dark:hover:bg-[var(--color-surface-hover-row)] dark:hover:text-white',
   ],
   ghost: [
@@ -81,15 +82,15 @@ export const buttonRecipes = {
     'hover:-translate-y-0.5',
     'hover:border-[var(--color-border-control)]',
     'dark:hover:border-[color:color-mix(in_srgb,var(--color-border-glass)_20%,transparent)]',
-    'dark:text-slate-200',
+    'dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_90%,var(--color-brand-navy))]',
   ],
   icon: [
     ...buttonChrome.muted,
     ...semanticSurfaces.mutedChip,
     semanticTextRecipes.muted,
     'hover:-translate-y-[1px] hover:border-[var(--color-border-default)]',
-    'hover:text-slate-900',
-    'dark:text-slate-400',
+    'hover:text-[var(--color-text-primary)]',
+    brandNeutral.textSubtle,
     'dark:hover:border-[var(--color-border-default)] dark:hover:text-white',
   ],
   filterChip: ['hover:-translate-y-[2px]', 'disabled:hover:translate-y-0'],

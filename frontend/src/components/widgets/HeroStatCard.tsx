@@ -6,7 +6,12 @@ import {
   radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { getHeroAccentTheme, type HeroAccentTheme, heroAccents } from '@/ui/tokens';
+import {
+  categoryThemeVars,
+  getHeroAccentTheme,
+  type HeroAccentTheme,
+  heroAccents,
+} from '@/ui/tokens';
 import { useCategories } from '../../features/transactions/hooks/useCategories';
 import { getTagThemeForCategory } from '../../utils/categories';
 import { heroStatSemanticThemes } from './heroStatSemanticThemes';
@@ -109,12 +114,14 @@ function accentFromIndex(index?: number): Accent {
 function HeroStatCardFooterPill({
   label,
   wrapperClass,
+  style,
 }: {
   label: React.ReactNode;
   wrapperClass: string;
+  style?: React.CSSProperties;
 }) {
   return (
-    <span className={cn(heroFooterPillRecipes.base, wrapperClass)}>
+    <span className={cn(heroFooterPillRecipes.base, wrapperClass)} style={style}>
       <span className={cn(heroFooterPillRecipes.label)}>{label}</span>
     </span>
   );
@@ -186,6 +193,7 @@ function HeroStatCardScrollFooter({
                 key={`category-${pill.categoryName || pill.label}`}
                 label={pill.label}
                 wrapperClass={theme.tag}
+                style={categoryThemeVars(theme)}
               />
             );
           }

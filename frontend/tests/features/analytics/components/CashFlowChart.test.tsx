@@ -34,7 +34,7 @@ describe('CashFlowChart', () => {
   it('renders a semantic net worth glow on the net line', () => {
     const data = [{ month: '2026-06', income: 5000, expenses: 3000, net: 2000 }];
     const { container } = render(<CashFlowChart data={data} width={400} height={300} />);
-    const netWorthStroke = getThemeColors('light').semantic.netWorth;
+    const netWorthStroke = netWorthLineChart.stroke.light;
     const html = container.innerHTML.toLowerCase();
 
     expect(html).toContain('net-worth-curve-glow');

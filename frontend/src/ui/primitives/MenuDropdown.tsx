@@ -42,7 +42,7 @@ export const menuDropdownRecipes = {
     'active:border-[var(--color-border-default)]',
     'active:bg-[var(--color-surface-hover-row)]',
     focusRecipes.visible,
-    'dark:text-slate-300',
+    'dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_86%,var(--color-brand-navy))]',
     'dark:hover:border-[var(--color-border-divider)]',
     'dark:hover:bg-[var(--color-surface-hover-row)]',
     'dark:active:border-[var(--color-border-divider)]',

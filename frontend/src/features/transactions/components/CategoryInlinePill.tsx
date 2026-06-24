@@ -1,4 +1,5 @@
 import { cn } from '@/ui/primitives';
+import { categoryThemeVars } from '@/ui/tokens';
 import { formatCategoryName, getTagThemeForCategory } from '@/utils/categories';
 
 type CategoryInlinePillProps = {
@@ -18,7 +19,10 @@ export function CategoryInlinePill({
   const theme = getTagThemeForCategory(categoryKey, accentIndexByName);
 
   return (
-    <span className={cn('min-w-0', 'max-w-full', 'truncate', theme.inlineLabel, className)}>
+    <span
+      className={cn('min-w-0', 'max-w-full', 'truncate', theme.inlineLabel, className)}
+      style={categoryThemeVars(theme)}
+    >
       {displayLabel}
     </span>
   );

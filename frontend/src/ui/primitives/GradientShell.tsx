@@ -1,4 +1,5 @@
 import type React from 'react';
+import { brandNeutral } from '@/ui/recipes';
 import { cn } from './utils';
 
 export const gradientShellRecipes = {
@@ -25,8 +26,7 @@ export const gradientShellRecipes = {
     'transition-opacity duration-700',
     'dark:bg-transparent',
   ],
-  vignette:
-    'bg-gradient-to-b from-white/70 via-white/38 to-transparent transition-colors duration-700 ease-out dark:from-slate-900/68 dark:via-slate-900/42 dark:to-transparent',
+  vignette: `${brandNeutral.glassVignetteLight} to-transparent transition-colors duration-700 ease-out ${brandNeutral.glassVignetteDark} dark:to-transparent`,
   vignetteOverlay:
     'bg-[radial-gradient(120%_120%_at_50%_55%,transparent_60%,rgba(15,23,42,0.1)_100%)] transition-opacity duration-700 ease-out dark:bg-[radial-gradient(120%_120%_at_50%_54%,transparent_58%,rgba(2,6,23,0.38)_100%)]',
   centerGlow:

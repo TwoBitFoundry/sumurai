@@ -3,6 +3,7 @@ import { useMemo, useRef, useState } from 'react';
 import type { Transaction } from '@/types/api';
 import { Button, cn } from '@/ui/primitives';
 import { controlIconWell } from '@/ui/recipes';
+import { categoryThemeVars } from '@/ui/tokens';
 import {
   formatCategoryName,
   getTagThemeForCategory,
@@ -59,6 +60,7 @@ export function InlineCategoryCell({
   const categoryChipStyle = _dense
     ? { width: categoryChipWidth, flexBasis: categoryChipWidth }
     : { maxWidth: categoryChipWidth };
+  const theme = getTagThemeForCategory(categoryName, accentIndexByName);
 
   return (
     <div
@@ -90,11 +92,8 @@ export function InlineCategoryCell({
                 setOpenWithCallback((value) => !value);
               }
         }
-        className={cn(
-          transactionsRowRecipes.categoryPill,
-          readOnly && '!w-fit',
-          themeInlineLabelClasses(categoryName, accentIndexByName)
-        )}
+        className={cn(transactionsRowRecipes.categoryPill, readOnly && '!w-fit', theme.inlineLabel)}
+        style={categoryThemeVars(theme)}
       >
         <span
           className={cn(
@@ -132,11 +131,3 @@ export function InlineCategoryCell({
 }
 
 export default InlineCategoryCell;
-
-function themeInlineLabelClasses(
-  categoryName: string,
-  accentIndexByName: ReadonlyMap<string, number>
-): string {
-  const theme = getTagThemeForCategory(categoryName, accentIndexByName);
-  return theme.inlineLabel;
-}

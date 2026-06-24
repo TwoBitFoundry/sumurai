@@ -32,19 +32,6 @@ export function InsightsPanelShell({
           className={cn('pointer-events-none', ...uiInsightsPanelRecipes.glassInnerRing)}
         />
         <div
-          className={cn(
-            'hero-stat-card__gradient',
-            'pointer-events-none',
-            'absolute',
-            'inset-0',
-            'rounded-[inherit]',
-            'opacity-100'
-          )}
-          style={{
-            backgroundColor: `${shellAccent.gradFrom}33`,
-          }}
-        />
-        <div
           aria-hidden
           className={cn(
             'hero-stat-card__inset-ring',

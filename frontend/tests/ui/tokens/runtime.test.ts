@@ -9,6 +9,7 @@ import {
   getHeroAccentTheme,
   getThemeColors,
   heroAccents,
+  rotatableCategoryAccents,
   status,
 } from '@/ui/tokens';
 
@@ -45,8 +46,8 @@ describe('ui tokens runtime map', () => {
   });
 
   it('keeps the category and hero maps stable', () => {
-    expect(categoryAccents).toHaveLength(10);
-    expect(categoryAccents[0]).toMatchObject({ key: 'azure', ringHex: '#3cbbfe' });
+    expect(categoryAccents).toHaveLength(15);
+    expect(categoryAccents[0]).toMatchObject({ key: 'sky', ringHex: '#38bdf8' });
     expect(accountTypeDot).toEqual({
       cash: '#00c2a2',
       credit: '#b82812',
@@ -108,8 +109,10 @@ describe('ui tokens runtime map', () => {
       },
     });
     expect(getCategoryAccent('Groceries')).toEqual(getCategoryAccent('Groceries'));
-    expect(getCategoryAccentByIndex(0)).toEqual(categoryAccents[0]);
-    expect(getCategoryAccentByIndex(categoryAccents.length)).toEqual(categoryAccents[0]);
+    expect(getCategoryAccentByIndex(0)).toEqual(rotatableCategoryAccents[0]);
+    expect(getCategoryAccentByIndex(rotatableCategoryAccents.length)).toEqual(
+      rotatableCategoryAccents[0]
+    );
     expect(getHeroAccentTheme('azure')).toEqual(heroAccents.azure);
   });
 });

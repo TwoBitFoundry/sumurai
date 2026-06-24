@@ -1,5 +1,5 @@
 import generatedTokens from './generated/tokens';
-import { effect as uiEffectRecipes } from './recipes';
+import { categoryPill, font, effect as uiEffectRecipes } from './recipes';
 
 const glassBackdropClasses = uiEffectRecipes.glassBackdrop.join(' ');
 
@@ -45,6 +45,10 @@ export type ThemeColors = {
 
 export type CategoryTheme = {
   key: string;
+  cssVars: {
+    '--category-accent': string;
+    '--category-accent-bright': string;
+  };
   tag: string;
   inlineLabel: string;
   chipSurface: string;
@@ -53,6 +57,8 @@ export type CategoryTheme = {
   ring: string;
   ringHex: string;
 };
+
+export type CategoryThemeVars = CategoryTheme['cssVars'];
 
 export type HeroAccentTheme = {
   border: string;
@@ -188,55 +194,113 @@ export const accountTypeDot = {
   loan: brandAmber,
 } as const;
 
-const categoryTagTypography = 'text-[0.6rem] font-bold uppercase tracking-[0.18em]';
-const categoryInlineLabelTypography =
-  'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]';
+const ROTATION_EXCLUDED_CATEGORY_ACCENT_KEYS = new Set(['emerald', 'rose']);
 
-const categoryAccent = (
-  key: string,
-  lightVar: string,
-  darkVar: string,
-  ringHex: string
-): CategoryTheme => ({
-  key,
-  tag: `${categoryTagTypography} text-[var(${lightVar})] dark:text-[var(${darkVar})] border border-[color:color-mix(in_srgb,var(${lightVar})_20%,transparent)] dark:border-transparent bg-[color:color-mix(in_srgb,var(${lightVar})_20%,transparent)] dark:bg-[color:color-mix(in_srgb,var(${darkVar})_14%,transparent)]`,
-  inlineLabel: `${categoryInlineLabelTypography} text-[var(${lightVar})] dark:text-[var(${darkVar})]`,
-  chipSurface: `!border !border-[color:color-mix(in_srgb,var(${lightVar})_20%,transparent)] dark:!border-transparent !bg-[color:color-mix(in_srgb,var(${lightVar})_20%,transparent)] dark:!bg-[color:color-mix(in_srgb,var(${darkVar})_14%,transparent)]`,
-  chipSurfaceSelected: `!border !border-[var(${lightVar})] dark:!border-transparent !bg-[color:color-mix(in_srgb,var(${lightVar})_20%,transparent)] dark:!bg-[color:color-mix(in_srgb,var(${darkVar})_14%,transparent)]`,
-  dot: `bg-[color:color-mix(in_srgb,var(${lightVar})_90%,transparent)] dark:bg-[color:color-mix(in_srgb,var(${darkVar})_85%,transparent)]`,
-  ring: `ring-[var(${darkVar})]`,
-  ringHex,
-});
+type CategoryAccentKey =
+  | 'sky'
+  | 'emerald'
+  | 'cyan'
+  | 'violet'
+  | 'amber'
+  | 'rose'
+  | 'indigo'
+  | 'fuchsia'
+  | 'teal'
+  | 'lime'
+  | 'orange'
+  | 'pink'
+  | 'slate'
+  | 'coral'
+  | 'mint';
+
+const categoryAccentColors: Record<CategoryAccentKey, { light: string; dark: string }> = {
+  sky: { light: '#0284c7', dark: '#38bdf8' },
+  emerald: { light: brandTeal, dark: brandMint },
+  cyan: { light: '#0891b2', dark: '#67e8f9' },
+  violet: { light: '#7c3aed', dark: '#c4b5fd' },
+  amber: { light: brandAmber, dark: brandAmberDark },
+  rose: { light: brandCrimson, dark: brandSignalRed },
+  indigo: { light: '#4f46e5', dark: '#a5b4fc' },
+  fuchsia: { light: '#c026d3', dark: '#f0abfc' },
+  teal: { light: '#0d9488', dark: '#5eead4' },
+  lime: { light: '#65a30d', dark: '#bef264' },
+  orange: { light: '#ea580c', dark: '#fdba74' },
+  pink: { light: '#db2777', dark: '#f9a8d4' },
+  slate: { light: '#64748b', dark: '#cbd5e1' },
+  coral: { light: '#f43f5e', dark: '#fda4af' },
+  mint: { light: '#059669', dark: '#6ee7b7' },
+};
+
+function joinRecipeClasses(...groups: readonly (readonly string[] | string)[]): string {
+  return groups.flatMap((group) => (typeof group === 'string' ? [group] : [...group])).join(' ');
+}
+
+function buildCategoryAccentCssVars(key: CategoryAccentKey): CategoryThemeVars {
+  const colors = categoryAccentColors[key];
+  return {
+    '--category-accent': colors.light,
+    '--category-accent-bright': colors.dark,
+  };
+}
+
+function brandCategoryAccent(key: CategoryAccentKey, ringHex: string): CategoryTheme {
+  return {
+    key,
+    cssVars: buildCategoryAccentCssVars(key),
+    tag: joinRecipeClasses(
+      font.categoryTag,
+      categoryPill.text,
+      'border',
+      categoryPill.border,
+      categoryPill.surface
+    ),
+    inlineLabel: joinRecipeClasses(font.badge, categoryPill.text),
+    chipSurface: joinRecipeClasses(categoryPill.chipSurface),
+    chipSurfaceSelected: joinRecipeClasses(categoryPill.chipSurfaceSelected),
+    dot: joinRecipeClasses(categoryPill.dot),
+    ring: joinRecipeClasses(categoryPill.ring),
+    ringHex,
+  };
+}
+
+export function categoryThemeVars(theme: CategoryTheme): CategoryThemeVars {
+  return theme.cssVars;
+}
 
 export const categoryAccents: CategoryTheme[] = [
-  categoryAccent('azure', '--color-brand-azure', '--color-brand-glacier', brandGlacier),
-  categoryAccent('teal', '--color-brand-teal', '--color-brand-mint', brandMint),
-  categoryAccent('glacier', '--color-brand-glacier', '--color-brand-glacier', brandGlacier),
-  categoryAccent('ocean', '--color-brand-ocean', '--color-brand-ocean', brandOcean),
-  categoryAccent('amber', '--color-brand-amber', '--color-brand-amber-dark', brandAmberDark),
-  categoryAccent('crimson', '--color-brand-crimson', '--color-brand-signal-red', brandSignalRed),
-  categoryAccent('navy', '--color-brand-navy', '--color-brand-navy', brandNavy),
-  categoryAccent('mint', '--color-brand-mint', '--color-brand-mint', brandMint),
-  categoryAccent('ice', '--color-brand-ice', '--color-brand-ice', brandIce),
-  categoryAccent(
-    'signal-red',
-    '--color-brand-signal-red',
-    '--color-brand-signal-red',
-    brandSignalRed
-  ),
+  brandCategoryAccent('sky', '#38bdf8'),
+  brandCategoryAccent('emerald', brandMint),
+  brandCategoryAccent('cyan', '#67e8f9'),
+  brandCategoryAccent('violet', '#c4b5fd'),
+  brandCategoryAccent('amber', brandAmberDark),
+  brandCategoryAccent('rose', brandCrimson),
+  brandCategoryAccent('indigo', '#a5b4fc'),
+  brandCategoryAccent('fuchsia', '#f0abfc'),
+  brandCategoryAccent('teal', '#5eead4'),
+  brandCategoryAccent('lime', '#bef264'),
+  brandCategoryAccent('orange', '#fdba74'),
+  brandCategoryAccent('pink', '#f9a8d4'),
+  brandCategoryAccent('slate', '#cbd5e1'),
+  brandCategoryAccent('coral', '#fda4af'),
+  brandCategoryAccent('mint', '#6ee7b7'),
 ];
 
 const categoryLabelHex = {
-  azure: { light: brandAzure, dark: brandGlacier },
-  teal: { light: brandTeal, dark: brandMint },
-  glacier: { light: brandGlacier, dark: brandGlacier },
-  ocean: { light: brandOcean, dark: brandOcean },
+  sky: { light: '#0284c7', dark: '#38bdf8' },
+  emerald: { light: brandTeal, dark: brandMint },
+  cyan: { light: '#0891b2', dark: '#67e8f9' },
+  violet: { light: '#7c3aed', dark: '#c4b5fd' },
   amber: { light: brandAmber, dark: brandAmberDark },
-  crimson: { light: brandCrimson, dark: brandSignalRed },
-  navy: { light: brandNavy, dark: brandNavy },
-  mint: { light: brandMint, dark: brandMint },
-  ice: { light: brandIce, dark: brandIce },
-  'signal-red': { light: brandSignalRed, dark: brandSignalRed },
+  rose: { light: brandCrimson, dark: brandSignalRed },
+  indigo: { light: '#4f46e5', dark: '#a5b4fc' },
+  fuchsia: { light: '#c026d3', dark: '#f0abfc' },
+  teal: { light: '#0d9488', dark: '#5eead4' },
+  lime: { light: '#65a30d', dark: '#bef264' },
+  orange: { light: '#ea580c', dark: '#fdba74' },
+  pink: { light: '#db2777', dark: '#f9a8d4' },
+  slate: { light: '#64748b', dark: '#cbd5e1' },
+  coral: { light: '#f43f5e', dark: '#fda4af' },
+  mint: { light: '#059669', dark: '#6ee7b7' },
 } as const satisfies Record<string, Record<ThemeMode, string>>;
 
 export function getCategoryLabelHex(theme: CategoryTheme, mode: ThemeMode): string {
@@ -326,15 +390,15 @@ export const heroAccents: Record<HeroAccent, HeroAccentTheme> = {
     ringHex: brandAmberDark,
     gradFrom: brandAmberDark,
     gradVia: brandAmber,
-    icon: 'text-[var(--color-brand-amber)] dark:text-[var(--color-brand-amber-dark)]',
+    icon: 'text-[var(--color-brand-amber)]',
     defaultPill: heroPill(
       '--color-brand-amber',
-      '--color-brand-amber-dark',
       '--color-brand-amber',
-      '--color-brand-amber-dark'
+      '--color-brand-amber',
+      '--color-brand-amber'
     ),
     defaultDot:
-      'bg-[color:color-mix(in_srgb,var(--color-brand-amber)_90%,transparent)] dark:bg-[color:color-mix(in_srgb,var(--color-brand-amber-dark)_85%,transparent)]',
+      'bg-[color:color-mix(in_srgb,var(--color-brand-amber)_90%,transparent)] dark:bg-[color:color-mix(in_srgb,var(--color-brand-amber)_85%,transparent)]',
     glowRgb: '251,191,36',
   },
   crimson: {
@@ -478,10 +542,19 @@ export function getThemeColors(mode: ThemeMode): ThemeColors {
   return mode === 'dark' ? themeColors.dark : themeColors.light;
 }
 
+export const rotatableCategoryAccents = categoryAccents.filter(
+  (accent) => !ROTATION_EXCLUDED_CATEGORY_ACCENT_KEYS.has(accent.key)
+);
+
+export function getCategoryAccentByKey(key: string): CategoryTheme {
+  return categoryAccents.find((accent) => accent.key === key) ?? categoryAccents[0];
+}
+
 export function getCategoryAccentByIndex(index: number): CategoryTheme {
   const normalizedIndex =
-    ((index % categoryAccents.length) + categoryAccents.length) % categoryAccents.length;
-  return categoryAccents[normalizedIndex];
+    ((index % rotatableCategoryAccents.length) + rotatableCategoryAccents.length) %
+    rotatableCategoryAccents.length;
+  return rotatableCategoryAccents[normalizedIndex];
 }
 
 export function getCategoryAccent(name?: string | null, index?: number): CategoryTheme {
@@ -489,21 +562,26 @@ export function getCategoryAccent(name?: string | null, index?: number): Categor
     return getCategoryAccentByIndex(index);
   }
   const key = (name || 'Uncategorized').toLowerCase();
-  return categoryAccents[hashString(key) % categoryAccents.length];
+  return rotatableCategoryAccents[hashString(key) % rotatableCategoryAccents.length];
 }
 
 export function getHeroAccentForCategoryKey(categoryKey: string): HeroAccent {
   const map: Record<string, HeroAccent> = {
-    azure: 'azure',
-    glacier: 'azure',
-    teal: 'teal',
-    mint: 'teal',
-    ocean: 'ocean',
-    navy: 'ocean',
-    ice: 'ocean',
+    sky: 'azure',
+    emerald: 'teal',
+    cyan: 'azure',
+    violet: 'ocean',
     amber: 'amber',
-    crimson: 'crimson',
-    'signal-red': 'crimson',
+    rose: 'crimson',
+    indigo: 'ocean',
+    fuchsia: 'azure',
+    teal: 'teal',
+    lime: 'teal',
+    orange: 'amber',
+    pink: 'crimson',
+    slate: 'slate',
+    coral: 'crimson',
+    mint: 'teal',
   };
   return map[categoryKey] ?? 'teal';
 }
@@ -511,3 +589,15 @@ export function getHeroAccentForCategoryKey(categoryKey: string): HeroAccent {
 export function getHeroAccentTheme(accent: HeroAccent): HeroAccentTheme {
   return heroAccents[accent];
 }
+
+export const _categoryChipClasses = [
+  ...categoryPill.surface,
+  ...categoryPill.border,
+  ...categoryPill.chipSurface,
+  ...categoryPill.chipSurfaceSelected,
+  ...categoryPill.text,
+  ...categoryPill.dot,
+  ...categoryPill.ring,
+  '--category-accent',
+  '--category-accent-bright',
+] as const;

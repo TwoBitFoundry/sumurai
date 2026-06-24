@@ -49,7 +49,8 @@ describe('BudgetInsightsPanel', () => {
     expect(shell).toHaveClass('sticky');
     expect(shell).toHaveClass('z-30');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
-    expect(shell.firstElementChild?.className).toContain('--color-surface-glass-panel');
+    expect(shell.firstElementChild?.className).toContain('bg-transparent');
+    expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
     expect(shell.querySelector('.hero-stat-card__inset-ring')).not.toBeNull();
     expect(screen.getByRole('button', { name: /budget insights/i })).toHaveAttribute(
       'aria-expanded',

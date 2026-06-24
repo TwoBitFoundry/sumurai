@@ -52,7 +52,8 @@ describe('InlineCategoryCell', () => {
 
     const button = screen.getByRole('button', { name: /Edit category: Merchandise/i });
     expect(button.className).toContain('!justify-end');
-    expect(button.className).toContain('text-[var(--color-brand-amber)]');
+    expect(button.className).toContain('text-[var(--category-accent)]');
+    expect(button.className).toContain('dark:text-[var(--category-accent-bright)]');
     expect(button.className).not.toContain('rounded-full');
     expect(button.className).not.toContain('bg-[linear-gradient');
     expect(button.querySelector('span.flex-1')?.className).toContain('text-right');

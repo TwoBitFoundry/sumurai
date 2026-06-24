@@ -165,8 +165,12 @@ describe('DashboardPage', () => {
 
     const topCard = screen.getByText('Food').closest('button');
     expect(topCard).toBeTruthy();
-    expect(topCard?.className).toContain('var(--color-surface-card)');
+    expect(topCard?.className).toContain('bg-[var(--color-surface-card)]');
+    expect(topCard?.className).toContain('dark:bg-[var(--color-brand-navy)]');
     expect(topCard?.className).not.toContain('bg-transparent');
+    expect(topCard?.className).not.toContain('backdrop-blur-md');
+    expect(topCard?.className).not.toContain('backdrop-saturate');
+    expect(topCard?.className).not.toMatch(/drop-shadow-\[/);
     expect(topCard?.className).not.toMatch(/drop-shadow-\[/);
     const insetRing = topCard?.querySelector('.hero-stat-card__inset-ring');
     expect(insetRing).toHaveClass('opacity-0');

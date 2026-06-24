@@ -26,6 +26,7 @@ import {
   modalDrawer,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
+import { categoryThemeVars } from '@/ui/tokens';
 import {
   formatCategoryName,
   getTagThemeForCategory,
@@ -192,6 +193,7 @@ export function CategoryPicker({
                   onClick={() => {
                     handleSuggestedSelect(categoryName, isCustom, selected);
                   }}
+                  style={categoryThemeVars(theme)}
                   className={cn(
                     suggestedCategoryButtonClasses,
                     theme.tag,

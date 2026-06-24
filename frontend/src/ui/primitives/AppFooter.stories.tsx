@@ -32,7 +32,7 @@ export const Default: Story = {
 export const DarkCanvas: Story = {
   decorators: [
     (StoryEl) => (
-      <div className="dark min-h-[260px] bg-slate-950">
+      <div className="dark min-h-[260px] bg-[var(--color-brand-navy)]">
         <StoryEl />
       </div>
     ),

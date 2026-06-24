@@ -8,7 +8,7 @@ import { PasskeyService } from '@/services/passkeyService';
 import type { AuthResponse } from '@/types/api';
 import { Alert, Button, cn, FormLabel, Input } from '@/ui/primitives';
 import { authLayout, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
-import { getCategoryAccentByIndex } from '@/ui/tokens';
+import { categoryThemeVars, getCategoryAccentByIndex } from '@/ui/tokens';
 import {
   type CreationChallengeResponseJSON,
   createPasskeyCredential,
@@ -151,7 +151,12 @@ export function RegisterScreen({
       <AuthFormLayout>
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
-            <span className={getCategoryAccentByIndex(0).inlineLabel}>Join the Path</span>
+            <span
+              className={getCategoryAccentByIndex(0).inlineLabel}
+              style={categoryThemeVars(getCategoryAccentByIndex(0))}
+            >
+              Join the Path
+            </span>
             <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
               Become a Sumurai
             </h2>

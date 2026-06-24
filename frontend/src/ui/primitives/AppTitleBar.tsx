@@ -297,7 +297,7 @@ export const AppTitleBar = ({
                   'focus-visible:ring-offset-2',
                   'focus-visible:ring-offset-white',
                   'dark:focus-visible:ring-sky-400/80',
-                  'dark:focus-visible:ring-offset-slate-900'
+                  'dark:focus-visible:ring-offset-[var(--color-brand-navy)]'
                 )}
                 aria-label="Go to dashboard"
               >

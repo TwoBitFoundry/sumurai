@@ -15,7 +15,7 @@ const meta = {
     children: (
       <div
         className={cn(
-          `flex h-48 items-center justify-center ${uiRadiusRecipes.standard} border border-dashed border-slate-300 text-sm dark:border-slate-600`,
+          `flex h-48 items-center justify-center ${uiRadiusRecipes.standard} border border-dashed border-[color:color-mix(in_srgb,var(--color-brand-fog)_65%,var(--color-brand-navy))] text-sm dark:border-[color:color-mix(in_srgb,var(--color-brand-navy)_55%,transparent)]`,
           uiTextRecipes.muted
         )}
       >

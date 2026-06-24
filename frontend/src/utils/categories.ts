@@ -3,7 +3,8 @@
  */
 
 import type { CustomCategory } from '@/types/api';
-import { getCategoryAccent, getCategoryAccentByIndex } from '@/ui/tokens';
+import type { CategoryTheme } from '@/ui/tokens';
+import { getCategoryAccent, getCategoryAccentByIndex, getCategoryAccentByKey } from '@/ui/tokens';
 
 const SYSTEM_CATEGORY_LABELS: Record<string, string> = {
   BANK_FEES: 'Bank Fees',
@@ -93,12 +94,83 @@ export function mergeTransactionFilterCategories(
   return sortCategoryNamesAlphabetically([...new Set([...transactionCategories, ...customNames])]);
 }
 
-export function buildCategoryAccentIndex(names: readonly string[]): ReadonlyMap<string, number> {
-  return new Map(names.map((name, index) => [name, index]));
-}
-
 function toCategorySlug(value: string): string {
   return value.trim().replace(/\s+/g, '_').toUpperCase();
+}
+
+function isIncomeCategorySlug(slug: string): boolean {
+  return slug === 'INCOME' || slug.startsWith('INCOME_');
+}
+
+function isTransferOutCategorySlug(slug: string): boolean {
+  return slug === 'TRANSFER_OUT' || slug.startsWith('TRANSFER_OUT_');
+}
+
+const SYSTEM_CATEGORY_ACCENT_KEYS: Record<string, string> = {
+  BANK_FEES: 'slate',
+  RENT_AND_UTILITIES: 'sky',
+  ENTERTAINMENT: 'violet',
+  FOOD_AND_DRINK: 'amber',
+  GOVERNMENT_AND_NON_PROFIT: 'indigo',
+  HOME_IMPROVEMENT: 'lime',
+  LOAN_PAYMENTS: 'coral',
+  GENERAL_MERCHANDISE: 'fuchsia',
+  MEDICAL: 'teal',
+  OTHER: 'slate',
+  PERSONAL_CARE: 'pink',
+  SHOPPING: 'orange',
+  GENERAL_SERVICES: 'cyan',
+  SUBSCRIPTION: 'indigo',
+  TRANSFER_IN: 'mint',
+  TRANSPORTATION: 'cyan',
+  TRAVEL: 'sky',
+};
+
+export function getSystemCategoryAccentKey(name: string): string | null {
+  const slug = toCategorySlug(name);
+  const direct = SYSTEM_CATEGORY_ACCENT_KEYS[slug];
+  if (direct) {
+    return direct;
+  }
+
+  const display = formatCategoryName(name).toLowerCase();
+  for (const systemSlug of SYSTEM_CATEGORY_SLUGS) {
+    if (toCategorySlug(systemSlug) === slug) {
+      return SYSTEM_CATEGORY_ACCENT_KEYS[systemSlug] ?? null;
+    }
+    const systemDisplay = (
+      SYSTEM_CATEGORY_LABELS[systemSlug] ?? formatCategoryName(systemSlug)
+    ).toLowerCase();
+    if (systemDisplay === display) {
+      return SYSTEM_CATEGORY_ACCENT_KEYS[systemSlug] ?? null;
+    }
+  }
+
+  return null;
+}
+
+export function getReservedCategoryAccent(name: string): CategoryTheme | null {
+  const slug = toCategorySlug(name);
+  if (isIncomeCategorySlug(slug)) {
+    return getCategoryAccentByKey('emerald');
+  }
+  if (isTransferOutCategorySlug(slug)) {
+    return getCategoryAccentByKey('rose');
+  }
+  return null;
+}
+
+export function buildCategoryAccentIndex(names: readonly string[]): ReadonlyMap<string, number> {
+  let rotationIndex = 0;
+  const map = new Map<string, number>();
+  for (const name of names) {
+    if (getReservedCategoryAccent(name)) {
+      continue;
+    }
+    map.set(name, rotationIndex);
+    rotationIndex += 1;
+  }
+  return map;
 }
 
 const BUDGET_INELIGIBLE_CATEGORY_SLUGS = new Set(['INCOME', 'TRANSFER_IN', 'TRANSFER_OUT']);
@@ -150,6 +222,16 @@ export function getTagThemeForCategory(
   name?: string | null,
   accentIndex?: ReadonlyMap<string, number>
 ) {
+  if (name != null) {
+    const reserved = getReservedCategoryAccent(name);
+    if (reserved) {
+      return reserved;
+    }
+    const systemKey = getSystemCategoryAccentKey(name);
+    if (systemKey) {
+      return getCategoryAccentByKey(systemKey);
+    }
+  }
   if (accentIndex && name != null) {
     const index = findCategoryAccentIndex(name, accentIndex);
     if (index !== undefined) {

@@ -58,7 +58,16 @@ describe('FixedExpenseList', () => {
       'drop-shadow-'
     );
     expect(screen.getByTestId('fixed-expense-card-spotify').className).toContain(
-      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]'
+      'bg-[var(--color-surface-card)]'
+    );
+    expect(screen.getByTestId('fixed-expense-card-spotify').className).toContain(
+      'dark:bg-[var(--color-brand-navy)]'
+    );
+    expect(screen.getByTestId('fixed-expense-card-spotify').className).not.toContain(
+      'bg-transparent'
+    );
+    expect(screen.getByTestId('fixed-expense-card-spotify').className).not.toContain(
+      'backdrop-blur-md'
     );
     expect(screen.getByTestId('fixed-expense-card-spotify').className).toContain(
       'border-[var(--color-border-subtle)]'

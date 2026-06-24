@@ -3,7 +3,7 @@ import { type CSSProperties, useRef, useState } from 'react';
 import type { AccountCategoryType } from '@/domain/accountCategories';
 import { ImportModal } from '@/features/import/components/ImportModal';
 import { useTransactionListLauncher } from '@/features/transactions/hooks/useTransactionListLauncher';
-import { cn, GlassCard, IconButton } from '@/ui/primitives';
+import { cn, IconButton } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
   status as uiStatusRecipes,
@@ -100,24 +100,30 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
 
   return (
     <>
-      <GlassCard
+      {/* biome-ignore lint/a11y/useSemanticElements: nested import control requires a non-button shell */}
+      <div
         ref={cardRef}
-        variant="accent"
-        rounded="lg"
-        padding="none"
-        elevated={false}
-        withInnerEffects={false}
-        containerClassName={cn(cardContainerClasses, 'cursor-pointer', ...accountTriggerFocusRing)}
+        className={cn(
+          ...dashboardCategoryCard.shell,
+          cardContainerClasses,
+          ...accountTriggerFocusRing
+        )}
+        role="button"
+        tabIndex={0}
         onClick={handleOpen}
-        beforeContent={
-          <div
-            aria-hidden
-            className={cn(...dashboardCategoryCard.insetRing)}
-            style={accountHeroHoverRingStyle}
-          />
-        }
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleOpen();
+          }
+        }}
       >
-        <div className={cn('relative', 'flex', 'min-h-[6rem]', 'items-start', 'p-6')}>
+        <div
+          aria-hidden
+          className={cn(...dashboardCategoryCard.insetRing)}
+          style={accountHeroHoverRingStyle}
+        />
+        <div className={cn('relative z-10', 'flex', 'min-h-[6rem]', 'items-start', 'p-6')}>
           <div className={cn('relative', 'z-10', 'w-full', 'space-y-3')}>
             <div className={cn('flex', 'items-start', 'justify-between', 'gap-3')}>
               <div
@@ -163,7 +169,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
             </div>
           </div>
         </div>
-      </GlassCard>
+      </div>
       {isImportOpen ? (
         <ImportModal
           account={account}

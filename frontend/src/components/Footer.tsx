@@ -84,10 +84,8 @@ export function Footer() {
         'border-t',
         ...uiBorderRecipes.divider,
         'bg-gradient-to-b',
-        'from-white/60',
-        'to-sky-50/30',
-        'dark:from-slate-900/60',
-        'dark:to-slate-900/80',
+        'bg-transparent',
+        'dark:bg-transparent',
         ...uiEffectRecipes.glassBackdrop,
         'pb-[env(safe-area-inset-bottom)]'
       )}

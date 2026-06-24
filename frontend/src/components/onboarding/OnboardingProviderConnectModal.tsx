@@ -8,6 +8,7 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import type { FinancialProvider } from '@/types/api';
 import { cn, GlassCard, IconButton, Modal } from '@/ui/primitives';
 import {
+  brandNeutral,
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
   status as uiStatusRecipes,
@@ -156,15 +157,9 @@ function OnboardingProviderConnectModalContent({
               <Smartphone className={cn('h-6', 'w-6', uiTextRecipes.subtle)} aria-hidden="true" />
             </div>
             <div className={cn('mx-2', 'flex', 'items-center', 'gap-1')}>
-              <div
-                className={cn('h-1', 'w-1', 'rounded-full', 'bg-slate-300', 'dark:bg-slate-600')}
-              />
-              <div
-                className={cn('h-1', 'w-1', 'rounded-full', 'bg-slate-300', 'dark:bg-slate-600')}
-              />
-              <div
-                className={cn('h-1', 'w-1', 'rounded-full', 'bg-slate-300', 'dark:bg-slate-600')}
-              />
+              <div className={cn('h-1', 'w-1', 'rounded-full', brandNeutral.decorativeDot)} />
+              <div className={cn('h-1', 'w-1', 'rounded-full', brandNeutral.decorativeDot)} />
+              <div className={cn('h-1', 'w-1', 'rounded-full', brandNeutral.decorativeDot)} />
             </div>
             <div
               className={cn(
@@ -190,15 +185,9 @@ function OnboardingProviderConnectModalContent({
               )}
             </div>
             <div className={cn('mx-2', 'flex', 'items-center', 'gap-1')}>
-              <div
-                className={cn('h-1', 'w-1', 'rounded-full', 'bg-slate-300', 'dark:bg-slate-600')}
-              />
-              <div
-                className={cn('h-1', 'w-1', 'rounded-full', 'bg-slate-300', 'dark:bg-slate-600')}
-              />
-              <div
-                className={cn('h-1', 'w-1', 'rounded-full', 'bg-slate-300', 'dark:bg-slate-600')}
-              />
+              <div className={cn('h-1', 'w-1', 'rounded-full', brandNeutral.decorativeDot)} />
+              <div className={cn('h-1', 'w-1', 'rounded-full', brandNeutral.decorativeDot)} />
+              <div className={cn('h-1', 'w-1', 'rounded-full', brandNeutral.decorativeDot)} />
             </div>
             <div
               className={cn(

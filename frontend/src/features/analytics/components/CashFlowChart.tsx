@@ -14,7 +14,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { text as uiTextRecipes } from '@/ui/recipes';
+import { netWorthLineChart, text as uiTextRecipes } from '@/ui/recipes';
 import { status as statusColors } from '@/ui/tokens';
 import { useTheme } from '../../../context/ThemeContext';
 import type { AnalyticsCashFlowPoint } from '../../../types/api';
@@ -56,14 +56,14 @@ const cashFlowTooltipValueClassName = (
   const key = String(entry.dataKey ?? entry.name ?? '');
   if (key === 'income') return uiTextRecipes.success;
   if (key === 'expenses' || key === 'plottedExpenses') return uiTextRecipes.danger;
-  if (key === 'net') return 'text-violet-500 dark:text-violet-300';
+  if (key === 'net') return uiTextRecipes.info;
   return undefined;
 };
 
 const CashFlowChartFn: React.FC<CashFlowChartProps> = ({ data, width, height }) => {
   const { colors, mode } = useTheme();
   const glowFilterId = netWorthLineGlowFilterId(useId().replace(/[^a-zA-Z0-9_-]/g, ''));
-  const netWorthStroke = colors.semantic.netWorth || colors.chart.axis;
+  const netWorthStroke = netWorthLineChart.stroke[mode];
   const incomeColor = statusColors[mode].successIcon;
   const expenseColor = statusColors[mode].dangerIcon;
   const chartData = useMemo<CashFlowChartDatum[]>(

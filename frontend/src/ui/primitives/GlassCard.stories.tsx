@@ -58,7 +58,9 @@ export const Overflow: Story = {
 export const DarkCanvas: Story = {
   decorators: [
     (StoryEl) => (
-      <div className={`dark min-h-[200px] bg-slate-950 p-8 ${uiRadiusRecipes.standard}`}>
+      <div
+        className={`dark min-h-[200px] bg-[var(--color-brand-navy)] p-8 ${uiRadiusRecipes.standard}`}
+      >
         <StoryEl />
       </div>
     ),

@@ -13,10 +13,10 @@ describe('ChartGlassTooltip', () => {
     );
 
     const tooltip = screen.getByRole('tooltip');
-    expect(tooltip.className).toContain('--color-surface-glass-panel');
-    expect(tooltip.className).toContain('--color-border-glass');
-    expect(tooltip.className).toContain('--color-effect-glass-shadow');
     expect(tooltip.className).toContain('backdrop-blur-md');
+    expect(tooltip.className).toContain('backdrop-saturate-[135%]');
+    expect(tooltip.className).toContain('bg-transparent');
+    expect(tooltip.className).not.toContain('--color-surface-glass-panel');
   });
 
   it('renders formatted values inside the glass shell', () => {

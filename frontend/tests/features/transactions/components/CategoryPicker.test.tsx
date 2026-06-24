@@ -284,7 +284,7 @@ describe('CategoryPicker', () => {
       'touch-pan-y'
     );
     expect(screen.getByRole('textbox', { name: 'Make Your Own' })).toHaveClass(
-      'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_26%,transparent)]',
+      'bg-transparent',
       'focus-visible:ring-inset'
     );
     expect(screen.getByRole('button', { name: 'Confirm category' })).toHaveClass('h-11', 'w-11');

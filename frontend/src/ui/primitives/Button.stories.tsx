@@ -69,7 +69,7 @@ export const Connect: Story = {
 export const DarkPrimary: Story = {
   decorators: [
     (StoryEl) => (
-      <div className="dark min-h-[120px] bg-slate-950 p-8">
+      <div className="dark min-h-[120px] bg-[var(--color-brand-navy)] p-8">
         <StoryEl />
       </div>
     ),

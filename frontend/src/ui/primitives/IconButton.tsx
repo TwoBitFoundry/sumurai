@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 import {
+  brandNeutral,
   buttonChrome,
   buttonCta,
   chromeBar,
@@ -19,15 +20,16 @@ export const iconButtonRecipes = {
     `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} disabled:cursor-not-allowed`,
     ...buttonChrome.muted,
     ...semanticSurfaces.card,
-    'text-slate-600 dark:text-slate-200',
+    brandNeutral.textMuted,
+    'dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_90%,var(--color-brand-navy))]',
     'transition-all duration-200 ease-out hover:-translate-y-[2px] hover:bg-[var(--color-surface-hover-row)] active:scale-[0.98] disabled:active:scale-100 dark:hover:bg-[var(--color-surface-hover-row)]',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-brand-fog)] dark:focus-visible:ring-offset-[var(--color-brand-navy)]',
   ],
   primary: [
     `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} bg-[var(--color-brand-azure)] text-white disabled:cursor-not-allowed`,
     ...buttonCta.glow,
     'transition-all duration-200 ease-out hover:-translate-y-[2px] active:scale-[0.98] disabled:active:scale-100 disabled:hover:translate-y-0',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-[#0f172a]',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-brand-fog)] dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-[var(--color-brand-navy)]',
   ],
   success: [
     `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} text-white disabled:cursor-not-allowed`,
@@ -46,25 +48,26 @@ export const iconButtonRecipes = {
     'transition-all duration-200 ease-out hover:-translate-y-0.5 active:scale-[0.98] disabled:active:scale-100 disabled:hover:translate-y-0',
     'hover:bg-[var(--color-status-danger-strong-surface)]',
     'dark:hover:bg-[color:color-mix(in_srgb,var(--color-status-danger-strong-surface)_46%,transparent)]',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-status-danger-border)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-[var(--color-status-danger-border)] dark:focus-visible:ring-offset-slate-900',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-status-danger-border)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-brand-fog)] dark:focus-visible:ring-[var(--color-status-danger-border)] dark:focus-visible:ring-offset-[var(--color-brand-navy)]',
   ],
   toolbar: [
     `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} disabled:cursor-not-allowed`,
     'border border-transparent',
     'bg-transparent',
-    'text-slate-600 dark:text-slate-200',
+    brandNeutral.textMuted,
+    'dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_90%,var(--color-brand-navy))]',
     'transition-all duration-200 ease-out hover:-translate-y-[2px] active:scale-[0.98] disabled:active:scale-100 disabled:hover:translate-y-0',
     'hover:border-[var(--color-border-control)]',
     'hover:bg-[var(--color-surface-hover-row)]',
     'dark:hover:border-[var(--color-border-divider)]',
     'dark:hover:bg-[var(--color-surface-hover-row)]',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-brand-fog)] dark:focus-visible:ring-offset-[var(--color-brand-navy)]',
   ],
   tabActive: [
     `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} disabled:cursor-not-allowed`,
     ...buttonRecipes.tabActive,
     'transition-all duration-200 ease-out hover:-translate-y-0.5 active:scale-[0.98] disabled:active:scale-100 disabled:hover:translate-y-0',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-[#0f172a]',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-brand-fog)] dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-[var(--color-brand-navy)]',
   ],
 } as const;
 

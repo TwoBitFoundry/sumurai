@@ -23,11 +23,13 @@ import {
   modalDrawerSectionLabelClassName,
 } from '@/ui/primitives';
 import {
+  brandNeutral,
   categoryPickerPopover,
   floatingChromeGlass,
   modalDrawer,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
+import { categoryThemeVars } from '@/ui/tokens';
 import {
   formatCategoryName,
   getTagThemeForCategory,
@@ -178,7 +180,10 @@ export function CategoryCatalogPicker({
                     isCustom && 'transition-all duration-200 ease-out hover:-translate-y-[2px]'
                   )}
                 >
-                  <span className={cn(readOnlyCategoryPillClasses, theme.tag, isCustom && 'pr-10')}>
+                  <span
+                    className={cn(readOnlyCategoryPillClasses, theme.tag, isCustom && 'pr-10')}
+                    style={categoryThemeVars(theme)}
+                  >
                     <span className="whitespace-nowrap">{label}</span>
                   </span>
                   {isCustom && customCategory ? (
@@ -199,20 +204,19 @@ export function CategoryCatalogPicker({
                         'border-0',
                         'bg-transparent',
                         'p-0',
-                        'text-slate-500',
+                        brandNeutral.textSubtle,
                         'text-sm',
                         'leading-none',
                         'transition-colors',
                         'duration-200',
                         'hover:bg-transparent',
-                        'hover:text-slate-700',
-                        'dark:hover:text-slate-300',
+                        brandNeutral.textHoverStrong,
                         'focus-visible:outline-none',
                         'focus-visible:ring-2',
                         'focus-visible:ring-[var(--color-border-focus-active)]',
                         'focus-visible:ring-offset-2',
-                        'focus-visible:ring-offset-white',
-                        'dark:focus-visible:ring-offset-slate-900'
+                        'focus-visible:ring-offset-[var(--color-brand-fog)]',
+                        'dark:focus-visible:ring-offset-[var(--color-brand-navy)]'
                       )}
                       onClick={(event) => {
                         deleteAnchorRef.current = event.currentTarget;

@@ -182,6 +182,11 @@ describe('MoneyFlowSankeyChart', () => {
       />
     );
 
+    const categoryColor = getTagThemeForCategory(
+      'Food & Drink',
+      buildCategoryAccentIndex(['food_and_drink'])
+    ).ringHex;
+
     expect(await screen.findByTestId('sankey-node-income')).toBeVisible();
     expect(screen.getByText('20%')).toBeVisible();
     expect(screen.getByText('80%')).toBeVisible();
@@ -229,13 +234,13 @@ describe('MoneyFlowSankeyChart', () => {
     ).toHaveTextContent('Free Spending');
     expect(screen.getByTestId('sankey-node-food_and_drink').querySelector('rect')).toHaveAttribute(
       'fill',
-      '#3cbbfe'
+      categoryColor
     );
     expect(screen.getByTestId('sankey-node-savings').querySelector('rect')).toHaveAttribute(
       'fill',
       '#0d8acc'
     );
-    expect(screen.getByTestId('sankey-link-3')).toHaveAttribute('stroke', '#3cbbfe');
+    expect(screen.getByTestId('sankey-link-3')).toHaveAttribute('stroke', categoryColor);
     expect(mockSankey).toHaveBeenCalled();
   });
 

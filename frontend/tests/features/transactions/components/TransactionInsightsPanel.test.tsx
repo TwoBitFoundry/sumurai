@@ -71,10 +71,8 @@ describe('TransactionInsightsPanel', () => {
     expect(shell).toHaveClass('sticky');
     expect(shell).toHaveClass('z-30');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
-    expect(shell.firstElementChild?.className).toContain('--color-surface-glass-panel');
-    const gradient = shell.querySelector('.hero-stat-card__gradient');
-    expect(gradient).toHaveClass('opacity-100');
-    expect(gradient).not.toHaveClass('group-hover:opacity-100');
+    expect(shell.firstElementChild?.className).toContain('bg-transparent');
+    expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
     const insetRing = shell.querySelector('.hero-stat-card__inset-ring');
     expect(insetRing).toHaveClass('opacity-0', 'group-hover:opacity-100');
   });
@@ -154,7 +152,7 @@ describe('TransactionInsightsPanel', () => {
     const zeroAmounts = screen.getAllByText('$0.00');
     expect(zeroAmounts).toHaveLength(2);
     for (const amount of zeroAmounts) {
-      expect(amount.className).toContain('text-slate-600');
+      expect(amount.className).toContain('var(--color-brand-navy)');
       expect(amount.className).not.toContain('text-[var(--color-brand-crimson)]');
       expect(amount.className).not.toContain('text-[var(--color-brand-teal)]');
     }

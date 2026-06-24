@@ -4,7 +4,7 @@ import { InsightsPanelShell } from '@/components/widgets/InsightsPanelShell';
 function expectGlassInsightsSurface(surface: Element | null | undefined) {
   expect(surface).toBeTruthy();
   expect(surface?.className).toContain('backdrop-blur-md');
-  expect(surface?.className).toContain('--color-surface-glass-panel');
+  expect(surface?.className).toContain('bg-transparent');
   expect(surface).not.toHaveClass('border-0');
   expect(surface).not.toHaveClass('bg-white/80');
 }
@@ -29,7 +29,6 @@ describe('InsightsPanelShell', () => {
     expectGlassInsightsSurface(shell.firstElementChild);
     expect(shell.firstElementChild?.className ?? '').toContain('shadow-[0_8px_32px');
     expect(shell.firstElementChild?.className ?? '').not.toContain('drop-shadow-[');
-    expect(shell.querySelector('.hero-stat-card__gradient')).toBeTruthy();
     expect(shell.querySelector('.hero-stat-card__inset-ring')).toBeTruthy();
     expect(screen.getByTestId('insights-content')).toBeInTheDocument();
   });

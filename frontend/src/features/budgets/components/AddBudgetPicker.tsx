@@ -11,11 +11,13 @@ import {
   modalDrawerSectionLabelClassName,
 } from '@/ui/primitives';
 import {
+  brandNeutral,
   categoryPickerPopover,
   floatingChromeGlass,
   modalDrawer,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
+import { categoryThemeVars } from '@/ui/tokens';
 import { formatCategoryName, getTagThemeForCategory } from '@/utils/categories';
 
 export interface BudgetFormValue {
@@ -128,7 +130,7 @@ export function AddBudgetPicker({
           )}
         >
           {categories.length === 0 ? (
-            <p className={cn('text-sm text-slate-600 dark:text-slate-300')}>
+            <p className={cn('text-sm', brandNeutral.textBody)}>
               Every category already has a budget.
             </p>
           ) : (
@@ -146,6 +148,7 @@ export function AddBudgetPicker({
                     onClick={() => {
                       handleCategorySelect(categoryName, selected);
                     }}
+                    style={categoryThemeVars(theme)}
                     className={cn(
                       categoryOptionButtonClasses,
                       theme.tag,

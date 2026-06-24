@@ -20,7 +20,7 @@ export const badgeRecipes = {
     ...semanticSurfaces.mutedChip,
     semanticTextRecipes.muted,
     ...semanticEffects.glassDropShadow,
-    'dark:text-slate-200',
+    'dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_90%,var(--color-brand-navy))]',
   ],
   primary: [...semanticStatus.info.surface, ...semanticStatus.info.text],
   feature: [...semanticSurfaces.insetWell, 'ring-1 ring-inset'],

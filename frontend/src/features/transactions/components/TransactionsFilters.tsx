@@ -6,11 +6,14 @@ import type { CustomCategory } from '@/types/api';
 import { Button, cn, Input } from '@/ui/primitives';
 import { buildPillScrollMask, pillScrollFadeRecipes } from '@/ui/primitives/Pill';
 import {
+  brandNeutral,
+  categoryFilterChip,
   control,
   placeholder as uiPlaceholderRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
+import { categoryThemeVars } from '@/ui/tokens';
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
 import { useCategories } from '../hooks/useCategories';
 import DeleteCustomCategoryConfirm from './DeleteCustomCategoryConfirm';
@@ -274,16 +277,16 @@ export const TransactionsFilters: React.FC<Props> = ({
                         size="sm"
                         shape="pill"
                         onClick={() => onSelectCategory(isSelected ? null : name)}
+                        style={categoryThemeVars(theme)}
                         className={cn(
                           'whitespace-nowrap',
                           transactionsRowRecipes.categoryFilterPill,
                           isCustom && 'pr-10 hover:translate-y-0',
-                          isInline && [
-                            ...transactionsRowRecipes.contextualFilterChipGlass,
-                            'hover:translate-y-0',
-                          ],
+                          isInline && 'hover:translate-y-0',
                           theme.inlineLabel,
-                          isSelected ? theme.chipSurfaceSelected : theme.chipSurface,
+                          isSelected
+                            ? categoryFilterChip.surfaceSelected
+                            : categoryFilterChip.surface,
                           isSelected && ['ring-2', theme.ring]
                         )}
                         aria-pressed={isSelected}
@@ -309,20 +312,19 @@ export const TransactionsFilters: React.FC<Props> = ({
                             'border-0',
                             'bg-transparent',
                             'p-0',
-                            'text-slate-500',
+                            brandNeutral.textSubtle,
                             'text-sm',
                             'leading-none',
                             'transition-colors',
                             'duration-200',
                             'hover:bg-transparent',
-                            'hover:text-slate-700',
-                            'dark:hover:text-slate-300',
+                            brandNeutral.textHoverStrong,
                             'focus-visible:outline-none',
                             'focus-visible:ring-2',
                             'focus-visible:ring-[var(--color-border-focus-active)]',
                             'focus-visible:ring-offset-2',
-                            'focus-visible:ring-offset-white',
-                            'dark:focus-visible:ring-offset-slate-900'
+                            'focus-visible:ring-offset-[var(--color-brand-fog)]',
+                            'dark:focus-visible:ring-offset-[var(--color-brand-navy)]'
                           )}
                           onClick={(event) => {
                             event.stopPropagation();
