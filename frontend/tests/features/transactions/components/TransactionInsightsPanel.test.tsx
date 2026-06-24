@@ -71,7 +71,7 @@ describe('TransactionInsightsPanel', () => {
     expect(shell).toHaveClass('sticky');
     expect(shell).toHaveClass('z-30');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
-    expect(shell.firstElementChild?.className).toContain('bg-transparent');
+    expect(shell.firstElementChild?.className).toContain('var(--color-brand-fog)');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
     const insetRing = shell.querySelector('.hero-stat-card__inset-ring');
     expect(insetRing).toHaveClass('opacity-0', 'group-hover:opacity-100');

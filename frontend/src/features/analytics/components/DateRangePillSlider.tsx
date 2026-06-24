@@ -3,6 +3,7 @@ import { transactionsRowRecipes } from '@/features/transactions/components/trans
 import { Button, cn } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import {
+  brandNeutral,
   border as uiBorderRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
@@ -148,16 +149,14 @@ export function DateRangeLabelPill({
         className={cn(
           'whitespace-nowrap',
           transactionsRowRecipes.categoryFilterPill,
-          ...transactionsRowRecipes.contextualFilterChipGlass,
+          ...transactionsRowRecipes.contextualFilterChipGlassChrome,
+          brandNeutral.surfaceTint,
           '!border-transparent',
           'dark:!border-transparent',
-          '!bg-sky-500/20',
-          'dark:!bg-sky-400/14',
           dateRange === 'custom' && [
             'ring-2',
             'ring-inset',
-            'ring-sky-400/60',
-            'dark:ring-sky-300/60',
+            'ring-[var(--color-border-focus-active)]',
           ]
         )}
       >
@@ -166,8 +165,7 @@ export function DateRangeLabelPill({
             uiTypographyRecipes.badge,
             'normal-case',
             'tracking-normal',
-            'text-sky-600',
-            'dark:text-sky-200'
+            uiTextRecipes.primary
           )}
         >
           {rangeLabel}

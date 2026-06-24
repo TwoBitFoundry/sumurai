@@ -22,7 +22,7 @@ export const glassCardRecipes = {
     ...semanticSurfaces.glassPanel,
     ...semanticEffects.glassBackdrop,
   ],
-  accent: [...semanticBorders.elevatedGlass, 'bg-transparent', 'dark:bg-transparent'],
+  accent: [...semanticBorders.elevatedGlass, ...semanticSurfaces.glassPanel],
   danger: ['border-red-200/70', 'bg-red-50/80', 'dark:border-red-700/60', 'dark:bg-red-900/25'],
   rounded: {
     default: uiRadiusRecipes.standard,

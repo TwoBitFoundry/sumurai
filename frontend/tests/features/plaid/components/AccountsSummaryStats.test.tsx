@@ -28,7 +28,7 @@ describe('AccountsSummaryStats', () => {
     expect(shell).toHaveClass('sticky');
     expect(shell).toHaveClass('z-30');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
-    expect(shell.firstElementChild?.className).toContain('bg-transparent');
+    expect(shell.firstElementChild?.className).toContain('var(--color-brand-fog)');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
     expect(shell.querySelector('.hero-stat-card__inset-ring')).not.toBeNull();
     expect(screen.getByText('Account insights')).toBeInTheDocument();

@@ -47,6 +47,9 @@ describe('DesktopTransactionRow', () => {
     expect(screen.getByRole('row').className).toContain(
       'grid-cols-[minmax(0,9rem)_minmax(0,1fr)_minmax(0,8rem)'
     );
+    expect(screen.getByRole('row').className).toContain('hover:ring-2');
+    expect(screen.getByRole('row').className).toContain('brand-mint');
+    expect(screen.getByRole('row').className).not.toContain('hover:ring-0');
 
     fireEvent.click(screen.getByRole('button', { name: 'Search transactions for Transfer' }));
 

@@ -35,7 +35,7 @@ describe('Input', () => {
     render(<Input aria-label="Category" variant="floatingChromeInvalid" />);
 
     const input = screen.getByRole('textbox', { name: 'Category' });
-    expect(input.className).toContain('bg-transparent');
+    expect(input.className).toContain('var(--color-brand-fog)');
     expect(input.className).toContain('border-[var(--color-status-danger-border)]');
     expect(input.className).toContain('focus-visible:ring-inset');
   });

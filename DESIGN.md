@@ -269,7 +269,7 @@ Read `DESIGN.md` before changing UI, then use primitives, shared recipes, and fe
 ## Colors
 Use brand colors for emphasis and semantic finance colors for meaning. Keep surfaces, borders, and status tones neutral and reusable.
 
-The shell may keep ambient depth and aura, but the steady-state palette should stay restrained so dashboard data stays easy to read.
+The shell keeps static ambient depth with brand fog dominant in light mode and brand navy dominant in dark mode so dashboard data stays easy to read.
 
 ## Typography
 Keep the scale compact: display, page title, section title, card title, body, body strong, caption, and label.

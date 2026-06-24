@@ -4,7 +4,7 @@ import {
   border,
   budgetProgress,
   buttonCta,
-  categoryFilterChip,
+  categoryPickerChip,
   categoryPill,
   chartFloatingGlass,
   chartTooltip,
@@ -113,13 +113,10 @@ describe('shared UI recipes', () => {
     );
   });
 
-  it('exposes glass category filter chip surfaces with backdrop blur and transparent accent fills', () => {
-    expect(categoryFilterChip.surface).toEqual(expect.arrayContaining([...effect.glassBackdrop]));
-    expect(categoryFilterChip.surface.join(' ')).toContain(
-      'color-mix(in_srgb,var(--category-accent)_12%,transparent)'
-    );
-    expect(categoryFilterChip.surface.join(' ')).not.toContain('--color-surface-card');
-    expect(categoryFilterChip.surfaceSelected.join(' ')).toContain('backdrop-blur-md');
+  it('exposes category picker chip button recipes shared with transaction filters', () => {
+    expect(categoryPickerChip.button.join(' ')).toContain('rounded-full');
+    expect(categoryPickerChip.button.join(' ')).toContain(font.badge);
+    expect(categoryPickerChip.selected).toEqual(['ring-2', 'ring-inset']);
   });
 
   it('exposes flat sky CTA and progress fill recipes', () => {

@@ -26,6 +26,8 @@ export const brandNeutral = {
     'border-[color:color-mix(in_srgb,var(--color-brand-fog)_72%,var(--color-brand-navy))] dark:border-[color:color-mix(in_srgb,var(--color-brand-navy)_45%,transparent)]',
   surfaceTint:
     'bg-[color:color-mix(in_srgb,var(--color-brand-fog)_82%,transparent)] dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_40%,transparent)]',
+  glassFillLight: 'bg-[color:color-mix(in_srgb,var(--color-brand-fog)_35%,transparent)]',
+  glassFillDark: 'dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_35%,transparent)]',
   surfaceSolidLight: 'bg-[var(--color-brand-fog)]',
   surfaceSolidDark: 'dark:bg-[var(--color-brand-navy)]',
   ringOffset: 'ring-offset-[var(--color-brand-fog)] dark:ring-offset-[var(--color-brand-navy)]',
@@ -61,9 +63,9 @@ export const placeholder = {
 
 export const surface = {
   appShell: ['bg-[var(--color-surface-app-shell)]', 'dark:bg-[var(--color-surface-app-shell)]'],
-  glassPanel: ['bg-transparent', 'dark:bg-transparent'],
-  chartGlassHoverPanel: ['bg-transparent', 'dark:bg-transparent'],
-  floatingChromePanel: ['bg-transparent', 'dark:bg-transparent'],
+  glassPanel: [brandNeutral.glassFillLight, brandNeutral.glassFillDark],
+  chartGlassHoverPanel: [brandNeutral.glassFillLight, brandNeutral.glassFillDark],
+  floatingChromePanel: [brandNeutral.glassFillLight, brandNeutral.glassFillDark],
   solidPanel: [
     'bg-[var(--color-surface-solid-panel)]',
     'dark:bg-[var(--color-surface-solid-panel)]',
@@ -303,25 +305,6 @@ export const categoryPill = {
   ],
 } as const satisfies CategoryAccentRecipe;
 
-export const categoryFilterChip = {
-  surface: [
-    ...effect.glassBackdrop,
-    '!border',
-    '!border-[color:color-mix(in_srgb,var(--category-accent)_30%,transparent)]',
-    'dark:!border-[color:color-mix(in_srgb,var(--category-accent-bright)_24%,transparent)]',
-    '!bg-[color:color-mix(in_srgb,var(--category-accent)_12%,transparent)]',
-    'dark:!bg-[color:color-mix(in_srgb,var(--category-accent-bright)_16%,transparent)]',
-  ],
-  surfaceSelected: [
-    ...effect.glassBackdrop,
-    '!border',
-    '!border-[var(--category-accent)]',
-    'dark:!border-[var(--category-accent-bright)]',
-    '!bg-[color:color-mix(in_srgb,var(--category-accent)_20%,transparent)]',
-    'dark:!bg-[color:color-mix(in_srgb,var(--category-accent-bright)_24%,transparent)]',
-  ],
-} as const;
-
 export const focus = {
   visible: `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-glacier)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-brand-fog)] dark:focus-visible:ring-[var(--color-brand-azure)] dark:focus-visible:ring-offset-[var(--color-brand-navy)]`,
   danger: `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-brand-fog)] dark:focus-visible:ring-red-400/75 dark:focus-visible:ring-offset-[var(--color-brand-navy)]`,
@@ -345,6 +328,36 @@ export const font = {
   label: 'font-label text-[0.75rem] font-semibold uppercase leading-none tracking-[0.14em]',
   badge: 'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]',
   categoryTag: 'text-[0.6rem] font-bold uppercase tracking-[0.18em]',
+} as const;
+
+export const categoryPickerChip = {
+  button: [
+    'inline-flex',
+    'w-fit',
+    'max-w-full',
+    'items-center',
+    'gap-1.5',
+    'rounded-full',
+    'border',
+    'px-2.5',
+    'py-1',
+    'min-h-11',
+    'md:min-h-9',
+    'lg:min-h-8',
+    font.badge,
+    'transition-all',
+    'duration-200',
+    'ease-out',
+    'hover:-translate-y-0.5',
+    'focus-visible:outline-none',
+    'focus-visible:ring-2',
+    'focus-visible:ring-inset',
+    'focus-visible:ring-[var(--color-border-focus-active)]',
+    'disabled:cursor-not-allowed',
+    'disabled:opacity-60',
+    'disabled:hover:translate-y-0',
+  ],
+  selected: ['ring-2', 'ring-inset'],
 } as const;
 
 export const budgetProgress = {
@@ -712,8 +725,8 @@ export const transactionsTable = {
   footer: [
     'border-t px-4 py-4 transition-colors duration-500',
     ...border.subtle,
-    'bg-transparent',
-    'dark:bg-transparent',
+    brandNeutral.glassFillLight,
+    brandNeutral.glassFillDark,
     ...effect.glassBackdrop,
   ],
 } as const;

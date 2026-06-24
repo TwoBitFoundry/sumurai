@@ -62,14 +62,12 @@ describe('TransactionsFilters', () => {
 
     const foodButton = screen.getByRole('button', { name: 'Food & Drink' });
     expect(foodButton.className).toContain('rounded-full');
-    expect(foodButton.className).toContain('cursor-pointer');
-    expect(foodButton.className).toContain('py-0');
-    expect(foodButton.className).toContain('backdrop-blur-md');
-    expect(foodButton.className).toContain('--category-accent');
+    expect(foodButton.className).toContain('py-1');
+    expect(foodButton.className).toContain('text-[var(--category-accent)]');
     expect(foodButton.getAttribute('style')).toContain('--category-accent: #f59e0b');
     expect(foodButton.className).not.toContain('linear-gradient');
+    expect(foodButton.className).not.toContain('backdrop-blur-md');
     expect(foodButton.className).not.toContain('text-slate-800');
-    expect(foodButton.className).not.toContain('h-11');
     expect(foodButton).toHaveAttribute('aria-pressed', 'false');
 
     await user.click(foodButton);
@@ -87,8 +85,8 @@ describe('TransactionsFilters', () => {
     render(<TransactionsFilters {...filterProps} />);
 
     const foodButton = screen.getByRole('button', { name: 'Food & Drink' });
-    expect(foodButton.className).toContain('py-0');
-    expect(foodButton.className).not.toContain('h-11');
+    expect(foodButton.className).toContain('min-h-11');
+    expect(foodButton.className).toContain('py-1');
   });
 
   it('marks the active category filter as pressed', () => {
@@ -107,8 +105,12 @@ describe('TransactionsFilters', () => {
       'aria-pressed',
       'true'
     );
+    expect(screen.getByRole('button', { name: 'Entertainment' }).className).toContain('ring-inset');
+    expect(screen.getByRole('button', { name: 'Entertainment' }).className).toContain(
+      '!border-[var(--category-accent)]'
+    );
     const entertainmentButton = screen.getByRole('button', { name: 'Entertainment' });
-    expect(entertainmentButton.className).toContain('--category-accent');
+    expect(entertainmentButton.className).toContain('text-[var(--category-accent)]');
     expect(entertainmentButton.getAttribute('style')).toContain('--category-accent: #7c3aed');
     expect(entertainmentButton.parentElement?.className).toContain('sticky');
     expect(entertainmentButton.parentElement?.className).toContain('left-0');
@@ -143,7 +145,7 @@ describe('TransactionsFilters', () => {
     expect(scrollContainer?.className).toContain('w-full');
     expect(scrollContainer?.className).toContain('max-w-full');
     expect(scrollContainer?.className).toContain('py-1.5');
-    expect(billsButton.className).toContain('--category-accent');
+    expect(billsButton.className).toContain('text-[var(--category-accent)]');
     expect(billsButton.getAttribute('style')).toContain('--category-accent: #0284c7');
     expect(billsButton.className).not.toContain('linear-gradient');
   });
@@ -160,7 +162,7 @@ describe('TransactionsFilters', () => {
     );
 
     const entertainmentButton = screen.getByRole('button', { name: 'Entertainment' });
-    expect(entertainmentButton.className).toContain('--category-accent-bright');
+    expect(entertainmentButton.className).toContain('dark:text-[var(--category-accent-bright)]');
     expect(entertainmentButton.getAttribute('style')).toContain(
       '--category-accent-bright: #c4b5fd'
     );

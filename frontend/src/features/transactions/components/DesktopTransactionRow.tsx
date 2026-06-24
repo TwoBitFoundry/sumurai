@@ -62,8 +62,7 @@ export const DesktopTransactionRow: React.FC<Props> = ({
         transactionsRowRecipes.desktopGridRow,
         transactionsRowRecipes.shell,
         index % 2 ? transactionsRowRecipes.odd : transactionsRowRecipes.even,
-        'h-full',
-        onMerchantSearch && 'hover:ring-0 dark:hover:ring-0'
+        'h-full'
       )}
     >
       <div

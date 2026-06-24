@@ -4,7 +4,7 @@ import { InsightsPanelShell } from '@/components/widgets/InsightsPanelShell';
 function expectGlassInsightsSurface(surface: Element | null | undefined) {
   expect(surface).toBeTruthy();
   expect(surface?.className).toContain('backdrop-blur-md');
-  expect(surface?.className).toContain('bg-transparent');
+  expect(surface?.className).toContain('var(--color-brand-fog)');
   expect(surface).not.toHaveClass('border-0');
   expect(surface).not.toHaveClass('bg-white/80');
 }

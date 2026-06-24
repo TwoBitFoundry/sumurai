@@ -21,10 +21,10 @@ import {
   modalDrawerSectionLabelClassName,
 } from '@/ui/primitives';
 import {
+  categoryPickerChip,
   categoryPickerPopover,
   floatingChromeGlass,
   modalDrawer,
-  font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { categoryThemeVars } from '@/ui/tokens';
 import {
@@ -50,32 +50,7 @@ const validationMessages = {
   collides_custom: 'That matches an existing custom category.',
 } as const;
 
-const suggestedCategoryButtonClasses = cn(
-  'inline-flex',
-  'w-fit',
-  'max-w-full',
-  'items-center',
-  'gap-1.5',
-  'rounded-full',
-  'border',
-  'px-2.5',
-  'py-1',
-  'min-h-11',
-  'md:min-h-9',
-  'lg:min-h-8',
-  uiTypographyRecipes.badge,
-  'transition-all',
-  'duration-200',
-  'ease-out',
-  'hover:-translate-y-0.5',
-  'focus-visible:outline-none',
-  'focus-visible:ring-2',
-  'focus-visible:ring-inset',
-  'focus-visible:ring-[var(--color-border-focus-active)]',
-  'disabled:cursor-not-allowed',
-  'disabled:opacity-60',
-  'disabled:hover:translate-y-0'
-);
+const suggestedCategoryButtonClasses = cn(...categoryPickerChip.button);
 
 export function CategoryPicker({
   open,
@@ -198,7 +173,8 @@ export function CategoryPicker({
                     suggestedCategoryButtonClasses,
                     theme.tag,
                     selected && theme.chipSurfaceSelected,
-                    selected && ['ring-2', 'ring-inset', theme.ring]
+                    selected && categoryPickerChip.selected,
+                    selected && theme.ring
                   )}
                 >
                   <span className="whitespace-nowrap">{label}</span>

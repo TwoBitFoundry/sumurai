@@ -7,7 +7,7 @@ import { Button, cn, Input } from '@/ui/primitives';
 import { buildPillScrollMask, pillScrollFadeRecipes } from '@/ui/primitives/Pill';
 import {
   brandNeutral,
-  categoryFilterChip,
+  categoryPickerChip,
   control,
   placeholder as uiPlaceholderRecipes,
   text as uiTextRecipes,
@@ -271,29 +271,23 @@ export const TransactionsFilters: React.FC<Props> = ({
                         isCustom && 'transition-all duration-200 ease-out hover:-translate-y-[2px]'
                       )}
                     >
-                      <Button
+                      <button
                         type="button"
-                        variant="filterChip"
-                        size="sm"
-                        shape="pill"
                         onClick={() => onSelectCategory(isSelected ? null : name)}
                         style={categoryThemeVars(theme)}
                         className={cn(
-                          'whitespace-nowrap',
-                          transactionsRowRecipes.categoryFilterPill,
-                          isCustom && 'pr-10 hover:translate-y-0',
-                          isInline && 'hover:translate-y-0',
-                          theme.inlineLabel,
-                          isSelected
-                            ? categoryFilterChip.surfaceSelected
-                            : categoryFilterChip.surface,
-                          isSelected && ['ring-2', theme.ring]
+                          ...categoryPickerChip.button,
+                          theme.tag,
+                          isCustom && 'pr-10',
+                          isSelected && theme.chipSurfaceSelected,
+                          isSelected && categoryPickerChip.selected,
+                          isSelected && theme.ring
                         )}
                         aria-pressed={isSelected}
                         title={isSelected ? `Remove filter: ${label}` : `Filter by ${label}`}
                       >
-                        {label}
-                      </Button>
+                        <span className="whitespace-nowrap">{label}</span>
+                      </button>
                       {isCustom && customCategory ? (
                         <button
                           type="button"

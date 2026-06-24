@@ -53,10 +53,13 @@ describe('design token surface recipes', () => {
       'bg-[var(--color-surface-app-shell)]',
       'dark:bg-[var(--color-surface-app-shell)]',
     ]);
-    expect(uiSurfaceRecipes.glassPanel).toEqual(['bg-transparent', 'dark:bg-transparent']);
+    expect(uiSurfaceRecipes.glassPanel).toEqual([
+      'bg-[color:color-mix(in_srgb,var(--color-brand-fog)_35%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_35%,transparent)]',
+    ]);
     expect(uiSurfaceRecipes.chartGlassHoverPanel).toEqual([
-      'bg-transparent',
-      'dark:bg-transparent',
+      'bg-[color:color-mix(in_srgb,var(--color-brand-fog)_35%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_35%,transparent)]',
     ]);
     expect(uiSurfaceRecipes.card).toEqual([
       'bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
