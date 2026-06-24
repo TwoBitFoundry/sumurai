@@ -2,15 +2,6 @@ import { render, screen } from '@testing-library/react';
 import { LoginScreen, RegisterScreen } from '@/Auth';
 
 describe('Auth screens', () => {
-  it('renders login badge with inline category sky styling', () => {
-    render(<LoginScreen onNavigateToRegister={jest.fn()} />);
-    const badge = screen.getByText(/rejoin the path/i);
-    expect(badge.tagName).toBe('SPAN');
-    expect(badge.className).toContain('font-label');
-    expect(badge.className).toContain('--category-accent');
-    expect(badge.getAttribute('style')).toContain('--category-accent-bright');
-  });
-
   it('renders email step without password fields', () => {
     render(<LoginScreen onNavigateToRegister={jest.fn()} />);
     expect(screen.getByLabelText(/^email$/i)).toBeTruthy();
@@ -90,13 +81,13 @@ describe('Auth screens', () => {
     expect(screen.getByRole('button', { name: /sign in with password/i })).toBeTruthy();
   });
 
-  it('renders register badge with inline category sky styling', () => {
+  it('does not render auth eyebrow labels on sign-in or sign-up', () => {
+    const { unmount } = render(<LoginScreen onNavigateToRegister={jest.fn()} />);
+    expect(screen.queryByText(/rejoin the path/i)).toBeNull();
+    unmount();
+
     render(<RegisterScreen onNavigateToLogin={jest.fn()} />);
-    const badge = screen.getByText(/join the path/i);
-    expect(badge.tagName).toBe('SPAN');
-    expect(badge.className).toContain('font-label');
-    expect(badge.className).toContain('--category-accent');
-    expect(badge.getAttribute('style')).toContain('--category-accent-bright');
+    expect(screen.queryByText(/join the path/i)).toBeNull();
   });
 
   it('renders register without password fields', () => {

@@ -1,15 +1,6 @@
 import React, { useId, useMemo } from 'react';
 import type { CurveProps, TooltipProps } from 'recharts';
-import {
-  CartesianGrid,
-  Curve,
-  Line,
-  LineChart,
-  ReferenceLine,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { CartesianGrid, Line, LineChart, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts';
 import { cn } from '@/ui/primitives';
 import { budgetRealityChart, font, text as uiTextRecipes } from '@/ui/recipes';
 import { useTheme } from '../../../context/ThemeContext';
@@ -17,6 +8,8 @@ import { fmtUSD } from '../../../utils/format';
 import { realityChartDomain } from '../utils/budgetChartAxis';
 import { formatChartMonthLabel } from '../utils/chartMonth';
 import { ChartGlassTooltip, chartTooltipRechartsProps } from './ChartGlassTooltip';
+import { ChartGlowLineCurve, ChartGlowLineFilter } from './ChartGlowLineCurve';
+import { renderChartSeriesActiveDot, renderChartSeriesDot } from './ChartSeriesMarkers';
 
 export interface BudgetVsActualChartData {
   month: string;
@@ -39,55 +32,12 @@ function realityMarkerColor(
   return Number(expenses) > Number(totalBudget) ? overColor : underColor;
 }
 
-function BudgetRealityCurveGlowFilter({ filterId }: { filterId: string }) {
-  return (
-    <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur
-        in="SourceGraphic"
-        stdDeviation={budgetRealityChart.curveGlow.blurStdDeviation}
-      />
-    </filter>
-  );
-}
-
-function BudgetRealityCurve({
-  curveProps,
-  stroke,
-  curveGlowFilterId,
-}: {
-  curveProps: CurveProps;
-  stroke: string;
-  curveGlowFilterId: string;
-}) {
-  const { strokeDasharray: _strokeDasharray, ...curveWithoutDash } = curveProps;
-  return (
-    <g>
-      <Curve
-        {...curveWithoutDash}
-        stroke={stroke}
-        strokeWidth={budgetRealityChart.curveGlow.strokeWidth}
-        fill="none"
-        filter={`url(#${curveGlowFilterId})`}
-        opacity={budgetRealityChart.curveGlow.opacity}
-      />
-      <Curve {...curveWithoutDash} stroke={stroke} strokeWidth={2} fill="none" />
-    </g>
-  );
-}
-
-function BudgetRealityDot({
-  cx,
-  cy,
-  radius,
-  fill,
-}: {
-  cx: number;
-  cy: number;
-  radius: number;
-  fill: string;
-}) {
-  return <circle cx={cx} cy={cy} r={radius} fill={fill} />;
-}
+const budgetRealityGlowLineStyle = {
+  blurStdDeviation: budgetRealityChart.curveGlow.blurStdDeviation,
+  glowStrokeWidth: budgetRealityChart.curveGlow.strokeWidth,
+  glowOpacity: budgetRealityChart.curveGlow.opacity,
+  lineStrokeWidth: 2,
+} as const;
 
 const budgetRealityTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) => {
   const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
@@ -184,7 +134,10 @@ const BudgetVsActualChartFn: React.FC<BudgetVsActualChartProps> = ({
           <stop offset={`${zeroPercent}%`} stopColor={colors.semantic.credit} />
           <stop offset="100%" stopColor={colors.semantic.credit} />
         </linearGradient>
-        <BudgetRealityCurveGlowFilter filterId={curveGlowFilterId} />
+        <ChartGlowLineFilter
+          filterId={curveGlowFilterId}
+          blurStdDeviation={budgetRealityChart.curveGlow.blurStdDeviation}
+        />
       </defs>
       <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
       <XAxis
@@ -266,17 +219,16 @@ const BudgetVsActualChartFn: React.FC<BudgetVsActualChartProps> = ({
         stroke={gradientStroke}
         strokeWidth={2}
         shape={(curveProps: CurveProps) => (
-          <BudgetRealityCurve
+          <ChartGlowLineCurve
             curveProps={curveProps}
             stroke={lineStroke}
-            curveGlowFilterId={curveGlowFilterId}
+            filterId={curveGlowFilterId}
+            style={budgetRealityGlowLineStyle}
           />
         )}
         dot={(props) => {
           const point = props.payload as BudgetVsActualChartData | undefined;
-          const cx = props.cx;
-          const cy = props.cy;
-          if (!point || cx == null || cy == null) {
+          if (!point || props.cx == null || props.cy == null) {
             return null;
           }
           const fill = realityMarkerColor(
@@ -285,18 +237,11 @@ const BudgetVsActualChartFn: React.FC<BudgetVsActualChartProps> = ({
             colors.semantic.cash,
             colors.semantic.credit
           );
-          return (
-            <g>
-              <circle cx={cx} cy={cy} r={10} fill="transparent" stroke="none" />
-              <BudgetRealityDot cx={cx} cy={cy} radius={5} fill={fill} />
-            </g>
-          );
+          return renderChartSeriesDot(fill)(props);
         }}
         activeDot={(props) => {
           const point = props.payload as BudgetVsActualChartData | undefined;
-          const cx = props.cx;
-          const cy = props.cy;
-          if (!point || cx == null || cy == null) {
+          if (!point || props.cx == null || props.cy == null) {
             return null;
           }
           const fill = realityMarkerColor(
@@ -305,7 +250,7 @@ const BudgetVsActualChartFn: React.FC<BudgetVsActualChartProps> = ({
             colors.semantic.cash,
             colors.semantic.credit
           );
-          return <BudgetRealityDot cx={cx} cy={cy} radius={7} fill={fill} />;
+          return renderChartSeriesActiveDot(fill)(props);
         }}
         isAnimationActive
         animationBegin={0}

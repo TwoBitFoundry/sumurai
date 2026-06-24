@@ -15,6 +15,18 @@ const brandSignalRed = generatedTokens.color['brand-signal-red'].$value.hex;
 const brandAmber = generatedTokens.color['brand-amber'].$value.hex;
 const brandAmberDark = generatedTokens.color['brand-amber-dark'].$value.hex;
 
+function hexWithAlpha(hex: string, alpha: number): string {
+  const normalized = hex.replace('#', '');
+  const alphaByte = Math.round(Math.min(1, Math.max(0, alpha)) * 255)
+    .toString(16)
+    .padStart(2, '0');
+  return `#${normalized}${alphaByte}`;
+}
+
+const textMuted = generatedTokens.color['text-muted'].$value.hex;
+const textMutedDark = generatedTokens.color['text-muted-dark'].$value.hex;
+const textPrimaryDark = generatedTokens.color['text-primary-dark'].$value.hex;
+
 export type ThemeMode = 'light' | 'dark';
 export type ThemePreference = 'system' | ThemeMode;
 export type HeroAccent = 'slate' | 'teal' | 'azure' | 'ocean' | 'amber' | 'crimson';
@@ -110,21 +122,21 @@ const semanticDark = {
 
 const chartThemeLight = {
   primary: chartLight,
-  grid: '#94a3b8',
-  axis: '#64748b',
+  grid: hexWithAlpha(textMuted, 0.28),
+  axis: textMuted,
   tooltipBg: '#ffffff',
   tooltipBorder: '#e2e8f0',
-  tooltipText: '#0f172a',
+  tooltipText: textMuted,
   dotFill: '#ffffff',
 } as const;
 
 const chartThemeDark = {
   primary: chartDark,
-  grid: '#334155',
-  axis: '#94a3b8',
+  grid: hexWithAlpha(textMutedDark, 0.42),
+  axis: textMutedDark,
   tooltipBg: '#1e293b',
   tooltipBorder: '#475569',
-  tooltipText: '#f8fafc',
+  tooltipText: textPrimaryDark,
   dotFill: '#0b1220',
 } as const;
 
@@ -285,26 +297,8 @@ export const categoryAccents: CategoryTheme[] = [
   brandCategoryAccent('mint', '#6ee7b7'),
 ];
 
-const categoryLabelHex = {
-  sky: { light: '#0284c7', dark: '#38bdf8' },
-  emerald: { light: brandTeal, dark: brandMint },
-  cyan: { light: '#0891b2', dark: '#67e8f9' },
-  violet: { light: '#7c3aed', dark: '#c4b5fd' },
-  amber: { light: brandAmber, dark: brandAmberDark },
-  rose: { light: brandCrimson, dark: brandSignalRed },
-  indigo: { light: '#4f46e5', dark: '#a5b4fc' },
-  fuchsia: { light: '#c026d3', dark: '#f0abfc' },
-  teal: { light: '#0d9488', dark: '#5eead4' },
-  lime: { light: '#65a30d', dark: '#bef264' },
-  orange: { light: '#ea580c', dark: '#fdba74' },
-  pink: { light: '#db2777', dark: '#f9a8d4' },
-  slate: { light: '#64748b', dark: '#cbd5e1' },
-  coral: { light: '#f43f5e', dark: '#fda4af' },
-  mint: { light: '#059669', dark: '#6ee7b7' },
-} as const satisfies Record<string, Record<ThemeMode, string>>;
-
 export function getCategoryLabelHex(theme: CategoryTheme, mode: ThemeMode): string {
-  const colors = categoryLabelHex[theme.key as keyof typeof categoryLabelHex];
+  const colors = categoryAccentColors[theme.key as CategoryAccentKey];
   return colors?.[mode] ?? theme.ringHex;
 }
 

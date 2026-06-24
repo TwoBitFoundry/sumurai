@@ -1836,7 +1836,7 @@ export const generatedTokens = {
           "value": 0.75,
           "unit": "rem"
         },
-        "fontWeight": 600,
+        "fontWeight": 700,
         "letterSpacing": {
           "value": 0.14,
           "unit": "em"

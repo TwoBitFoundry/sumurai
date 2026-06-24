@@ -53,4 +53,10 @@ describe('providerCards', () => {
     expect(resolvePickerVisibleProviders('plaid')).toEqual(['diy', 'plaid']);
     expect(resolvePickerVisibleProviders('simplefin')).toEqual(['diy', 'simplefin']);
   });
+
+  it('resolvePickerVisibleProviders returns all providers in demo mode even with an active aggregator', () => {
+    expect(resolvePickerVisibleProviders('teller', true)).toEqual(PROVIDER_PRICE_ORDER);
+    expect(resolvePickerVisibleProviders('plaid', true)).toEqual(PROVIDER_PRICE_ORDER);
+    expect(resolvePickerVisibleProviders(null, true)).toEqual(PROVIDER_PRICE_ORDER);
+  });
 });

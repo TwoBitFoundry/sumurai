@@ -12,6 +12,7 @@ import {
   chromeBar,
   control,
   controlIconWell,
+  dangerCta,
   dashboardCategoryCard,
   effect,
   floatingChromeGlass,
@@ -21,6 +22,8 @@ import {
   insightsPanel,
   modalDrawer,
   placeholder,
+  providerNestedCard,
+  providerSelectionCard,
   semanticPlaceholderTextRecipes,
   semanticTextRecipes,
   settingsSecurityLayout,
@@ -71,6 +74,9 @@ describe('shared UI recipes', () => {
     ]);
     expect(effect.tabBarDropShadow[0]).toContain('--color-effect-glass-shadow');
     expect(focus.visible).toContain('focus-visible:ring-[var(--color-brand-glacier)]');
+    expect(font.label).toBe(
+      'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]'
+    );
     expect(font.badge).toBe(
       'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]'
     );
@@ -117,6 +123,14 @@ describe('shared UI recipes', () => {
     expect(categoryPickerChip.button.join(' ')).toContain('rounded-full');
     expect(categoryPickerChip.button.join(' ')).toContain(font.badge);
     expect(categoryPickerChip.selected).toEqual(['ring-2', 'ring-inset']);
+  });
+
+  it('exposes brand red danger CTA recipes for destructive buttons', () => {
+    expect(dangerCta.gradient).toEqual([
+      'bg-[var(--color-brand-crimson)]',
+      'dark:bg-[var(--color-brand-signal-red)]',
+    ]);
+    expect(dangerCta.hover.join(' ')).toContain('hover:-translate-y-0.5');
   });
 
   it('exposes flat sky CTA and progress fill recipes', () => {
@@ -233,6 +247,23 @@ describe('shared UI recipes', () => {
       expect(shell.some((token) => token.startsWith('drop-shadow-['))).toBe(false);
       expect(shell.some((token) => token.startsWith('shadow-['))).toBe(false);
     }
+  });
+
+  it('themes provider picker cards from generated surface tokens', () => {
+    expect(providerSelectionCard.shell).toEqual(
+      expect.arrayContaining([
+        'border',
+        ...border.glass,
+        '!bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_40%,transparent)]',
+        ...effect.glassBackdrop,
+        ...effect.glassElevationShadow,
+      ])
+    );
+    expect(providerNestedCard.shell).toEqual(
+      expect.arrayContaining([...border.subtle, ...surface.dataRow])
+    );
+    expect(providerNestedCard.label).toBe(text.primary);
+    expect(providerNestedCard.detail).toBe(text.body);
   });
 
   it('composes chart floating glass from glass design tokens', () => {

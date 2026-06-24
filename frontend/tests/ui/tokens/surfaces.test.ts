@@ -11,6 +11,7 @@ const expectedRoles = [
   'hoverRow',
   'overlay',
   'insetWell',
+  'dataRow',
   'mutedChip',
 ];
 
@@ -73,6 +74,7 @@ describe('design token surface recipes', () => {
       'bg-[var(--color-surface-muted-chip)]',
       'dark:bg-[var(--color-surface-muted-chip)]',
     ]);
+    expect(uiSurfaceRecipes.dataRow).toEqual(['bg-[var(--color-surface-data-row)]']);
     expect(generatedTokens.color['surface-card'].$value.hex).toBeDefined();
   });
 });

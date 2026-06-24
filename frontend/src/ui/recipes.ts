@@ -15,13 +15,15 @@ export const brandNeutral = {
   textBody:
     'text-[color:color-mix(in_srgb,var(--color-brand-navy)_82%,var(--color-brand-fog))] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_86%,var(--color-brand-navy))]',
   textMuted:
-    'text-[color:color-mix(in_srgb,var(--color-brand-navy)_68%,var(--color-brand-fog))] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_72%,var(--color-brand-navy))]',
+    'text-[color:color-mix(in_srgb,var(--color-brand-navy)_74%,var(--color-brand-fog))] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_72%,var(--color-brand-navy))]',
   textSubtle:
-    'text-[color:color-mix(in_srgb,var(--color-brand-navy)_52%,var(--color-brand-fog))] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_58%,var(--color-brand-navy))]',
+    'text-[color:color-mix(in_srgb,var(--color-brand-navy)_64%,var(--color-brand-fog))] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_58%,var(--color-brand-navy))]',
   textLabel:
-    'text-[color:color-mix(in_srgb,var(--color-brand-navy)_68%,var(--color-brand-fog))] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_72%,var(--color-brand-navy))]',
+    'text-[color:color-mix(in_srgb,var(--color-brand-navy)_74%,var(--color-brand-fog))] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_72%,var(--color-brand-navy))]',
+  controlTextDark:
+    'dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_90%,var(--color-brand-navy))]',
   placeholderMuted:
-    'placeholder:text-[color:color-mix(in_srgb,var(--color-brand-navy)_44%,var(--color-brand-fog))] dark:placeholder:text-[color:color-mix(in_srgb,var(--color-brand-fog)_50%,var(--color-brand-navy))]',
+    'placeholder:text-[color:color-mix(in_srgb,var(--color-brand-navy)_64%,var(--color-brand-fog))] dark:placeholder:text-[color:color-mix(in_srgb,var(--color-brand-fog)_54%,var(--color-brand-navy))]',
   borderSubtle:
     'border-[color:color-mix(in_srgb,var(--color-brand-fog)_72%,var(--color-brand-navy))] dark:border-[color:color-mix(in_srgb,var(--color-brand-navy)_45%,transparent)]',
   surfaceTint:
@@ -51,9 +53,9 @@ export const text = {
   label: brandNeutral.textLabel,
   inverse: 'text-white dark:text-white',
   accent: 'text-[var(--color-brand-azure)] dark:text-[var(--color-brand-glacier)]',
-  danger: 'text-[var(--color-brand-crimson)] dark:text-red-300',
+  danger: 'text-[var(--color-brand-crimson)] dark:text-[var(--color-brand-signal-red)]',
   success: 'text-[var(--color-brand-teal)] dark:text-[var(--color-brand-mint)]',
-  warning: 'text-amber-600 dark:text-amber-300',
+  warning: 'text-[var(--color-brand-amber)] dark:text-[var(--color-brand-amber)]',
   info: 'text-[var(--color-brand-azure)] dark:text-[var(--color-brand-glacier)]',
 } as const satisfies Record<SemanticTextRole, string>;
 
@@ -82,6 +84,7 @@ export const surface = {
   hoverRow: ['bg-[var(--color-surface-hover-row)]', 'dark:bg-[var(--color-surface-hover-row)]'],
   mutedChip: ['bg-[var(--color-surface-muted-chip)]', 'dark:bg-[var(--color-surface-muted-chip)]'],
   insetWell: ['bg-[var(--color-surface-inset-well)]', 'dark:bg-[var(--color-surface-inset-well)]'],
+  dataRow: ['bg-[var(--color-surface-data-row)]'],
   overlay: [
     'bg-[color:color-mix(in_srgb,var(--color-surface-overlay)_20%,transparent)]',
     'dark:bg-[color:color-mix(in_srgb,var(--color-surface-overlay)_36%,transparent)]',
@@ -181,6 +184,20 @@ export const successCta = {
   ],
 } as const;
 
+export const dangerCta = {
+  gradient: ['bg-[var(--color-brand-crimson)]', 'dark:bg-[var(--color-brand-signal-red)]'],
+  hover: ['hover:-translate-y-0.5', 'disabled:hover:translate-y-0'],
+  focus: [
+    'focus-visible:outline-none',
+    'focus-visible:ring-2',
+    'focus-visible:ring-[var(--color-brand-crimson)]',
+    'focus-visible:ring-offset-2',
+    'focus-visible:ring-offset-[var(--color-brand-fog)]',
+    'dark:focus-visible:ring-[var(--color-brand-signal-red)]',
+    'dark:focus-visible:ring-offset-[var(--color-brand-navy)]',
+  ],
+} as const;
+
 export const status = {
   info: {
     surface: [
@@ -209,10 +226,7 @@ export const status = {
       'dark:border-[var(--color-status-success-border)]',
     ],
     alertBorder: ['border-[var(--color-status-success-border)]'],
-    text: [
-      'text-[var(--color-status-success-text)]',
-      'dark:text-[var(--color-status-success-text)]',
-    ],
+    text: ['text-[var(--color-brand-teal)]', 'dark:text-[var(--color-brand-mint)]'],
     strongSurface: [
       'bg-[var(--color-status-success-strong-surface)]',
       'dark:bg-[var(--color-status-success-strong-surface)]',
@@ -255,7 +269,7 @@ export const status = {
       'dark:border-[var(--color-status-danger-border)]',
     ],
     alertBorder: ['border-[var(--color-status-danger-border)]'],
-    text: ['text-[var(--color-status-danger-text)]', 'dark:text-[var(--color-status-danger-text)]'],
+    text: ['text-[var(--color-brand-crimson)]', 'dark:text-[var(--color-brand-signal-red)]'],
     strongSurface: [
       'bg-[var(--color-status-danger-strong-surface)]',
       'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-strong-surface)_46%,transparent)]',
@@ -325,7 +339,7 @@ export const font = {
   bodyStrong: 'font-body-strong text-[1rem] font-semibold leading-[1.5] tracking-normal',
   caption: 'font-caption text-[0.875rem] font-normal leading-[1.5] tracking-normal',
   captionStrong: 'font-caption text-[0.875rem] font-semibold leading-[1.5] tracking-normal',
-  label: 'font-label text-[0.75rem] font-semibold uppercase leading-none tracking-[0.14em]',
+  label: 'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]',
   badge: 'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]',
   categoryTag: 'text-[0.6rem] font-bold uppercase tracking-[0.18em]',
 } as const;
@@ -358,6 +372,27 @@ export const categoryPickerChip = {
     'disabled:hover:translate-y-0',
   ],
   selected: ['ring-2', 'ring-inset'],
+} as const;
+
+export const dateLabelPill = {
+  shell: [
+    'inline-flex',
+    'w-fit',
+    'max-w-full',
+    'flex-shrink-0',
+    'items-center',
+    'gap-1.5',
+    'rounded-full',
+    'whitespace-nowrap',
+    'px-2',
+    'py-0',
+    ...effect.glassBackdrop,
+    'border',
+    ...surface.floatingChromePanel,
+    ...border.floatingChrome,
+  ],
+  label: [font.badge, 'normal-case', 'tracking-normal', text.primary],
+  customSelectedRing: ['ring-2', 'ring-inset', 'ring-[var(--color-border-focus-active)]'],
 } as const;
 
 export const budgetProgress = {
@@ -525,6 +560,35 @@ export const dashboardCategoryCard = {
     'group-hover:opacity-100',
   ],
   insetRingActive: 'opacity-100',
+} as const;
+
+export const providerNestedCard = {
+  shell: [
+    `${radius.standard} border transition-all duration-300 text-left`,
+    ...border.subtle,
+    ...surface.dataRow,
+  ],
+  label: text.primary,
+  detail: text.body,
+} as const;
+
+export const syncStatusRow = {
+  ...providerNestedCard,
+  institutionName: providerNestedCard.label,
+} as const;
+
+export const providerSelectionCard = {
+  shell: [
+    radius.standard,
+    'border',
+    ...border.glass,
+    '!bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_40%,transparent)]',
+    ...effect.glassBackdrop,
+    ...effect.glassElevationShadow,
+    'transition-all',
+    'duration-200',
+  ],
+  padding: ['p-3', 'md:p-6'],
 } as const;
 
 export const modalBackdrop = {
@@ -822,6 +886,14 @@ export const control = {
     md: font.bodyStrong,
     lg: font.bodyStrong,
   },
+  anchoredVerticalCenter: [
+    'absolute',
+    'top-1/2',
+    '-translate-y-1/2',
+    'hover:!-translate-y-1/2',
+    'active:!-translate-y-1/2',
+    'shrink-0',
+  ],
 } as const;
 
 export const floatingChromeSearch = {

@@ -68,6 +68,9 @@ describe('SyncInstitutionStatusToast', () => {
     expect(screen.getByText('Demo Bank')).toBeVisible();
     expect(screen.getByText('Synced 1 new transaction')).toBeVisible();
     expect(screen.getByRole('button', { name: /close sync results in 5s/i })).toBeInTheDocument();
+    expect(screen.getByTestId('sync-status-row').className).toContain(
+      'bg-[var(--color-surface-data-row)]'
+    );
 
     act(() => {
       jest.advanceTimersByTime(1000);

@@ -25,9 +25,13 @@ describe('ui tokens runtime map', () => {
     );
     expect(chart.tooltip.light).toEqual({
       background: '#ffffff',
-      text: '#0f172a',
+      text: '#011e5b',
       border: '#e2e8f0',
     });
+    expect(chart.axis.light).toBe('#011e5b');
+    expect(chart.axis.dark).toBe('#ebeff5');
+    expect(chart.grid.light).toBe('#011e5b47');
+    expect(chart.grid.dark).toBe('#ebeff56b');
     expect(chart.tooltip.dark).toEqual({
       background: '#1e293b',
       text: '#f8fafc',

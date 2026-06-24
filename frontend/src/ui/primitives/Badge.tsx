@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 import {
+  brandNeutral,
   effect as semanticEffects,
   status as semanticStatus,
   surface as semanticSurfaces,
@@ -20,7 +21,7 @@ export const badgeRecipes = {
     ...semanticSurfaces.mutedChip,
     semanticTextRecipes.muted,
     ...semanticEffects.glassDropShadow,
-    'dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_90%,var(--color-brand-navy))]',
+    brandNeutral.controlTextDark,
   ],
   primary: [...semanticStatus.info.surface, ...semanticStatus.info.text],
   feature: [...semanticSurfaces.insetWell, 'ring-1 ring-inset'],

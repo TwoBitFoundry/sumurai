@@ -38,6 +38,16 @@ describe('BudgetMonthLabelPill', () => {
   it('shows the selected budget month in a non-interactive pill', () => {
     render(<BudgetMonthLabelPill monthLabel="May 2026" />);
 
-    expect(screen.getByLabelText(/selected budget month:/i)).toHaveTextContent('May 2026');
+    expect(screen.getByText('May 2026')).toBeInTheDocument();
+  });
+
+  it('uses the shared date label pill styling', () => {
+    render(<BudgetMonthLabelPill monthLabel="June 2026" />);
+
+    const pill = screen.getByTestId('budget-month-label-pill');
+    expect(pill.className).toContain('brand-fog');
+    expect(pill.className).toContain('backdrop-blur-md');
+    expect(pill.className).not.toContain('status-info');
+    expect(pill.querySelector('span')?.className).toContain('--color-text-primary');
   });
 });

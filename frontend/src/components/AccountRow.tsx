@@ -68,7 +68,8 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
   const [isImportOpen, setIsImportOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const { openTransactionList } = useTransactionListLauncher();
-  const isDebtAccount = account.type === 'credit' || account.type === 'loan';
+  const isCreditAccount = account.type === 'credit';
+  const isLoanAccount = account.type === 'loan';
   const isInvestmentAccount = account.type === 'investments';
 
   const rawBalance = account.balance;
@@ -79,18 +80,16 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
     'tabular-nums',
     'transition-colors duration-300 ease-out',
     rawBalance == null && uiTextRecipes.subtle,
+    rawBalance != null && account.type === 'cash' && rawBalance > 0 && uiStatusRecipes.success.text,
     rawBalance != null &&
-      !isDebtAccount &&
-      rawBalance > 0 &&
-      !isInvestmentAccount &&
-      uiStatusRecipes.success.text,
-    rawBalance != null &&
-      !isDebtAccount &&
+      !isCreditAccount &&
+      !isLoanAccount &&
       rawBalance > 0 &&
       isInvestmentAccount &&
       uiTextRecipes.muted,
-    rawBalance != null && rawBalance < 0 && uiStatusRecipes.danger.text,
-    isDebtAccount && rawBalance != null && uiStatusRecipes.danger.text,
+    rawBalance != null && rawBalance < 0 && !isLoanAccount && uiStatusRecipes.danger.text,
+    isCreditAccount && rawBalance != null && rawBalance !== 0 && uiStatusRecipes.danger.text,
+    isLoanAccount && rawBalance != null && rawBalance !== 0 && 'text-[var(--color-brand-amber)]',
     rawBalance === 0 && uiTextRecipes.subtle
   );
 

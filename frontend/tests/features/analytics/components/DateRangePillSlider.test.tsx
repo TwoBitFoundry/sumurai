@@ -108,6 +108,7 @@ describe('DateRangeLabelPill', () => {
 
     const pill = screen.getByTestId('date-range-label-pill');
     expect(pill.className).toContain('brand-fog');
+    expect(pill.className).toContain('backdrop-blur-md');
     expect(pill.className).not.toContain('sky-500');
     expect(pill.querySelector('span')?.className).toContain('--color-text-primary');
     expect(pill).toHaveTextContent(/\d/);

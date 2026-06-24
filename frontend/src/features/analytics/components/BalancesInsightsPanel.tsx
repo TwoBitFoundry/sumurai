@@ -37,7 +37,6 @@ export function BalancesInsightsPanel({
   const { expanded, toggleExpanded } = useSessionCollapsible('balances-insights');
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
   const { isMobile } = useViewportBreakpoint();
-  const shellAccent = heroAccents.ocean;
 
   if (lastResetKey !== resetKey) {
     setLastResetKey(resetKey);
@@ -48,33 +47,21 @@ export function BalancesInsightsPanel({
   const showYtd = incomeYtd != null && expensesYtd != null;
   const showYtdInHeader = showYtd && !isMobile;
 
+  const netAccentClassName = semanticTextRecipes.info;
+
   const netLabel = (
     <div className={cn('flex', 'items-center', 'gap-x-1.5')}>
-      <span className={cn(...heroStatCardRecipes.iconWell, shellAccent.icon)} aria-hidden>
+      <span className={cn(...heroStatCardRecipes.iconWell, netAccentClassName)} aria-hidden>
         <CircleDollarSign />
       </span>
       <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.label)}>Net</div>
     </div>
   );
 
+  const netAmountClassName = cn(uiTypographyRecipes.cardTitle, netAccentClassName, 'tabular-nums');
+
   const netAmount = (
-    <span
-      data-testid="overall-net"
-      className={cn(
-        'inline-flex',
-        'min-w-0',
-        'justify-self-end',
-        'text-right',
-        'text-[1.45rem]',
-        'font-semibold',
-        'leading-none',
-        'tracking-[-0.02em]',
-        'md:text-[1.65rem]',
-        'lg:text-2xl',
-        'tabular-nums',
-        shellAccent.icon
-      )}
-    >
+    <span data-testid="overall-net" className={netAmountClassName}>
       {fmtUSD(overall.net)}
     </span>
   );
@@ -179,9 +166,24 @@ export function BalancesInsightsPanel({
                   data-testid="balances-ytd-row"
                   className={cn('flex', 'w-full', 'items-start', 'justify-between', 'gap-x-4')}
                 >
-                  <div className={cn('flex', 'shrink-0', 'flex-col', 'items-start', 'gap-y-1.5')}>
-                    {netLabel}
-                    {netAmount}
+                  <div
+                    className={cn(
+                      'inline-grid',
+                      'shrink-0',
+                      'grid-cols-[1fr_auto]',
+                      'gap-x-1',
+                      'gap-y-1.5'
+                    )}
+                  >
+                    <div className={cn('col-start-1', 'flex', 'items-center', 'gap-x-1.5')}>
+                      {netLabel}
+                    </div>
+                    <div
+                      data-testid="balances-ytd-net"
+                      className={cn('col-start-1', 'col-end-3', 'row-start-2')}
+                    >
+                      {netAmount}
+                    </div>
                   </div>
                   <div className={cn('flex', 'shrink-0', 'items-start', 'gap-x-4', 'md:gap-x-6')}>
                     <div
@@ -305,7 +307,7 @@ export function BalancesInsightsPanel({
               ) : (
                 <div
                   className={cn(
-                    'grid',
+                    'inline-grid',
                     'w-full',
                     'min-w-0',
                     'grid-cols-[auto_minmax(0,1fr)]',
@@ -315,7 +317,12 @@ export function BalancesInsightsPanel({
                   )}
                 >
                   {netLabel}
-                  {netAmount}
+                  <span
+                    data-testid="overall-net"
+                    className={cn(netAmountClassName, 'justify-self-end', 'text-right')}
+                  >
+                    {fmtUSD(overall.net)}
+                  </span>
                 </div>
               )}
             </div>

@@ -61,8 +61,8 @@ describe('design token status recipes', () => {
       'dark:bg-[var(--color-status-info-surface)]',
     ]);
     expect(uiStatusRecipes.success.text).toEqual([
-      'text-[var(--color-status-success-text)]',
-      'dark:text-[var(--color-status-success-text)]',
+      'text-[var(--color-brand-teal)]',
+      'dark:text-[var(--color-brand-mint)]',
     ]);
     expect(uiStatusRecipes.warning.icon).toEqual([
       'text-[var(--color-status-warning-icon)]',
@@ -71,6 +71,10 @@ describe('design token status recipes', () => {
     expect(uiStatusRecipes.danger.border).toEqual([
       'border-[var(--color-status-danger-border)]',
       'dark:border-[var(--color-status-danger-border)]',
+    ]);
+    expect(uiStatusRecipes.danger.text).toEqual([
+      'text-[var(--color-brand-crimson)]',
+      'dark:text-[var(--color-brand-signal-red)]',
     ]);
     expect(uiStatusRecipes.danger.surface).toEqual([
       'bg-[color:color-mix(in_srgb,var(--color-status-danger-surface)_82%,transparent)]',

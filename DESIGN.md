@@ -199,7 +199,7 @@ typography:
   label:
     fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
     fontSize: 0.75rem
-    fontWeight: 600
+    fontWeight: 700
     lineHeight: 1
     letterSpacing: 0.14em
 rounded:

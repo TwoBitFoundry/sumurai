@@ -81,7 +81,7 @@ export function InlineCategoryCell({
         ref={anchorRef}
         type="button"
         variant="tab"
-        size="sm"
+        size="inherit"
         aria-label={readOnly ? label : `Edit category: ${label}`}
         aria-expanded={readOnly ? undefined : open}
         onClick={

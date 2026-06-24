@@ -1377,6 +1377,46 @@ describe('AccountsPage', () => {
       expect(screen.getAllByRole('button', { name: /^connect$/i })).toHaveLength(2);
     });
 
+    it('shows all providers in demo mode even when an aggregator is active', async () => {
+      const user = userEvent.setup();
+
+      jest.mocked(useOnlineStatus).mockReturnValue(true);
+      jest.mocked(useProviderCatalog).mockReturnValue(
+        makeProviderCatalogMock({
+          available_providers: ['teller', 'simplefin', 'plaid', 'diy'],
+          user_provider: 'teller',
+          teller_application_id: 'app_123',
+        })
+      );
+      jest.mocked(useAccountFilter).mockReturnValue(
+        makeTellerAccountFilter({
+          accountsByBank: {
+            'Demo Bank': [
+              {
+                id: 'acc_1',
+                name: 'Checking',
+                account_type: 'depository',
+                balance_ledger: 100,
+                balance_available: 100,
+                mask: '1234',
+                provider: 'teller',
+                institution_name: 'Demo Bank',
+                connection_id: 'conn_1',
+                transaction_count: 0,
+              },
+            ],
+          },
+        })
+      );
+
+      renderAccountsPage({ demoModeActive: true });
+
+      await user.click(screen.getByRole('button', { name: /^link account$/i }));
+
+      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: /^connect$/i })).toHaveLength(4);
+    });
+
     it('starts Teller connect from the picker click instead of only selecting the provider', async () => {
       const user = userEvent.setup();
       const chooseProvider = jest.fn();

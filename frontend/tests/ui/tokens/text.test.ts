@@ -31,7 +31,9 @@ describe('design token text recipes', () => {
     expect(generatedTokens.color['text-primary'].$value.hex).toBe('#011e5b');
     expect(uiTextRecipes.body).toContain('var(--color-brand-navy)');
     expect(uiTextRecipes.body).toContain('var(--color-brand-fog)');
-    expect(uiTextRecipes.danger).toBe('text-[var(--color-brand-crimson)] dark:text-red-300');
+    expect(uiTextRecipes.danger).toBe(
+      'text-[var(--color-brand-crimson)] dark:text-[var(--color-brand-signal-red)]'
+    );
   });
 
   it('exposes placeholder text recipes aligned with muted intent', () => {

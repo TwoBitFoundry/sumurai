@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 import {
+  brandNeutral,
   control,
   floatingChromeSearch,
   border as semanticBorders,
@@ -43,7 +44,8 @@ export const inputControl = {
     'border-white/60',
     'focus:ring-2 focus:ring-sky-400/80',
     'focus:ring-offset-2 focus:ring-offset-[var(--color-brand-fog)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_80%,transparent)] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_90%,var(--color-brand-navy))]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_80%,transparent)]',
+    brandNeutral.controlTextDark,
     'dark:border-white/12',
     'dark:focus:ring-offset-[var(--color-brand-navy)]',
   ],

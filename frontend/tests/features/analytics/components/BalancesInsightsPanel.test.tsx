@@ -45,7 +45,7 @@ describe('BalancesInsightsPanel', () => {
     const shell = screen.getByTestId('balances-insights-shell');
     expect(shell).toBeInTheDocument();
     expect(screen.getByText('Balance insights')).toBeInTheDocument();
-    expect(screen.getByTestId('overall-net')).toHaveClass(heroAccents.ocean.icon);
+    expect(screen.getByTestId('overall-net')).toHaveClass(heroAccents.azure.icon);
     expect(shell).toHaveClass('sticky');
     expect(shell).toHaveClass('z-30');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
@@ -68,7 +68,7 @@ describe('BalancesInsightsPanel', () => {
     const netValue = screen.getByTestId('overall-net');
     const netRow = netValue.parentElement;
 
-    expect(netRow).toHaveClass('grid');
+    expect(netRow).toHaveClass('inline-grid');
     expect(netRow).toHaveClass('grid-cols-[auto_minmax(0,1fr)]');
     expect(netRow).toHaveClass('items-baseline');
     expect(netValue).toHaveClass('justify-self-end');
@@ -243,8 +243,11 @@ describe('BalancesInsightsPanel', () => {
   it('styles desktop header YTD values with glyph accent colors', () => {
     render(<BalancesInsightsPanel overall={sampleOverall} incomeYtd={1000} expensesYtd={500} />);
 
+    const netValue = screen.getByTestId('overall-net');
     const incomeValue = screen.getByTestId('balances-ytd-income-value');
     const expensesValue = screen.getByTestId('balances-ytd-expenses-value');
+    expect(netValue).toHaveClass('font-card-title');
+    expect(netValue).toHaveClass(heroAccents.azure.icon);
     expect(incomeValue).toHaveClass('font-card-title');
     expect(incomeValue).toHaveClass(heroAccents.teal.icon);
     expect(expensesValue).toHaveClass('font-card-title');

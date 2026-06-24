@@ -5,7 +5,7 @@ import { PlaidService } from '@/services/PlaidService';
 import { SimpleFinService } from '@/services/SimpleFinService';
 import { TellerService } from '@/services/TellerService';
 import type { FinancialProvider, Transaction } from '@/types/api';
-import { dispatchFinancialAppRefresh } from '@/utils/events';
+import { dispatchFinancialAccountsRefresh } from '@/utils/events';
 import { formatUserFacingApiError } from '@/utils/formatUserFacingApiError';
 import { isSyncProvider } from '@/utils/queryInvalidation';
 import type { SyncAllRow, SyncAllRowStatus } from '../types/syncAllStatus';
@@ -112,6 +112,7 @@ export function useSyncAllOrchestrator({
   const [syncAllModalOpen, setSyncAllModalOpen] = useState(false);
   const [syncingAll, setSyncingAll] = useState(false);
   const autoCloseTimerRef = useRef<number | null>(null);
+  const hasAppliedRefreshRef = useRef(false);
 
   const clearAutoCloseTimer = useCallback(() => {
     if (autoCloseTimerRef.current != null) {
@@ -129,19 +130,33 @@ export function useSyncAllOrchestrator({
   const closeSyncAllModal = useCallback(() => {
     clearAutoCloseTimer();
     setSyncAllModalOpen(false);
-    if (hasAppliedSuccessfulSync(syncAllRows)) {
-      dispatchFinancialAppRefresh({ tab: 'accounts' });
+  }, [clearAutoCloseTimer]);
+
+  const applySuccessfulSyncRefresh = useCallback((rows: SyncAllRow[]) => {
+    if (!hasAppliedSuccessfulSync(rows) || hasAppliedRefreshRef.current) {
+      return;
     }
-  }, [clearAutoCloseTimer, syncAllRows]);
+    hasAppliedRefreshRef.current = true;
+    dispatchFinancialAccountsRefresh();
+  }, []);
 
   const scheduleAutoClose = useCallback(() => {
     clearAutoCloseTimer();
     autoCloseTimerRef.current = window.setTimeout(() => {
       setSyncAllModalOpen(false);
       autoCloseTimerRef.current = null;
-      dispatchFinancialAppRefresh({ tab: 'accounts' });
     }, AUTO_CLOSE_DELAY_MS);
   }, [clearAutoCloseTimer]);
+
+  const finalizeSuccessfulSyncBatch = useCallback(
+    (rows: SyncAllRow[]) => {
+      applySuccessfulSyncRefresh(rows);
+      if (hasFinishedSuccessState(rows)) {
+        scheduleAutoClose();
+      }
+    },
+    [applySuccessfulSyncRefresh, scheduleAutoClose]
+  );
 
   const syncAll = useCallback(async () => {
     if (!isOnline || syncingAll) {
@@ -157,6 +172,7 @@ export function useSyncAllOrchestrator({
     }
 
     clearAutoCloseTimer();
+    hasAppliedRefreshRef.current = false;
     let currentRows = mapBanksToSyncRows(providerBanks);
     setSyncAllRows(currentRows);
     setSyncAllModalOpen(true);
@@ -211,9 +227,7 @@ export function useSyncAllOrchestrator({
         });
         setSyncAllRows(currentRows);
 
-        if (hasFinishedSuccessState(currentRows)) {
-          scheduleAutoClose();
-        }
+        finalizeSuccessfulSyncBatch(currentRows);
 
         return;
       }
@@ -282,9 +296,7 @@ export function useSyncAllOrchestrator({
         }
       }
 
-      if (hasFinishedSuccessState(currentRows)) {
-        scheduleAutoClose();
-      }
+      finalizeSuccessfulSyncBatch(currentRows);
     } catch (error: unknown) {
       currentRows = currentRows.map((row) =>
         row.status === 'syncing' || row.status === 'pending'
@@ -307,7 +319,7 @@ export function useSyncAllOrchestrator({
     isOnline,
     onError,
     primaryProvider,
-    scheduleAutoClose,
+    finalizeSuccessfulSyncBatch,
     syncingAll,
   ]);
 

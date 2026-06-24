@@ -11,7 +11,7 @@ export function AuthFormLayout({ children }: AuthFormLayoutProps) {
     <>
       <div className={cn(authLayout.brandBackdrop)} aria-hidden>
         <img
-          src="/sumurai-logo-no-background.webp"
+          src="/brand-images/Sumarai-AvatarOnly.svg"
           alt=""
           className={cn(authLayout.brandBackdropImage)}
         />

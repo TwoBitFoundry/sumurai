@@ -11,6 +11,7 @@ import { GlassCard, IconButton } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import {
   budgetProgress as budgetProgressRecipes,
+  control,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
@@ -114,7 +115,7 @@ function ToastCard({ message, progress, onClose, autoDismiss, dismissKey, type }
         type="button"
         variant="ghost"
         size="sm"
-        className={cn('absolute', 'right-3', 'top-1/2', '-translate-y-1/2', 'shrink-0')}
+        className={cn(...control.anchoredVerticalCenter, 'right-3')}
         onClick={onClose}
         aria-label="Close toast"
       >

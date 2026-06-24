@@ -38,18 +38,11 @@ export const appTitleBarRecipes = {
   ],
   shell: [...semanticSurfaces.card, ...semanticBorders.divider, ...semanticEffects.glassDropShadow],
   logo: {
-    container: ['flex', 'h-full', 'min-h-0', 'items-center', 'gap-2', semanticTextRecipes.primary],
-    image: [
-      'relative',
-      'aspect-square',
-      'shrink-0',
-      'overflow-hidden',
-      chromeBar.height,
-      'w-12',
-      uiRadiusRecipes.standard,
-    ],
-    wordmark: [uiTypographyRecipes.pageTitle, 'leading-none'],
-    wordmarkStack: ['flex', 'min-w-0', 'flex-col', 'gap-0.5'],
+    container: ['flex', 'h-full', 'min-h-0', 'items-center', 'gap-2'],
+    icon: ['relative', 'aspect-square', 'shrink-0', chromeBar.height, 'w-12'],
+    wordmark: ['flex', 'shrink-0', 'items-center', 'h-10'],
+    wordmarkCompact: ['flex', 'shrink-0', 'items-center', 'h-8'],
+    wordmarkStack: ['flex', chromeBar.height, 'min-w-0', 'flex-col', 'justify-center', 'gap-0.5'],
     fontFamily: { fontFamily: "'Cal Sans', system-ui, sans-serif" },
   },
   settingsIdle: buttonChrome.settingsIdle.join(' '),
@@ -186,6 +179,7 @@ export const AppTitleBar = ({
   ref,
 }: AppTitleBarProps & { ref?: React.RefObject<HTMLElement | null> }) => {
   const canGoToDashboard = state === 'authenticated' && onTabChange != null;
+  const logoCompact = state === 'authenticated' && demoModeActive;
 
   const demoModeBadge =
     state === 'authenticated' && demoModeActive ? (
@@ -203,24 +197,40 @@ export const AppTitleBar = ({
 
   const logoMark = (
     <>
-      <div className={cn(...appTitleBarRecipes.logo.image)}>
+      <div className={cn(...appTitleBarRecipes.logo.icon)}>
         <Image
-          src="/sumurai-hero.webp"
-          alt="Sumurai Logo"
-          fill
-          sizes="48px"
-          className="object-cover"
+          src="/brand-images/Sumurai-HelmetMonogram.svg"
+          alt=""
+          aria-hidden
+          width={116}
+          height={117}
+          className="h-full w-full object-contain"
           unoptimized
         />
       </div>
       <div className={cn(...appTitleBarRecipes.logo.wordmarkStack)}>
-        <span className={cn(...appTitleBarRecipes.logo.wordmark)}>Sumurai</span>
+        <div
+          className={cn(
+            ...(logoCompact
+              ? appTitleBarRecipes.logo.wordmarkCompact
+              : appTitleBarRecipes.logo.wordmark)
+          )}
+        >
+          <Image
+            src="/brand-images/FullColor-TextLogo.svg"
+            alt="Sumurai"
+            width={178}
+            height={32}
+            className="h-full w-auto object-contain"
+            unoptimized
+          />
+        </div>
         {demoModeBadge}
       </div>
     </>
   );
 
-  const logoClassName = cn(...appTitleBarRecipes.logo.container, appTitleBarRecipes.logo.wordmark);
+  const logoClassName = cn(...appTitleBarRecipes.logo.container);
 
   const primaryTabs = canGoToDashboard ? (
     <nav className={cn(...appTitleBarRecipes.pillNav)} aria-label="Primary">

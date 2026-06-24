@@ -95,4 +95,48 @@ describe('AccountRow', () => {
 
     expect(openTransactionList).not.toHaveBeenCalled();
   });
+
+  it('uses brand amber for loan balances', () => {
+    render(
+      <ThemeTestProvider>
+        <AccountRow
+          account={{
+            id: 'loan-1',
+            name: 'Mortgage',
+            mask: '5001',
+            type: 'loan',
+            balance: -18420.77,
+            transactions: 13,
+          }}
+          isOnline
+        />
+      </ThemeTestProvider>
+    );
+
+    const balance = screen.getByText('-$18,420.77');
+    expect(balance.className).toContain('text-[var(--color-brand-amber)]');
+    expect(balance.className).not.toContain('brand-crimson');
+  });
+
+  it('uses brand red for credit balances', () => {
+    render(
+      <ThemeTestProvider>
+        <AccountRow
+          account={{
+            id: 'credit-1',
+            name: 'Rewards Card',
+            mask: '4242',
+            type: 'credit',
+            balance: -1200,
+            transactions: 8,
+          }}
+          isOnline
+        />
+      </ThemeTestProvider>
+    );
+
+    const balance = screen.getByText('-$1,200.00');
+    expect(balance.className).toContain('text-[var(--color-brand-crimson)]');
+    expect(balance.className).not.toContain('brand-amber');
+  });
 });

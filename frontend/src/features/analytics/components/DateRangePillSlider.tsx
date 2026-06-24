@@ -1,9 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
-import { transactionsRowRecipes } from '@/features/transactions/components/transactionsRowRecipes';
 import { Button, cn } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import {
-  brandNeutral,
+  dateLabelPill,
   border as uiBorderRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
@@ -147,29 +146,11 @@ export function DateRangeLabelPill({
         aria-label={`Selected date range: ${rangeLabel}. Choose custom range`}
         aria-expanded={pickerOpen}
         className={cn(
-          'whitespace-nowrap',
-          transactionsRowRecipes.categoryFilterPill,
-          ...transactionsRowRecipes.contextualFilterChipGlassChrome,
-          brandNeutral.surfaceTint,
-          '!border-transparent',
-          'dark:!border-transparent',
-          dateRange === 'custom' && [
-            'ring-2',
-            'ring-inset',
-            'ring-[var(--color-border-focus-active)]',
-          ]
+          ...dateLabelPill.shell,
+          dateRange === 'custom' && [...dateLabelPill.customSelectedRing]
         )}
       >
-        <span
-          className={cn(
-            uiTypographyRecipes.badge,
-            'normal-case',
-            'tracking-normal',
-            uiTextRecipes.primary
-          )}
-        >
-          {rangeLabel}
-        </span>
+        <span className={cn(...dateLabelPill.label)}>{rangeLabel}</span>
       </Button>
       <CustomDateRangePicker
         open={pickerOpen}

@@ -44,9 +44,10 @@ export type ProviderCardConfig = {
 export const PROVIDER_PRICE_ORDER: FinancialProvider[] = ['diy', 'simplefin', 'teller', 'plaid'];
 
 export function resolvePickerVisibleProviders(
-  activeAggregator: SyncProvider | null
+  activeAggregator: SyncProvider | null,
+  demoModeActive = false
 ): FinancialProvider[] {
-  if (activeAggregator) {
+  if (!demoModeActive && activeAggregator) {
     return PROVIDER_PRICE_ORDER.filter(
       (provider) => provider === 'diy' || provider === activeAggregator
     );
