@@ -33,4 +33,25 @@ describe('ChartGlassTooltip', () => {
     expect(screen.getByRole('tooltip')).toHaveTextContent('Net');
     expect(screen.getByRole('tooltip')).toHaveTextContent('$1200');
   });
+
+  it('dedupes tooltip rows that share the same dataKey', () => {
+    render(
+      <ChartGlassTooltip
+        active
+        label="May 2026"
+        payload={[
+          { name: 'Income', value: 1200, dataKey: 'income' },
+          { name: '', value: 1200, dataKey: 'income' },
+          { name: 'Expenses', value: -400, dataKey: 'plottedExpenses' },
+          { value: -400, dataKey: 'plottedExpenses' },
+        ]}
+      />
+    );
+
+    const tooltip = screen.getByRole('tooltip');
+    expect(tooltip).toHaveTextContent('Income');
+    expect(tooltip).toHaveTextContent('Expenses');
+    expect(tooltip.textContent?.match(/Income/g)?.length).toBe(1);
+    expect(tooltip.textContent?.match(/Expenses/g)?.length).toBe(1);
+  });
 });

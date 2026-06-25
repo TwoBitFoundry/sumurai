@@ -60,7 +60,7 @@ describe('Auth screens', () => {
     expect(emailInput.value).toBe('locked@example.com');
     expect(emailInput).toHaveProperty('readOnly', true);
     expect(screen.getByRole('button', { name: /^enter$/i })).toHaveProperty('disabled', true);
-    expect(screen.getByRole('button', { name: /join/i })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: /sign up/i })).toHaveProperty('disabled', true);
   });
 
   it('shows password step when login begin reports no passkey but password is available', async () => {
@@ -95,7 +95,7 @@ describe('Auth screens', () => {
     expect(screen.getByLabelText(/^email$/i)).toBeTruthy();
     expect(screen.getByLabelText(/^passkey name$/i)).toBeTruthy();
     expect(screen.queryByLabelText(/password/i)).toBeNull();
-    expect(screen.getByRole('button', { name: /^join$/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^sign up$/i })).toBeTruthy();
   });
 
   it('keeps auth form layout padding on the md tier', () => {
@@ -109,7 +109,9 @@ describe('Auth screens', () => {
     const brandBackdrop = container.querySelector('[aria-hidden="true"]');
     expect(brandBackdrop).toBeTruthy();
     expect(brandBackdrop).toHaveClass('items-end');
-    expect(brandBackdrop).toHaveClass('justify-center');
+    expect(
+      brandBackdrop?.querySelector('[class*="max-w-[var(--spacing-content-max)]"]')
+    ).toBeTruthy();
     expect(brandBackdrop?.querySelector('img')).toBeTruthy();
     expect(container.querySelector('.lg\\:max-w-lg')?.querySelector('img')).toBeNull();
   });

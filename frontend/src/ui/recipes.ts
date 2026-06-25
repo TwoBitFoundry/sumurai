@@ -1031,6 +1031,15 @@ export const appLayout = {
 } as const;
 
 export const authLayout = {
+  main: [
+    'flex-1',
+    'flex',
+    'items-start',
+    'md:items-center',
+    'justify-center',
+    'md:justify-start',
+    ...appLayout.contentShellWithGutter,
+  ],
   shell: [
     'relative',
     'flex',
@@ -1050,12 +1059,20 @@ export const authLayout = {
     'pointer-events-none',
     'fixed',
     'z-0',
-    'flex',
     'inset-x-0',
     'top-14',
     'bottom-0',
+    'flex',
+    'items-end',
+  ],
+  brandBackdropInner: [
+    ...appLayout.contentShellWithGutter,
+    'flex',
+    'h-full',
+    'w-full',
     'items-end',
     'justify-center',
+    'md:justify-end',
   ],
   brandBackdropImage: ['h-full', 'w-auto', 'max-w-full', 'object-contain', 'object-bottom'],
   card: ['relative', 'z-10', 'w-full'],

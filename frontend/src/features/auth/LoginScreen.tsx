@@ -317,7 +317,7 @@ export function LoginScreen({
               size="sm"
               disabled={isBusy || isEmailLocked}
             >
-              Join
+              Sign up
             </Button>
           </div>
         </div>

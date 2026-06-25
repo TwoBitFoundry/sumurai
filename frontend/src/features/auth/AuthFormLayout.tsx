@@ -10,11 +10,13 @@ export function AuthFormLayout({ children }: AuthFormLayoutProps) {
   return (
     <>
       <div className={cn(authLayout.brandBackdrop)} aria-hidden>
-        <img
-          src="/brand-images/Sumarai-AvatarOnly.svg"
-          alt=""
-          className={cn(authLayout.brandBackdropImage)}
-        />
+        <div className={cn(authLayout.brandBackdropInner)}>
+          <img
+            src="/brand-images/Sumarai-AvatarOnly.svg"
+            alt=""
+            className={cn(authLayout.brandBackdropImage)}
+          />
+        </div>
       </div>
       <div className={cn(authLayout.shell)}>
         <GlassCard variant="auth" padding="lg" containerClassName={cn(authLayout.card)}>

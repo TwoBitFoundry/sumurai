@@ -221,9 +221,21 @@ describe('shared UI recipes', () => {
   });
 
   it('exposes auth layout recipes for mobile, tablet, and desktop tiers', () => {
+    expect(authLayout.main).toEqual(
+      expect.arrayContaining([
+        'items-start',
+        'md:items-center',
+        'justify-center',
+        'md:justify-start',
+        'max-w-[var(--spacing-content-max)]',
+        'md:px-6',
+        'lg:px-8',
+      ])
+    );
     expect(authLayout.shell).toEqual(expect.arrayContaining(['px-4', 'md:px-6', 'lg:max-w-lg']));
     expect(authLayout.brandBackdrop).toContain('items-end');
-    expect(authLayout.brandBackdrop).toContain('justify-center');
+    expect(authLayout.brandBackdropInner).toContain('md:justify-end');
+    expect(authLayout.brandBackdropInner).toContain('max-w-[var(--spacing-content-max)]');
     expect(authLayout.brandBackdropImage).toContain('h-full');
     expect(authLayout.brandBackdropImage).toContain('object-bottom');
     expect(authLayout.brandBackdropImage).not.toContain('lg:object-right-bottom');

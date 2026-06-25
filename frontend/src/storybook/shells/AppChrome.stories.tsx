@@ -4,14 +4,14 @@ import { AppLayout } from '@/layouts/AppLayout';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { AppFooter, AppTitleBar, cn, GradientShell } from '@/ui/primitives';
-import { radius as uiRadiusRecipes, text as uiTextRecipes } from '@/ui/recipes';
+import { authLayout, radius as uiRadiusRecipes, text as uiTextRecipes } from '@/ui/recipes';
 
 function UnauthenticatedLoginShell() {
   return (
     <GradientShell className={cn(uiTextRecipes.primary)}>
       <div className={cn('flex', 'flex-col', 'min-h-screen')}>
         <AppTitleBar state="unauthenticated" scrolled={false} isOnline />
-        <main className={cn('flex-1', 'flex', 'items-center', 'justify-center')}>
+        <main className={cn(...authLayout.main)}>
           <LoginScreen onNavigateToRegister={() => {}} />
         </main>
         <AppFooter />

@@ -128,12 +128,12 @@ export function RegisterScreen({
   const submitLabel = passwordAuthEnabled
     ? resolvedPhase === 'submitting'
       ? 'Creating account...'
-      : 'Join'
+      : 'Sign up'
     : resolvedPhase === 'awaitingCeremony'
       ? 'Confirm the passkey summons on your device.'
       : resolvedPhase === 'submitting'
         ? 'Enrolling...'
-        : 'Join';
+        : 'Sign up';
 
   const subtitle = passwordAuthEnabled
     ? 'Enter your email and password to create your account.'
