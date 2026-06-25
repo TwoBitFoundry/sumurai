@@ -147,8 +147,8 @@ describe('useSyncAllOrchestrator', () => {
       status: 'auth_required',
       detail: 'Auth required',
     });
-    expect(events.dispatchFinancialAppRefresh).not.toHaveBeenCalled();
-    expect(events.dispatchFinancialAccountsRefresh).toHaveBeenCalledTimes(1);
+    expect(events.dispatchFinancialAppRefresh).toHaveBeenCalledWith({ tab: 'accounts' });
+    expect(events.dispatchFinancialAccountsRefresh).not.toHaveBeenCalled();
   });
 
   it('matches SimpleFIN rows by connection id when institution names differ', async () => {
@@ -201,7 +201,8 @@ describe('useSyncAllOrchestrator', () => {
       status: 'synced',
       transactionCount: 1,
     });
-    expect(events.dispatchFinancialAccountsRefresh).toHaveBeenCalledTimes(1);
+    expect(events.dispatchFinancialAppRefresh).toHaveBeenCalledWith({ tab: 'accounts' });
+    expect(events.dispatchFinancialAccountsRefresh).not.toHaveBeenCalled();
   });
 
   it('marks every SimpleFIN row rate-limited when the bridge returns 429', async () => {
@@ -282,15 +283,15 @@ describe('useSyncAllOrchestrator', () => {
       },
     ]);
     expect(onError).not.toHaveBeenCalled();
-    expect(events.dispatchFinancialAppRefresh).not.toHaveBeenCalled();
-    expect(events.dispatchFinancialAccountsRefresh).toHaveBeenCalledTimes(1);
+    expect(events.dispatchFinancialAppRefresh).toHaveBeenCalledWith({ tab: 'accounts' });
+    expect(events.dispatchFinancialAccountsRefresh).not.toHaveBeenCalled();
 
     act(() => {
       result.current.closeSyncAllModal();
     });
 
-    expect(events.dispatchFinancialAppRefresh).not.toHaveBeenCalled();
-    expect(events.dispatchFinancialAccountsRefresh).toHaveBeenCalledTimes(1);
+    expect(events.dispatchFinancialAppRefresh).toHaveBeenCalledWith({ tab: 'accounts' });
+    expect(events.dispatchFinancialAccountsRefresh).not.toHaveBeenCalled();
   });
 
   it('syncs Teller banks sequentially and closes the modal after success', async () => {
@@ -317,8 +318,8 @@ describe('useSyncAllOrchestrator', () => {
     expect(tellerSyncTransactions).toHaveBeenNthCalledWith(2, 'conn-2');
     expect(result.current.syncAllRows).toMatchObject([{ status: 'synced' }, { status: 'synced' }]);
     expect(result.current.syncAllModalOpen).toBe(true);
-    expect(events.dispatchFinancialAppRefresh).not.toHaveBeenCalled();
-    expect(events.dispatchFinancialAccountsRefresh).toHaveBeenCalledTimes(1);
+    expect(events.dispatchFinancialAppRefresh).toHaveBeenCalledWith({ tab: 'accounts' });
+    expect(events.dispatchFinancialAccountsRefresh).not.toHaveBeenCalled();
 
     await act(async () => {
       jest.advanceTimersByTime(5000);
@@ -327,8 +328,8 @@ describe('useSyncAllOrchestrator', () => {
     await waitFor(() => {
       expect(result.current.syncAllModalOpen).toBe(false);
     });
-    expect(events.dispatchFinancialAppRefresh).not.toHaveBeenCalled();
-    expect(events.dispatchFinancialAccountsRefresh).toHaveBeenCalledTimes(1);
+    expect(events.dispatchFinancialAppRefresh).toHaveBeenCalledWith({ tab: 'accounts' });
+    expect(events.dispatchFinancialAccountsRefresh).not.toHaveBeenCalled();
 
     jest.useRealTimers();
   });

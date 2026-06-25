@@ -5,7 +5,7 @@ import { PlaidService } from '@/services/PlaidService';
 import { SimpleFinService } from '@/services/SimpleFinService';
 import { TellerService } from '@/services/TellerService';
 import type { FinancialProvider, Transaction } from '@/types/api';
-import { dispatchFinancialAccountsRefresh } from '@/utils/events';
+import { dispatchFinancialAppRefresh } from '@/utils/events';
 import { formatUserFacingApiError } from '@/utils/formatUserFacingApiError';
 import { isSyncProvider } from '@/utils/queryInvalidation';
 import type { SyncAllRow, SyncAllRowStatus } from '../types/syncAllStatus';
@@ -137,7 +137,7 @@ export function useSyncAllOrchestrator({
       return;
     }
     hasAppliedRefreshRef.current = true;
-    dispatchFinancialAccountsRefresh();
+    dispatchFinancialAppRefresh({ tab: 'accounts' });
   }, []);
 
   const scheduleAutoClose = useCallback(() => {
