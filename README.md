@@ -2,7 +2,7 @@
 
 Personal finance dashboard. Self-hosted. Connects to your bank via Teller, Plaid, or SimpleFIN, syncs transactions, and shows where your money goes.
 
-![Sumurai](frontend/public/sumurai-hero.webp)
+![Sumurai](frontend/public/screenshots/sumurai-hero.webp)
 
 ## Why This Exists
 
@@ -15,11 +15,12 @@ Sumurai exists because there are not a lot of free, simple, and modern budgeting
 - Tracks budgets by category
 - Charts spending, balances, and net worth over time
 
-![Dashboard](frontend/public/dashboard-hero.webp)
-![Dashboard extras](frontend/public/dashboard-extras.webp)
-![Transactions](frontend/public/transactions.webp)
-![Budgets](frontend/public/budgets.webp)
-![Accounts](frontend/public/accounts.webp)
+![Dashboard](frontend/public/screenshots/sumurai-dashboard-dark-pt1.webp)
+![Dashboard extras](frontend/public/screenshots/sumurai-dashboard-dark-pt2.webp)
+![Transactions](frontend/public/screenshots/sumurai-transactions-dark.webp)
+![Budgets](frontend/public/screenshots/sumurai-budgets-dark-pt1.webp)
+![Budgets extras](frontend/public/screenshots/sumurai-budgets-dark-pt2.webp)
+![Accounts](frontend/public/screenshots/sumurai-accounts-dark.webp)
 
 ## Which Financial Provider is Right for You?
 
