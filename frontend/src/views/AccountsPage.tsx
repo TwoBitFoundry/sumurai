@@ -848,8 +848,8 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
   }, [banksWithSync]);
 
   const pickerVisibleProviders = useMemo(
-    () => resolvePickerVisibleProviders(activeAggregator),
-    [activeAggregator]
+    () => resolvePickerVisibleProviders(activeAggregator, demoModeActive),
+    [activeAggregator, demoModeActive]
   );
 
   const catalogLoading = providerCatalog.loading || accountFilter.loading;

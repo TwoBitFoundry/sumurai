@@ -3,7 +3,7 @@ import { type CSSProperties, useRef, useState } from 'react';
 import type { AccountCategoryType } from '@/domain/accountCategories';
 import { ImportModal } from '@/features/import/components/ImportModal';
 import { useTransactionListLauncher } from '@/features/transactions/hooks/useTransactionListLauncher';
-import { cn, GlassCard, IconButton } from '@/ui/primitives';
+import { cn, IconButton } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
   status as uiStatusRecipes,
@@ -38,7 +38,7 @@ const accountTriggerFocusRing = [
 ] as const;
 
 const accountHeroHoverRingStyle = {
-  boxShadow: `inset 0 0 0 2px ${heroAccents.violet.ringHex}`,
+  boxShadow: `inset 0 0 0 2px ${heroAccents.ocean.ringHex}`,
 } as CSSProperties;
 
 const accountMaskClasses = cn(
@@ -68,7 +68,8 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
   const [isImportOpen, setIsImportOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const { openTransactionList } = useTransactionListLauncher();
-  const isDebtAccount = account.type === 'credit' || account.type === 'loan';
+  const isCreditAccount = account.type === 'credit';
+  const isLoanAccount = account.type === 'loan';
   const isInvestmentAccount = account.type === 'investments';
 
   const rawBalance = account.balance;
@@ -79,18 +80,16 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
     'tabular-nums',
     'transition-colors duration-300 ease-out',
     rawBalance == null && uiTextRecipes.subtle,
+    rawBalance != null && account.type === 'cash' && rawBalance > 0 && uiStatusRecipes.success.text,
     rawBalance != null &&
-      !isDebtAccount &&
-      rawBalance > 0 &&
-      !isInvestmentAccount &&
-      uiStatusRecipes.success.text,
-    rawBalance != null &&
-      !isDebtAccount &&
+      !isCreditAccount &&
+      !isLoanAccount &&
       rawBalance > 0 &&
       isInvestmentAccount &&
       uiTextRecipes.muted,
-    rawBalance != null && rawBalance < 0 && uiStatusRecipes.danger.text,
-    isDebtAccount && rawBalance != null && uiStatusRecipes.danger.text,
+    rawBalance != null && rawBalance < 0 && !isLoanAccount && uiStatusRecipes.danger.text,
+    isCreditAccount && rawBalance != null && rawBalance !== 0 && uiStatusRecipes.danger.text,
+    isLoanAccount && rawBalance != null && rawBalance !== 0 && 'text-[var(--color-brand-amber)]',
     rawBalance === 0 && uiTextRecipes.subtle
   );
 
@@ -100,24 +99,30 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
 
   return (
     <>
-      <GlassCard
+      {/* biome-ignore lint/a11y/useSemanticElements: nested import control requires a non-button shell */}
+      <div
         ref={cardRef}
-        variant="accent"
-        rounded="lg"
-        padding="none"
-        elevated={false}
-        withInnerEffects={false}
-        containerClassName={cn(cardContainerClasses, 'cursor-pointer', ...accountTriggerFocusRing)}
+        className={cn(
+          ...dashboardCategoryCard.shell,
+          cardContainerClasses,
+          ...accountTriggerFocusRing
+        )}
+        role="button"
+        tabIndex={0}
         onClick={handleOpen}
-        beforeContent={
-          <div
-            aria-hidden
-            className={cn(...dashboardCategoryCard.insetRing)}
-            style={accountHeroHoverRingStyle}
-          />
-        }
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleOpen();
+          }
+        }}
       >
-        <div className={cn('relative', 'flex', 'min-h-[6rem]', 'items-start', 'p-6')}>
+        <div
+          aria-hidden
+          className={cn(...dashboardCategoryCard.insetRing)}
+          style={accountHeroHoverRingStyle}
+        />
+        <div className={cn('relative z-10', 'flex', 'min-h-[6rem]', 'items-start', 'p-6')}>
           <div className={cn('relative', 'z-10', 'w-full', 'space-y-3')}>
             <div className={cn('flex', 'items-start', 'justify-between', 'gap-3')}>
               <div
@@ -163,7 +168,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
             </div>
           </div>
         </div>
-      </GlassCard>
+      </div>
       {isImportOpen ? (
         <ImportModal
           account={account}

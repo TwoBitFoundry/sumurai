@@ -95,7 +95,7 @@ describe('Button', () => {
     );
 
     const button = screen.getByRole('button', { name: 'Categorize' });
-    expect(button.className).toContain('bg-[var(--color-brand-sky)]');
+    expect(button.className).toContain('bg-[var(--color-brand-azure)]');
     expect(button.className).toContain('--color-effect-accent-outline-glow');
     expect(button.className).not.toContain('bg-gradient-to-r');
     expect(button.className).not.toContain('to-violet-500');

@@ -27,14 +27,17 @@ describe('design token text recipes', () => {
   });
 
   it('maps representative text roles to paired light and dark classes', () => {
-    expect(uiTextRecipes.primary).toBe('text-slate-900 dark:text-slate-100');
-    expect(uiTextRecipes.body).toBe('text-slate-700 dark:text-slate-300');
-    expect(uiTextRecipes.danger).toBe('text-red-600 dark:text-red-300');
+    expect(uiTextRecipes.primary).toBe('text-[var(--color-text-primary)]');
+    expect(generatedTokens.color['text-primary'].$value.hex).toBe('#011e5b');
+    expect(uiTextRecipes.body).toContain('var(--color-brand-navy)');
+    expect(uiTextRecipes.body).toContain('var(--color-brand-fog)');
+    expect(uiTextRecipes.danger).toBe(
+      'text-[var(--color-brand-crimson)] dark:text-[var(--color-brand-signal-red)]'
+    );
   });
 
   it('exposes placeholder text recipes aligned with muted intent', () => {
-    expect(uiPlaceholderRecipes.muted).toBe(
-      'placeholder:text-slate-400 dark:placeholder:text-slate-500'
-    );
+    expect(uiPlaceholderRecipes.muted).toContain('var(--color-brand-navy)');
+    expect(uiPlaceholderRecipes.muted).toContain('var(--color-brand-fog)');
   });
 });

@@ -4,12 +4,15 @@ import {
   border,
   budgetProgress,
   buttonCta,
+  categoryPickerChip,
+  categoryPill,
   chartFloatingGlass,
   chartTooltip,
   chrome,
   chromeBar,
   control,
   controlIconWell,
+  dangerCta,
   dashboardCategoryCard,
   effect,
   floatingChromeGlass,
@@ -19,6 +22,8 @@ import {
   insightsPanel,
   modalDrawer,
   placeholder,
+  providerNestedCard,
+  providerSelectionCard,
   semanticPlaceholderTextRecipes,
   semanticTextRecipes,
   settingsSecurityLayout,
@@ -45,16 +50,20 @@ describe('shared UI recipes', () => {
         'info',
       ])
     );
-    expect(text.primary).toBe('text-slate-900 dark:text-slate-100');
-    expect(placeholder.muted).toBe('placeholder:text-slate-400 dark:placeholder:text-slate-500');
+    expect(text.primary).toBe('text-[var(--color-text-primary)]');
+    expect(placeholder.muted).toContain('var(--color-brand-fog)');
     expect(semanticTextRecipes).toBe(text);
     expect(semanticPlaceholderTextRecipes).toBe(placeholder);
   });
 
   it('exposes the shared surface, border, effect, focus, font, and chrome recipes', () => {
     expect(surface.card).toEqual([
-      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
+      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
       'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
+    ]);
+    expect(surface.solidCard).toEqual([
+      'bg-[var(--color-surface-card)]',
+      'dark:bg-[var(--color-brand-navy)]',
     ]);
     expect(border.glass).toEqual([
       'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
@@ -64,7 +73,10 @@ describe('shared UI recipes', () => {
       'drop-shadow-[0_8px_32px_color-mix(in_srgb,var(--color-effect-glass-shadow)_22%,transparent)]',
     ]);
     expect(effect.tabBarDropShadow[0]).toContain('--color-effect-glass-shadow');
-    expect(focus.visible).toContain('focus-visible:ring-sky-400');
+    expect(focus.visible).toContain('focus-visible:ring-[var(--color-brand-glacier)]');
+    expect(font.label).toBe(
+      'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]'
+    );
     expect(font.badge).toBe(
       'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]'
     );
@@ -91,22 +103,52 @@ describe('shared UI recipes', () => {
     expect(controlIconWell.lg).toContain(control.glyph.lg);
   });
 
+  it('exposes category accent pill recipes with paired text and surfaces', () => {
+    expect(categoryPill.text).toEqual([
+      'text-[var(--category-accent)]',
+      'dark:text-[var(--category-accent-bright)]',
+    ]);
+    expect(categoryPill.chipSurface.join(' ')).toContain(
+      'color-mix(in_srgb,var(--category-accent)_22%,var(--color-surface-card))'
+    );
+    expect(categoryPill.chipSurface.join(' ')).toContain(
+      'color-mix(in_srgb,var(--category-accent-bright)_28%,transparent)'
+    );
+    expect(categoryPill.chipSurfaceSelected.join(' ')).toContain(
+      '!border-[var(--category-accent)]'
+    );
+  });
+
+  it('exposes category picker chip button recipes shared with transaction filters', () => {
+    expect(categoryPickerChip.button.join(' ')).toContain('rounded-full');
+    expect(categoryPickerChip.button.join(' ')).toContain(font.badge);
+    expect(categoryPickerChip.selected).toEqual(['ring-2', 'ring-inset']);
+  });
+
+  it('exposes brand red danger CTA recipes for destructive buttons', () => {
+    expect(dangerCta.gradient).toEqual([
+      'bg-[var(--color-brand-crimson)]',
+      'dark:bg-[var(--color-brand-signal-red)]',
+    ]);
+    expect(dangerCta.hover.join(' ')).toContain('hover:-translate-y-0.5');
+  });
+
   it('exposes flat sky CTA and progress fill recipes', () => {
-    expect(buttonCta.gradient).toEqual(['bg-[var(--color-brand-sky)]']);
+    expect(buttonCta.gradient).toEqual(['bg-[var(--color-brand-azure)]']);
     expect(buttonCta.glow).toEqual([...effect.accentOutlineGlowCta]);
     expect(budgetProgress.shell).toEqual(['overflow-visible', 'py-2', '-my-2']);
     expect(budgetProgress.track.join(' ')).toContain('overflow-visible');
     expect(budgetProgress.track.join(' ')).not.toContain('overflow-hidden');
-    expect(budgetProgress.fillWithin).toContain('bg-[var(--color-brand-sky)]');
-    expect(budgetProgress.fillWithin).not.toContain('brand-violet');
+    expect(budgetProgress.fillWithin).toContain('bg-[var(--color-brand-azure)]');
+    expect(budgetProgress.fillWithin).not.toContain('brand-navy');
     expect(budgetProgress.fillWithin).toEqual([
-      'bg-[var(--color-brand-sky)]',
+      'bg-[var(--color-brand-azure)]',
       ...effect.successGlow,
     ]);
     expect(budgetProgress.fillOver).toEqual([
       'bg-gradient-to-r',
-      'from-[var(--color-brand-rose)]',
-      'via-[var(--color-brand-rose)]',
+      'from-[var(--color-brand-crimson)]',
+      'via-[var(--color-brand-crimson)]',
       'to-[var(--color-text-danger)]',
       ...effect.dangerGlow,
     ]);
@@ -116,7 +158,7 @@ describe('shared UI recipes', () => {
   });
 
   it('exposes the success and drawer modal recipes', () => {
-    expect(successCta.gradient).toEqual(['bg-[var(--color-brand-emerald)]']);
+    expect(successCta.gradient).toEqual(['bg-[var(--color-brand-teal)]']);
     expect(modalDrawer.formRow).toContain('items-end');
     expect(modalDrawer.contentMotion).toContain('modal-drawer-content');
     expect(modalDrawer.overlayMotion).toContain('modal-drawer-overlay');
@@ -175,13 +217,25 @@ describe('shared UI recipes', () => {
     expect(alert.shell.join(' ')).toContain('dark:border-0');
     expect(alert.shell.join(' ')).not.toContain('drop-shadow-');
     expect(alert.tone.solid).toContain('backdrop-blur-md');
-    expect(alert.tone.solid).toContain('backdrop-saturate-[150%]');
+    expect(alert.tone.solid).toContain('backdrop-saturate-[135%]');
   });
 
   it('exposes auth layout recipes for mobile, tablet, and desktop tiers', () => {
+    expect(authLayout.main).toEqual(
+      expect.arrayContaining([
+        'items-start',
+        'md:items-center',
+        'justify-center',
+        'md:justify-start',
+        'max-w-[var(--spacing-content-max)]',
+        'md:px-6',
+        'lg:px-8',
+      ])
+    );
     expect(authLayout.shell).toEqual(expect.arrayContaining(['px-4', 'md:px-6', 'lg:max-w-lg']));
     expect(authLayout.brandBackdrop).toContain('items-end');
-    expect(authLayout.brandBackdrop).toContain('justify-center');
+    expect(authLayout.brandBackdropInner).toContain('md:justify-end');
+    expect(authLayout.brandBackdropInner).toContain('max-w-[var(--spacing-content-max)]');
     expect(authLayout.brandBackdropImage).toContain('h-full');
     expect(authLayout.brandBackdropImage).toContain('object-bottom');
     expect(authLayout.brandBackdropImage).not.toContain('lg:object-right-bottom');
@@ -199,18 +253,36 @@ describe('shared UI recipes', () => {
       dashboardCategoryCard.shellInteractive,
     ]) {
       expect(shell).not.toEqual(expect.arrayContaining([...effect.glassDropShadow]));
-      expect(shell).toEqual(expect.arrayContaining([...surface.card]));
+      expect(shell).toEqual(expect.arrayContaining([...surface.solidCard]));
+      expect(shell).not.toEqual(expect.arrayContaining([...surface.glassPanel]));
+      expect(shell).not.toEqual(expect.arrayContaining([...effect.glassBackdrop]));
       expect(shell.some((token) => token.startsWith('drop-shadow-['))).toBe(false);
       expect(shell.some((token) => token.startsWith('shadow-['))).toBe(false);
     }
+  });
+
+  it('themes provider picker cards from generated surface tokens', () => {
+    expect(providerSelectionCard.shell).toEqual(
+      expect.arrayContaining([
+        'border',
+        ...border.glass,
+        '!bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_40%,transparent)]',
+        ...effect.glassBackdrop,
+        ...effect.glassElevationShadow,
+      ])
+    );
+    expect(providerNestedCard.shell).toEqual(
+      expect.arrayContaining([...border.subtle, ...surface.dataRow])
+    );
+    expect(providerNestedCard.label).toBe(text.primary);
+    expect(providerNestedCard.detail).toBe(text.body);
   });
 
   it('composes chart floating glass from glass design tokens', () => {
     expect(chartFloatingGlass.shell).toEqual(
       expect.arrayContaining([
         'border',
-        'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_58%,transparent)]',
-        'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
+        ...surface.chartGlassHoverPanel,
         ...border.glass,
         ...effect.glassDropShadow,
       ])

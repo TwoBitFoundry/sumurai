@@ -117,7 +117,10 @@ describe('ToastStack', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: 'Close toast' })).toHaveClass('top-1/2');
-    expect(screen.getByRole('button', { name: 'Close toast' })).toHaveClass('-translate-y-1/2');
+    const dismissButton = screen.getByRole('button', { name: 'Close toast' });
+    expect(dismissButton).toHaveClass('top-1/2');
+    expect(dismissButton).toHaveClass('-translate-y-1/2');
+    expect(dismissButton).toHaveClass('hover:!-translate-y-1/2');
+    expect(dismissButton).toHaveClass('active:!-translate-y-1/2');
   });
 });

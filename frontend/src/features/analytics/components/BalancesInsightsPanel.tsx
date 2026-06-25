@@ -1,7 +1,6 @@
 import { ArrowDownLeft, ArrowUpRight, CircleDollarSign } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { AccountGroupIcon } from '@/components/AccountGroupIcon';
-import { Amount } from '@/components/Amount';
 import { BalancesOverviewChart } from '@/components/BalancesOverview';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { InsightCard, type InsightTileAlign } from '@/components/widgets/InsightCard';
@@ -16,7 +15,6 @@ import { cn } from '@/ui/primitives';
 import {
   text as semanticTextRecipes,
   insightsPanel as uiInsightsPanelRecipes,
-  status as uiStatusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { heroAccents } from '@/ui/tokens';
@@ -39,7 +37,6 @@ export function BalancesInsightsPanel({
   const { expanded, toggleExpanded } = useSessionCollapsible('balances-insights');
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
   const { isMobile } = useViewportBreakpoint();
-  const shellAccent = heroAccents.violet;
 
   if (lastResetKey !== resetKey) {
     setLastResetKey(resetKey);
@@ -50,33 +47,22 @@ export function BalancesInsightsPanel({
   const showYtd = incomeYtd != null && expensesYtd != null;
   const showYtdInHeader = showYtd && !isMobile;
 
+  const netAccentClassName = semanticTextRecipes.info;
+
   const netLabel = (
     <div className={cn('flex', 'items-center', 'gap-x-1.5')}>
-      <span className={cn(...heroStatCardRecipes.iconWell, shellAccent.icon)} aria-hidden>
+      <span className={cn(...heroStatCardRecipes.iconWell, netAccentClassName)} aria-hidden>
         <CircleDollarSign />
       </span>
       <div className={cn(uiTypographyRecipes.label, semanticTextRecipes.label)}>Net</div>
     </div>
   );
 
+  const netAmountClassName = cn(uiTypographyRecipes.cardTitle, netAccentClassName, 'tabular-nums');
+
   const netAmount = (
-    <span
-      data-testid="overall-net"
-      className={cn(
-        'inline-flex',
-        'min-w-0',
-        'justify-self-end',
-        'text-right',
-        'text-[1.45rem]',
-        'font-semibold',
-        'leading-none',
-        'tracking-[-0.02em]',
-        'md:text-[1.65rem]',
-        'lg:text-2xl',
-        'tabular-nums'
-      )}
-    >
-      <Amount value={overall.net} className={cn('text-violet-500', 'dark:text-violet-300')} />
+    <span data-testid="overall-net" className={netAmountClassName}>
+      {fmtUSD(overall.net)}
     </span>
   );
 
@@ -95,7 +81,10 @@ export function BalancesInsightsPanel({
       accent: ACCOUNT_GROUP_ACCENT.cash,
       icon: <AccountGroupIcon group="cash" />,
       value: (
-        <span data-testid="overall-cash" className={cn(uiStatusRecipes.success.text)}>
+        <span
+          data-testid="overall-cash"
+          className={cn(heroAccents[ACCOUNT_GROUP_ACCENT.cash].icon, 'tabular-nums')}
+        >
           {fmtUSD(overall.cash)}
         </span>
       ),
@@ -108,7 +97,10 @@ export function BalancesInsightsPanel({
       accent: ACCOUNT_GROUP_ACCENT.investments,
       icon: <AccountGroupIcon group="investments" />,
       value: (
-        <span data-testid="overall-investments" className={cn(uiStatusRecipes.info.text)}>
+        <span
+          data-testid="overall-investments"
+          className={cn(heroAccents[ACCOUNT_GROUP_ACCENT.investments].icon, 'tabular-nums')}
+        >
           {fmtUSD(overall.investments)}
         </span>
       ),
@@ -121,7 +113,10 @@ export function BalancesInsightsPanel({
       accent: ACCOUNT_GROUP_ACCENT.credit,
       icon: <AccountGroupIcon group="credit" />,
       value: (
-        <span data-testid="overall-credit" className={cn(uiStatusRecipes.danger.text)}>
+        <span
+          data-testid="overall-credit"
+          className={cn(heroAccents[ACCOUNT_GROUP_ACCENT.credit].icon, 'tabular-nums')}
+        >
           {fmtUSD(overall.credit)}
         </span>
       ),
@@ -134,7 +129,10 @@ export function BalancesInsightsPanel({
       accent: ACCOUNT_GROUP_ACCENT.loans,
       icon: <AccountGroupIcon group="loans" />,
       value: (
-        <span data-testid="overall-loan" className={cn(uiStatusRecipes.warning.text)}>
+        <span
+          data-testid="overall-loan"
+          className={cn(heroAccents[ACCOUNT_GROUP_ACCENT.loans].icon, 'tabular-nums')}
+        >
           {fmtUSD(overall.loan)}
         </span>
       ),
@@ -144,7 +142,7 @@ export function BalancesInsightsPanel({
   ];
 
   return (
-    <InsightsPanelShell testId="balances-insights-shell" accent="violet">
+    <InsightsPanelShell testId="balances-insights-shell" accent="ocean">
       <InsightsExpandablePanel
         testId="balances-insights-panel"
         bodyId="balances-insights-panel-body"
@@ -168,9 +166,24 @@ export function BalancesInsightsPanel({
                   data-testid="balances-ytd-row"
                   className={cn('flex', 'w-full', 'items-start', 'justify-between', 'gap-x-4')}
                 >
-                  <div className={cn('flex', 'shrink-0', 'flex-col', 'items-start', 'gap-y-1.5')}>
-                    {netLabel}
-                    {netAmount}
+                  <div
+                    className={cn(
+                      'inline-grid',
+                      'shrink-0',
+                      'grid-cols-[1fr_auto]',
+                      'gap-x-1',
+                      'gap-y-1.5'
+                    )}
+                  >
+                    <div className={cn('col-start-1', 'flex', 'items-center', 'gap-x-1.5')}>
+                      {netLabel}
+                    </div>
+                    <div
+                      data-testid="balances-ytd-net"
+                      className={cn('col-start-1', 'col-end-3', 'row-start-2')}
+                    >
+                      {netAmount}
+                    </div>
                   </div>
                   <div className={cn('flex', 'shrink-0', 'items-start', 'gap-x-4', 'md:gap-x-6')}>
                     <div
@@ -192,7 +205,7 @@ export function BalancesInsightsPanel({
                         )}
                       >
                         <span
-                          className={cn(...heroStatCardRecipes.iconWell, heroAccents.emerald.icon)}
+                          className={cn(...heroStatCardRecipes.iconWell, heroAccents.teal.icon)}
                           aria-hidden
                         >
                           <ArrowUpRight />
@@ -218,7 +231,7 @@ export function BalancesInsightsPanel({
                           className={cn(
                             'justify-self-end',
                             uiTypographyRecipes.cardTitle,
-                            uiStatusRecipes.success.text,
+                            heroAccents.teal.icon,
                             'tabular-nums'
                           )}
                         >
@@ -250,7 +263,7 @@ export function BalancesInsightsPanel({
                         )}
                       >
                         <span
-                          className={cn(...heroStatCardRecipes.iconWell, heroAccents.rose.icon)}
+                          className={cn(...heroStatCardRecipes.iconWell, heroAccents.crimson.icon)}
                           aria-hidden
                         >
                           <ArrowDownLeft />
@@ -276,7 +289,7 @@ export function BalancesInsightsPanel({
                           className={cn(
                             'justify-self-end',
                             uiTypographyRecipes.cardTitle,
-                            uiStatusRecipes.danger.text,
+                            heroAccents.crimson.icon,
                             'tabular-nums'
                           )}
                         >
@@ -294,7 +307,7 @@ export function BalancesInsightsPanel({
               ) : (
                 <div
                   className={cn(
-                    'grid',
+                    'inline-grid',
                     'w-full',
                     'min-w-0',
                     'grid-cols-[auto_minmax(0,1fr)]',
@@ -304,7 +317,12 @@ export function BalancesInsightsPanel({
                   )}
                 >
                   {netLabel}
-                  {netAmount}
+                  <span
+                    data-testid="overall-net"
+                    className={cn(netAmountClassName, 'justify-self-end', 'text-right')}
+                  >
+                    {fmtUSD(overall.net)}
+                  </span>
                 </div>
               )}
             </div>
@@ -323,7 +341,7 @@ export function BalancesInsightsPanel({
                 >
                   <span
                     data-testid="balances-ytd-income-value"
-                    className={cn(uiStatusRecipes.success.text, 'tabular-nums')}
+                    className={cn(heroAccents.teal.icon, 'tabular-nums')}
                   >
                     {fmtUSD(incomeYtd)}
                   </span>
@@ -333,7 +351,7 @@ export function BalancesInsightsPanel({
                 </span>
               }
               question="How much income have you received year to date?"
-              accent="emerald"
+              accent="teal"
               flipped={!!flipped['income-ytd']}
               onToggle={() => toggle('income-ytd')}
               outlined={false}
@@ -350,7 +368,7 @@ export function BalancesInsightsPanel({
                 >
                   <span
                     data-testid="balances-ytd-expenses-value"
-                    className={cn(uiStatusRecipes.danger.text, 'tabular-nums')}
+                    className={cn(heroAccents.crimson.icon, 'tabular-nums')}
                   >
                     {fmtUSD(expensesYtd)}
                   </span>
@@ -360,7 +378,7 @@ export function BalancesInsightsPanel({
                 </span>
               }
               question="How much have you spent year to date?"
-              accent="rose"
+              accent="crimson"
               flipped={!!flipped['expenses-ytd']}
               onToggle={() => toggle('expenses-ytd')}
               outlined={false}

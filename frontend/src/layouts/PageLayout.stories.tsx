@@ -24,7 +24,9 @@ export const Default: Story = {
       </Button>
     ),
     children: (
-      <div className={`border p-6 dark:border-slate-700 ${uiRadiusRecipes.standard}`}>
+      <div
+        className={`border p-6 dark:border-[color:color-mix(in_srgb,var(--color-brand-navy)_45%,transparent)] ${uiRadiusRecipes.standard}`}
+      >
         Primary surface content
       </div>
     ),

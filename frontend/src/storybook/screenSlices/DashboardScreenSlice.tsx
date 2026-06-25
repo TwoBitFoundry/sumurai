@@ -29,7 +29,7 @@ import type { DateRangeKey } from '@/utils/dateRanges';
 import { fmtUSD } from '@/utils/format';
 
 const dashboardCategoryHoverRingStyle = {
-  boxShadow: `inset 0 0 0 2px ${heroAccents.violet.ringHex}`,
+  boxShadow: `inset 0 0 0 2px ${heroAccents.ocean.ringHex}`,
 } as CSSProperties;
 
 const dashboardLoadingCard = [

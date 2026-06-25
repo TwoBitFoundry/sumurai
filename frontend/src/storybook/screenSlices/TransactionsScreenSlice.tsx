@@ -126,7 +126,7 @@ export function TransactionsScreenSlice(props: {
               />
               <HeroStatCard
                 index={2}
-                accent="emerald"
+                accent="teal"
                 title="Average size"
                 icon={<TrendingUp />}
                 value={fmtUSD(stats.avgTransaction)}
@@ -134,7 +134,7 @@ export function TransactionsScreenSlice(props: {
               />
               <HeroStatCard
                 index={3}
-                accent="emerald"
+                accent="teal"
                 title="Largest size"
                 icon={<AlertTriangle />}
                 value={
@@ -180,10 +180,7 @@ export function TransactionsScreenSlice(props: {
                 uiTextRecipes.primary
               )}
             >
-              <span
-                className={cn(...controlIconWell.lg, heroAccents.emerald.icon)}
-                aria-hidden="true"
-              >
+              <span className={cn(...controlIconWell.lg, heroAccents.teal.icon)} aria-hidden="true">
                 <ReceiptText />
               </span>
               Transactions

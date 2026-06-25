@@ -5,6 +5,7 @@ import { Button, ControlHoverLabel, cn, Modal } from '@/ui/primitives';
 import {
   controlIconWell,
   inlineInfoTriggerButton,
+  providerNestedCard,
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
   status as uiStatusRecipes,
@@ -31,8 +32,12 @@ export const ProviderSelectionSection = ({ section, isMobile }: ProviderSelectio
     <div className={cn('space-y-3')}>
       {privacyInfoDetails.map((detail) => (
         <div key={detail.label} className={cn('space-y-1')}>
-          <div className={cn(uiTypographyRecipes.label, uiTextRecipes.primary)}>{detail.label}</div>
-          <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.subtle)}>{detail.value}</p>
+          <div className={cn(uiTypographyRecipes.label, providerNestedCard.label)}>
+            {detail.label}
+          </div>
+          <p className={cn(uiTypographyRecipes.caption, providerNestedCard.detail)}>
+            {detail.value}
+          </p>
         </div>
       ))}
     </div>
@@ -40,15 +45,13 @@ export const ProviderSelectionSection = ({ section, isMobile }: ProviderSelectio
 
   return (
     <div
+      data-testid="provider-feature-row"
       className={cn(
         'grid',
         'grid-cols-[1.5rem_4.5rem_minmax(0,1fr)]',
         'items-center',
         'gap-x-2',
-        'rounded-2xl',
-        'border',
-        ...uiBorderRecipes.subtle,
-        ...uiSurfaceRecipes.insetWell,
+        ...providerNestedCard.shell,
         'p-2.5',
         'md:p-3'
       )}
@@ -63,7 +66,7 @@ export const ProviderSelectionSection = ({ section, isMobile }: ProviderSelectio
           'w-full',
           'whitespace-nowrap',
           uiTypographyRecipes.bodyStrong,
-          uiTextRecipes.primary
+          providerNestedCard.label
         )}
       >
         {section.label}
@@ -78,7 +81,7 @@ export const ProviderSelectionSection = ({ section, isMobile }: ProviderSelectio
           'justify-between',
           'gap-1.5',
           uiTypographyRecipes.bodyStrong,
-          uiTextRecipes.primary
+          providerNestedCard.label
         )}
       >
         <span className={cn('flex', 'items-center', 'gap-1')}>

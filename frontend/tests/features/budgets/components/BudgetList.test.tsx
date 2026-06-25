@@ -51,15 +51,16 @@ describe('BudgetList', () => {
     expect(list).not.toHaveClass('2xl:grid-cols-4');
     expect(card).toHaveClass(uiRadiusRecipes.standard);
     const cardShell = container.querySelector('li > div');
-    expect(cardShell?.className).toContain(
-      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]'
-    );
+    expect(cardShell?.className).toContain('bg-[var(--color-surface-card)]');
+    expect(cardShell?.className).toContain('dark:bg-[var(--color-brand-navy)]');
+    expect(cardShell?.className).not.toContain('bg-transparent');
+    expect(cardShell?.className).not.toContain('backdrop-blur-md');
     expect(cardShell?.className).not.toMatch(/drop-shadow-\[/);
     expect(cardShell?.className).toContain('border-[var(--color-border-subtle)]');
     const insetRing = container.querySelector('.hero-stat-card__inset-ring');
     expect(insetRing).toHaveClass('group-hover:opacity-100');
     expect((insetRing as HTMLElement).style.boxShadow).toBe(
-      `inset 0 0 0 2px ${heroAccents.sky.ringHex}`
+      `inset 0 0 0 2px ${heroAccents.azure.ringHex}`
     );
   });
 

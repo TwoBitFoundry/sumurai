@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../ui/generated/theme.css";
+@config "../../tailwind.config.js";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -30,6 +31,30 @@
 
   #app-shell {
     min-height: 100dvh;
+  }
+
+  .gradient-shell-mesh {
+    background-color: var(--color-brand-fog);
+    background-image:
+      radial-gradient(circle at 8% 10%, color-mix(in srgb, var(--color-brand-mint) 52%, transparent) 0%, transparent 44%),
+      radial-gradient(circle at 48% 4%, color-mix(in srgb, var(--color-brand-glacier) 70%, transparent) 0%, transparent 42%),
+      radial-gradient(circle at 91% 7%, color-mix(in srgb, var(--color-brand-ocean) 36%, transparent) 0%, transparent 40%),
+      radial-gradient(circle at 96% 58%, color-mix(in srgb, var(--color-brand-mint) 40%, transparent) 0%, transparent 46%),
+      radial-gradient(circle at 70% 94%, color-mix(in srgb, var(--color-brand-glacier) 58%, transparent) 0%, transparent 45%),
+      radial-gradient(circle at 20% 86%, color-mix(in srgb, var(--color-brand-ocean) 28%, transparent) 0%, transparent 48%);
+    background-repeat: no-repeat;
+  }
+
+  :is(.dark, .dark *) .gradient-shell-mesh {
+    background-color: var(--color-brand-navy);
+    background-image:
+      radial-gradient(circle at 10% 8%, color-mix(in srgb, var(--color-brand-azure) 42%, transparent) 0%, transparent 42%),
+      radial-gradient(circle at 48% 3%, color-mix(in srgb, var(--color-brand-glacier) 52%, transparent) 0%, transparent 40%),
+      radial-gradient(circle at 82% 10%, color-mix(in srgb, var(--color-brand-teal) 54%, transparent) 0%, transparent 44%),
+      radial-gradient(circle at 96% 62%, color-mix(in srgb, var(--color-brand-azure) 64%, transparent) 0%, transparent 48%),
+      radial-gradient(circle at 62% 96%, color-mix(in srgb, var(--color-brand-teal) 46%, transparent) 0%, transparent 44%),
+      radial-gradient(circle at 14% 86%, color-mix(in srgb, var(--color-brand-glacier) 44%, transparent) 0%, transparent 48%);
+    background-repeat: no-repeat;
   }
 
   button:not(:disabled),
@@ -100,15 +125,6 @@
     max-height: min(48rem, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem)) !important;
     transform: translate(-50%, -50%) !important;
     overflow: hidden !important;
-  }
-}
-
-@keyframes rotateAura {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
   }
 }
 

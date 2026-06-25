@@ -9,6 +9,7 @@ import {
   getHeroAccentTheme,
   getThemeColors,
   heroAccents,
+  rotatableCategoryAccents,
   status,
 } from '@/ui/tokens';
 
@@ -17,16 +18,20 @@ describe('ui tokens runtime map', () => {
     expect(chart.series.light).toHaveLength(6);
     expect(chart.series.dark).toHaveLength(6);
     expect(chart.series.light).toEqual(
-      expect.arrayContaining(['#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#059669'])
+      expect.arrayContaining(['#0d8acc', '#00c2a2', '#f59e0b', '#b82812', '#011e5b', '#20428c'])
     );
     expect(chart.series.dark).toEqual(
-      expect.arrayContaining(['#38bdf8', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#10b981'])
+      expect.arrayContaining(['#3cbbfe', '#81fed2', '#fbbf24', '#f53519', '#20428c', '#b1e4ff'])
     );
     expect(chart.tooltip.light).toEqual({
       background: '#ffffff',
-      text: '#0f172a',
+      text: '#011e5b',
       border: '#e2e8f0',
     });
+    expect(chart.axis.light).toBe('#011e5b');
+    expect(chart.axis.dark).toBe('#ebeff5');
+    expect(chart.grid.light).toBe('#011e5b47');
+    expect(chart.grid.dark).toBe('#ebeff56b');
     expect(chart.tooltip.dark).toEqual({
       background: '#1e293b',
       text: '#f8fafc',
@@ -35,32 +40,31 @@ describe('ui tokens runtime map', () => {
     expect(finance.light.cash).toBeDefined();
     expect(finance.dark.netWorth).toBeDefined();
     expect(status.light).toEqual({
-      successIcon: '#10b981',
-      dangerIcon: '#ef4444',
+      successIcon: '#00c2a2',
+      dangerIcon: '#b82812',
     });
     expect(status.dark).toEqual({
-      successIcon: '#34d399',
-      dangerIcon: '#f87171',
+      successIcon: '#81fed2',
+      dangerIcon: '#f53519',
     });
   });
 
   it('keeps the category and hero maps stable', () => {
-    expect(categoryAccents).toHaveLength(10);
+    expect(categoryAccents).toHaveLength(15);
     expect(categoryAccents[0]).toMatchObject({ key: 'sky', ringHex: '#38bdf8' });
     expect(accountTypeDot).toEqual({
-      cash: '#38bdf8',
-      credit: '#f59e0b',
-      investments: '#94a3b8',
-      loan: '#a78bfa',
+      cash: '#00c2a2',
+      credit: '#b82812',
+      investments: '#0d8acc',
+      loan: '#f59e0b',
     });
-    expect(heroAccents.emerald).toMatchObject({
-      gradFrom: '#34d399',
-      gradVia: '#10b981',
-      defaultDot: 'bg-emerald-500/90 dark:bg-emerald-300/80',
+    expect(heroAccents.teal).toMatchObject({
+      gradFrom: '#81fed2',
+      gradVia: '#00c2a2',
+      defaultDot:
+        'bg-[color:color-mix(in_srgb,var(--color-brand-teal)_90%,transparent)] dark:bg-[color:color-mix(in_srgb,var(--color-brand-mint)_80%,transparent)]',
     });
-    expect(featurePalettes.welcome.sky.gradient).toBe(
-      'from-sky-400/55 via-sky-500/25 to-sky-500/5'
-    );
+    expect(featurePalettes.welcome.azure.gradient).toContain('--color-brand-glacier');
   });
 
   it('keeps the helper functions aligned with the legacy registry', () => {
@@ -82,8 +86,8 @@ describe('ui tokens runtime map', () => {
         netWorth: finance.light.netWorth,
       },
       effect: {
-        successGlow: '#10b981',
-        dangerGlow: '#f43f5e',
+        successGlow: '#00c2a2',
+        dangerGlow: '#b82812',
       },
     });
     expect(getThemeColors('dark')).toEqual({
@@ -104,13 +108,15 @@ describe('ui tokens runtime map', () => {
         netWorth: finance.dark.netWorth,
       },
       effect: {
-        successGlow: '#34d399',
-        dangerGlow: '#f87171',
+        successGlow: '#81fed2',
+        dangerGlow: '#f53519',
       },
     });
     expect(getCategoryAccent('Groceries')).toEqual(getCategoryAccent('Groceries'));
-    expect(getCategoryAccentByIndex(0)).toEqual(categoryAccents[0]);
-    expect(getCategoryAccentByIndex(categoryAccents.length)).toEqual(categoryAccents[0]);
-    expect(getHeroAccentTheme('sky')).toEqual(heroAccents.sky);
+    expect(getCategoryAccentByIndex(0)).toEqual(rotatableCategoryAccents[0]);
+    expect(getCategoryAccentByIndex(rotatableCategoryAccents.length)).toEqual(
+      rotatableCategoryAccents[0]
+    );
+    expect(getHeroAccentTheme('azure')).toEqual(heroAccents.azure);
   });
 });

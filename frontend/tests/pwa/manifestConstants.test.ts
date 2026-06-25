@@ -12,7 +12,7 @@ describe('manifestConstants', () => {
   });
 
   it('uses DESIGN primary for theme chrome', () => {
-    expect(PWA_THEME_COLOR).toBe('#0369a1');
+    expect(PWA_THEME_COLOR).toBe('#20428c');
   });
 
   it('scopes SPA root for trailing-slash export', () => {

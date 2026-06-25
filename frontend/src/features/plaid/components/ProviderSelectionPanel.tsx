@@ -76,7 +76,6 @@ function ProviderSelectionHero({
     <section className={cn(...pageLayoutRecipes.shell)}>
       <div className={cn(pageLayoutRecipes.shellSurface)}>
         <div className={cn(pageLayoutRecipes.innerRing)} />
-        <div className={cn(pageLayoutRecipes.innerGradient)} />
       </div>
 
       <div className={cn('relative', 'z-10', 'flex', 'flex-col', 'gap-5')}>

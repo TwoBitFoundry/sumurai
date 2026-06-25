@@ -162,7 +162,7 @@ export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
               sectionId="budgets"
               title="Budgets"
               titleIcon={Target}
-              titleIconClassName={heroAccents.sky.icon}
+              titleIconClassName={heroAccents.azure.icon}
               testId="budgets-section"
               expandLabel="Show budgets"
               collapseLabel="Hide budgets"

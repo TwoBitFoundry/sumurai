@@ -52,13 +52,24 @@ describe('AccountRow', () => {
     expect(screen.getByText('tx').parentElement).toHaveTextContent('0tx');
   });
 
-  it('uses the violet hero inset ring on hover', () => {
+  it('uses a solid account shell without glass backdrop effects', () => {
+    const { container } = renderAccountRow(12);
+
+    const card = container.firstElementChild;
+    expect(card?.className).toContain('bg-[var(--color-surface-card)]');
+    expect(card?.className).toContain('dark:bg-[var(--color-brand-navy)]');
+    expect(card?.className).not.toContain('bg-transparent');
+    expect(card?.className).not.toContain('backdrop-blur-md');
+    expect(card?.className).not.toContain('backdrop-saturate');
+  });
+
+  it('uses the ocean hero inset ring on hover', () => {
     const { container } = renderAccountRow(12);
 
     const insetRing = container.querySelector('.hero-stat-card__inset-ring');
     expect(insetRing).toHaveClass('group-hover:opacity-100');
     expect((insetRing as HTMLElement).style.boxShadow).toBe(
-      `inset 0 0 0 2px ${heroAccents.violet.ringHex}`
+      `inset 0 0 0 2px ${heroAccents.ocean.ringHex}`
     );
   });
 
@@ -83,5 +94,49 @@ describe('AccountRow', () => {
     await user.click(screen.getByRole('button', { name: 'Import transactions' }));
 
     expect(openTransactionList).not.toHaveBeenCalled();
+  });
+
+  it('uses brand amber for loan balances', () => {
+    render(
+      <ThemeTestProvider>
+        <AccountRow
+          account={{
+            id: 'loan-1',
+            name: 'Mortgage',
+            mask: '5001',
+            type: 'loan',
+            balance: -18420.77,
+            transactions: 13,
+          }}
+          isOnline
+        />
+      </ThemeTestProvider>
+    );
+
+    const balance = screen.getByText('-$18,420.77');
+    expect(balance.className).toContain('text-[var(--color-brand-amber)]');
+    expect(balance.className).not.toContain('brand-crimson');
+  });
+
+  it('uses brand red for credit balances', () => {
+    render(
+      <ThemeTestProvider>
+        <AccountRow
+          account={{
+            id: 'credit-1',
+            name: 'Rewards Card',
+            mask: '4242',
+            type: 'credit',
+            balance: -1200,
+            transactions: 8,
+          }}
+          isOnline
+        />
+      </ThemeTestProvider>
+    );
+
+    const balance = screen.getByText('-$1,200.00');
+    expect(balance.className).toContain('text-[var(--color-brand-crimson)]');
+    expect(balance.className).not.toContain('brand-amber');
   });
 });

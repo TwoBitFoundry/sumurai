@@ -30,7 +30,9 @@ export const WithAction: Story = {
 export const Dark: Story = {
   decorators: [
     (StoryEl) => (
-      <div className={`dark min-h-[220px] bg-slate-950 p-10 ${uiRadiusRecipes.standard}`}>
+      <div
+        className={`dark min-h-[220px] bg-[var(--color-brand-navy)] p-10 ${uiRadiusRecipes.standard}`}
+      >
         <StoryEl />
       </div>
     ),

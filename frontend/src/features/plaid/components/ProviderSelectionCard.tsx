@@ -8,6 +8,7 @@ import { Button, cn, GlassCard } from '@/ui/primitives';
 import {
   chromeBar,
   dashboardCategoryCard,
+  providerSelectionCard,
   border as uiBorderRecipes,
   status as uiStatusRecipes,
   surface as uiSurfaceRecipes,
@@ -26,7 +27,7 @@ import { ProviderSelectionSection } from './ProviderSelectionSection';
 const providerBadgeAccentIndex = new Map<string, number>([['provider-badge', 0]]);
 
 const providerCardHoverRingStyle = {
-  boxShadow: `inset 0 0 0 2px ${heroAccents.sky.ringHex}`,
+  boxShadow: `inset 0 0 0 2px ${heroAccents.azure.ringHex}`,
 } as CSSProperties;
 
 const privacyLinkClasses = cn(
@@ -36,12 +37,11 @@ const privacyLinkClasses = cn(
   'underline',
   'underline-offset-4',
   uiTypographyRecipes.caption,
-  uiTextRecipes.primary,
+  uiTextRecipes.body,
   'self-center',
   'transition-all',
   'duration-200',
-  'hover:text-[var(--color-text-primary)]',
-  'dark:hover:text-[var(--color-text-primary)]'
+  'hover:text-[var(--color-text-primary)]'
 );
 
 const privacyLinkExternalIcon = cn('h-3.5', 'w-3.5', 'shrink-0');
@@ -118,12 +118,8 @@ export const ProviderSelectionCard = ({
         'overflow-hidden',
         'h-full',
         'w-full',
-        'p-3',
-        'md:p-6',
-        'transition-all',
-        'duration-200',
-        ...uiBorderRecipes.glass,
-        ...uiSurfaceRecipes.card
+        ...providerSelectionCard.shell,
+        ...providerSelectionCard.padding
       )}
     >
       <div className={cn('flex', 'h-full', 'flex-col', 'gap-5')}>

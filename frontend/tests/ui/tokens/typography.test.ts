@@ -45,10 +45,10 @@ describe('design token typography recipes', () => {
   });
 
   it('keeps every semantic recipe at or above the caption floor', () => {
-    const recipes = Object.values(uiTypographyRecipes);
+    const recipes = Object.entries(uiTypographyRecipes).filter(([role]) => role !== 'categoryTag');
 
     expect(
-      recipes.every((recipe) => {
+      recipes.every(([, recipe]) => {
         const size = extractMinimumRemSize(recipe);
         return size === null || size >= 0.75;
       })

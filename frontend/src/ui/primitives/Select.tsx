@@ -1,6 +1,11 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
-import { control, radius as uiRadiusRecipes } from '@/ui/recipes';
+import {
+  brandNeutral,
+  control,
+  text as semanticTextRecipes,
+  radius as uiRadiusRecipes,
+} from '@/ui/recipes';
 import { cn } from './utils';
 
 export const selectControl = {
@@ -13,33 +18,34 @@ export const selectControl = {
     'disabled:cursor-not-allowed disabled:opacity-60',
   ],
   default: [
-    'bg-white text-slate-900 dark:text-slate-100',
+    `bg-white ${semanticTextRecipes.primary}`,
     'border-black/10',
     'focus:ring-2 focus:ring-sky-400',
-    'focus:ring-offset-2 focus:ring-offset-white',
-    'dark:bg-[#111a2f]',
+    'focus:ring-offset-2 focus:ring-offset-[var(--color-brand-fog)]',
+    'dark:bg-[var(--color-brand-navy)]',
     'dark:border-white/12',
     'dark:focus:ring-sky-400/80',
-    'dark:focus:ring-offset-[#0f172a]',
+    'dark:focus:ring-offset-[var(--color-brand-navy)]',
   ],
   invalid: [
-    'bg-white text-slate-900 dark:text-slate-100',
+    `bg-white ${semanticTextRecipes.primary}`,
     'border-red-300',
     'focus:ring-2 focus:ring-red-400',
-    'focus:ring-offset-2 focus:ring-offset-white',
-    'dark:bg-[#111a2f]',
+    'focus:ring-offset-2 focus:ring-offset-[var(--color-brand-fog)]',
+    'dark:bg-[var(--color-brand-navy)]',
     'dark:border-red-600/80',
     'dark:focus:ring-red-400/75',
-    'dark:focus:ring-offset-[#0f172a]',
+    'dark:focus:ring-offset-[var(--color-brand-navy)]',
   ],
   glass: [
-    'bg-white/80 text-slate-700 dark:text-slate-300',
+    `bg-white/80 ${brandNeutral.textBody}`,
     'border-white/60',
     'focus:ring-2 focus:ring-sky-400/80',
-    'focus:ring-offset-2 focus:ring-offset-white',
-    'dark:bg-[#111a2f]/80 dark:text-slate-100',
+    'focus:ring-offset-2 focus:ring-offset-[var(--color-brand-fog)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_80%,transparent)]',
+    brandNeutral.controlTextDark,
     'dark:border-white/12',
-    'dark:focus:ring-offset-[#0f172a]',
+    'dark:focus:ring-offset-[var(--color-brand-navy)]',
   ],
 } as const;
 

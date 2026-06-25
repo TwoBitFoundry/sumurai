@@ -4,12 +4,14 @@ import { surface as uiSurfaceRecipes } from '@/ui/recipes';
 const expectedRoles = [
   'appShell',
   'glassPanel',
+  'chartGlassHoverPanel',
   'solidPanel',
   'card',
   'elevatedCard',
   'hoverRow',
   'overlay',
   'insetWell',
+  'dataRow',
   'mutedChip',
 ];
 
@@ -53,11 +55,15 @@ describe('design token surface recipes', () => {
       'dark:bg-[var(--color-surface-app-shell)]',
     ]);
     expect(uiSurfaceRecipes.glassPanel).toEqual([
-      'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)]',
-      'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
+      'bg-[color:color-mix(in_srgb,var(--color-brand-fog)_35%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_35%,transparent)]',
+    ]);
+    expect(uiSurfaceRecipes.chartGlassHoverPanel).toEqual([
+      'bg-[color:color-mix(in_srgb,var(--color-brand-fog)_35%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_35%,transparent)]',
     ]);
     expect(uiSurfaceRecipes.card).toEqual([
-      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
+      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
       'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
     ]);
     expect(uiSurfaceRecipes.overlay).toEqual([
@@ -68,6 +74,7 @@ describe('design token surface recipes', () => {
       'bg-[var(--color-surface-muted-chip)]',
       'dark:bg-[var(--color-surface-muted-chip)]',
     ]);
+    expect(uiSurfaceRecipes.dataRow).toEqual(['bg-[var(--color-surface-data-row)]']);
     expect(generatedTokens.color['surface-card'].$value.hex).toBeDefined();
   });
 });

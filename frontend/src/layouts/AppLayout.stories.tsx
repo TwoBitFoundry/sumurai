@@ -37,7 +37,7 @@ export const Dashboard: Story = {
     isOnline: true,
     children: (
       <div
-        className={`mx-auto max-w-5xl ${uiRadiusRecipes.standard} border border-slate-200 bg-white/60 p-8 dark:border-slate-700 dark:bg-slate-900/40`}
+        className={`mx-auto max-w-5xl ${uiRadiusRecipes.standard} border border-[color:color-mix(in_srgb,var(--color-brand-fog)_72%,var(--color-brand-navy))] bg-white/60 p-8 dark:border-[color:color-mix(in_srgb,var(--color-brand-navy)_45%,transparent)] dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_40%,transparent)]`}
       >
         Dashboard body placeholder
       </div>
@@ -59,7 +59,7 @@ export const TransactionsTab: Story = {
     isOnline: true,
     children: (
       <div
-        className={`mx-auto max-w-5xl ${uiRadiusRecipes.standard} border border-slate-200 bg-white/60 p-8 dark:border-slate-700 dark:bg-slate-900/40`}
+        className={`mx-auto max-w-5xl ${uiRadiusRecipes.standard} border border-[color:color-mix(in_srgb,var(--color-brand-fog)_72%,var(--color-brand-navy))] bg-white/60 p-8 dark:border-[color:color-mix(in_srgb,var(--color-brand-navy)_45%,transparent)] dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_40%,transparent)]`}
       >
         Transactions body placeholder
       </div>

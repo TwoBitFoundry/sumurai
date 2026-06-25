@@ -1,20 +1,24 @@
-import React from 'react';
 import type { CurveProps } from 'recharts';
-import { Curve } from 'recharts';
 import { netWorthLineChart } from '@/ui/recipes';
+import { ChartGlowLineCurve, ChartGlowLineFilter } from './ChartGlowLineCurve';
 
 export function netWorthLineGlowFilterId(instanceId: string) {
   return `${instanceId}-net-worth-curve-glow`;
 }
 
+const netWorthGlowLineStyle = {
+  blurStdDeviation: netWorthLineChart.curveGlow.blurStdDeviation,
+  glowStrokeWidth: netWorthLineChart.curveGlow.strokeWidth,
+  glowOpacity: netWorthLineChart.curveGlow.opacity,
+  lineStrokeWidth: netWorthLineChart.lineStrokeWidth,
+} as const;
+
 export function NetWorthLineGlowFilter({ filterId }: { filterId: string }) {
   return (
-    <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur
-        in="SourceGraphic"
-        stdDeviation={netWorthLineChart.curveGlow.blurStdDeviation}
-      />
-    </filter>
+    <ChartGlowLineFilter
+      filterId={filterId}
+      blurStdDeviation={netWorthLineChart.curveGlow.blurStdDeviation}
+    />
   );
 }
 
@@ -27,24 +31,12 @@ export function NetWorthGlowLineCurve({
   stroke: string;
   filterId: string;
 }) {
-  const { strokeDasharray: _strokeDasharray, ...curveWithoutDash } = curveProps;
-
   return (
-    <g>
-      <Curve
-        {...curveWithoutDash}
-        stroke={stroke}
-        strokeWidth={netWorthLineChart.curveGlow.strokeWidth}
-        fill="none"
-        filter={`url(#${filterId})`}
-        opacity={netWorthLineChart.curveGlow.opacity}
-      />
-      <Curve
-        {...curveWithoutDash}
-        stroke={stroke}
-        strokeWidth={netWorthLineChart.lineStrokeWidth}
-        fill="none"
-      />
-    </g>
+    <ChartGlowLineCurve
+      curveProps={curveProps}
+      stroke={stroke}
+      filterId={filterId}
+      style={netWorthGlowLineStyle}
+    />
   );
 }

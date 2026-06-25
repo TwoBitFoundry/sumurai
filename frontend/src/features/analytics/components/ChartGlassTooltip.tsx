@@ -83,6 +83,35 @@ type ChartGlassTooltipProps = TooltipContentProps<number, string> & {
   ) => string | undefined;
 };
 
+function dedupeTooltipPayloadByDataKey(
+  payload: NonNullable<TooltipContentProps<number, string>['payload']>
+): Array<NonNullable<TooltipContentProps<number, string>['payload']>[number]> {
+  const rows: Array<NonNullable<TooltipContentProps<number, string>['payload']>[number]> = [];
+
+  for (const entry of payload) {
+    const dataKey = entry.dataKey != null ? String(entry.dataKey) : '';
+    if (!dataKey) {
+      rows.push(entry);
+      continue;
+    }
+
+    const existingIndex = rows.findIndex((row) => String(row.dataKey ?? '') === dataKey);
+    if (existingIndex === -1) {
+      rows.push(entry);
+      continue;
+    }
+
+    const existing = rows[existingIndex];
+    const existingHasName = existing.name != null && String(existing.name) !== '';
+    const entryHasName = entry.name != null && String(entry.name) !== '';
+    if (!existingHasName && entryHasName) {
+      rows[existingIndex] = entry;
+    }
+  }
+
+  return rows;
+}
+
 export function ChartGlassTooltip({
   active,
   payload,
@@ -103,6 +132,7 @@ export function ChartGlassTooltip({
       ? label
       : null;
   const labelUsesCustomContent = isValidElement(formattedLabel);
+  const tooltipRows = dedupeTooltipPayloadByDataKey(payload);
 
   return (
     <ChartTooltipShell>
@@ -120,7 +150,7 @@ export function ChartGlassTooltip({
           {formattedLabel}
         </p>
       ) : null}
-      {payload.map((entry, index) => {
+      {tooltipRows.map((entry, index) => {
         const rawValue = entry.value;
         const numericValue =
           typeof rawValue === 'number' ? rawValue : Number(rawValue ?? Number.NaN);

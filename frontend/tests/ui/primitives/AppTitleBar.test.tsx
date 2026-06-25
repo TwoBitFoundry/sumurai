@@ -51,8 +51,8 @@ describe('AppTitleBar', () => {
 
     const initialState = {
       headerClassName: screen.getByRole('banner').className,
-      logoWidth: screen.getByAltText('Sumurai Logo').getAttribute('data-width'),
-      logoHeight: screen.getByAltText('Sumurai Logo').getAttribute('data-height'),
+      logoWidth: screen.getByAltText('Sumurai').getAttribute('data-width'),
+      logoHeight: screen.getByAltText('Sumurai').getAttribute('data-height'),
     };
 
     rerender(
@@ -63,8 +63,8 @@ describe('AppTitleBar', () => {
 
     expect({
       headerClassName: screen.getByRole('banner').className,
-      logoWidth: screen.getByAltText('Sumurai Logo').getAttribute('data-width'),
-      logoHeight: screen.getByAltText('Sumurai Logo').getAttribute('data-height'),
+      logoWidth: screen.getByAltText('Sumurai').getAttribute('data-width'),
+      logoHeight: screen.getByAltText('Sumurai').getAttribute('data-height'),
     }).toEqual(initialState);
   });
 
@@ -103,10 +103,41 @@ describe('AppTitleBar', () => {
   it('sizes the logo to fill the title bar chrome on each breakpoint', () => {
     renderAppTitleBar(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
-    const logoFrame = screen.getByAltText('Sumurai Logo').parentElement;
-    expect(logoFrame?.className).toContain('h-12');
-    expect(logoFrame?.className).toContain('w-12');
-    expect(logoFrame?.className).not.toContain('lg:h-8');
+    const logoIconFrame = screen
+      .getByRole('button', { name: 'Go to dashboard' })
+      .querySelector('img')?.parentElement;
+    expect(logoIconFrame?.className).toContain('h-12');
+    expect(logoIconFrame?.className).toContain('w-12');
+
+    const wordmarkFrame = screen.getByAltText('Sumurai').parentElement;
+    expect(wordmarkFrame?.className).toContain('h-10');
+    expect(wordmarkFrame?.className).not.toContain('h-8');
+  });
+
+  it('keeps the helmet icon at title bar height when demo mode stacks the badge', () => {
+    renderAppTitleBar(<AppTitleBar {...baseProps} isOnline demoModeActive onLogout={jest.fn()} />);
+
+    const logoButton = screen.getByRole('button', { name: 'Go to dashboard' });
+    const logoIconFrame = logoButton.querySelector('img')?.parentElement;
+    expect(logoIconFrame?.className).toContain('h-12');
+    expect(logoIconFrame?.className).toContain('w-12');
+
+    const wordmarkStack = screen.getByAltText('Sumurai').parentElement?.parentElement;
+    expect(wordmarkStack?.className).toContain('h-12');
+
+    const wordmarkFrame = screen.getByAltText('Sumurai').parentElement;
+    expect(wordmarkFrame?.className).toContain('h-8');
+    expect(wordmarkFrame?.className).not.toContain('h-10');
+  });
+
+  it('renders the helmet icon beside the Sumurai wordmark', () => {
+    renderAppTitleBar(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+
+    const logoButton = screen.getByRole('button', { name: 'Go to dashboard' });
+    const images = logoButton.querySelectorAll('img');
+    expect(images).toHaveLength(2);
+    expect(images[0]).toHaveAttribute('src', '/brand-images/Sumurai-HelmetMonogram.svg');
+    expect(images[1]).toHaveAttribute('src', '/brand-images/FullColor-TextLogo.svg');
   });
 
   it('uses context pill tabs for the desktop tab switcher', () => {
@@ -140,6 +171,9 @@ describe('AppTitleBar', () => {
     const logoutButton = screen.getByRole('button', { name: 'Log off' });
     expect(logoutButton.className).toContain('aspect-square');
     expect(logoutButton.className).toContain('md:aspect-auto');
+    expect(logoutButton.className).toContain('bg-[var(--color-brand-crimson)]');
+    expect(logoutButton.className).toContain('text-white');
+    expect(logoutButton.className).not.toContain('color-mix');
     expect(screen.getByText('Log off')).toHaveClass('hidden', 'md:inline');
   });
 
@@ -149,7 +183,7 @@ describe('AppTitleBar', () => {
     );
 
     const settingsButton = screen.getByRole('button', { name: 'Settings' });
-    expect(settingsButton.className).toContain('bg-[var(--color-brand-sky)]');
+    expect(settingsButton.className).toContain('bg-[var(--color-brand-azure)]');
     expect(settingsButton.className).toContain('text-white');
     expect(settingsButton.className).not.toContain(
       'bg-[color:color-mix(in_srgb,var(--color-surface-card)'
@@ -161,7 +195,7 @@ describe('AppTitleBar', () => {
 
     const settingsButton = screen.getByRole('button', { name: 'Settings' });
     expect(settingsButton.className).toContain('bg-transparent');
-    expect(settingsButton.className).not.toContain('bg-[var(--color-brand-sky)]');
+    expect(settingsButton.className).not.toContain('bg-[var(--color-brand-azure)]');
   });
 
   it('shows the demo mode badge under the title when demo mode is active', () => {
@@ -176,7 +210,12 @@ describe('AppTitleBar', () => {
     expect(badge.className).not.toContain('--color-status-info-strong-surface');
     expect(badge.className).not.toContain('--color-status-info-border');
     expect(badge.className).not.toContain('border');
-    expect(screen.getByText('Sumurai').parentElement).toContainElement(badge);
+    const logoButton = screen.getByRole('button', { name: 'Go to dashboard' });
+    expect(logoButton).toContainElement(badge);
+
+    const wordmarkImage = screen.getByAltText('Sumurai');
+    expect(wordmarkImage.parentElement?.parentElement).toContainElement(badge);
+    expect(wordmarkImage.parentElement?.nextElementSibling).toBe(badge);
 
     const actions = screen.getByRole('status', { name: 'Online' }).closest('div');
     expect(actions).not.toContainElement(badge);
@@ -224,17 +263,18 @@ describe('AppTitleBar', () => {
   });
 
   describe('unauthenticated auth layout', () => {
-    it('always renders the Sumurai logo and wordmark', () => {
+    it('always renders the Sumurai logo and helmet icon', () => {
       renderAppTitleBar(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
 
-      expect(screen.getByAltText('Sumurai Logo')).toBeInTheDocument();
-      expect(screen.getByText('Sumurai')).toBeInTheDocument();
+      expect(screen.getByAltText('Sumurai')).toBeInTheDocument();
+      expect(screen.queryByText('Sumurai')).not.toBeInTheDocument();
+      expect(screen.getByRole('banner').querySelectorAll('img')).toHaveLength(2);
     });
 
     it('keeps the logo left-aligned in the title bar grid', () => {
       renderAppTitleBar(<AppTitleBar state="unauthenticated" scrolled={false} isOnline />);
 
-      const logoSlot = screen.getByAltText('Sumurai Logo').closest('.col-start-1');
+      const logoSlot = screen.getByAltText('Sumurai').closest('.col-start-1');
       expect(logoSlot?.className).toContain('col-start-1');
       expect(logoSlot?.className).not.toContain('max-lg:absolute');
       expect(logoSlot?.className).not.toContain('max-lg:justify-center');

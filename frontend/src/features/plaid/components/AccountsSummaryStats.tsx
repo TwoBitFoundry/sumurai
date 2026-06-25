@@ -25,7 +25,7 @@ export const AccountsSummaryStats = ({ summary, lastSyncValue }: AccountsSummary
   const { isMobile } = useViewportBreakpoint();
   const toggle = (id: string) => setFlipped((prev) => ({ ...prev, [id]: !prev[id] }));
   const hasConnections = summary.institutions > 0;
-  const cardAccent = 'violet' as const;
+  const cardAccent = 'ocean' as const;
   const insightsToggleLabel = expanded ? 'Collapse account insights' : 'Expand account insights';
 
   const summaryCards = expanded ? (
@@ -96,7 +96,7 @@ export const AccountsSummaryStats = ({ summary, lastSyncValue }: AccountsSummary
   ) : null;
 
   return (
-    <InsightsPanelShell testId="accounts-summary-shell" accent="violet">
+    <InsightsPanelShell testId="accounts-summary-shell" accent="ocean">
       <InsightsExpandablePanel
         testId="accounts-summary-panel"
         bodyId="accounts-summary-panel-body"

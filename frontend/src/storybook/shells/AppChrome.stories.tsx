@@ -4,14 +4,14 @@ import { AppLayout } from '@/layouts/AppLayout';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { AppFooter, AppTitleBar, cn, GradientShell } from '@/ui/primitives';
-import { radius as uiRadiusRecipes, text as uiTextRecipes } from '@/ui/recipes';
+import { authLayout, radius as uiRadiusRecipes, text as uiTextRecipes } from '@/ui/recipes';
 
 function UnauthenticatedLoginShell() {
   return (
     <GradientShell className={cn(uiTextRecipes.primary)}>
       <div className={cn('flex', 'flex-col', 'min-h-screen')}>
         <AppTitleBar state="unauthenticated" scrolled={false} isOnline />
-        <main className={cn('flex-1', 'flex', 'items-center', 'justify-center')}>
+        <main className={cn(...authLayout.main)}>
           <LoginScreen onNavigateToRegister={() => {}} />
         </main>
         <AppFooter />
@@ -25,7 +25,7 @@ function AuthenticatedDashboardShell() {
     <AccountFilterStoryProvider>
       <AppLayout currentTab="dashboard" onTabChange={() => {}} onLogout={() => {}} isOnline>
         <div
-          className={`mx-auto max-w-5xl ${uiRadiusRecipes.standard} border border-slate-200 bg-white/50 p-8 dark:border-slate-700 dark:bg-slate-900/35`}
+          className={`mx-auto max-w-5xl ${uiRadiusRecipes.standard} border border-[color:color-mix(in_srgb,var(--color-brand-fog)_72%,var(--color-brand-navy))] bg-white/50 p-8 dark:border-[color:color-mix(in_srgb,var(--color-brand-navy)_45%,transparent)] dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_35%,transparent)]`}
         >
           Authenticated tab surface placeholder
         </div>

@@ -1,9 +1,10 @@
-import { categoryAccents } from '@/ui/tokens';
+import { categoryAccents, rotatableCategoryAccents } from '@/ui/tokens';
 import {
   buildCategoryAccentIndex,
   categoryLookupKey,
   formatCategoryName,
   formatCustomCategoryDisplay,
+  getReservedCategoryAccent,
   getTagThemeForCategory,
   getTagThemeForCategoryAtIndex,
   isBudgetEligibleCategory,
@@ -11,22 +12,28 @@ import {
   longestFormattedCategoryLabel,
   mergeTransactionFilterCategories,
   mobileCategoryChipWidthRem,
+  SYSTEM_CATEGORY_SLUGS,
   sortCategoryNamesAlphabetically,
   validateCustomCategoryName,
 } from '@/utils/categories';
 
 describe('category accent index', () => {
   it('assigns colors by sorted filter roster index and repeats', () => {
-    const names = sortCategoryNamesAlphabetically(['transportation', 'Coffee', 'food_and_drink']);
+    const names = sortCategoryNamesAlphabetically(['Coffee', 'Groceries', 'Pets']);
     const accentIndex = buildCategoryAccentIndex(names);
 
-    expect(getTagThemeForCategoryAtIndex(0).key).toBe(categoryAccents[0].key);
-    expect(getTagThemeForCategoryAtIndex(categoryAccents.length).key).toBe(categoryAccents[0].key);
+    expect(getTagThemeForCategoryAtIndex(0).key).toBe(rotatableCategoryAccents[0].key);
+    expect(getTagThemeForCategoryAtIndex(rotatableCategoryAccents.length).key).toBe(
+      rotatableCategoryAccents[0].key
+    );
     expect(getTagThemeForCategory('Coffee', accentIndex).key).toBe(
       getTagThemeForCategoryAtIndex(0).key
     );
-    expect(getTagThemeForCategory('food_and_drink', accentIndex).key).toBe(
+    expect(getTagThemeForCategory('Groceries', accentIndex).key).toBe(
       getTagThemeForCategoryAtIndex(1).key
+    );
+    expect(getTagThemeForCategory('Pets', accentIndex).key).toBe(
+      getTagThemeForCategoryAtIndex(2).key
     );
   });
 
@@ -40,14 +47,66 @@ describe('category accent index', () => {
     const accentIndex = buildCategoryAccentIndex(names);
 
     const subscriptionTheme = getTagThemeForCategory('SUBSCRIPTION', accentIndex);
+    expect(subscriptionTheme.key).toBe('indigo');
     expect(getTagThemeForCategory('Subscriptions', accentIndex).key).toBe(subscriptionTheme.key);
     expect(getTagThemeForCategory('subscription', accentIndex).key).toBe(subscriptionTheme.key);
-    expect(getTagThemeForCategory('GENERAL_SERVICES', accentIndex).key).toBe(
-      getTagThemeForCategory('Services', accentIndex).key
+    expect(getTagThemeForCategory('GENERAL_SERVICES', accentIndex).key).toBe('cyan');
+    expect(getTagThemeForCategory('Services', accentIndex).key).toBe('cyan');
+    expect(getTagThemeForCategory('food and drink', accentIndex).key).toBe('amber');
+  });
+
+  it('reserves green for income and red for transfer out outside the rotation', () => {
+    const names = sortCategoryNamesAlphabetically([
+      'ENTERTAINMENT',
+      'FOOD_AND_DRINK',
+      'INCOME',
+      'TRANSFER_OUT',
+    ]);
+    const accentIndex = buildCategoryAccentIndex(names);
+
+    expect(getReservedCategoryAccent('INCOME')?.key).toBe('emerald');
+    expect(getReservedCategoryAccent('Income')?.key).toBe('emerald');
+    expect(getReservedCategoryAccent('TRANSFER_OUT')?.key).toBe('rose');
+    expect(getReservedCategoryAccent('Transfer Out')?.key).toBe('rose');
+    expect(getTagThemeForCategory('INCOME', accentIndex).key).toBe('emerald');
+    expect(getTagThemeForCategory('TRANSFER_OUT', accentIndex).key).toBe('rose');
+    expect(accentIndex.has('INCOME')).toBe(false);
+    expect(accentIndex.has('TRANSFER_OUT')).toBe(false);
+    expect(getTagThemeForCategory('ENTERTAINMENT', accentIndex).key).toBe('violet');
+    expect(getTagThemeForCategory('FOOD_AND_DRINK', accentIndex).key).toBe('amber');
+    expect(getTagThemeForCategory('ENTERTAINMENT', accentIndex).key).not.toBe('emerald');
+    expect(getTagThemeForCategory('FOOD_AND_DRINK', accentIndex).key).not.toBe('rose');
+  });
+
+  it('assigns semantically meaningful accents to system categories', () => {
+    const expenseSlugs = SYSTEM_CATEGORY_SLUGS.filter(
+      (slug) => slug !== 'INCOME' && slug !== 'TRANSFER_OUT'
     );
-    expect(getTagThemeForCategory('food and drink', accentIndex).key).toBe(
-      getTagThemeForCategory('FOOD_AND_DRINK', accentIndex).key
-    );
+    const keys = expenseSlugs.map((slug) => getTagThemeForCategory(slug).key);
+
+    expect(getTagThemeForCategory('BANK_FEES').key).toBe('slate');
+    expect(getTagThemeForCategory('RENT_AND_UTILITIES').key).toBe('sky');
+    expect(getTagThemeForCategory('FOOD_AND_DRINK').key).toBe('amber');
+    expect(getTagThemeForCategory('ENTERTAINMENT').key).toBe('violet');
+    expect(getTagThemeForCategory('GOVERNMENT_AND_NON_PROFIT').key).toBe('indigo');
+    expect(getTagThemeForCategory('HOME_IMPROVEMENT').key).toBe('lime');
+    expect(getTagThemeForCategory('LOAN_PAYMENTS').key).toBe('coral');
+    expect(getTagThemeForCategory('MEDICAL').key).toBe('teal');
+    expect(getTagThemeForCategory('PERSONAL_CARE').key).toBe('pink');
+    expect(getTagThemeForCategory('GENERAL_SERVICES').key).toBe('cyan');
+    expect(getTagThemeForCategory('SHOPPING').key).toBe('orange');
+    expect(getTagThemeForCategory('SUBSCRIPTION').key).toBe('indigo');
+    expect(getTagThemeForCategory('TRANSFER_IN').key).toBe('mint');
+    expect(getTagThemeForCategory('TRANSPORTATION').key).toBe('cyan');
+    expect(new Set(keys).size).toBeGreaterThanOrEqual(10);
+  });
+
+  it('uses bright readable tokens for dark-mode category pill text on deep accents', () => {
+    const entertainmentTheme = getTagThemeForCategory('ENTERTAINMENT');
+    const indigoTheme = getTagThemeForCategory('GOVERNMENT_AND_NON_PROFIT');
+
+    expect(entertainmentTheme.cssVars['--category-accent-bright']).toBe('#c4b5fd');
+    expect(indigoTheme.cssVars['--category-accent-bright']).toBe('#a5b4fc');
   });
 });
 

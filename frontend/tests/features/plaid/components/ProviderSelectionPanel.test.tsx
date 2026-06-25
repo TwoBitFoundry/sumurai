@@ -24,6 +24,21 @@ function renderPanel(props: Partial<ComponentProps<typeof ProviderSelectionPanel
 }
 
 describe('ProviderSelectionPanel', () => {
+  it('uses themed glass provider cards with themed nested feature rows', () => {
+    renderPanel({
+      availableProviders: ['diy'],
+    });
+
+    const card = screen.getByText('Self-Managed').closest('.group');
+    expect(card?.className).toContain('backdrop-blur-md');
+    expect(card?.className).toContain(
+      'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_40%,transparent)]'
+    );
+
+    const featureRow = screen.getAllByTestId('provider-feature-row')[0];
+    expect(featureRow?.className).toContain('bg-[var(--color-surface-data-row)]');
+  });
+
   it('renders the fixed provider order, wireframe copy, and privacy links', () => {
     renderPanel({
       availableProviders: ['plaid', 'teller', 'simplefin'],

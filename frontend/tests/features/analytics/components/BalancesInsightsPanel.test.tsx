@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { BalancesInsightsPanel } from '@/features/analytics/components/BalancesInsightsPanel';
 import type { Totals } from '@/types/analytics';
 import { text as semanticTextRecipes, status as uiStatusRecipes } from '@/ui/recipes';
+import { heroAccents } from '@/ui/tokens';
 import {
   getSessionCollapsibleExpanded,
   setSessionCollapsibleExpanded,
@@ -44,10 +45,12 @@ describe('BalancesInsightsPanel', () => {
     const shell = screen.getByTestId('balances-insights-shell');
     expect(shell).toBeInTheDocument();
     expect(screen.getByText('Balance insights')).toBeInTheDocument();
+    expect(screen.getByTestId('overall-net')).toHaveClass(heroAccents.azure.icon);
     expect(shell).toHaveClass('sticky');
     expect(shell).toHaveClass('z-30');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
-    expect(shell.firstElementChild?.className).toContain('--color-surface-glass-panel');
+    expect(shell.firstElementChild?.className).toContain('var(--color-brand-fog)');
+    expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
     expect(shell.querySelector('.hero-stat-card__inset-ring')).not.toBeNull();
     expect(screen.getByTestId('overall-net')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /balance insights/i })).toHaveAttribute(
@@ -65,7 +68,7 @@ describe('BalancesInsightsPanel', () => {
     const netValue = screen.getByTestId('overall-net');
     const netRow = netValue.parentElement;
 
-    expect(netRow).toHaveClass('grid');
+    expect(netRow).toHaveClass('inline-grid');
     expect(netRow).toHaveClass('grid-cols-[auto_minmax(0,1fr)]');
     expect(netRow).toHaveClass('items-baseline');
     expect(netValue).toHaveClass('justify-self-end');
@@ -128,18 +131,43 @@ describe('BalancesInsightsPanel', () => {
     expect(cashCard.firstElementChild).not.toHaveClass('border-2');
   });
 
-  it('keeps category glyph and value colors', () => {
+  it('uses brand accent colors for category glyphs, titles, and values', () => {
     setSessionCollapsibleExpanded('balances-insights', true);
 
     render(<BalancesInsightsPanel overall={sampleOverall} />);
 
-    const cashCard = screen.getByTestId('insight-card-cash');
-    const cashValue = within(cashCard).getByTestId('overall-cash');
-    expect(cashValue).toHaveClass(uiStatusRecipes.success.text[0]);
+    const categories = [
+      {
+        card: 'insight-card-cash',
+        value: 'overall-cash',
+        label: 'Cash',
+        accent: heroAccents.teal.icon,
+      },
+      {
+        card: 'insight-card-investments',
+        value: 'overall-investments',
+        label: 'Investments',
+        accent: heroAccents.azure.icon,
+      },
+      {
+        card: 'insight-card-credit',
+        value: 'overall-credit',
+        label: 'Credit',
+        accent: heroAccents.crimson.icon,
+      },
+      {
+        card: 'insight-card-loans',
+        value: 'overall-loan',
+        label: 'Loans',
+        accent: heroAccents.amber.icon,
+      },
+    ] as const;
 
-    const creditCard = screen.getByTestId('insight-card-credit');
-    const creditValue = within(creditCard).getByTestId('overall-credit');
-    expect(creditValue).toHaveClass(uiStatusRecipes.danger.text[0]);
+    for (const { card, value, label, accent } of categories) {
+      const categoryCard = screen.getByTestId(card);
+      expect(within(categoryCard).getByTestId(value)).toHaveClass(accent);
+      expect(within(categoryCard).getByText(label)).toHaveClass(accent);
+    }
   });
 
   it('lays out desktop sub-categories as content-fit tiles', () => {
@@ -212,15 +240,18 @@ describe('BalancesInsightsPanel', () => {
     expect(screen.getByTestId('overall-net')).toBeInTheDocument();
   });
 
-  it('styles desktop header YTD values as cardTitle with status colors', () => {
+  it('styles desktop header YTD values with glyph accent colors', () => {
     render(<BalancesInsightsPanel overall={sampleOverall} incomeYtd={1000} expensesYtd={500} />);
 
+    const netValue = screen.getByTestId('overall-net');
     const incomeValue = screen.getByTestId('balances-ytd-income-value');
     const expensesValue = screen.getByTestId('balances-ytd-expenses-value');
+    expect(netValue).toHaveClass('font-card-title');
+    expect(netValue).toHaveClass(heroAccents.azure.icon);
     expect(incomeValue).toHaveClass('font-card-title');
-    expect(incomeValue).toHaveClass(uiStatusRecipes.success.text[0]);
+    expect(incomeValue).toHaveClass(heroAccents.teal.icon);
     expect(expensesValue).toHaveClass('font-card-title');
-    expect(expensesValue).toHaveClass(uiStatusRecipes.danger.text[0]);
+    expect(expensesValue).toHaveClass(heroAccents.crimson.icon);
   });
 
   it('styles mobile body YTD values like balance row amounts', () => {
@@ -235,9 +266,9 @@ describe('BalancesInsightsPanel', () => {
 
     expect(incomeValue).not.toHaveClass('font-card-title');
     expect(expensesValue).not.toHaveClass('font-card-title');
-    expect(incomeValue).toHaveClass(uiStatusRecipes.success.text[0]);
-    expect(expensesValue).toHaveClass(uiStatusRecipes.danger.text[0]);
-    expect(cashValue).toHaveClass(uiStatusRecipes.success.text[0]);
+    expect(incomeValue).toHaveClass(heroAccents.teal.icon);
+    expect(expensesValue).toHaveClass(heroAccents.crimson.icon);
+    expect(cashValue).toHaveClass(heroAccents.teal.icon);
     expect(cashValue).not.toHaveClass('font-card-title');
   });
 

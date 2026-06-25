@@ -2,7 +2,7 @@
 
 Personal finance dashboard. Self-hosted. Connects to your bank via Teller, Plaid, or SimpleFIN, syncs transactions, and shows where your money goes.
 
-![Sumurai](frontend/public/sumurai-hero.webp)
+![Sumurai](frontend/public/screenshots/sumurai-hero.webp)
 
 ## Why This Exists
 
@@ -10,16 +10,22 @@ Sumurai exists because there are not a lot of free, simple, and modern budgeting
 
 ## What It Does
 
-- Connects accounts through Teller, Plaid, or SimpleFIN
-- Syncs and categorizes transactions
-- Tracks budgets by category
-- Charts spending, balances, and net worth over time
+- Connects and syncs your bank accounts through Teller, Plaid, SimpleFIN, or Self-Manage your own
+![Provider Picker](frontend/public/screenshots/sumurai-provider-picker-dark.webp)
 
-![Dashboard](frontend/public/dashboard-hero.webp)
-![Dashboard extras](frontend/public/dashboard-extras.webp)
-![Transactions](frontend/public/transactions.webp)
-![Budgets](frontend/public/budgets.webp)
-![Accounts](frontend/public/accounts.webp)
+- Import/export data into your accounts or add custom ones
+![Accounts](frontend/public/screenshots/sumurai-accounts-dark.webp)
+
+- Your dashboard surfaces important trends across all your accounts over time
+![Dashboard](frontend/public/screenshots/sumurai-dashboard-dark-pt1.webp)
+![Dashboard extras](frontend/public/screenshots/sumurai-dashboard-dark-pt2.webp)
+
+- Review all your accounts' transactions, cleaned and categorized for you, or if you can customize or add your own categories
+![Transactions](frontend/public/screenshots/sumurai-transactions-dark.webp)
+
+- Tracks budgets by category and fixed expenses for bills and subscriptions
+![Budgets](frontend/public/screenshots/sumurai-budgets-dark-pt1.webp)
+![Budgets extras](frontend/public/screenshots/sumurai-budgets-dark-pt2.webp)
 
 ## Which Financial Provider is Right for You?
 
@@ -32,13 +38,13 @@ Import your own data, or connect through an aggregator. For aggregators, check w
 ℹ️ Sumurai never stores your bank login when using an aggregator. Pick the path that's right for you. Teller/Plaid require a developer account.
 
 
-|          | Self          | Teller              | SimpleFIN            | Plaid                |
-| -------- | ------------- | ------------------- | -------------------- | -------------------- |
-| Focus    | Manual import | Budget Friendly     | Privacy First        | Turn Key             |
-| Region   | Any           | US Only             | US, CA               | US, CA, UK, EU       |
-| Cost     | Free          | Free                | $1.50/mo             | Pay/use              |
-| Coverage | Any           | ~7,000 Institutions | ~16,000 Institutions | ~12,000 Institutions |
-| Privacy  | Strongest     | Moderate            | Strong               | Broad                |
+|               | Self-Managed | Teller              | SimpleFIN            | Plaid                |
+| ------------- | ------------ | ------------------- | -------------------- | -------------------- |
+| Focus         | DIY          | Budget Friendly     | Privacy First        | Organizations        |
+| Region        | Any          | US Only             | US, CA               | US, CA, UK, EU       |
+| Provider Cost | Free         | Free                | $1.50/mo             | Pay/use              |
+| Coverage      | Any          | ~7,000 Institutions | ~16,000 Institutions | ~12,000 Institutions |
+| Privacy       | Strongest    | Moderate            | Strong               | Broad                |
 
 
 ## Privacy Disclosure for 3rd Party Financial Aggregators
@@ -57,22 +63,25 @@ Review the provider trade-offs before connecting real financial accounts.
 
 Sumurai normalizes transactions into these primary category buckets:
 
+- `BILLS`
 - `ENTERTAINMENT`
 - `FOOD & DRINK`
-- `MERCHANDISE`
-- `SERVICES`
 - `GOVT & NON PROFIT`
 - `HOME`
 - `INCOME`
 - `LOAN PAYMENTS`
 - `MEDICAL`
+- `MERCHANDISE`
 - `OTHER`
 - `PERSONAL CARE`
-- `BILLS`
+- `SERVICES`
+- `SUBSCRIPTIONS`
 - `TRANSFER IN`
 - `TRANSFER OUT`
 - `TRANSPORT`
 - `TRAVEL`
+
+You can also create custom categories for spending that does not fit these buckets.
 
 ## Quick Start
 
@@ -102,10 +111,10 @@ docker compose version
 wsl --install
 ```
 
-2. Restart your computer if prompted.
-3. Download [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/).
-4. Run the installer and accept the default options.
-5. Start Docker Desktop and wait until it is running.
+1. Restart your computer if prompted.
+2. Download [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/).
+3. Run the installer and accept the default options.
+4. Start Docker Desktop and wait until it is running.
 
 Verify:
 
@@ -122,13 +131,13 @@ docker compose version
 curl -fsSL https://get.docker.com | sh
 ```
 
-2. Add your user to the Docker group:
+1. Add your user to the Docker group:
 
 ```bash
 sudo usermod -aG docker $USER
 ```
 
-3. Log out and back in, then verify:
+1. Log out and back in, then verify:
 
 ```bash
 docker --version
@@ -151,7 +160,21 @@ Generate a value for each secret with `openssl rand -hex 32` and set:
 
 Pick one path below.
 
-#### SimpleFin (Private)
+#### Self-Managed (DIY)
+
+No aggregator keys required. Add banks and accounts manually, then import transactions from supported files. Strongest privacy option — nothing leaves your self-hosted instance.
+
+1. Start the app:
+
+```bash
+docker compose up -d
+```
+
+1. Open [http://localhost:8080](http://localhost:8080), sign in, and choose **Self-Managed** in the provider picker.
+2. Add a bank and one or more accounts (checking, savings, credit, or loan).
+3. Import transactions from CSV, OFX, QBO, QFX, or QBX on any account.
+
+#### SimpleFin (Privacy First)
 
 Privacy-first option for US and Canada. Bring your own SimpleFIN token (~$1.50/mo).
 
@@ -159,12 +182,12 @@ Privacy-first option for US and Canada. Bring your own SimpleFIN token (~$1.50/m
 2. Start the app:
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d --build
+docker compose up -d
 ```
 
-3. Open [http://localhost:8080](http://localhost:8080), sign in, choose SimpleFIN in the provider picker, and paste your setup token when prompted.
+1. Open [http://localhost:8080](http://localhost:8080), sign in, choose SimpleFIN in the provider picker, and paste your setup token when prompted.
 
-#### Teller (Recommended)
+#### Teller (Budget Friendly)
 
 Free for US banks. Best balance of cost, setup, and coverage for most self-hosters.
 
@@ -174,10 +197,10 @@ Free for US banks. Best balance of cost, setup, and coverage for most self-hoste
 4. Start the app:
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
 
-5. Open [http://localhost:8080](http://localhost:8080).
+1. Open [http://localhost:8080](http://localhost:8080).
 
 #### Plaid (Organization)
 
@@ -189,10 +212,10 @@ Broadest regional coverage. Best when you already have a company Plaid account a
 4. Start the app:
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
 
-5. Open [http://localhost:8080](http://localhost:8080).
+1. Open [http://localhost:8080](http://localhost:8080).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, validation, workflow details, and local demo or sandbox credentials.
 

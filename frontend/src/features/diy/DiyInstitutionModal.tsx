@@ -16,6 +16,7 @@ import {
   Select,
 } from '@/ui/primitives';
 import {
+  brandNeutral,
   control,
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
@@ -179,9 +180,9 @@ const toBalancePayload = (value: string): string => value.trim();
 
 const connectBridgeDots = (
   <div className={cn('mx-2', 'flex', 'items-center', 'gap-1')}>
-    <div className={cn('h-1', 'w-1', 'rounded-full', 'bg-slate-300', 'dark:bg-slate-600')} />
-    <div className={cn('h-1', 'w-1', 'rounded-full', 'bg-slate-300', 'dark:bg-slate-600')} />
-    <div className={cn('h-1', 'w-1', 'rounded-full', 'bg-slate-300', 'dark:bg-slate-600')} />
+    <div className={cn('h-1', 'w-1', 'rounded-full', brandNeutral.decorativeDot)} />
+    <div className={cn('h-1', 'w-1', 'rounded-full', brandNeutral.decorativeDot)} />
+    <div className={cn('h-1', 'w-1', 'rounded-full', brandNeutral.decorativeDot)} />
   </div>
 );
 

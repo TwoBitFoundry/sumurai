@@ -22,11 +22,7 @@ export const glassCardRecipes = {
     ...semanticSurfaces.glassPanel,
     ...semanticEffects.glassBackdrop,
   ],
-  accent: [
-    ...semanticBorders.elevatedGlass,
-    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_36%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
-  ],
+  accent: [...semanticBorders.elevatedGlass, ...semanticSurfaces.glassPanel],
   danger: ['border-red-200/70', 'bg-red-50/80', 'dark:border-red-700/60', 'dark:bg-red-900/25'],
   rounded: {
     default: uiRadiusRecipes.standard,
@@ -129,16 +125,6 @@ export function GlassCard({
               'ring-inset ring-1',
               'ring-white/40',
               'dark:ring-white/10'
-            )}
-          />
-          <div
-            className={cn(
-              'absolute inset-0',
-              roundedClass,
-              'bg-gradient-to-b',
-              'from-white/65 via-white/25 to-transparent',
-              'transition-colors duration-500',
-              'dark:from-slate-900/68 dark:via-slate-900/34 dark:to-transparent'
             )}
           />
         </div>

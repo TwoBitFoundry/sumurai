@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import {
+  brandNeutral,
   floatingChromeGlass,
   focus as focusRecipes,
   text as semanticTextRecipes,
@@ -42,7 +43,7 @@ export const menuDropdownRecipes = {
     'active:border-[var(--color-border-default)]',
     'active:bg-[var(--color-surface-hover-row)]',
     focusRecipes.visible,
-    'dark:text-slate-300',
+    brandNeutral.controlTextDark,
     'dark:hover:border-[var(--color-border-divider)]',
     'dark:hover:bg-[var(--color-surface-hover-row)]',
     'dark:active:border-[var(--color-border-divider)]',

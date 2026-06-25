@@ -73,8 +73,8 @@ function AccountFilterCheckbox({
       <span
         className={cn(
           uiCheckboxControlRecipes.box,
-          'peer-indeterminate:border-[var(--color-brand-sky)]',
-          'peer-indeterminate:bg-[var(--color-brand-sky)]'
+          'peer-indeterminate:border-[var(--color-brand-azure)]',
+          'peer-indeterminate:bg-[var(--color-brand-azure)]'
         )}
         aria-hidden="true"
       />

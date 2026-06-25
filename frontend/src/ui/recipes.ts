@@ -11,34 +11,63 @@ export type SemanticTextRole =
   | 'warning'
   | 'info';
 
+export const brandNeutral = {
+  textBody:
+    'text-[color:color-mix(in_srgb,var(--color-brand-navy)_82%,var(--color-brand-fog))] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_86%,var(--color-brand-navy))]',
+  textMuted:
+    'text-[color:color-mix(in_srgb,var(--color-brand-navy)_74%,var(--color-brand-fog))] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_72%,var(--color-brand-navy))]',
+  textSubtle:
+    'text-[color:color-mix(in_srgb,var(--color-brand-navy)_64%,var(--color-brand-fog))] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_58%,var(--color-brand-navy))]',
+  textLabel:
+    'text-[color:color-mix(in_srgb,var(--color-brand-navy)_74%,var(--color-brand-fog))] dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_72%,var(--color-brand-navy))]',
+  controlTextDark:
+    'dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_90%,var(--color-brand-navy))]',
+  placeholderMuted:
+    'placeholder:text-[color:color-mix(in_srgb,var(--color-brand-navy)_64%,var(--color-brand-fog))] dark:placeholder:text-[color:color-mix(in_srgb,var(--color-brand-fog)_54%,var(--color-brand-navy))]',
+  borderSubtle:
+    'border-[color:color-mix(in_srgb,var(--color-brand-fog)_72%,var(--color-brand-navy))] dark:border-[color:color-mix(in_srgb,var(--color-brand-navy)_45%,transparent)]',
+  surfaceTint:
+    'bg-[color:color-mix(in_srgb,var(--color-brand-fog)_82%,transparent)] dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_40%,transparent)]',
+  glassFillLight: 'bg-[color:color-mix(in_srgb,var(--color-brand-fog)_35%,transparent)]',
+  glassFillDark: 'dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_35%,transparent)]',
+  surfaceSolidLight: 'bg-[var(--color-brand-fog)]',
+  surfaceSolidDark: 'dark:bg-[var(--color-brand-navy)]',
+  ringOffset: 'ring-offset-[var(--color-brand-fog)] dark:ring-offset-[var(--color-brand-navy)]',
+  glassVignetteLight:
+    'from-[color:color-mix(in_srgb,var(--color-brand-fog)_70%,transparent)] via-[color:color-mix(in_srgb,var(--color-brand-fog)_38%,transparent)]',
+  glassVignetteDark:
+    'dark:from-[color:color-mix(in_srgb,var(--color-brand-navy)_68%,transparent)] dark:via-[color:color-mix(in_srgb,var(--color-brand-navy)_42%,transparent)]',
+  textHoverStrong:
+    'hover:text-[color:color-mix(in_srgb,var(--color-brand-navy)_92%,var(--color-brand-fog))] dark:hover:text-[color:color-mix(in_srgb,var(--color-brand-fog)_94%,var(--color-brand-navy))]',
+  decorativeDot:
+    'bg-[color:color-mix(in_srgb,var(--color-brand-fog)_85%,var(--color-brand-navy))] dark:bg-[color:color-mix(in_srgb,var(--color-brand-fog)_55%,var(--color-brand-navy))]',
+  footerFadeDark:
+    'dark:from-[color:color-mix(in_srgb,var(--color-brand-navy)_60%,transparent)] dark:to-[color:color-mix(in_srgb,var(--color-brand-navy)_80%,transparent)]',
+} as const;
+
 export const text = {
-  primary: 'text-slate-900 dark:text-slate-100',
-  body: 'text-slate-700 dark:text-slate-300',
-  muted: 'text-slate-600 dark:text-slate-400',
-  subtle: 'text-slate-500 dark:text-slate-500',
-  label: 'text-slate-600 dark:text-slate-400',
+  primary: 'text-[var(--color-text-primary)]',
+  body: brandNeutral.textBody,
+  muted: brandNeutral.textMuted,
+  subtle: brandNeutral.textSubtle,
+  label: brandNeutral.textLabel,
   inverse: 'text-white dark:text-white',
-  accent: 'text-sky-600 dark:text-sky-300',
-  danger: 'text-red-600 dark:text-red-300',
-  success: 'text-emerald-600 dark:text-emerald-300',
-  warning: 'text-amber-600 dark:text-amber-300',
-  info: 'text-sky-600 dark:text-sky-300',
+  accent: 'text-[var(--color-brand-azure)] dark:text-[var(--color-brand-glacier)]',
+  danger: 'text-[var(--color-brand-crimson)] dark:text-[var(--color-brand-signal-red)]',
+  success: 'text-[var(--color-brand-teal)] dark:text-[var(--color-brand-mint)]',
+  warning: 'text-[var(--color-brand-amber)] dark:text-[var(--color-brand-amber)]',
+  info: 'text-[var(--color-brand-azure)] dark:text-[var(--color-brand-glacier)]',
 } as const satisfies Record<SemanticTextRole, string>;
 
 export const placeholder = {
-  muted: 'placeholder:text-slate-400 dark:placeholder:text-slate-500',
+  muted: brandNeutral.placeholderMuted,
 } as const;
 
 export const surface = {
   appShell: ['bg-[var(--color-surface-app-shell)]', 'dark:bg-[var(--color-surface-app-shell)]'],
-  glassPanel: [
-    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
-  ],
-  floatingChromePanel: [
-    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_26%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
-  ],
+  glassPanel: [brandNeutral.glassFillLight, brandNeutral.glassFillDark],
+  chartGlassHoverPanel: [brandNeutral.glassFillLight, brandNeutral.glassFillDark],
+  floatingChromePanel: [brandNeutral.glassFillLight, brandNeutral.glassFillDark],
   solidPanel: [
     'bg-[var(--color-surface-solid-panel)]',
     'dark:bg-[var(--color-surface-solid-panel)]',
@@ -48,12 +77,14 @@ export const surface = {
     'dark:bg-[var(--color-surface-elevated-card)]',
   ],
   card: [
-    'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
+    'bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
     'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
   ],
+  solidCard: ['bg-[var(--color-surface-card)]', 'dark:bg-[var(--color-brand-navy)]'],
   hoverRow: ['bg-[var(--color-surface-hover-row)]', 'dark:bg-[var(--color-surface-hover-row)]'],
   mutedChip: ['bg-[var(--color-surface-muted-chip)]', 'dark:bg-[var(--color-surface-muted-chip)]'],
   insetWell: ['bg-[var(--color-surface-inset-well)]', 'dark:bg-[var(--color-surface-inset-well)]'],
+  dataRow: ['bg-[var(--color-surface-data-row)]'],
   overlay: [
     'bg-[color:color-mix(in_srgb,var(--color-surface-overlay)_20%,transparent)]',
     'dark:bg-[color:color-mix(in_srgb,var(--color-surface-overlay)_36%,transparent)]',
@@ -117,7 +148,7 @@ export const effect = {
   accentOutlineGlowHover: [
     'hover:ring-2 hover:ring-inset hover:ring-[color:color-mix(in_srgb,var(--color-effect-accent-outline-glow)_60%,transparent)]',
   ],
-  glassBackdrop: ['backdrop-blur-md', 'backdrop-saturate-[150%]'],
+  glassBackdrop: ['backdrop-blur-md', 'backdrop-saturate-[135%]'],
 } as const;
 
 export const scroll = {
@@ -134,13 +165,13 @@ export const scroll = {
 } as const;
 
 export const buttonCta = {
-  gradient: ['bg-[var(--color-brand-sky)]'],
+  gradient: ['bg-[var(--color-brand-azure)]'],
   glow: [...effect.accentOutlineGlowCta],
   hover: ['hover:-translate-y-0.5', 'disabled:hover:translate-y-0'],
 } as const;
 
 export const successCta = {
-  gradient: ['bg-[var(--color-brand-emerald)]'],
+  gradient: ['bg-[var(--color-brand-teal)]'],
   glow: [...effect.successGlow],
   hover: ['hover:-translate-y-[2px]', 'active:scale-[0.98]', 'disabled:active:scale-100'],
   focus: [
@@ -150,6 +181,20 @@ export const successCta = {
     'focus-visible:ring-offset-2',
     'focus-visible:ring-offset-white',
     'dark:focus-visible:ring-offset-[#0f172a]',
+  ],
+} as const;
+
+export const dangerCta = {
+  gradient: ['bg-[var(--color-brand-crimson)]', 'dark:bg-[var(--color-brand-signal-red)]'],
+  hover: ['hover:-translate-y-0.5', 'disabled:hover:translate-y-0'],
+  focus: [
+    'focus-visible:outline-none',
+    'focus-visible:ring-2',
+    'focus-visible:ring-[var(--color-brand-crimson)]',
+    'focus-visible:ring-offset-2',
+    'focus-visible:ring-offset-[var(--color-brand-fog)]',
+    'dark:focus-visible:ring-[var(--color-brand-signal-red)]',
+    'dark:focus-visible:ring-offset-[var(--color-brand-navy)]',
   ],
 } as const;
 
@@ -181,10 +226,7 @@ export const status = {
       'dark:border-[var(--color-status-success-border)]',
     ],
     alertBorder: ['border-[var(--color-status-success-border)]'],
-    text: [
-      'text-[var(--color-status-success-text)]',
-      'dark:text-[var(--color-status-success-text)]',
-    ],
+    text: ['text-[var(--color-brand-teal)]', 'dark:text-[var(--color-brand-mint)]'],
     strongSurface: [
       'bg-[var(--color-status-success-strong-surface)]',
       'dark:bg-[var(--color-status-success-strong-surface)]',
@@ -227,7 +269,7 @@ export const status = {
       'dark:border-[var(--color-status-danger-border)]',
     ],
     alertBorder: ['border-[var(--color-status-danger-border)]'],
-    text: ['text-[var(--color-status-danger-text)]', 'dark:text-[var(--color-status-danger-text)]'],
+    text: ['text-[var(--color-brand-crimson)]', 'dark:text-[var(--color-brand-signal-red)]'],
     strongSurface: [
       'bg-[var(--color-status-danger-strong-surface)]',
       'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-strong-surface)_46%,transparent)]',
@@ -236,11 +278,50 @@ export const status = {
   },
 } as const;
 
+export type CategoryAccentRecipe = {
+  surface: readonly string[];
+  border: readonly string[];
+  chipSurface: readonly string[];
+  chipSurfaceSelected: readonly string[];
+  text: readonly string[];
+  dot: readonly string[];
+  ring: readonly string[];
+};
+
+export const categoryPill = {
+  surface: [
+    'bg-[color:color-mix(in_srgb,var(--category-accent)_22%,var(--color-surface-card))]',
+    'dark:bg-[color:color-mix(in_srgb,var(--category-accent-bright)_28%,transparent)]',
+  ],
+  border: [
+    'border-[color:color-mix(in_srgb,var(--category-accent)_32%,var(--color-surface-card))]',
+    'dark:border-transparent',
+  ],
+  chipSurface: [
+    '!border',
+    '!border-[color:color-mix(in_srgb,var(--category-accent)_28%,var(--color-surface-card))]',
+    'dark:!border-transparent',
+    '!bg-[color:color-mix(in_srgb,var(--category-accent)_22%,var(--color-surface-card))]',
+    'dark:!bg-[color:color-mix(in_srgb,var(--category-accent-bright)_28%,transparent)]',
+  ],
+  chipSurfaceSelected: [
+    '!border',
+    '!border-[var(--category-accent)]',
+    'dark:!border-transparent',
+    '!bg-[color:color-mix(in_srgb,var(--category-accent)_30%,var(--color-surface-card))]',
+    'dark:!bg-[color:color-mix(in_srgb,var(--category-accent-bright)_34%,transparent)]',
+  ],
+  text: ['text-[var(--category-accent)]', 'dark:text-[var(--category-accent-bright)]'],
+  dot: ['bg-[var(--category-accent)]', 'dark:bg-[var(--category-accent-bright)]'],
+  ring: [
+    'ring-[color:color-mix(in_srgb,var(--category-accent)_55%,var(--color-surface-card))]',
+    'dark:ring-[color:color-mix(in_srgb,var(--category-accent-bright)_55%,transparent)]',
+  ],
+} as const satisfies CategoryAccentRecipe;
+
 export const focus = {
-  visible:
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-slate-900',
-  danger:
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-red-400/75 dark:focus-visible:ring-offset-slate-900',
+  visible: `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-glacier)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-brand-fog)] dark:focus-visible:ring-[var(--color-brand-azure)] dark:focus-visible:ring-offset-[var(--color-brand-navy)]`,
+  danger: `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-brand-fog)] dark:focus-visible:ring-red-400/75 dark:focus-visible:ring-offset-[var(--color-brand-navy)]`,
   darkOffset: 'dark:focus:ring-offset-[var(--color-surface-glass-panel)]',
   visibleDarkOffset: 'dark:focus-visible:ring-offset-[var(--color-surface-glass-panel)]',
   ringOffsetLightOnDark: [
@@ -258,8 +339,60 @@ export const font = {
   bodyStrong: 'font-body-strong text-[1rem] font-semibold leading-[1.5] tracking-normal',
   caption: 'font-caption text-[0.875rem] font-normal leading-[1.5] tracking-normal',
   captionStrong: 'font-caption text-[0.875rem] font-semibold leading-[1.5] tracking-normal',
-  label: 'font-label text-[0.75rem] font-semibold uppercase leading-none tracking-[0.14em]',
+  label: 'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]',
   badge: 'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]',
+  categoryTag: 'text-[0.6rem] font-bold uppercase tracking-[0.18em]',
+} as const;
+
+export const categoryPickerChip = {
+  button: [
+    'inline-flex',
+    'w-fit',
+    'max-w-full',
+    'items-center',
+    'gap-1.5',
+    'rounded-full',
+    'border',
+    'px-2.5',
+    'py-1',
+    'min-h-11',
+    'md:min-h-9',
+    'lg:min-h-8',
+    font.badge,
+    'transition-all',
+    'duration-200',
+    'ease-out',
+    'hover:-translate-y-0.5',
+    'focus-visible:outline-none',
+    'focus-visible:ring-2',
+    'focus-visible:ring-inset',
+    'focus-visible:ring-[var(--color-border-focus-active)]',
+    'disabled:cursor-not-allowed',
+    'disabled:opacity-60',
+    'disabled:hover:translate-y-0',
+  ],
+  selected: ['ring-2', 'ring-inset'],
+} as const;
+
+export const dateLabelPill = {
+  shell: [
+    'inline-flex',
+    'w-fit',
+    'max-w-full',
+    'flex-shrink-0',
+    'items-center',
+    'gap-1.5',
+    'rounded-full',
+    'whitespace-nowrap',
+    'px-2',
+    'py-0',
+    ...effect.glassBackdrop,
+    'border',
+    ...surface.floatingChromePanel,
+    ...border.floatingChrome,
+  ],
+  label: [font.badge, 'normal-case', 'tracking-normal', text.primary],
+  customSelectedRing: ['ring-2', 'ring-inset', 'ring-[var(--color-border-focus-active)]'],
 } as const;
 
 export const budgetProgress = {
@@ -285,11 +418,11 @@ export const budgetProgress = {
     'duration-500',
     'ease-out',
   ],
-  fillWithin: ['bg-[var(--color-brand-sky)]', ...effect.successGlow],
+  fillWithin: ['bg-[var(--color-brand-azure)]', ...effect.successGlow],
   fillOver: [
     'bg-gradient-to-r',
-    'from-[var(--color-brand-rose)]',
-    'via-[var(--color-brand-rose)]',
+    'from-[var(--color-brand-crimson)]',
+    'via-[var(--color-brand-crimson)]',
     'to-[var(--color-text-danger)]',
     ...effect.dangerGlow,
   ],
@@ -298,13 +431,12 @@ export const budgetProgress = {
     'items-center',
     'justify-between',
     'text-[0.75rem]',
-    'text-slate-600',
-    'dark:text-slate-400',
+    brandNeutral.textMuted,
     'transition-colors',
     'duration-300',
   ],
   captionPercent: ['font-medium', 'tracking-wide'],
-  captionWithin: ['font-semibold', 'text-slate-700', 'dark:text-slate-300'],
+  captionWithin: ['font-semibold', brandNeutral.textBody],
   captionOver: ['font-semibold', 'text-red-600', 'dark:text-red-300'],
 } as const;
 
@@ -345,14 +477,11 @@ export const insightsPanel = {
     'inset-0',
     radius.standard,
     'bg-gradient-to-b',
-    'from-white/72',
-    'via-white/28',
+    'from-transparent',
+    'via-transparent',
     'to-transparent',
     'transition-colors',
     'duration-500',
-    'dark:from-slate-900/68',
-    'dark:via-slate-900/34',
-    'dark:to-transparent',
   ],
   labelDivider: [
     'border-[var(--color-border-strong)]',
@@ -374,8 +503,7 @@ export const insightsPanel = {
     'shrink-0',
     'transition-transform',
     'duration-200',
-    'text-slate-500',
-    'dark:text-slate-500',
+    brandNeutral.textSubtle,
   ],
   summaryToggleShell: ['relative'],
   summaryToggleOverlay: ['absolute', 'inset-0', 'z-0', 'cursor-pointer'],
@@ -397,18 +525,18 @@ export const dashboardCategoryCard = {
   shell: [
     `${radius.standard} border transition-all duration-300 text-left`,
     ...border.subtle,
-    ...surface.card,
+    ...surface.solidCard,
   ],
   shellActive: [
     `${radius.standard} border transition-all duration-300`,
-    ...surface.card,
+    ...surface.solidCard,
     '!border-[var(--color-border-hover-accent)]',
     'dark:!border-[var(--color-border-hover-accent)]',
   ],
   shellInteractive: [
     `${radius.standard} border transition-all duration-300`,
     ...border.subtle,
-    ...surface.card,
+    ...surface.solidCard,
     'hover:!border-[var(--color-border-hover-accent)]',
     'dark:hover:!border-[var(--color-border-hover-accent)]',
   ],
@@ -432,6 +560,35 @@ export const dashboardCategoryCard = {
     'group-hover:opacity-100',
   ],
   insetRingActive: 'opacity-100',
+} as const;
+
+export const providerNestedCard = {
+  shell: [
+    `${radius.standard} border transition-all duration-300 text-left`,
+    ...border.subtle,
+    ...surface.dataRow,
+  ],
+  label: text.primary,
+  detail: text.body,
+} as const;
+
+export const syncStatusRow = {
+  ...providerNestedCard,
+  institutionName: providerNestedCard.label,
+} as const;
+
+export const providerSelectionCard = {
+  shell: [
+    radius.standard,
+    'border',
+    ...border.glass,
+    '!bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_40%,transparent)]',
+    ...effect.glassBackdrop,
+    ...effect.glassElevationShadow,
+    'transition-all',
+    'duration-200',
+  ],
+  padding: ['p-3', 'md:p-6'],
 } as const;
 
 export const modalBackdrop = {
@@ -465,12 +622,12 @@ export const modalDrawer = {
     'mt-auto',
     'border-t',
     'border-black/10',
-    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_96%,white)]',
+    'bg-transparent',
     'px-5',
     'pb-[max(1rem,env(safe-area-inset-bottom))]',
     'pt-4',
     'dark:border-white/10',
-    'dark:bg-[#0f172a]/98',
+    'dark:bg-transparent',
   ],
   formRow: ['flex', 'items-end', 'gap-2'],
   formField: ['min-w-0', 'flex-1', 'space-y-1'],
@@ -478,14 +635,8 @@ export const modalDrawer = {
 } as const;
 
 export const chartFloatingGlass = {
-  backdrop: [...floatingChromeGlass.backdrop],
-  shell: [
-    'border',
-    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_58%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
-    ...border.glass,
-    ...effect.glassDropShadow,
-  ],
+  backdrop: [...effect.glassBackdrop],
+  shell: ['border', ...surface.chartGlassHoverPanel, ...border.glass, ...effect.glassDropShadow],
 } as const;
 
 export const chartTooltip = {
@@ -585,6 +736,10 @@ export const sankeyChart = {
 } as const;
 
 export const netWorthLineChart = {
+  stroke: {
+    light: 'var(--color-brand-azure)',
+    dark: 'var(--color-brand-glacier)',
+  },
   curveGlow: {
     blurStdDeviation: 4,
     strokeWidth: 6,
@@ -634,8 +789,8 @@ export const transactionsTable = {
   footer: [
     'border-t px-4 py-4 transition-colors duration-500',
     ...border.subtle,
-    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_12%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
+    brandNeutral.glassFillLight,
+    brandNeutral.glassFillDark,
     ...effect.glassBackdrop,
   ],
 } as const;
@@ -673,10 +828,10 @@ export const checkboxControl = {
     'peer-focus-visible:outline-none',
     'peer-focus-visible:ring-2',
     'peer-focus-visible:ring-[var(--color-border-hover-accent)]',
-    'peer-checked:border-[var(--color-brand-sky)]',
-    'peer-checked:bg-[var(--color-brand-sky)]',
-    'dark:peer-checked:border-[var(--color-brand-sky)]',
-    'dark:peer-checked:bg-[var(--color-brand-sky)]',
+    'peer-checked:border-[var(--color-brand-azure)]',
+    'peer-checked:bg-[var(--color-brand-azure)]',
+    'dark:peer-checked:border-[var(--color-brand-azure)]',
+    'dark:peer-checked:bg-[var(--color-brand-azure)]',
   ],
   icon: [
     'pointer-events-none',
@@ -731,6 +886,14 @@ export const control = {
     md: font.bodyStrong,
     lg: font.bodyStrong,
   },
+  anchoredVerticalCenter: [
+    'absolute',
+    'top-1/2',
+    '-translate-y-1/2',
+    'hover:!-translate-y-1/2',
+    'active:!-translate-y-1/2',
+    'shrink-0',
+  ],
 } as const;
 
 export const floatingChromeSearch = {
@@ -868,6 +1031,15 @@ export const appLayout = {
 } as const;
 
 export const authLayout = {
+  main: [
+    'flex-1',
+    'flex',
+    'items-start',
+    'md:items-center',
+    'justify-center',
+    'md:justify-start',
+    ...appLayout.contentShellWithGutter,
+  ],
   shell: [
     'relative',
     'flex',
@@ -887,12 +1059,20 @@ export const authLayout = {
     'pointer-events-none',
     'fixed',
     'z-0',
-    'flex',
     'inset-x-0',
     'top-14',
     'bottom-0',
+    'flex',
+    'items-end',
+  ],
+  brandBackdropInner: [
+    ...appLayout.contentShellWithGutter,
+    'flex',
+    'h-full',
+    'w-full',
     'items-end',
     'justify-center',
+    'md:justify-end',
   ],
   brandBackdropImage: ['h-full', 'w-auto', 'max-w-full', 'object-contain', 'object-bottom'],
   card: ['relative', 'z-10', 'w-full'],

@@ -4,7 +4,7 @@ import type React from 'react';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Button, GlassCard } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { brandNeutral, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { ApiError, AuthenticationError } from '../services/ApiClient';
 
 interface Props {
@@ -222,7 +222,8 @@ export class ErrorBoundary extends Component<Props, State> {
         <div
           className={cn(
             'min-h-screen p-4',
-            'bg-slate-100 dark:bg-slate-900',
+            brandNeutral.surfaceSolidLight,
+            brandNeutral.surfaceSolidDark,
             uiTextRecipes.primary
           )}
         >

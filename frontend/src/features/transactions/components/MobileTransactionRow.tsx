@@ -125,7 +125,7 @@ export const MobileTransactionRow: React.FC<Props> = ({
                       'pointer-events-auto min-w-0 truncate text-left touch-manipulation',
                       uiTypographyRecipes.caption,
                       uiTextRecipes.muted,
-                      'hover:text-emerald-600 dark:hover:text-emerald-300'
+                      'hover:text-[var(--color-brand-teal)] dark:hover:text-[var(--color-brand-mint)]'
                     )}
                   >
                     {accountLabel}

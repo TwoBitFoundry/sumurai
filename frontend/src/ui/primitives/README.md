@@ -42,7 +42,7 @@ The `md` control size is anchored to the iOS 44pt minimum touch target, which dr
 
 ### GradientShell
 
-Full-page background container with animated aura effects. Uses a unified, rich visual design with blue-toned gradients and an animated rotating aura.
+Full-page background container with a static, full-viewport mesh gradient built from the current brand palette.
 
 **Use Cases:**
 - App shell backgrounds
@@ -86,9 +86,9 @@ function AppShell() {
 ```
 
 **Visual Characteristics:**
-- Radial gradient base layer with blue-toned colors
-- Animated rotating aura (95s cycles, 0.28 opacity)
-- Multiple layered overlay gradients for visual depth
+- Static mesh gradient with no motion
+- Brand fog dominant in light mode with mint, glacier, and ocean accents
+- Brand navy dominant in dark mode with azure, teal, and glacier accents
 - Consistent light and dark mode support via Tailwind `dark:` variants
 
 ---

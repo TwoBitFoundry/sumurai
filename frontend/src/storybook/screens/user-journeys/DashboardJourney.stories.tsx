@@ -1,9 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { type ReactNode, useState } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
-import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import { sampleSankeySurplus } from '@/storybook/fixtures/analytics';
 import { sampleBudgetProgressEntries } from '@/storybook/fixtures/budgets';
 import { sampleFixedExpenses } from '@/storybook/fixtures/fixed-expenses';
+import {
+  buildStoryAccountFilterContextFromAccounts,
+  MockAccountFilterProvider,
+} from '@/storybook/mockAccountFilter';
 import type { DateRangeKey } from '@/utils/dateRanges';
 import DashboardPage from '@/views/DashboardPage';
 import {
@@ -14,6 +19,7 @@ import {
   storyTransactionCategories,
 } from './shared';
 import { jsonResponse, route, StoryApiScope } from './storyApi';
+import { expandBalanceInsights, waitForDashboardSankeyIncome } from './storyPlay';
 
 const meta = {
   title: 'App/Screens/User Journeys/Dashboard',
@@ -97,11 +103,34 @@ const handlers = [
   ),
 ];
 
+function DashboardJourneyProviders({ children }: { children: ReactNode }) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: false,
+          },
+        },
+      })
+  );
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <MockAccountFilterProvider
+        value={buildStoryAccountFilterContextFromAccounts(storyProviderAccounts)}
+      >
+        {children}
+      </MockAccountFilterProvider>
+    </QueryClientProvider>
+  );
+}
+
 function DashboardJourney() {
   const setDateRange = (_range: DateRangeKey) => {};
 
   return (
-    <AccountFilterStoryProvider>
+    <DashboardJourneyProviders>
       <StoryApiScope handlers={handlers}>
         <DashboardPage
           dateRange="current-month"
@@ -109,7 +138,7 @@ function DashboardJourney() {
           setDateRange={setDateRange}
         />
       </StoryApiScope>
-    </AccountFilterStoryProvider>
+    </DashboardJourneyProviders>
   );
 }
 
@@ -123,27 +152,9 @@ export const Journey: Story = {
     await waitFor(() => {
       expect(canvas.getByRole('button', { name: /food & drink/i })).toBeVisible();
     });
-    await waitFor(
-      () => {
-        expect(canvas.getByTestId('sankey-node-income')).toBeVisible();
-      },
-      { timeout: 15000 }
-    );
-
-    const balanceInsights = canvas.getByRole('button', { name: /balance insights/i });
-    if (balanceInsights.getAttribute('aria-expanded') !== 'true') {
-      await userEvent.click(balanceInsights);
-    }
-    await waitFor(() => {
-      expect(canvas.getByTestId('balances-chart-plot')).toBeVisible();
-    });
-
-    await waitFor(
-      () => {
-        expect(canvas.getByTestId('sankey-node-income')).toBeVisible();
-      },
-      { timeout: 15000 }
-    );
+    await waitForDashboardSankeyIncome(canvas);
+    await expandBalanceInsights(canvas);
+    await waitForDashboardSankeyIncome(canvas);
 
     const foodCard = canvas.getByRole('button', { name: /food & drink/i });
 

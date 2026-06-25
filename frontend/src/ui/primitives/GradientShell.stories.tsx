@@ -22,7 +22,7 @@ const meta = {
           'px-4',
           'py-3',
           ...uiEffectRecipes.glassDropShadow,
-          'dark:bg-slate-900/60',
+          'dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_60%,transparent)]',
           uiTextRecipes.body
         )}
       >

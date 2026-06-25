@@ -1,6 +1,7 @@
 import type React from 'react';
 import { heroStatSemanticThemes } from '@/components/widgets/heroStatSemanticThemes';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { brandNeutral, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { categoryThemeVars } from '@/ui/tokens';
 import { getTagThemeForCategory } from '@/utils/categories';
 import { cn } from './utils';
 
@@ -66,10 +67,8 @@ export const pillScrollFadeRecipes = {
     'hover:bg-transparent',
     'active:!-translate-y-1/2',
     'active:scale-100',
-    'text-slate-500',
-    'dark:text-slate-400',
-    'hover:text-slate-800',
-    'dark:hover:text-slate-200',
+    brandNeutral.textSubtle,
+    brandNeutral.textHoverStrong,
   ],
   surfaces: {
     card: {
@@ -132,7 +131,7 @@ export function Pill({
 
   const theme = getTagThemeForCategory(categoryName || String(children), accentIndexByName);
   return (
-    <span className={cn(base, theme.tag, className)} {...props}>
+    <span className={cn(base, theme.tag, className)} style={categoryThemeVars(theme)} {...props}>
       <span className="whitespace-nowrap">{children}</span>
     </span>
   );

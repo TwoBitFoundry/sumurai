@@ -44,9 +44,10 @@ export type ProviderCardConfig = {
 export const PROVIDER_PRICE_ORDER: FinancialProvider[] = ['diy', 'simplefin', 'teller', 'plaid'];
 
 export function resolvePickerVisibleProviders(
-  activeAggregator: SyncProvider | null
+  activeAggregator: SyncProvider | null,
+  demoModeActive = false
 ): FinancialProvider[] {
-  if (activeAggregator) {
+  if (!demoModeActive && activeAggregator) {
     return PROVIDER_PRICE_ORDER.filter(
       (provider) => provider === 'diy' || provider === activeAggregator
     );
@@ -325,7 +326,7 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: Landmark,
       title: 'Global accounts & balances',
       body: 'See your checking, savings, cards, and up-to-date balances in one place.',
-      palette: featurePalettes.providerFeature.emerald,
+      palette: featurePalettes.providerFeature.teal,
     },
     {
       icon: Zap,
@@ -337,7 +338,7 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: Sparkles,
       title: 'Rich categorizations',
       body: 'Merchants and categories are tidied so reports are easy to understand.',
-      palette: featurePalettes.providerFeature.purple,
+      palette: featurePalettes.providerFeature.ocean,
     },
   ],
   highlights: [
@@ -351,19 +352,19 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: ShieldCheck,
       title: 'Bank-grade protection',
       body: 'The connection is encrypted and identity-verified before any data is shared.',
-      palette: featurePalettes.highlight.sky,
+      palette: featurePalettes.highlight.azure,
     },
     {
       icon: Fingerprint,
       title: 'You stay in control',
       body: 'Disconnect anytime from Settings—data access stops instantly.',
-      palette: featurePalettes.highlight.violet,
+      palette: featurePalettes.highlight.ocean,
     },
     {
       icon: Eye,
       title: 'Preview first',
       body: 'Not ready yet? Explore demo insights and link when you are.',
-      palette: featurePalettes.highlight.fuchsia,
+      palette: featurePalettes.highlight.crimson,
     },
   ],
   cta: {
@@ -392,7 +393,7 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: Landmark,
       title: 'US Accounts & balances',
       body: 'See your checking, savings, cards, and up-to-date balances in one place.',
-      palette: featurePalettes.providerFeature.emerald,
+      palette: featurePalettes.providerFeature.teal,
     },
     {
       icon: Zap,
@@ -404,7 +405,7 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: Sparkles,
       title: 'Clean categories',
       body: 'Merchants and categories are tidied so reports are easy to understand.',
-      palette: featurePalettes.providerFeature.purple,
+      palette: featurePalettes.providerFeature.ocean,
     },
   ],
   highlights: [
@@ -412,19 +413,19 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: Eye,
       title: 'Read-only by design',
       body: "We can't move money or make changes—only view balances and transactions.",
-      palette: featurePalettes.highlight.sky,
+      palette: featurePalettes.highlight.azure,
     },
     {
       icon: Fingerprint,
       title: "You're in control",
       body: 'Disconnect anytime from settings; access stops immediately.',
-      palette: featurePalettes.highlight.violet,
+      palette: featurePalettes.highlight.ocean,
     },
     {
       icon: ShieldCheck,
       title: 'Bank-grade protection',
       body: 'The connection is encrypted and identity-verified before any data is shared.',
-      palette: featurePalettes.highlight.emerald,
+      palette: featurePalettes.highlight.teal,
     },
     {
       icon: Building2,
@@ -461,7 +462,7 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: Landmark,
       title: 'Many institutions',
       body: 'One bridge can link every bank you enable on SimpleFIN.',
-      palette: featurePalettes.providerFeature.emerald,
+      palette: featurePalettes.providerFeature.teal,
     },
     {
       icon: Zap,
@@ -473,7 +474,7 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: Sparkles,
       title: 'You hold the keys',
       body: 'Manage access at simplefin.org; revoke or rotate tokens whenever you need.',
-      palette: featurePalettes.providerFeature.purple,
+      palette: featurePalettes.providerFeature.ocean,
     },
   ],
   highlights: [
@@ -481,13 +482,13 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: Eye,
       title: 'Read-only by design',
       body: 'SimpleFIN only shares balance and transaction data. No money movement, no account changes.',
-      palette: featurePalettes.highlight.sky,
+      palette: featurePalettes.highlight.azure,
     },
     {
       icon: Fingerprint,
       title: 'Your bridge, your control',
       body: 'Manage or revoke individual bank connections from your SimpleFIN dashboard.',
-      palette: featurePalettes.highlight.violet,
+      palette: featurePalettes.highlight.ocean,
     },
     {
       icon: Building2,
@@ -499,7 +500,7 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: ShieldCheck,
       title: 'Transparent access',
       body: 'Every sync is scoped to institutions you explicitly linked on the bridge.',
-      palette: featurePalettes.highlight.emerald,
+      palette: featurePalettes.highlight.teal,
     },
   ],
   cta: {
@@ -526,7 +527,7 @@ const DIY_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: Landmark,
       title: 'Custom institutions',
       body: 'Name your own bank or account container and add it instantly.',
-      palette: featurePalettes.providerFeature.emerald,
+      palette: featurePalettes.providerFeature.teal,
     },
     {
       icon: Zap,
@@ -538,7 +539,7 @@ const DIY_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: Sparkles,
       title: 'File import',
       body: 'Upload CSV or OFX files to populate transactions; no aggregator fees.',
-      palette: featurePalettes.providerFeature.purple,
+      palette: featurePalettes.providerFeature.ocean,
     },
   ],
   highlights: [
@@ -546,13 +547,13 @@ const DIY_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: ShieldCheck,
       title: 'Strongest privacy option',
       body: 'No third party ever sees your data. Everything stays on your device.',
-      palette: featurePalettes.highlight.emerald,
+      palette: featurePalettes.highlight.teal,
     },
     {
       icon: Fingerprint,
       title: 'You control your data',
       body: 'Import new bank data or remove the bank anytime to delete its accounts and transactions.',
-      palette: featurePalettes.highlight.violet,
+      palette: featurePalettes.highlight.ocean,
     },
     {
       icon: Building2,
@@ -564,7 +565,7 @@ const DIY_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: Eye,
       title: 'Always free',
       body: 'No subscriptions, no per-account fees, no surprises.',
-      palette: featurePalettes.highlight.sky,
+      palette: featurePalettes.highlight.azure,
     },
   ],
   cta: {

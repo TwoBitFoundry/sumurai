@@ -10,9 +10,9 @@ export const ACCOUNT_GROUP_LABELS = {
 export type AccountGroupKey = keyof typeof ACCOUNT_GROUP_LABELS;
 
 export const ACCOUNT_GROUP_ACCENT = {
-  cash: 'emerald',
-  credit: 'rose',
-  investments: 'sky',
+  cash: 'teal',
+  credit: 'crimson',
+  investments: 'azure',
   loans: 'amber',
 } as const;
 

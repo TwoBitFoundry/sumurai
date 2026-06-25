@@ -36,21 +36,7 @@ export const pageLayoutRecipes = {
     'ring-white/45',
     'dark:ring-white/12',
   ],
-  innerGradient: [
-    'absolute',
-    'inset-0',
-    uiRadiusRecipes.standard,
-    'bg-gradient-to-b',
-    'from-white/72',
-    'via-white/28',
-    'to-transparent',
-    'transition-colors',
-    'duration-500',
-    'dark:from-slate-900/68',
-    'dark:via-slate-900/34',
-    'dark:to-transparent',
-  ],
-  badge: `${uiTypographyRecipes.badge} inline-flex items-center justify-center rounded-full ${semanticSurfaces.mutedChip.join(' ')} px-3 py-1 ${semanticTextRecipes.label} ${semanticEffects.glassDropShadow[0]} dark:text-slate-200`,
+  badge: `${uiTypographyRecipes.badge} inline-flex items-center justify-center rounded-full ${semanticSurfaces.mutedChip.join(' ')} px-3 py-1 ${semanticTextRecipes.label} ${semanticEffects.glassDropShadow[0]} dark:text-[color:color-mix(in_srgb,var(--color-brand-fog)_90%,var(--color-brand-navy))]`,
   title: `${uiTypographyRecipes.pageTitle} ${semanticTextRecipes.primary} transition-colors duration-300 ease-out`,
   titleInlineHost: [
     'inline',
@@ -136,7 +122,6 @@ export function PageLayout({
         <section className={cn(...pageLayoutRecipes.shell)}>
           <div className={cn(pageLayoutRecipes.shellSurface)}>
             <div className={cn(pageLayoutRecipes.innerRing)} />
-            <div className={cn(pageLayoutRecipes.innerGradient)} />
           </div>
 
           <div className={cn('relative', 'z-10', 'flex', 'flex-col', 'gap-5')}>

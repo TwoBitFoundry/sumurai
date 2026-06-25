@@ -1,6 +1,7 @@
 import { Search, X } from 'lucide-react';
 import { cn, Input } from '@/ui/primitives';
 import {
+  brandNeutral,
   floatingChromeGlass,
   floatingChromeSearch,
   focus as uiFocusRecipes,
@@ -67,8 +68,7 @@ export function TransactionsSearchBar({ search, onSearch }: TransactionsSearchBa
               uiTextRecipes.subtle,
               'transition-colors',
               'duration-200',
-              'hover:text-slate-700',
-              'dark:hover:text-slate-200',
+              brandNeutral.textHoverStrong,
               uiFocusRecipes.visible
             )}
           >

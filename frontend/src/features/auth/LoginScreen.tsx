@@ -7,7 +7,6 @@ import { PasskeyService } from '@/services/passkeyService';
 import type { AuthResponse } from '@/types/api';
 import { Alert, Button, cn, FormLabel, Input } from '@/ui/primitives';
 import { authLayout, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
-import { getCategoryAccentByIndex } from '@/ui/tokens';
 import {
   type CreationChallengeResponseJSON,
   getPasskeyCredential,
@@ -194,7 +193,6 @@ export function LoginScreen({
       <AuthFormLayout>
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
-            <span className={getCategoryAccentByIndex(0).inlineLabel}>Rejoin the Path</span>
             <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
               Return to Sumurai
             </h2>
@@ -319,7 +317,7 @@ export function LoginScreen({
               size="sm"
               disabled={isBusy || isEmailLocked}
             >
-              Join
+              Sign up
             </Button>
           </div>
         </div>

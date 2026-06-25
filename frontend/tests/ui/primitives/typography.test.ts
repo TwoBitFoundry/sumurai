@@ -5,7 +5,7 @@ import { buttonRecipes, buttonTypographySizes, connectButtonRecipes } from '@/ui
 import { emptyStateRecipes } from '@/ui/primitives/EmptyState';
 import { menuDropdownRecipes } from '@/ui/primitives/MenuDropdown';
 import { pillRecipes } from '@/ui/primitives/Pill';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { chromeBar, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
 describe('primitive typography recipes', () => {
   it('maps page layout copy to semantic typography recipes', () => {
@@ -50,13 +50,14 @@ describe('primitive typography recipes', () => {
     expect(buttonRecipes.base.join(' ')).not.toContain('font-subheading');
     expect(buttonRecipes.base.join(' ')).toContain('uppercase');
     expect(buttonRecipes.secondary.join(' ')).toContain(uiTextRecipes.muted);
-    expect(buttonRecipes.danger.join(' ')).toContain('color-status-danger-text');
-    expect(buttonRecipes.danger.join(' ')).toContain('dark:border-0');
+    expect(buttonRecipes.danger.join(' ')).toContain('bg-[var(--color-brand-crimson)]');
+    expect(buttonRecipes.danger.join(' ')).toContain('text-white');
+    expect(buttonRecipes.danger.join(' ')).toContain('dark:bg-[var(--color-brand-signal-red)]');
   });
 
   it('keeps title bar layout recipes free of baked-in text colors', () => {
     expect(menuDropdownRecipes.item.join(' ')).toContain(uiTextRecipes.muted);
-    expect(appTitleBarRecipes.logo.container.join(' ')).toContain(uiTextRecipes.primary);
+    expect(appTitleBarRecipes.logo.container.join(' ')).not.toContain(uiTextRecipes.primary);
     expect(appTitleBarRecipes.pillTab.join(' ')).not.toContain(uiTextRecipes.muted);
     expect(appTitleBarRecipes.pillTab.join(' ')).not.toContain(uiTextRecipes.inverse);
     expect(appTitleBarRecipes.pillTab.join(' ')).toContain(
@@ -66,10 +67,12 @@ describe('primitive typography recipes', () => {
     expect(appTitleBarRecipes.titleBarGrid.join(' ')).not.toContain('grid-rows-[auto_auto]');
     expect(appTitleBarRecipes.titleBarGrid.join(' ')).not.toContain('gap-y-2');
     expect(appTitleBarRecipes.titleBarGrid.join(' ')).toContain('h-14');
-    expect(appTitleBarRecipes.logo.image.join(' ')).toContain('h-12');
-    expect(appTitleBarRecipes.logo.image.join(' ')).toContain('w-12');
-    expect(appTitleBarRecipes.logo.image.join(' ')).not.toContain('lg:h-8');
-    expect(appTitleBarRecipes.logo.wordmark.join(' ')).toContain('leading-none');
+    expect(appTitleBarRecipes.logo.icon.join(' ')).toContain(chromeBar.height);
+    expect(appTitleBarRecipes.logo.icon.join(' ')).toContain('w-12');
+    expect(appTitleBarRecipes.logo.wordmark.join(' ')).toContain('h-10');
+    expect(appTitleBarRecipes.logo.wordmarkCompact.join(' ')).toContain('h-8');
+    expect(appTitleBarRecipes.logo.wordmarkStack.join(' ')).toContain(chromeBar.height);
+    expect(appTitleBarRecipes.logo.wordmarkStack.join(' ')).toContain('justify-center');
     expect(appTitleBarRecipes.pillTabSize.join(' ')).toContain('px-3.5');
     expect(appTitleBarRecipes.pillInset.join(' ')).toContain('md:p-3');
     expect(appTitleBarRecipes.contextPillInset.join(' ')).toContain('md:py-2');

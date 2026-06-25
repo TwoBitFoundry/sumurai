@@ -21,7 +21,7 @@ import { AuthService } from './services/authService';
 import { BrowserStorageAdapter } from './services/boundaries';
 import { AppFooter, AppTitleBar, GlassCard, GradientShell } from './ui/primitives';
 import { ControlTooltipProvider } from './ui/primitives/ControlHoverLabel';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from './ui/recipes';
+import { authLayout, text as uiTextRecipes, font as uiTypographyRecipes } from './ui/recipes';
 import { FINANCIAL_STATE_CHANGED_EVENT, type FinancialStateChangedDetail } from './utils/events';
 import { resetFinancialQueriesForAppRefresh } from './utils/queryInvalidation';
 
@@ -297,7 +297,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
         <GradientShell className={uiTextRecipes.primary}>
           <div className={cn('flex', 'flex-col', 'min-h-dvh')}>
             <AppTitleBar state="unauthenticated" scrolled={false} isOnline={isOnline} />
-            <main className={cn('flex-1', 'flex', 'items-center', 'justify-center')}>
+            <main className={cn(...authLayout.main)}>
               {authScreen === 'login' ? (
                 <LoginScreen
                   onNavigateToRegister={() => setAuthScreen('register')}

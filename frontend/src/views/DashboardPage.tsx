@@ -46,7 +46,7 @@ const dashboardLoadingCard = [
 ] as const;
 
 const dashboardCategoryHoverRingStyle = {
-  boxShadow: `inset 0 0 0 2px ${heroAccents.violet.ringHex}`,
+  boxShadow: `inset 0 0 0 2px ${heroAccents.ocean.ringHex}`,
 } as CSSProperties;
 
 interface CategoryCardProps {

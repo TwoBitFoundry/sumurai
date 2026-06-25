@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type React from 'react';
 import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { cn } from '@/ui/primitives';
+import { font as uiTypographyRecipes } from '@/ui/recipes';
 import { type HeroAccent, heroAccents } from '@/ui/tokens';
 import { InsightQuestion } from './InsightQuestion';
 
@@ -78,7 +79,7 @@ export function InsightCard({
   value,
   suffix,
   question,
-  accent = 'sky',
+  accent = 'azure',
   flipped,
   onToggle,
   outlined = true,
@@ -88,6 +89,13 @@ export function InsightCard({
   className,
 }: InsightCardProps) {
   const styles = heroAccents[accent];
+  const titleClassName = cn(
+    uiTypographyRecipes.label,
+    styles.icon,
+    'whitespace-nowrap',
+    'transition-colors',
+    'duration-500'
+  );
   const tileAlignStyles = tileLayout ? tileAlignRecipes[tileAlign] : null;
   let shellClassName: string;
   if (outlined) {
@@ -189,7 +197,7 @@ export function InsightCard({
                 ) : (
                   <span />
                 )}
-                <div className={cn(insightCardRecipes.title, 'self-center')}>{title}</div>
+                <div className={cn(titleClassName, 'self-center')}>{title}</div>
                 {value}
               </motion.div>
             ) : (
@@ -213,13 +221,7 @@ export function InsightCard({
                   {icon ? (
                     <span className={cn(...heroStatCardRecipes.iconWell, styles.icon)}>{icon}</span>
                   ) : null}
-                  <div
-                    className={cn(
-                      tileLayout ? insightCardRecipes.tileTitle : insightCardRecipes.title
-                    )}
-                  >
-                    {title}
-                  </div>
+                  <div className={titleClassName}>{title}</div>
                 </div>
                 <div
                   className={cn(

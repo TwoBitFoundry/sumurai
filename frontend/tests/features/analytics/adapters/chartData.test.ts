@@ -1,5 +1,5 @@
 import { categoriesToDonut } from '@/features/analytics/adapters/chartData';
-import { categoryAccents } from '@/ui/tokens';
+import { getTagThemeForCategory } from '@/utils/categories';
 
 describe('categoriesToDonut', () => {
   it('assigns stable category colors from the accent index map', () => {
@@ -23,19 +23,19 @@ describe('categoriesToDonut', () => {
         name: 'Merchandise',
         categoryKey: 'GENERAL_MERCHANDISE',
         value: 2368.1,
-        color: categoryAccents[0].ringHex,
+        color: getTagThemeForCategory('GENERAL_MERCHANDISE', accentIndexByName).ringHex,
       },
       {
         name: 'Services',
         categoryKey: 'GENERAL_SERVICES',
         value: 2293.57,
-        color: categoryAccents[1].ringHex,
+        color: getTagThemeForCategory('GENERAL_SERVICES', accentIndexByName).ringHex,
       },
       {
         name: 'Food & Drink',
         categoryKey: 'FOOD_AND_DRINK',
         value: 1142.81,
-        color: categoryAccents[2].ringHex,
+        color: getTagThemeForCategory('FOOD_AND_DRINK', accentIndexByName).ringHex,
       },
     ]);
   });

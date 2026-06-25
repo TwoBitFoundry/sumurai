@@ -21,14 +21,15 @@ describe('AccountsSummaryStats', () => {
     window.sessionStorage.clear();
   });
 
-  it('renders an InsightsPanel shell with violet accent', () => {
+  it('renders an InsightsPanel shell with ocean accent', () => {
     render(<AccountsSummaryStats summary={defaultSummary} lastSyncValue="12m ago" />);
 
     const shell = screen.getByTestId('accounts-summary-shell');
     expect(shell).toHaveClass('sticky');
     expect(shell).toHaveClass('z-30');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
-    expect(shell.firstElementChild?.className).toContain('--color-surface-glass-panel');
+    expect(shell.firstElementChild?.className).toContain('var(--color-brand-fog)');
+    expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
     expect(shell.querySelector('.hero-stat-card__inset-ring')).not.toBeNull();
     expect(screen.getByText('Account insights')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /expand account insights/i })).toHaveAttribute(

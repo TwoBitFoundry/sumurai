@@ -8,6 +8,7 @@ import {
   RangeSlider,
 } from '@/ui/primitives';
 import {
+  brandNeutral,
   floatingChromeGlass,
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
@@ -255,11 +256,9 @@ export function CustomDateRangePicker({
       </div>
       <div data-testid="custom-date-range-picker-content" className={cn('flex flex-col gap-3 p-4')}>
         {loading ? (
-          <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>
-            Checking available dates...
-          </p>
+          <p className={cn('text-sm', brandNeutral.textBody)}>Checking available dates...</p>
         ) : !hasBounds ? (
-          <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>
+          <p className={cn('text-sm', brandNeutral.textBody)}>
             No dated transactions are available for this account selection.
           </p>
         ) : (
@@ -309,8 +308,7 @@ export function CustomDateRangePicker({
                 'gap-3',
                 'px-1',
                 'text-xs',
-                'text-slate-500',
-                'dark:text-slate-400'
+                brandNeutral.textSubtle
               )}
               data-testid="custom-date-range-picker-bounds"
             >

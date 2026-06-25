@@ -1,4 +1,5 @@
 import {
+  brandNeutral,
   border as semanticBorders,
   effect as uiEffectRecipes,
   surface as uiSurfaceRecipes,
@@ -6,10 +7,10 @@ import {
 
 export const transactionsRowRecipes = {
   shell: [
-    'group relative w-full min-w-0 overflow-hidden rounded-md border-b border-slate-200/70 transition-[box-shadow,colors] duration-150 ease-out',
-    'dark:border-slate-700/50',
-    'hover:ring-2 hover:ring-inset hover:ring-emerald-400/60',
-    'dark:hover:ring-emerald-400/50',
+    'group relative w-full min-w-0 overflow-hidden rounded-md border-b transition-[box-shadow,colors] duration-150 ease-out',
+    brandNeutral.borderSubtle,
+    'hover:ring-2 hover:ring-inset hover:ring-[color:color-mix(in_srgb,var(--color-brand-teal)_60%,transparent)]',
+    'dark:hover:ring-[color:color-mix(in_srgb,var(--color-brand-mint)_50%,transparent)]',
   ],
   mainSurfaceHost: ['relative', 'min-w-0', 'w-full'],
   mobileAmount: [
@@ -55,18 +56,12 @@ export const transactionsRowRecipes = {
   ],
   mobileMerchantLine: ['min-w-0', 'pr-28'],
   mobileMetaBlock: ['mt-1', 'min-w-0', 'pr-28'],
-  placeholder: [
-    'pointer-events-none',
-    'select-none',
-    'border-b',
-    'border-slate-200/70',
-    'dark:border-slate-700/50',
-  ],
+  placeholder: ['pointer-events-none', 'select-none', 'border-b', brandNeutral.borderSubtle],
   placeholderDesktopHeight: ['h-[3.75rem]'],
   placeholderMobileHeight: ['min-h-[6rem]'],
   odd: [
-    'bg-[color:color-mix(in_srgb,var(--color-surface-muted-chip)_40%,transparent)]',
-    'dark:bg-slate-700/20',
+    'bg-[color:color-mix(in_srgb,var(--color-brand-fog)_82%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-brand-navy)_40%,transparent)]',
   ],
   even: ['bg-transparent', 'dark:bg-transparent'],
   merchantEllipsis: ['min-w-0', 'overflow-hidden', 'text-ellipsis', 'whitespace-nowrap'],
@@ -87,6 +82,11 @@ export const transactionsRowRecipes = {
     ...uiEffectRecipes.glassBackdrop,
     'border',
     ...uiSurfaceRecipes.floatingChromePanel,
+    ...semanticBorders.floatingChrome,
+  ],
+  contextualFilterChipGlassChrome: [
+    ...uiEffectRecipes.glassBackdrop,
+    'border',
     ...semanticBorders.floatingChrome,
   ],
   contextualFilterScroll: ['w-full', 'max-w-full', 'py-1.5'],

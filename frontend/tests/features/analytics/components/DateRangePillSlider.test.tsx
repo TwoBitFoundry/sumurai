@@ -103,12 +103,14 @@ describe('DateRangeLabelPill', () => {
     expect(screen.queryByTestId('custom-date-range-picker-popover')).not.toBeInTheDocument();
   });
 
-  it('uses the sky category filter accent styling', () => {
+  it('uses fog tint and primary text styling', () => {
     renderDateRangePillSlider(<DateRangeLabelPill dateRange="current-month" {...labelPillProps} />);
 
     const pill = screen.getByTestId('date-range-label-pill');
-    expect(pill.className).toContain('!bg-sky-500/20');
-    expect(pill.className).not.toContain('!border-sky-500');
+    expect(pill.className).toContain('brand-fog');
+    expect(pill.className).toContain('backdrop-blur-md');
+    expect(pill.className).not.toContain('sky-500');
+    expect(pill.querySelector('span')?.className).toContain('--color-text-primary');
     expect(pill).toHaveTextContent(/\d/);
   });
 

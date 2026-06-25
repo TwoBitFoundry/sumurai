@@ -11,7 +11,7 @@ const meta = {
     value: '$15.00',
     suffix: '/ day',
     question: 'How much can I spend each day and stay on budget?',
-    accent: 'sky',
+    accent: 'azure',
     flipped: false,
     onToggle: fn(),
   },

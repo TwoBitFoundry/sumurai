@@ -17,9 +17,17 @@ type Story = StoryObj<typeof meta>;
 
 function StickyPanelShellDemo() {
   return (
-    <div className={cn('h-[28rem]', 'overflow-y-auto', 'bg-slate-100', 'p-4', 'dark:bg-slate-950')}>
+    <div
+      className={cn(
+        'h-[28rem]',
+        'overflow-y-auto',
+        'bg-[var(--color-brand-fog)]',
+        'p-4',
+        'dark:bg-[var(--color-brand-navy)]'
+      )}
+    >
       <div className="h-24" />
-      <InsightsPanelShell testId="insights-shell-story" accent="violet">
+      <InsightsPanelShell testId="insights-shell-story" accent="ocean">
         <div className={cn('px-3', 'py-2', 'md:px-4', 'md:py-3')}>
           <InsightsPanelHeader label="Balance insights" />
           <div className={cn('space-y-1.5', uiTypographyRecipes.body, uiTextRecipes.body)}>

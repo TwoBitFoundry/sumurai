@@ -62,8 +62,7 @@ export const DesktopTransactionRow: React.FC<Props> = ({
         transactionsRowRecipes.desktopGridRow,
         transactionsRowRecipes.shell,
         index % 2 ? transactionsRowRecipes.odd : transactionsRowRecipes.even,
-        'h-full',
-        onMerchantSearch && 'hover:ring-0 dark:hover:ring-0'
+        'h-full'
       )}
     >
       <div
@@ -139,8 +138,8 @@ export const DesktopTransactionRow: React.FC<Props> = ({
               uiTypographyRecipes.body,
               uiTextRecipes.muted,
               'cursor-pointer text-left transition-colors duration-500',
-              'hover:text-emerald-600 dark:hover:text-emerald-300',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-slate-900'
+              'hover:text-[var(--color-brand-teal)] dark:hover:text-[var(--color-brand-mint)]',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-brand-fog)] dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-[var(--color-brand-navy)]'
             )}
           >
             {r.account_name}

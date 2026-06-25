@@ -6,7 +6,9 @@ import CategoryInlinePill from '@/features/transactions/components/CategoryInlin
 import { useTransactionListLauncher } from '@/features/transactions/hooks/useTransactionListLauncher';
 import { cn, EmptyState, IconButton, Input } from '@/ui/primitives';
 import {
+  brandNeutral,
   dashboardCategoryCard,
+  placeholder as uiPlaceholderRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
@@ -47,7 +49,7 @@ const budgetBarSlotClass = cn(
 );
 
 const budgetHeroHoverRingStyle = {
-  boxShadow: `inset 0 0 0 2px ${heroAccents.sky.ringHex}`,
+  boxShadow: `inset 0 0 0 2px ${heroAccents.azure.ringHex}`,
 } as CSSProperties;
 
 const budgetRowShell = [
@@ -193,9 +195,7 @@ function BudgetCard({
                       'text-center',
                       budgetAmountClass,
                       uiTextRecipes.primary,
-                      'placeholder:font-normal',
-                      'placeholder:text-slate-500',
-                      'dark:placeholder:text-slate-400'
+                      uiPlaceholderRecipes.muted
                     )}
                   />
                 </>

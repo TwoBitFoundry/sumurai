@@ -27,7 +27,7 @@ describe('Footer', () => {
     expect(getByRole('link', { name: /contribute/i }).className).toContain(
       '--color-effect-accent-outline-glow'
     );
-    expect(getByRole('link', { name: /contribute/i }).className).toContain('--color-brand-sky');
+    expect(getByRole('link', { name: /contribute/i }).className).toContain('--color-brand-azure');
     expect(getByRole('link', { name: /buy us a coffee/i }).className).toContain(
       '--color-effect-warning-glow'
     );

@@ -21,7 +21,7 @@ export function FixedExpensesSection({
       sectionId="fixed-expenses"
       title="Fixed Expenses"
       titleIcon={Repeat2}
-      titleIconClassName={heroAccents.sky.icon}
+      titleIconClassName={heroAccents.azure.icon}
       testId="fixed-expenses-section"
       expandLabel="Show fixed expenses"
       collapseLabel="Hide fixed expenses"
