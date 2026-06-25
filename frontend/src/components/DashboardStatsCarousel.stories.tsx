@@ -1,7 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { expect, waitFor, within } from 'storybook/test';
-import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { type ReactNode, useState } from 'react';
+import { within } from 'storybook/test';
 import { sampleSankeySurplus } from '@/storybook/fixtures/analytics';
+import {
+  buildStoryAccountFilterContextFromAccounts,
+  MockAccountFilterProvider,
+} from '@/storybook/mockAccountFilter';
 import {
   getCursorStoryTransactions,
   storyCategoryList,
@@ -9,6 +14,7 @@ import {
   storyProviderAccounts,
 } from '@/storybook/screens/user-journeys/shared';
 import { jsonResponse, route, StoryApiScope } from '@/storybook/screens/user-journeys/storyApi';
+import { waitForDashboardSankeyIncome } from '@/storybook/screens/user-journeys/storyPlay';
 import DashboardStatsCarousel from './DashboardStatsCarousel';
 
 const handlers = [
@@ -36,13 +42,36 @@ const handlers = [
   ),
 ];
 
+function DashboardStatsCarouselStoryProviders({ children }: { children: ReactNode }) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: false,
+          },
+        },
+      })
+  );
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <MockAccountFilterProvider
+        value={buildStoryAccountFilterContextFromAccounts(storyProviderAccounts)}
+      >
+        {children}
+      </MockAccountFilterProvider>
+    </QueryClientProvider>
+  );
+}
+
 function DashboardStatsCarouselStory() {
   return (
-    <AccountFilterStoryProvider>
+    <DashboardStatsCarouselStoryProviders>
       <StoryApiScope handlers={handlers}>
         <DashboardStatsCarousel dateRange="current-month" />
       </StoryApiScope>
-    </AccountFilterStoryProvider>
+    </DashboardStatsCarouselStoryProviders>
   );
 }
 
@@ -62,11 +91,6 @@ export const Default: Story = {
   render: () => <DashboardStatsCarouselStory />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await waitFor(
-      () => {
-        expect(canvas.getByTestId('sankey-node-income')).toBeVisible();
-      },
-      { timeout: 15000 }
-    );
+    await waitForDashboardSankeyIncome(canvas);
   },
 };

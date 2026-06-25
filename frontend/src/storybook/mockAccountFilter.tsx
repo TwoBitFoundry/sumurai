@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import {
   AccountFilterContext,
   type AccountFilterContextType,
+  type AccountsByBank,
   type ProviderAccount,
 } from '@/context/AccountFilterContext';
 import type { Account } from '@/types/api';
@@ -71,6 +72,22 @@ export function buildMockAccountFilterContext(
     toggleAccount: partial.toggleAccount ?? (() => {}),
     removeAccountsByIds: partial.removeAccountsByIds ?? (() => {}),
   };
+}
+
+export function buildStoryAccountFilterContextFromAccounts(
+  accounts: Account[]
+): AccountFilterContextType {
+  const providerAccounts = accounts.map(accountToProviderAccount);
+  const accountsByBank = providerAccounts.reduce<AccountsByBank>((acc, account) => {
+    const bankName = account.institution_name || 'Unknown Bank';
+    if (!acc[bankName]) {
+      acc[bankName] = [];
+    }
+    acc[bankName].push(account);
+    return acc;
+  }, {});
+
+  return buildMockAccountFilterContext({ accountsByBank });
 }
 
 export function MockAccountFilterProvider({

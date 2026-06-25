@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
-import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { within } from 'storybook/test';
 import { BottomContextualBar } from '@/components/BottomContextualBar';
 import {
   DateRangeLabelPill,
@@ -17,8 +17,7 @@ import {
   storyTransactionCategories,
 } from './user-journeys/shared';
 import { jsonResponse, route, StoryApiScope } from './user-journeys/storyApi';
-
-const storyInteractionTimeoutMs = 15_000;
+import { expandBalanceInsights, waitForDashboardSankeyIncome } from './user-journeys/storyPlay';
 
 function clearBalancesInsightsSession() {
   const raw = window.sessionStorage.getItem('sumurai.ui.collapsibleExpanded');
@@ -36,19 +35,6 @@ function clearBalancesInsightsSession() {
   } catch {
     window.sessionStorage.removeItem('sumurai.ui.collapsibleExpanded');
   }
-}
-
-async function expandBalanceInsights(canvas: ReturnType<typeof within>) {
-  const summaryButton = canvas.getByRole('button', { name: /balance insights/i });
-  if (summaryButton.getAttribute('aria-expanded') !== 'true') {
-    await userEvent.click(summaryButton);
-  }
-  await waitFor(
-    () => {
-      expect(canvas.getByTestId('balances-chart-plot')).toBeVisible();
-    },
-    { timeout: storyInteractionTimeoutMs }
-  );
 }
 
 const handlers = [
@@ -174,12 +160,7 @@ export const HappyPath: Story = {
   render: () => <DashboardScreenSlice variant="happy" dateRange="current-month" />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await waitFor(
-      () => {
-        expect(canvas.getByTestId('sankey-node-income')).toBeVisible();
-      },
-      { timeout: storyInteractionTimeoutMs }
-    );
+    await waitForDashboardSankeyIncome(canvas);
     await expandBalanceInsights(canvas);
   },
 };
