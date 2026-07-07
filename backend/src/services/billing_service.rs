@@ -339,15 +339,25 @@ pub struct PaddleWebhookEnvelope {
 }
 
 pub fn hash_trial_code(secret: &str, code: &str) -> Result<String, BillingServiceError> {
-    let normalized = normalize_trial_code(code);
-    let mut mac = HmacSha256::new_from_slice(secret.as_bytes())
-        .map_err(|_| BillingServiceError::PaddleRequestFailed)?;
-    mac.update(normalized.as_bytes());
-    Ok(hex::encode(mac.finalize().into_bytes()))
+    billing_common::hash_trial_code(secret, code).map_err(|error| match error {
+        billing_common::TrialCodeHashError::InvalidCode => {
+            BillingServiceError::InvalidTrialRedemption
+        }
+        billing_common::TrialCodeHashError::InvalidHashKey => {
+            BillingServiceError::PaddleRequestFailed
+        }
+    })
 }
 
-pub fn normalize_trial_code(code: &str) -> String {
-    code.trim().to_uppercase()
+pub fn normalize_trial_code(code: &str) -> Result<String, BillingServiceError> {
+    billing_common::normalize_trial_code(code).map_err(|error| match error {
+        billing_common::TrialCodeHashError::InvalidCode => {
+            BillingServiceError::InvalidTrialRedemption
+        }
+        billing_common::TrialCodeHashError::InvalidHashKey => {
+            BillingServiceError::PaddleRequestFailed
+        }
+    })
 }
 
 pub fn verify_paddle_webhook_signature(

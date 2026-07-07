@@ -1,10 +1,9 @@
 use async_trait::async_trait;
+use billing_common::{hash_trial_code as hash_trial_code_digest, normalize_trial_code};
 use chrono::{DateTime, Utc};
-use hmac::{Hmac, KeyInit, Mac};
-use sha2::Sha256;
 use uuid::Uuid;
 
-type HmacSha256 = Hmac<Sha256>;
+pub use billing_common::hash_trial_code;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TrialCodeRecord {
@@ -62,8 +61,8 @@ pub async fn create_trial_code(
     code: &str,
     redeem_by_at: DateTime<Utc>,
 ) -> Result<CreatedTrialCode, TrialCodeError> {
-    let normalized = normalize_trial_code(code)?;
-    let code_hash = hash_trial_code(hash_key, &normalized)?;
+    let normalized = normalize_trial_code(code).map_err(map_trial_code_hash_error)?;
+    let code_hash = hash_trial_code_digest(hash_key, code).map_err(map_trial_code_hash_error)?;
     let now = Utc::now();
     let record = TrialCodeRecord {
         id: Uuid::new_v4(),
@@ -109,22 +108,9 @@ pub async fn disable_trial_code(
     Ok(format!("Trial code {id} disabled."))
 }
 
-pub fn hash_trial_code(hash_key: &str, code: &str) -> Result<String, TrialCodeError> {
-    if hash_key.trim().is_empty() {
-        return Err(TrialCodeError::InvalidHashKey);
-    }
-    let normalized = normalize_trial_code(code)?;
-    let mut mac = HmacSha256::new_from_slice(hash_key.as_bytes())
-        .map_err(|_| TrialCodeError::InvalidHashKey)?;
-    mac.update(normalized.as_bytes());
-    Ok(hex::encode(mac.finalize().into_bytes()))
-}
-
-pub fn normalize_trial_code(code: &str) -> Result<String, TrialCodeError> {
-    let normalized = code.trim().to_uppercase();
-    if normalized.is_empty() {
-        Err(TrialCodeError::InvalidCode)
-    } else {
-        Ok(normalized)
+fn map_trial_code_hash_error(error: billing_common::TrialCodeHashError) -> TrialCodeError {
+    match error {
+        billing_common::TrialCodeHashError::InvalidCode => TrialCodeError::InvalidCode,
+        billing_common::TrialCodeHashError::InvalidHashKey => TrialCodeError::InvalidHashKey,
     }
 }

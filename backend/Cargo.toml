@@ -34,6 +34,7 @@ redis = { version = "1.2.1", features = ["tokio-comp", "connection-manager"] }
 jsonwebtoken = { version = "10.3", features = ["rust_crypto"] }
 argon2 = "0.5"
 sha2 = "0.11"
+billing-common = { path = "../billing-common" }
 csv = "1.3.1"
 ofx-rs = "0.1"
 futures = "0.3"
