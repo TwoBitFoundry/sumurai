@@ -117,6 +117,48 @@ export interface BudgetsOverviewResponse {
   fixed_expenses: FixedExpenseSummary[];
 }
 
+export type BillingAccessStatus =
+  | 'unrestricted'
+  | 'demo'
+  | 'trialing'
+  | 'active'
+  | 'past_due'
+  | 'paused'
+  | 'canceled'
+  | 'expired';
+
+export interface BillingStatusResponse {
+  billing_enabled: boolean;
+  access_status: BillingAccessStatus;
+  can_use_own_data: boolean;
+  is_demo_mode_active: boolean;
+  trial_ends_at: string | null;
+  current_period_ends_at: string | null;
+  payment_method_required: boolean;
+  billing_portal_available: boolean;
+  enabled_financial_providers: FinancialProvider[];
+}
+
+export interface BillingCheckoutResponse {
+  checkout_url: string;
+  transaction_id: string;
+}
+
+export interface TrialRedeemRequest {
+  code: string;
+  country_code: string;
+  postal_code: string;
+}
+
+export interface TrialRedeemResponse {
+  status: 'pending';
+}
+
+export interface BillingPortalSessionResponse {
+  overview_url: string;
+  subscription_urls: string[];
+}
+
 // Historically budgets included a `month`. Budgets are now
 // persistent containers not tied to months. Keep `month` only
 // for backward compatibility with older backend responses.

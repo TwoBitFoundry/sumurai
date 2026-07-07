@@ -53,6 +53,7 @@ pub struct PaddleBillingConfig {
     pub webhook_secret: String,
     pub monthly_price_id: String,
     pub cardless_trial_price_id: String,
+    pub trial_code_hash_key: String,
 }
 
 pub trait EnvironmentProvider {
@@ -199,6 +200,7 @@ fn parse_paddle_billing_config(
         webhook_secret: parse_required_trimmed(env, "PADDLE_WEBHOOK_SECRET")?,
         monthly_price_id: parse_required_trimmed(env, "PADDLE_MONTHLY_PRICE_ID")?,
         cardless_trial_price_id: parse_required_trimmed(env, "PADDLE_CARDLESS_TRIAL_PRICE_ID")?,
+        trial_code_hash_key: parse_required_trimmed(env, "TRIAL_CODE_HASH_KEY")?,
     }))
 }
 

@@ -68,3 +68,40 @@ pub struct PaddleWebhookEvent {
     pub error_code: Option<String>,
     pub created_at: DateTime<Utc>,
 }
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct BillingStatusResponse {
+    pub billing_enabled: bool,
+    pub access_status: String,
+    pub can_use_own_data: bool,
+    pub is_demo_mode_active: bool,
+    pub trial_ends_at: Option<DateTime<Utc>>,
+    pub current_period_ends_at: Option<DateTime<Utc>>,
+    pub payment_method_required: bool,
+    pub billing_portal_available: bool,
+    pub enabled_financial_providers: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct BillingCheckoutResponse {
+    pub checkout_url: String,
+    pub transaction_id: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct TrialRedeemRequest {
+    pub code: String,
+    pub country_code: String,
+    pub postal_code: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct TrialRedeemResponse {
+    pub status: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct BillingPortalSessionResponse {
+    pub overview_url: String,
+    pub subscription_urls: Vec<String>,
+}

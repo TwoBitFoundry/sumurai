@@ -173,6 +173,7 @@ async fn build_test_app_with_config(
     let state = AppState {
         plaid_service: plaid_service_arc,
         plaid_client: plaid_client_arc,
+        paddle_client: crate::test_fixtures::noop_paddle_client(),
         sync_service,
         sync_service_factory,
         analytics_service,

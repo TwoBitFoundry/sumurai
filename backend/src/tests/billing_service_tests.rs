@@ -6,6 +6,7 @@ use crate::services::billing_service::{
 };
 use chrono::{TimeZone, Utc};
 use std::collections::HashMap;
+use uuid::Uuid;
 
 struct MockEnvironment {
     vars: HashMap<String, String>,
@@ -34,6 +35,10 @@ impl MockEnvironment {
         vars.insert(
             "PADDLE_CARDLESS_TRIAL_PRICE_ID".to_string(),
             "pri_trial".to_string(),
+        );
+        vars.insert(
+            "TRIAL_CODE_HASH_KEY".to_string(),
+            "test-trial-code-hash-key".to_string(),
         );
         Self { vars }
     }
@@ -84,6 +89,18 @@ fn given_stale_paddle_signature_when_verifying_then_rejects() {
 
     let result =
         verify_paddle_webhook_signature("pdl_ntfset_test", header, raw_body, 1_700_000_006, 5);
+
+    assert_eq!(result, Err(PaddleWebhookSignatureError::StaleTimestamp));
+}
+
+#[test]
+fn given_negative_signature_tolerance_when_verifying_then_rejects_non_exact_timestamp() {
+    let raw_body = br#"{"event_id":"evt_123"}"#;
+    let header =
+        "ts=1700000000;h1=3a197239aca6698888207b95b9e07653c1db1715a97746290f20f3f466752b2b";
+
+    let result =
+        verify_paddle_webhook_signature("pdl_ntfset_test", header, raw_body, 1_700_000_001, -1);
 
     assert_eq!(result, Err(PaddleWebhookSignatureError::StaleTimestamp));
 }
@@ -208,6 +225,7 @@ async fn given_billing_disabled_when_creating_checkout_then_paddle_client_is_not
             CreateCheckoutRequest {
                 user_email: "me@example.com".to_string(),
                 price_id: "pri_monthly".to_string(),
+                user_id: Uuid::new_v4(),
             },
         )
         .await;

@@ -10,6 +10,7 @@ use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 use crate::models::auth::WebAuthnCredential;
 use crate::models::predicted_category::PredictedCategory;
 use crate::models::{auth::User, transaction::Transaction};
+use crate::providers::paddle_provider::MockPaddleClient;
 use crate::providers::ProviderRegistry;
 
 use crate::providers::{
@@ -149,6 +150,10 @@ pub(crate) fn noop_categorizer() -> Arc<dyn Categorizer> {
     Arc::new(NoopCategorizer)
 }
 
+pub(crate) fn noop_paddle_client() -> Arc<dyn crate::providers::PaddleClient> {
+    Arc::new(MockPaddleClient::new())
+}
+
 pub(crate) fn build_credential_resolvers(
     db_repository: Arc<dyn DatabaseRepository>,
 ) -> std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>> {
@@ -179,6 +184,23 @@ impl TestFixtures {
         test_env.set("AUTH_COOKIE_SAME_SITE", "Lax");
         test_env.set("APP_ORIGIN", "http://localhost:8080");
         Config::from_env_provider(&test_env).expect("Failed to create test config")
+    }
+
+    pub(crate) fn create_paddle_test_config() -> Config {
+        std::env::set_var("OTEL_TRACES_EXPORTER", "none");
+        let mut test_env = MockEnvironment::new();
+        test_env.set("TELLER_ENV", "test");
+        test_env.set("AUTH_COOKIE_SAME_SITE", "Lax");
+        test_env.set("APP_ORIGIN", "http://localhost:8080");
+        test_env.set("BILLING_MODE", "paddle");
+        test_env.set("PADDLE_ENVIRONMENT", "sandbox");
+        test_env.set("PADDLE_API_KEY", "test-api-key");
+        test_env.set("PADDLE_WEBHOOK_SECRET", "pdl_ntfset_test");
+        test_env.set("PADDLE_MONTHLY_PRICE_ID", "pri_monthly");
+        test_env.set("PADDLE_CARDLESS_TRIAL_PRICE_ID", "pri_trial");
+        test_env.set("TRIAL_CODE_HASH_KEY", "test-trial-code-hash-key");
+        test_env.set("ENABLED_FINANCIAL_PROVIDERS", "diy,plaid");
+        Config::from_env_provider(&test_env).expect("Failed to create Paddle test config")
     }
 
     pub fn sample_transactions() -> Vec<Transaction> {
@@ -458,6 +480,7 @@ impl TestFixtures {
         let state = AppState {
             plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
+            paddle_client: noop_paddle_client(),
             sync_service,
             sync_service_factory,
             analytics_service,
@@ -619,6 +642,7 @@ impl TestFixtures {
         let state = AppState {
             plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
+            paddle_client: noop_paddle_client(),
             sync_service,
             sync_service_factory,
             analytics_service,
@@ -662,6 +686,39 @@ impl TestFixtures {
         mock_db: MockDatabaseRepository,
         mock_cache: MockCacheService,
         categorizer: Arc<dyn Categorizer>,
+    ) -> Result<Router, anyhow::Error> {
+        let config = Self::create_test_config();
+        Self::create_test_app_with_db_cache_config_and_categorizer(
+            mock_db,
+            mock_cache,
+            categorizer,
+            config,
+        )
+        .await
+    }
+
+    pub async fn create_test_app_with_db_cache_config_and_categorizer(
+        mock_db: MockDatabaseRepository,
+        mock_cache: MockCacheService,
+        categorizer: Arc<dyn Categorizer>,
+        config: Config,
+    ) -> Result<Router, anyhow::Error> {
+        Self::create_test_app_with_db_cache_config_categorizer_and_paddle(
+            mock_db,
+            mock_cache,
+            categorizer,
+            config,
+            noop_paddle_client(),
+        )
+        .await
+    }
+
+    pub async fn create_test_app_with_db_cache_config_categorizer_and_paddle(
+        mock_db: MockDatabaseRepository,
+        mock_cache: MockCacheService,
+        categorizer: Arc<dyn Categorizer>,
+        config: Config,
+        paddle_client: Arc<dyn crate::providers::PaddleClient>,
     ) -> Result<Router, anyhow::Error> {
         let plaid_client = Arc::new(RealPlaidClient::new(
             "test_client_id".to_string(),
@@ -715,8 +772,6 @@ impl TestFixtures {
 
         let budget_service = Arc::new(BudgetService::new());
         let authorization_service = Arc::new(AuthorizationService::new());
-        let config = Self::create_test_config();
-
         let auto_categorization_service = Arc::new(AutoCategorizationService::new(
             db_repository.clone(),
             cache_service.clone(),
@@ -735,6 +790,7 @@ impl TestFixtures {
         let state = AppState {
             plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
+            paddle_client,
             sync_service,
             sync_service_factory,
             analytics_service,

@@ -1,11 +1,19 @@
 #![allow(dead_code)]
 
 use crate::config::{BillingMode, Config};
-use crate::providers::paddle_provider::{
-    CreateCheckoutRequest, CreateCheckoutResponse, PaddleClient,
+use crate::models::{
+    auth::User,
+    billing::{BillingProfile, TrialCodeRedemption},
 };
+use crate::providers::paddle_provider::{
+    CreateCardlessTrialRequest, CreateCheckoutRequest, CreateCheckoutResponse,
+    CreatePaymentMethodTransactionRequest, CreatePaymentMethodTransactionResponse,
+    CreatePortalSessionRequest, CreatePortalSessionResponse, PaddleClient,
+};
+use crate::services::repository_service::DatabaseRepository;
 use chrono::{DateTime, Utc};
 use hmac::{Hmac, KeyInit, Mac};
+use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use subtle::ConstantTimeEq;
 
@@ -22,10 +30,30 @@ pub enum EntitlementAccessStatus {
     Expired,
 }
 
+impl EntitlementAccessStatus {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Demo => "demo",
+            Self::Trialing => "trialing",
+            Self::Active => "active",
+            Self::PastDue => "past_due",
+            Self::Paused => "paused",
+            Self::Canceled => "canceled",
+            Self::Expired => "expired",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct EntitlementDecision {
     pub can_use_own_data: bool,
     pub payment_method_required: bool,
+}
+
+pub struct TrialRedemptionInput<'a> {
+    pub code: &'a str,
+    pub country_code: &'a str,
+    pub postal_code: &'a str,
 }
 
 #[derive(Clone)]
@@ -81,6 +109,18 @@ impl BillingService {
         }
     }
 
+    pub fn project_local_access_status(status: Option<&str>) -> EntitlementAccessStatus {
+        match status {
+            Some("trialing") => EntitlementAccessStatus::Trialing,
+            Some("active") => EntitlementAccessStatus::Active,
+            Some("past_due") => EntitlementAccessStatus::PastDue,
+            Some("paused") => EntitlementAccessStatus::Paused,
+            Some("canceled") => EntitlementAccessStatus::Canceled,
+            Some("expired") => EntitlementAccessStatus::Expired,
+            _ => EntitlementAccessStatus::Demo,
+        }
+    }
+
     pub fn should_apply_event(
         existing_last_event_at: Option<DateTime<Utc>>,
         incoming_event_at: DateTime<Utc>,
@@ -104,12 +144,182 @@ impl BillingService {
             .await
             .map_err(|_| BillingServiceError::PaddleRequestFailed)
     }
+
+    pub async fn create_checkout_for_user<C: PaddleClient + ?Sized>(
+        &self,
+        client: &C,
+        user: &User,
+    ) -> Result<CreateCheckoutResponse, BillingServiceError> {
+        let paddle = self
+            .config
+            .paddle_billing()
+            .ok_or(BillingServiceError::BillingDisabled)?;
+        self.create_checkout(
+            client,
+            CreateCheckoutRequest {
+                user_email: user.email.clone(),
+                user_id: user.id,
+                price_id: paddle.monthly_price_id.clone(),
+            },
+        )
+        .await
+    }
+
+    pub async fn redeem_trial_code<R: DatabaseRepository + ?Sized, C: PaddleClient + ?Sized>(
+        &self,
+        repository: &R,
+        client: &C,
+        user: &User,
+        input: TrialRedemptionInput<'_>,
+    ) -> Result<TrialCodeRedemption, BillingServiceError> {
+        if !self.config.is_billing_enabled() {
+            return Err(BillingServiceError::BillingDisabled);
+        }
+        if input.code.trim().is_empty()
+            || input.country_code.trim().is_empty()
+            || input.postal_code.trim().is_empty()
+        {
+            return Err(BillingServiceError::InvalidTrialRedemption);
+        }
+
+        let paddle = self
+            .config
+            .paddle_billing()
+            .ok_or(BillingServiceError::BillingDisabled)?;
+        let code_hash = hash_trial_code(&paddle.trial_code_hash_key, input.code)?;
+        let reserved_at = Utc::now();
+        let Some(redemption) = repository
+            .reserve_trial_code_redemption(&code_hash, &user.id, reserved_at)
+            .await
+            .map_err(|_| BillingServiceError::RepositoryRequestFailed)?
+        else {
+            return Err(BillingServiceError::TrialCodeUnavailable);
+        };
+
+        let profile = repository
+            .get_billing_profile(&user.id)
+            .await
+            .map_err(|_| BillingServiceError::RepositoryRequestFailed)?;
+
+        let trial = match client
+            .create_cardless_trial(CreateCardlessTrialRequest {
+                user_id: user.id,
+                user_email: user.email.clone(),
+                existing_customer_id: profile
+                    .as_ref()
+                    .and_then(|profile| profile.paddle_customer_id.clone()),
+                existing_address_id: profile
+                    .as_ref()
+                    .and_then(|profile| profile.paddle_address_id.clone()),
+                country_code: input.country_code.trim().to_uppercase(),
+                postal_code: input.postal_code.trim().to_string(),
+                price_id: paddle.cardless_trial_price_id.clone(),
+            })
+            .await
+        {
+            Ok(trial) => trial,
+            Err(_) => {
+                let _ = repository
+                    .release_trial_code_redemption(&code_hash, &user.id, Utc::now())
+                    .await;
+                return Err(BillingServiceError::PaddleRequestFailed);
+            }
+        };
+
+        let now = Utc::now();
+        repository
+            .upsert_billing_profile(&BillingProfile {
+                user_id: user.id,
+                paddle_customer_id: Some(trial.customer_id),
+                paddle_address_id: Some(trial.address_id),
+                billing_country_code: Some(input.country_code.trim().to_uppercase()),
+                billing_postal_code: Some(input.postal_code.trim().to_string()),
+                created_at: profile
+                    .as_ref()
+                    .map(|profile| profile.created_at)
+                    .unwrap_or(now),
+                updated_at: now,
+            })
+            .await
+            .map_err(|_| BillingServiceError::RepositoryRequestFailed)?;
+
+        let updated = TrialCodeRedemption {
+            paddle_transaction_id: Some(trial.transaction_id),
+            updated_at: now,
+            ..redemption
+        };
+        repository
+            .upsert_trial_code_redemption(&updated)
+            .await
+            .map_err(|_| BillingServiceError::RepositoryRequestFailed)?;
+
+        Ok(updated)
+    }
+
+    pub async fn create_payment_method_transaction<
+        R: DatabaseRepository + ?Sized,
+        C: PaddleClient + ?Sized,
+    >(
+        &self,
+        repository: &R,
+        client: &C,
+        user: &User,
+    ) -> Result<CreatePaymentMethodTransactionResponse, BillingServiceError> {
+        if !self.config.is_billing_enabled() {
+            return Err(BillingServiceError::BillingDisabled);
+        }
+        let entitlement = repository
+            .get_billing_entitlement(&user.id)
+            .await
+            .map_err(|_| BillingServiceError::RepositoryRequestFailed)?
+            .ok_or(BillingServiceError::EntitlementUnavailable)?;
+        let subscription_id = entitlement
+            .paddle_subscription_id
+            .ok_or(BillingServiceError::EntitlementUnavailable)?;
+        client
+            .create_payment_method_transaction(CreatePaymentMethodTransactionRequest {
+                subscription_id,
+            })
+            .await
+            .map_err(|_| BillingServiceError::PaddleRequestFailed)
+    }
+
+    pub async fn create_portal_session<R: DatabaseRepository + ?Sized, C: PaddleClient + ?Sized>(
+        &self,
+        repository: &R,
+        client: &C,
+        user: &User,
+    ) -> Result<CreatePortalSessionResponse, BillingServiceError> {
+        if !self.config.is_billing_enabled() {
+            return Err(BillingServiceError::BillingDisabled);
+        }
+        let entitlement = repository
+            .get_billing_entitlement(&user.id)
+            .await
+            .map_err(|_| BillingServiceError::RepositoryRequestFailed)?
+            .ok_or(BillingServiceError::EntitlementUnavailable)?;
+        let customer_id = entitlement
+            .paddle_customer_id
+            .ok_or(BillingServiceError::EntitlementUnavailable)?;
+        let subscription_ids = entitlement.paddle_subscription_id.into_iter().collect();
+        client
+            .create_portal_session(CreatePortalSessionRequest {
+                customer_id,
+                subscription_ids,
+            })
+            .await
+            .map_err(|_| BillingServiceError::PaddleRequestFailed)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BillingServiceError {
     BillingDisabled,
+    EntitlementUnavailable,
+    InvalidTrialRedemption,
     PaddleRequestFailed,
+    RepositoryRequestFailed,
+    TrialCodeUnavailable,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -119,6 +329,25 @@ pub enum PaddleWebhookSignatureError {
     InvalidTimestamp,
     StaleTimestamp,
     SignatureMismatch,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct PaddleWebhookEnvelope {
+    pub event_id: String,
+    pub event_type: String,
+    pub occurred_at: DateTime<Utc>,
+}
+
+pub fn hash_trial_code(secret: &str, code: &str) -> Result<String, BillingServiceError> {
+    let normalized = normalize_trial_code(code);
+    let mut mac = HmacSha256::new_from_slice(secret.as_bytes())
+        .map_err(|_| BillingServiceError::PaddleRequestFailed)?;
+    mac.update(normalized.as_bytes());
+    Ok(hex::encode(mac.finalize().into_bytes()))
+}
+
+pub fn normalize_trial_code(code: &str) -> String {
+    code.trim().to_uppercase()
 }
 
 pub fn verify_paddle_webhook_signature(
@@ -151,7 +380,8 @@ pub fn verify_paddle_webhook_signature(
         .parse::<i64>()
         .map_err(|_| PaddleWebhookSignatureError::InvalidTimestamp)?;
 
-    if now_timestamp.abs_diff(timestamp) > tolerance_seconds as u64 {
+    let tolerance_seconds = tolerance_seconds.max(0) as u64;
+    if now_timestamp.abs_diff(timestamp) > tolerance_seconds {
         return Err(PaddleWebhookSignatureError::StaleTimestamp);
     }
 

@@ -1,6 +1,6 @@
 use anyhow::Context;
 use axum::{
-    body::Body,
+    body::{Body, Bytes},
     extract::{DefaultBodyLimit, Multipart, Query, Request, State},
     http::{
         header::{AUTHORIZATION, CONTENT_TYPE, COOKIE, SET_COOKIE},
@@ -62,6 +62,10 @@ use crate::models::{
     account::AccountResponse,
     analytics::DateRangeQuery,
     auth as auth_models,
+    billing::{
+        BillingCheckoutResponse, BillingPortalSessionResponse, BillingStatusResponse,
+        TrialRedeemRequest, TrialRedeemResponse,
+    },
     budget::{
         Budget, BudgetsOverviewResponse, CreateBudgetRequest, DeleteBudgetResponse,
         UpdateBudgetRequest,
@@ -152,6 +156,10 @@ use middleware::telemetry_middleware::{self, request_tracing_middleware, Telemet
 use migration::MigratorTrait;
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DbBackend, Statement};
 use services::auto_categorization::service::AutoCategorizationError;
+use services::billing_service::{
+    verify_paddle_webhook_signature, BillingService, BillingServiceError, PaddleWebhookEnvelope,
+    TrialRedemptionInput,
+};
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
 use services::category_management::service::CategoryManagementService;
 use services::import_service::ImportService;
@@ -281,6 +289,13 @@ async fn main() -> anyhow::Result<()> {
     ));
 
     let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
+    let paddle_client: Arc<dyn providers::PaddleClient> = match config.paddle_billing() {
+        Some(paddle) => Arc::new(providers::RealPaddleClient::new(
+            &paddle.environment,
+            paddle.api_key.clone(),
+        )),
+        None => Arc::new(providers::RealPaddleClient::new("sandbox", String::new())),
+    };
 
     let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
 
@@ -481,6 +496,7 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState {
         plaid_service,
         plaid_client,
+        paddle_client,
         sync_service,
         sync_service_factory,
         analytics_service,
@@ -570,8 +586,23 @@ pub fn create_app(state: AppState) -> Router {
         .nest("/api/auth/register", auth_register)
         .route("/api/auth/refresh", post(refresh_user_session))
         .route("/api/auth/logout", post(logout_user));
+    let billing_webhook_routes = Router::new().route(
+        "/api/billing/webhooks/paddle",
+        post(handle_paddle_billing_webhook),
+    );
 
     let protected_routes = Router::new()
+        .route("/api/billing/status", get(get_authenticated_billing_status))
+        .route("/api/billing/checkout", post(create_billing_checkout))
+        .route("/api/billing/trials/redeem", post(redeem_trial_code))
+        .route(
+            "/api/billing/payment-method",
+            post(create_billing_payment_method),
+        )
+        .route(
+            "/api/billing/portal-session",
+            post(create_billing_portal_session),
+        )
         .route(
             "/api/auth/onboarding/complete",
             put(complete_user_onboarding),
@@ -789,6 +820,7 @@ pub fn create_app(state: AppState) -> Router {
 
     Router::new()
         .merge(public_routes)
+        .merge(billing_webhook_routes)
         .merge(protected_routes)
         .merge(docs_routes)
         .layer(middleware_stack)
@@ -2401,9 +2433,363 @@ fn provider_disabled_response(provider: &str) -> (StatusCode, Json<ApiErrorRespo
     .into_response(StatusCode::FORBIDDEN)
 }
 
+fn billing_disabled_response() -> (StatusCode, Json<ApiErrorResponse>) {
+    ApiErrorResponse::with_code(
+        "BILLING_DISABLED",
+        "Billing is not enabled for this deployment",
+        "BILLING_DISABLED",
+    )
+    .into_response(StatusCode::NOT_FOUND)
+}
+
 fn api_internal_server_error(message: impl Into<String>) -> (StatusCode, Json<ApiErrorResponse>) {
     ApiErrorResponse::new("INTERNAL_SERVER_ERROR", &message.into())
         .into_response(StatusCode::INTERNAL_SERVER_ERROR)
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/billing/status",
+    responses(
+        (status = 200, description = "Billing status", body = BillingStatusResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse)
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Billing"
+)]
+pub async fn get_authenticated_billing_status(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<BillingStatusResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    if !state.config.is_billing_enabled() {
+        return Ok(Json(BillingStatusResponse {
+            billing_enabled: false,
+            access_status: "unrestricted".to_string(),
+            can_use_own_data: true,
+            is_demo_mode_active: false,
+            trial_ends_at: None,
+            current_period_ends_at: None,
+            payment_method_required: false,
+            billing_portal_available: false,
+            enabled_financial_providers: state
+                .config
+                .enabled_financial_providers()
+                .unwrap_or(&[])
+                .to_vec(),
+        }));
+    }
+
+    let user = state
+        .db_repository
+        .get_user_by_id(&auth_context.user_id)
+        .await
+        .map_err(|error| {
+            tracing::error!("Failed to load user for billing status: {}", error);
+            api_internal_server_error("Failed to load billing status")
+        })?
+        .ok_or_else(|| api_internal_server_error("Failed to load billing status"))?;
+
+    let entitlement = state
+        .db_repository
+        .get_billing_entitlement(&auth_context.user_id)
+        .await
+        .map_err(|error| {
+            tracing::error!("Failed to load billing entitlement: {}", error);
+            api_internal_server_error("Failed to load billing status")
+        })?;
+
+    let billing_service = BillingService::new(state.config.clone());
+    let access_status = BillingService::project_local_access_status(
+        entitlement.as_ref().map(|row| row.access_status.as_str()),
+    );
+    let decision = billing_service.decision_for_status(access_status);
+    let billing_portal_available = entitlement
+        .as_ref()
+        .and_then(|row| row.paddle_customer_id.as_ref())
+        .is_some();
+
+    Ok(Json(BillingStatusResponse {
+        billing_enabled: true,
+        access_status: access_status.as_str().to_string(),
+        can_use_own_data: decision.can_use_own_data,
+        is_demo_mode_active: user.demo_mode_active,
+        trial_ends_at: entitlement.as_ref().and_then(|row| row.trial_ends_at),
+        current_period_ends_at: entitlement
+            .as_ref()
+            .and_then(|row| row.current_period_ends_at),
+        payment_method_required: decision.payment_method_required,
+        billing_portal_available,
+        enabled_financial_providers: state
+            .config
+            .enabled_financial_providers()
+            .unwrap_or(&[])
+            .to_vec(),
+    }))
+}
+
+async fn load_billing_user(
+    state: &AppState,
+    user_id: &Uuid,
+) -> Result<User, (StatusCode, Json<ApiErrorResponse>)> {
+    state
+        .db_repository
+        .get_user_by_id(user_id)
+        .await
+        .map_err(|error| {
+            tracing::error!("Failed to load user for billing endpoint: {}", error);
+            api_internal_server_error("Failed to load billing user")
+        })?
+        .ok_or_else(|| api_internal_server_error("Failed to load billing user"))
+}
+
+fn billing_service_error_response(
+    error: BillingServiceError,
+) -> (StatusCode, Json<ApiErrorResponse>) {
+    match error {
+        BillingServiceError::BillingDisabled => billing_disabled_response(),
+        BillingServiceError::InvalidTrialRedemption => api_bad_request("Invalid trial redemption"),
+        BillingServiceError::TrialCodeUnavailable => ApiErrorResponse::with_code(
+            "TRIAL_CODE_UNAVAILABLE",
+            "Trial code is unavailable",
+            "TRIAL_CODE_UNAVAILABLE",
+        )
+        .into_response(StatusCode::CONFLICT),
+        BillingServiceError::EntitlementUnavailable => ApiErrorResponse::with_code(
+            "BILLING_ENTITLEMENT_UNAVAILABLE",
+            "Billing entitlement is unavailable",
+            "BILLING_ENTITLEMENT_UNAVAILABLE",
+        )
+        .into_response(StatusCode::CONFLICT),
+        BillingServiceError::PaddleRequestFailed => ApiErrorResponse::with_code(
+            "PADDLE_REQUEST_FAILED",
+            "Paddle request failed",
+            "PADDLE_REQUEST_FAILED",
+        )
+        .into_response(StatusCode::BAD_GATEWAY),
+        BillingServiceError::RepositoryRequestFailed => {
+            api_internal_server_error("Billing request failed")
+        }
+    }
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/billing/checkout",
+    responses(
+        (status = 200, description = "Paddle checkout created", body = BillingCheckoutResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Billing disabled", body = ApiErrorResponse),
+        (status = 502, description = "Paddle request failed", body = ApiErrorResponse)
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Billing"
+)]
+pub async fn create_billing_checkout(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<BillingCheckoutResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    if !state.config.is_billing_enabled() {
+        return Err(billing_disabled_response());
+    }
+    let user = load_billing_user(&state, &auth_context.user_id).await?;
+    let billing_service = BillingService::new(state.config.clone());
+    let checkout = billing_service
+        .create_checkout_for_user(state.paddle_client.as_ref(), &user)
+        .await
+        .map_err(billing_service_error_response)?;
+    Ok(Json(BillingCheckoutResponse {
+        checkout_url: checkout.checkout_url,
+        transaction_id: checkout.transaction_id,
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/billing/trials/redeem",
+    request_body = TrialRedeemRequest,
+    responses(
+        (status = 200, description = "Trial redemption pending webhook fulfillment", body = TrialRedeemResponse),
+        (status = 400, description = "Invalid trial redemption", body = ApiErrorResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Billing disabled", body = ApiErrorResponse),
+        (status = 409, description = "Trial code unavailable", body = ApiErrorResponse),
+        (status = 429, description = "Rate limited", body = ApiErrorResponse),
+        (status = 502, description = "Paddle request failed", body = ApiErrorResponse)
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Billing"
+)]
+pub async fn redeem_trial_code(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<TrialRedeemRequest>,
+) -> Result<Json<TrialRedeemResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    if !state.config.is_billing_enabled() {
+        return Err(billing_disabled_response());
+    }
+    if req.code.trim().is_empty()
+        || req.country_code.trim().is_empty()
+        || req.postal_code.trim().is_empty()
+    {
+        return Err(api_bad_request(
+            "Trial code, country, and postal code are required",
+        ));
+    }
+    let attempts = state
+        .cache_service
+        .increment_counter(
+            &format!("billing_trial_redeem:{}", auth_context.user_id),
+            3600,
+        )
+        .await
+        .map_err(|error| {
+            tracing::error!("Failed to rate limit trial redemption: {}", error);
+            api_internal_server_error("Failed to redeem trial code")
+        })?;
+    if attempts > 10 {
+        return Err(ApiErrorResponse::with_code(
+            "RATE_LIMITED",
+            "Too many trial redemption attempts",
+            "RATE_LIMITED",
+        )
+        .into_response(StatusCode::TOO_MANY_REQUESTS));
+    }
+
+    let user = load_billing_user(&state, &auth_context.user_id).await?;
+    let billing_service = BillingService::new(state.config.clone());
+    billing_service
+        .redeem_trial_code(
+            state.db_repository.as_ref(),
+            state.paddle_client.as_ref(),
+            &user,
+            TrialRedemptionInput {
+                code: &req.code,
+                country_code: &req.country_code,
+                postal_code: &req.postal_code,
+            },
+        )
+        .await
+        .map_err(billing_service_error_response)?;
+    Ok(Json(TrialRedeemResponse {
+        status: "pending".to_string(),
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/billing/payment-method",
+    responses(
+        (status = 200, description = "Payment method checkout transaction created", body = BillingCheckoutResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Billing disabled", body = ApiErrorResponse),
+        (status = 409, description = "Entitlement unavailable", body = ApiErrorResponse),
+        (status = 502, description = "Paddle request failed", body = ApiErrorResponse)
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Billing"
+)]
+pub async fn create_billing_payment_method(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<BillingCheckoutResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    if !state.config.is_billing_enabled() {
+        return Err(billing_disabled_response());
+    }
+    let user = load_billing_user(&state, &auth_context.user_id).await?;
+    let billing_service = BillingService::new(state.config.clone());
+    let checkout = billing_service
+        .create_payment_method_transaction(
+            state.db_repository.as_ref(),
+            state.paddle_client.as_ref(),
+            &user,
+        )
+        .await
+        .map_err(billing_service_error_response)?;
+    Ok(Json(BillingCheckoutResponse {
+        checkout_url: checkout.checkout_url,
+        transaction_id: checkout.transaction_id,
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/billing/portal-session",
+    responses(
+        (status = 200, description = "Temporary Paddle portal session links", body = BillingPortalSessionResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Billing disabled", body = ApiErrorResponse),
+        (status = 409, description = "Entitlement unavailable", body = ApiErrorResponse),
+        (status = 502, description = "Paddle request failed", body = ApiErrorResponse)
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Billing"
+)]
+pub async fn create_billing_portal_session(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<BillingPortalSessionResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    if !state.config.is_billing_enabled() {
+        return Err(billing_disabled_response());
+    }
+    let user = load_billing_user(&state, &auth_context.user_id).await?;
+    let billing_service = BillingService::new(state.config.clone());
+    let portal = billing_service
+        .create_portal_session(
+            state.db_repository.as_ref(),
+            state.paddle_client.as_ref(),
+            &user,
+        )
+        .await
+        .map_err(billing_service_error_response)?;
+    Ok(Json(BillingPortalSessionResponse {
+        overview_url: portal.overview_url,
+        subscription_urls: portal.subscription_urls,
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/billing/webhooks/paddle",
+    request_body(content = String, content_type = "application/json"),
+    responses(
+        (status = 200, description = "Webhook accepted"),
+        (status = 400, description = "Invalid webhook", body = ApiErrorResponse),
+        (status = 404, description = "Billing disabled", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse)
+    ),
+    tag = "Billing"
+)]
+pub async fn handle_paddle_billing_webhook(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    raw_body: Bytes,
+) -> Result<StatusCode, (StatusCode, Json<ApiErrorResponse>)> {
+    if !state.config.is_billing_enabled() {
+        return Err(billing_disabled_response());
+    }
+
+    let paddle = state
+        .config
+        .paddle_billing()
+        .ok_or_else(|| api_internal_server_error("Paddle billing is not configured"))?;
+    let signature = headers
+        .get("Paddle-Signature")
+        .and_then(|value| value.to_str().ok())
+        .ok_or_else(|| api_bad_request("Missing Paddle signature"))?;
+    verify_paddle_webhook_signature(
+        &paddle.webhook_secret,
+        signature,
+        &raw_body,
+        Utc::now().timestamp(),
+        300,
+    )
+    .map_err(|_| api_bad_request("Invalid Paddle signature"))?;
+
+    let _event: PaddleWebhookEnvelope =
+        serde_json::from_slice(&raw_body).map_err(|_| api_bad_request("Invalid Paddle event"))?;
+
+    Ok(StatusCode::OK)
 }
 
 #[utoipa::path(

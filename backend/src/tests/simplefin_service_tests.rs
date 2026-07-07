@@ -1017,6 +1017,7 @@ async fn build_simplefin_handler_app(
     let state = AppState {
         plaid_service,
         plaid_client,
+        paddle_client: crate::test_fixtures::noop_paddle_client(),
         sync_service,
         sync_service_factory,
         analytics_service: Arc::new(AnalyticsService::new()),

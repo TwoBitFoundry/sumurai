@@ -38,10 +38,12 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use sea_orm::{
     sea_query::{Expr, Func, JoinType, OnConflict, Query, SimpleExpr},
+    ActiveModelTrait,
     ActiveValue::Set,
     ColumnTrait, Condition, ConnectionTrait, DatabaseConnection, DatabaseTransaction, DbBackend,
-    EntityTrait, FromQueryResult, PaginatorTrait, QueryFilter, QueryOrder, QueryResult,
-    QuerySelect, QueryTrait, RelationTrait, Select, Statement, TransactionTrait, Value,
+    EntityTrait, FromQueryResult, IntoActiveModel, PaginatorTrait, QueryFilter, QueryOrder,
+    QueryResult, QuerySelect, QueryTrait, RelationTrait, Select, Statement, TransactionTrait,
+    Value,
 };
 use std::{future::Future, pin::Pin};
 use uuid::Uuid;
@@ -464,6 +466,24 @@ pub trait DatabaseRepository: Send + Sync {
     async fn get_billing_entitlement(&self, user_id: &Uuid) -> Result<Option<BillingEntitlement>>;
     async fn insert_trial_code(&self, trial_code: &TrialCode) -> Result<()>;
     async fn get_trial_code_by_hash(&self, code_hash: &str) -> Result<Option<TrialCode>>;
+    async fn list_trial_codes(&self) -> Result<Vec<TrialCode>>;
+    async fn disable_trial_code(
+        &self,
+        id: &Uuid,
+        disabled_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<()>;
+    async fn reserve_trial_code_redemption(
+        &self,
+        code_hash: &str,
+        user_id: &Uuid,
+        reserved_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<Option<TrialCodeRedemption>>;
+    async fn release_trial_code_redemption(
+        &self,
+        code_hash: &str,
+        user_id: &Uuid,
+        released_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<()>;
     async fn upsert_trial_code_redemption(&self, redemption: &TrialCodeRedemption) -> Result<()>;
     async fn get_trial_code_redemption_for_user(
         &self,
@@ -4001,6 +4021,159 @@ impl DatabaseRepository for PostgresRepository {
                 created_at: Self::from_db_time(row.created_at),
                 updated_at: Self::from_db_time(row.updated_at),
             }))
+    }
+
+    async fn list_trial_codes(&self) -> Result<Vec<TrialCode>> {
+        let db = self.conn();
+        let rows = trial_codes::Entity::find()
+            .order_by_desc(trial_codes::Column::CreatedAt)
+            .all(&db)
+            .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| TrialCode {
+                id: row.id,
+                code_hash: row.code_hash,
+                redeem_by_at: Self::from_db_time(row.redeem_by_at),
+                redeemed_at: Self::opt_from_db_time(row.redeemed_at),
+                redeemed_by_user_id: row.redeemed_by_user_id,
+                disabled_at: Self::opt_from_db_time(row.disabled_at),
+                created_at: Self::from_db_time(row.created_at),
+                updated_at: Self::from_db_time(row.updated_at),
+            })
+            .collect())
+    }
+
+    async fn disable_trial_code(
+        &self,
+        id: &Uuid,
+        disabled_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<()> {
+        let db = self.conn();
+        trial_codes::Entity::update_many()
+            .col_expr(
+                trial_codes::Column::DisabledAt,
+                Expr::value(Self::to_db_time(disabled_at)),
+            )
+            .col_expr(
+                trial_codes::Column::UpdatedAt,
+                Expr::value(Self::to_db_time(disabled_at)),
+            )
+            .filter(trial_codes::Column::Id.eq(*id))
+            .exec(&db)
+            .await?;
+        Ok(())
+    }
+
+    async fn reserve_trial_code_redemption(
+        &self,
+        code_hash: &str,
+        user_id: &Uuid,
+        reserved_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<Option<TrialCodeRedemption>> {
+        let code_hash = code_hash.to_string();
+        let user_id = *user_id;
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                let update_result = trial_codes::Entity::update_many()
+                    .col_expr(
+                        trial_codes::Column::RedeemedAt,
+                        Expr::value(Self::to_db_time(reserved_at)),
+                    )
+                    .col_expr(trial_codes::Column::RedeemedByUserId, Expr::value(user_id))
+                    .col_expr(
+                        trial_codes::Column::UpdatedAt,
+                        Expr::value(Self::to_db_time(reserved_at)),
+                    )
+                    .filter(trial_codes::Column::CodeHash.eq(code_hash.clone()))
+                    .filter(trial_codes::Column::RedeemedAt.is_null())
+                    .filter(trial_codes::Column::DisabledAt.is_null())
+                    .filter(trial_codes::Column::RedeemByAt.gte(Self::to_db_time(reserved_at)))
+                    .exec(txn)
+                    .await?;
+
+                if update_result.rows_affected != 1 {
+                    return Ok(None);
+                }
+
+                let Some(trial_code) = trial_codes::Entity::find()
+                    .filter(trial_codes::Column::CodeHash.eq(code_hash))
+                    .one(txn)
+                    .await?
+                else {
+                    return Ok(None);
+                };
+
+                let redemption = TrialCodeRedemption {
+                    id: Uuid::new_v4(),
+                    trial_code_id: trial_code.id,
+                    user_id,
+                    status: "pending".to_string(),
+                    paddle_transaction_id: None,
+                    paddle_subscription_id: None,
+                    created_at: reserved_at,
+                    updated_at: reserved_at,
+                    fulfilled_at: None,
+                    failed_at: None,
+                };
+
+                trial_code_redemptions::Entity::insert(trial_code_redemptions::ActiveModel {
+                    id: Set(redemption.id),
+                    trial_code_id: Set(redemption.trial_code_id),
+                    user_id: Set(redemption.user_id),
+                    status: Set(redemption.status.clone()),
+                    paddle_transaction_id: Set(None),
+                    paddle_subscription_id: Set(None),
+                    created_at: Set(Self::to_db_time(redemption.created_at)),
+                    updated_at: Set(Self::to_db_time(redemption.updated_at)),
+                    fulfilled_at: Set(None),
+                    failed_at: Set(None),
+                })
+                .exec(txn)
+                .await?;
+
+                Ok(Some(redemption))
+            })
+        })
+        .await
+    }
+
+    async fn release_trial_code_redemption(
+        &self,
+        code_hash: &str,
+        user_id: &Uuid,
+        released_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<()> {
+        let code_hash = code_hash.to_string();
+        let user_id = *user_id;
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                let Some(trial_code) = trial_codes::Entity::find()
+                    .filter(trial_codes::Column::CodeHash.eq(code_hash))
+                    .filter(trial_codes::Column::RedeemedByUserId.eq(user_id))
+                    .one(txn)
+                    .await?
+                else {
+                    return Ok(());
+                };
+
+                trial_code_redemptions::Entity::delete_many()
+                    .filter(trial_code_redemptions::Column::TrialCodeId.eq(trial_code.id))
+                    .filter(trial_code_redemptions::Column::UserId.eq(user_id))
+                    .filter(trial_code_redemptions::Column::Status.eq("pending"))
+                    .exec(txn)
+                    .await?;
+
+                let mut trial_code_model = trial_code.into_active_model();
+                trial_code_model.redeemed_at = Set(None);
+                trial_code_model.redeemed_by_user_id = Set(None);
+                trial_code_model.updated_at = Set(Self::to_db_time(released_at));
+                trial_code_model.update(txn).await?;
+                Ok(())
+            })
+        })
+        .await
     }
 
     async fn upsert_trial_code_redemption(&self, redemption: &TrialCodeRedemption) -> Result<()> {

@@ -102,6 +102,7 @@ fn given_paddle_billing_with_required_settings_when_from_env_provider_then_billi
     env.set("PADDLE_WEBHOOK_SECRET", "test-webhook-secret");
     env.set("PADDLE_MONTHLY_PRICE_ID", "pri_monthly");
     env.set("PADDLE_CARDLESS_TRIAL_PRICE_ID", "pri_trial");
+    env.set("TRIAL_CODE_HASH_KEY", "test-trial-code-hash-key");
 
     let config = Config::from_env_provider(&env).unwrap();
     let paddle = config.paddle_billing().unwrap();
@@ -113,6 +114,7 @@ fn given_paddle_billing_with_required_settings_when_from_env_provider_then_billi
     assert_eq!(paddle.webhook_secret, "test-webhook-secret");
     assert_eq!(paddle.monthly_price_id, "pri_monthly");
     assert_eq!(paddle.cardless_trial_price_id, "pri_trial");
+    assert_eq!(paddle.trial_code_hash_key, "test-trial-code-hash-key");
 }
 
 #[test]

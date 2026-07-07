@@ -72,6 +72,41 @@ fn given_sync_transactions_response_when_generating_openapi_then_documents_simpl
 }
 
 #[test]
+fn given_billing_when_generating_openapi_then_documents_endpoints_and_schemas() {
+    let spec = serde_json::to_value(init_openapi()).unwrap();
+
+    for path in [
+        "/api/billing/status",
+        "/api/billing/checkout",
+        "/api/billing/trials/redeem",
+        "/api/billing/payment-method",
+        "/api/billing/portal-session",
+        "/api/billing/webhooks/paddle",
+    ] {
+        assert!(
+            spec["paths"].get(path).is_some(),
+            "missing billing path {path}"
+        );
+    }
+
+    assert_eq!(
+        spec["paths"]["/api/billing/status"]["get"]["responses"]["200"]["content"]
+            ["application/json"]["schema"]["$ref"],
+        serde_json::json!("#/components/schemas/BillingStatusResponse")
+    );
+    assert_eq!(
+        spec["paths"]["/api/billing/trials/redeem"]["post"]["requestBody"]["content"]
+            ["application/json"]["schema"]["$ref"],
+        serde_json::json!("#/components/schemas/TrialRedeemRequest")
+    );
+    assert_eq!(
+        spec["components"]["schemas"]["BillingStatusResponse"]["properties"]["billing_enabled"]
+            ["type"],
+        serde_json::json!("boolean")
+    );
+}
+
+#[test]
 fn given_auto_categorize_when_generating_openapi_then_documents_endpoint_and_schemas() {
     let spec = serde_json::to_value(init_openapi()).unwrap();
     let path = &spec["paths"]["/api/transactions/auto-categorize"];

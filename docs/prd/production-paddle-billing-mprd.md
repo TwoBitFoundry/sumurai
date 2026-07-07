@@ -392,16 +392,40 @@ without exposing a web admin surface.
 - Regenerate OpenAPI output and update frontend API types.
 
 **Acceptance criteria**
-- [ ] Billing status is safe and useful in both disabled and production billing
+- [x] Billing status is safe and useful in both disabled and production billing
       modes.
-- [ ] Billing mutation endpoints are unreachable or return `BILLING_DISABLED`
+- [x] Billing mutation endpoints are unreachable or return `BILLING_DISABLED`
       outside production billing mode.
-- [ ] Trial redemption does not consume a code if Paddle API setup fails before a
+- [x] Trial redemption does not consume a code if Paddle API setup fails before a
       transaction is created.
-- [ ] A single-use trial code cannot be redeemed by two users, including
+- [x] A single-use trial code cannot be redeemed by two users, including
       concurrent attempts.
-- [ ] Customer portal links are generated on demand and never persisted.
-- [ ] CLI can create, list, and disable trial codes without adding a web admin UI.
+- [x] Customer portal links are generated on demand and never persisted.
+- [x] CLI can create, list, and disable trial codes without adding a web admin UI.
+
+**TDD log**
+- Red: `cargo test -p sumurai-backend --locked billing_api_tests` failed before
+  billing routes, disabled-mode endpoint gates, and production status projection
+  existed.
+- Red: `cargo test -p sumurai-backend --locked billing_api_tests` failed before
+  trial redemption released reserved codes after Paddle setup failures, blocked
+  already reserved codes without calling Paddle, and kept portal URLs ephemeral.
+- Red: `cargo test -p sumurai-backend --locked openapi_tests` failed before
+  billing paths and schemas were registered in the OpenAPI document.
+- Red: `cargo test -p sumurai-cli --locked --test trial_codes_tests` failed
+  before keyed trial-code hashing and CLI create/list/disable operations
+  existed.
+- Green: `cargo test -p sumurai-backend --locked billing_api_tests`.
+- Green: `cargo test -p sumurai-backend --locked billing_service_tests`.
+- Green: `cargo test -p sumurai-backend --locked openapi_tests`.
+- Green: `cargo test -p sumurai-cli --locked --test trial_codes_tests`.
+- Verification: `cargo fmt --all --check`.
+- Verification: `cargo check --workspace --locked --all-targets`.
+- Verification: `cargo clippy --workspace --locked --all-targets --no-deps -- -D warnings`.
+- Verification: `bun --cwd=frontend run typecheck`.
+- Verification: `bun --cwd=frontend run test` passed 1348 tests.
+- Verification: `cargo test --workspace --locked` passed with backend 761
+  tests, 1 ignored, and all CLI tests passing.
 
 ## Phase 5 - Entitlement and provider gates for own-data writes
 
