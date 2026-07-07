@@ -119,11 +119,11 @@ state.billing_service.process_paddle_webhook(&headers, &raw_body).await
 
 **Acceptance criteria:**
 
-- [ ] Duplicate webhook event IDs return success without double mutation.
-- [ ] Out-of-order older events do not downgrade newer entitlement (`last_event_at`).
-- [ ] Verified webhook is the only path that grants trialing/active entitlement (no frontend trust).
-- [ ] Invalid/missing/stale signatures rejected before JSON business parsing.
-- [ ] Handler contains no entitlement or repository logic beyond delegation.
+- [x] Duplicate webhook event IDs return success without double mutation.
+- [x] Out-of-order older events do not downgrade newer entitlement (`last_event_at`).
+- [x] Verified webhook is the only path that grants trialing/active entitlement (no frontend trust).
+- [x] Invalid/missing/stale signatures rejected before JSON business parsing.
+- [x] Handler contains no entitlement or repository logic beyond delegation.
 
 **TDD slices:**
 
@@ -131,6 +131,13 @@ state.billing_service.process_paddle_webhook(&headers, &raw_body).await
 2. Green: implement `process_paddle_webhook`; thin handler delegates.
 3. Red: integration test — trial redeem → webhook → entitlement becomes `trialing`.
 4. Refactor: isolate Paddle payload parsing helpers inside service module.
+
+**TDD log (Workstream 3):**
+
+- Red: `cargo test -p sumurai-backend --locked billing_` failed before webhook processing existed.
+- Green: `cargo test -p sumurai-backend --locked billing_` (45 tests).
+- Green: `cargo test -p sumurai-backend --locked given_duplicate_paddle_webhook`.
+- Verification: `cargo fmt`, `cargo check --workspace`, `cargo clippy`, `cargo test -p sumurai-backend --locked`.
 
 ---
 

@@ -490,6 +490,7 @@ pub trait DatabaseRepository: Send + Sync {
         user_id: &Uuid,
     ) -> Result<Option<TrialCodeRedemption>>;
     async fn record_paddle_webhook_event(&self, event: &PaddleWebhookEvent) -> Result<()>;
+    async fn record_paddle_webhook_event_if_new(&self, event: &PaddleWebhookEvent) -> Result<bool>;
 }
 
 pub struct PostgresRepository {
@@ -626,11 +627,11 @@ impl PostgresRepository {
         dt.map(Self::from_db_time)
     }
 
-    async fn insert_paddle_webhook_event_on<C>(db: &C, event: PaddleWebhookEvent) -> Result<()>
+    async fn insert_paddle_webhook_event_on<C>(db: &C, event: PaddleWebhookEvent) -> Result<bool>
     where
         C: ConnectionTrait,
     {
-        paddle_webhook_events::Entity::insert(paddle_webhook_events::ActiveModel {
+        let result = paddle_webhook_events::Entity::insert(paddle_webhook_events::ActiveModel {
             event_id: Set(event.event_id),
             event_type: Set(event.event_type),
             occurred_at: Set(Self::to_db_time(event.occurred_at)),
@@ -646,9 +647,9 @@ impl PostgresRepository {
                 .do_nothing()
                 .to_owned(),
         )
-        .exec(db)
+        .exec_without_returning(db)
         .await?;
-        Ok(())
+        Ok(result > 0)
     }
 
     async fn with_tenant<T>(
@@ -4243,6 +4244,11 @@ impl DatabaseRepository for PostgresRepository {
     }
 
     async fn record_paddle_webhook_event(&self, event: &PaddleWebhookEvent) -> Result<()> {
+        let _ = self.record_paddle_webhook_event_if_new(event).await?;
+        Ok(())
+    }
+
+    async fn record_paddle_webhook_event_if_new(&self, event: &PaddleWebhookEvent) -> Result<bool> {
         let event = event.clone();
         #[cfg(test)]
         if let Some(db) = &self.mock_db {

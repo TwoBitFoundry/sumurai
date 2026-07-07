@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::config::{BillingMode, Config};
 use crate::models::{
     auth::User,
-    billing::{BillingProfile, TrialCodeRedemption},
+    billing::{BillingEntitlement, BillingProfile, PaddleWebhookEvent, TrialCodeRedemption},
 };
 use crate::providers::paddle_provider::{
     CreateCardlessTrialRequest, CreateCheckoutRequest, CreateCheckoutResponse,
@@ -373,6 +373,206 @@ impl BillingService {
             .await
             .map_err(|_| BillingServiceError::PaddleRequestFailed)
     }
+
+    pub async fn process_paddle_webhook(
+        &self,
+        signature_header: Option<&str>,
+        raw_body: &[u8],
+        now_timestamp: i64,
+    ) -> Result<(), BillingWebhookError> {
+        if !self.config.is_billing_enabled() {
+            return Err(BillingWebhookError::BillingDisabled);
+        }
+
+        let paddle = self
+            .config
+            .paddle_billing()
+            .ok_or(BillingWebhookError::BillingDisabled)?;
+
+        verify_paddle_webhook_signature(
+            &paddle.webhook_secret,
+            signature_header.unwrap_or(""),
+            raw_body,
+            now_timestamp,
+            300,
+        )
+        .map_err(|_| BillingWebhookError::InvalidSignature)?;
+
+        let payload: PaddleWebhookPayload =
+            serde_json::from_slice(raw_body).map_err(|_| BillingWebhookError::InvalidPayload)?;
+
+        let now = Utc::now();
+        let is_new = self
+            .repository
+            .record_paddle_webhook_event_if_new(&PaddleWebhookEvent {
+                event_id: payload.event_id.clone(),
+                event_type: payload.event_type.clone(),
+                occurred_at: payload.occurred_at,
+                processed_at: now,
+                processing_status: "received".to_string(),
+                related_user_id: extract_sumurai_user_id(&payload.data),
+                related_subscription_id: extract_subscription_id(&payload.data),
+                error_code: None,
+                created_at: now,
+            })
+            .await
+            .map_err(|_| BillingWebhookError::RepositoryRequestFailed)?;
+
+        if !is_new {
+            return Ok(());
+        }
+
+        let Some(user_id) = extract_sumurai_user_id(&payload.data) else {
+            return Ok(());
+        };
+
+        if is_subscription_lifecycle_event(&payload.event_type) {
+            if let Some(subscription) = parse_subscription_data(&payload.data) {
+                self.apply_subscription_entitlement(user_id, &subscription, payload.occurred_at)
+                    .await?;
+            }
+        }
+
+        if payload.event_type == "transaction.completed" {
+            self.fulfill_trial_redemption_for_transaction(user_id, &payload.data)
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    async fn apply_subscription_entitlement(
+        &self,
+        user_id: uuid::Uuid,
+        subscription: &ParsedSubscriptionData,
+        event_at: DateTime<Utc>,
+    ) -> Result<(), BillingWebhookError> {
+        let existing = self
+            .repository
+            .get_billing_entitlement(&user_id)
+            .await
+            .map_err(|_| BillingWebhookError::RepositoryRequestFailed)?;
+
+        if !Self::should_apply_event(
+            existing.as_ref().and_then(|row| row.last_event_at),
+            event_at,
+        ) {
+            return Ok(());
+        }
+
+        let access_status = Self::project_paddle_subscription_status(&subscription.status);
+        let payment_method_required = matches!(access_status, EntitlementAccessStatus::Trialing);
+        let now = Utc::now();
+        let entitlement = BillingEntitlement {
+            user_id,
+            access_status: access_status.as_str().to_string(),
+            source: "paddle".to_string(),
+            paddle_subscription_id: Some(subscription.subscription_id.clone()),
+            paddle_customer_id: subscription.customer_id.clone(),
+            paddle_price_id: subscription.price_id.clone(),
+            trial_ends_at: subscription.trial_ends_at,
+            current_period_ends_at: subscription.current_period_ends_at,
+            canceled_at: subscription.canceled_at,
+            last_event_at: Some(event_at),
+            payment_method_required,
+            created_at: existing.as_ref().map(|row| row.created_at).unwrap_or(now),
+            updated_at: now,
+        };
+
+        self.repository
+            .upsert_billing_entitlement(&entitlement)
+            .await
+            .map_err(|_| BillingWebhookError::RepositoryRequestFailed)?;
+
+        if matches!(
+            access_status,
+            EntitlementAccessStatus::Trialing | EntitlementAccessStatus::Active
+        ) {
+            self.fulfill_pending_trial_redemption(
+                user_id,
+                Some(subscription.subscription_id.as_str()),
+            )
+            .await?;
+        }
+
+        Ok(())
+    }
+
+    async fn fulfill_trial_redemption_for_transaction(
+        &self,
+        user_id: uuid::Uuid,
+        data: &serde_json::Value,
+    ) -> Result<(), BillingWebhookError> {
+        let Some(transaction_id) = data.get("id").and_then(|value| value.as_str()) else {
+            return Ok(());
+        };
+
+        let redemption = self
+            .repository
+            .get_trial_code_redemption_for_user(&user_id)
+            .await
+            .map_err(|_| BillingWebhookError::RepositoryRequestFailed)?;
+
+        let Some(redemption) = redemption else {
+            return Ok(());
+        };
+
+        if redemption.status != "pending" {
+            return Ok(());
+        }
+
+        if redemption.paddle_transaction_id.as_deref() != Some(transaction_id) {
+            return Ok(());
+        }
+
+        let subscription_id = extract_subscription_id(data);
+        self.fulfill_pending_trial_redemption(user_id, subscription_id.as_deref())
+            .await
+    }
+
+    async fn fulfill_pending_trial_redemption(
+        &self,
+        user_id: uuid::Uuid,
+        subscription_id: Option<&str>,
+    ) -> Result<(), BillingWebhookError> {
+        let redemption = self
+            .repository
+            .get_trial_code_redemption_for_user(&user_id)
+            .await
+            .map_err(|_| BillingWebhookError::RepositoryRequestFailed)?;
+
+        let Some(redemption) = redemption else {
+            return Ok(());
+        };
+
+        if redemption.status != "pending" {
+            return Ok(());
+        }
+
+        let now = Utc::now();
+        let updated = TrialCodeRedemption {
+            status: "fulfilled".to_string(),
+            paddle_subscription_id: subscription_id.map(str::to_string),
+            fulfilled_at: Some(now),
+            updated_at: now,
+            ..redemption
+        };
+
+        self.repository
+            .upsert_trial_code_redemption(&updated)
+            .await
+            .map_err(|_| BillingWebhookError::RepositoryRequestFailed)?;
+
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum BillingWebhookError {
+    BillingDisabled,
+    InvalidSignature,
+    InvalidPayload,
+    RepositoryRequestFailed,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -399,6 +599,115 @@ pub struct PaddleWebhookEnvelope {
     pub event_id: String,
     pub event_type: String,
     pub occurred_at: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct PaddleWebhookPayload {
+    pub event_id: String,
+    pub event_type: String,
+    pub occurred_at: DateTime<Utc>,
+    pub data: serde_json::Value,
+}
+
+struct ParsedSubscriptionData {
+    subscription_id: String,
+    customer_id: Option<String>,
+    price_id: Option<String>,
+    status: String,
+    trial_ends_at: Option<DateTime<Utc>>,
+    current_period_ends_at: Option<DateTime<Utc>>,
+    canceled_at: Option<DateTime<Utc>>,
+}
+
+fn is_subscription_lifecycle_event(event_type: &str) -> bool {
+    matches!(
+        event_type,
+        "subscription.created"
+            | "subscription.updated"
+            | "subscription.activated"
+            | "subscription.paused"
+            | "subscription.canceled"
+            | "subscription.past_due"
+            | "transaction.completed"
+            | "transaction.payment_failed"
+    )
+}
+
+fn extract_sumurai_user_id(value: &serde_json::Value) -> Option<uuid::Uuid> {
+    value
+        .get("custom_data")
+        .and_then(|custom_data| custom_data.get("sumurai_user_id"))
+        .and_then(|user_id| user_id.as_str())
+        .and_then(|user_id| uuid::Uuid::parse_str(user_id).ok())
+        .or_else(|| value.get("subscription").and_then(extract_sumurai_user_id))
+}
+
+fn extract_subscription_id(value: &serde_json::Value) -> Option<String> {
+    value
+        .get("id")
+        .and_then(|id| id.as_str())
+        .filter(|id| id.starts_with("sub_"))
+        .map(str::to_string)
+        .or_else(|| {
+            value
+                .get("subscription_id")
+                .and_then(|id| id.as_str())
+                .map(str::to_string)
+        })
+}
+
+fn parse_paddle_timestamp(value: Option<&serde_json::Value>) -> Option<DateTime<Utc>> {
+    value
+        .and_then(|timestamp| timestamp.as_str())
+        .and_then(|timestamp| DateTime::parse_from_rfc3339(timestamp).ok())
+        .map(|timestamp| timestamp.with_timezone(&Utc))
+}
+
+fn parse_subscription_data(data: &serde_json::Value) -> Option<ParsedSubscriptionData> {
+    let subscription = if data
+        .get("id")
+        .and_then(|id| id.as_str())
+        .is_some_and(|id| id.starts_with("sub_"))
+    {
+        data
+    } else {
+        data.get("subscription")?
+    };
+
+    let subscription_id = subscription.get("id")?.as_str()?.to_string();
+    let price_id = subscription
+        .get("items")
+        .and_then(|items| items.as_array())
+        .and_then(|items| items.first())
+        .and_then(|item| item.get("price"))
+        .and_then(|price| price.get("id"))
+        .and_then(|price_id| price_id.as_str())
+        .map(str::to_string);
+
+    Some(ParsedSubscriptionData {
+        subscription_id,
+        customer_id: subscription
+            .get("customer_id")
+            .and_then(|customer_id| customer_id.as_str())
+            .map(str::to_string),
+        price_id,
+        status: subscription
+            .get("status")
+            .and_then(|status| status.as_str())
+            .unwrap_or("expired")
+            .to_string(),
+        trial_ends_at: parse_paddle_timestamp(
+            subscription
+                .get("trial_dates")
+                .and_then(|trial_dates| trial_dates.get("ends_at")),
+        ),
+        current_period_ends_at: parse_paddle_timestamp(
+            subscription
+                .get("current_billing_period")
+                .and_then(|period| period.get("ends_at")),
+        ),
+        canceled_at: parse_paddle_timestamp(subscription.get("canceled_at")),
+    })
 }
 
 pub fn hash_trial_code(secret: &str, code: &str) -> Result<String, BillingServiceError> {

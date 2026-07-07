@@ -229,6 +229,47 @@ async fn given_paddle_webhook_event_when_recording_then_event_id_is_idempotency_
 }
 
 #[tokio::test]
+async fn given_duplicate_paddle_webhook_event_when_recording_if_new_then_returns_false() {
+    let key = parse_encryption_key_hex(
+        "0101010101010101010101010101010101010101010101010101010101010101",
+    )
+    .expect("test encryption key must be valid hex");
+    let db = MockDatabase::new(DbBackend::Postgres)
+        .append_exec_results([
+            MockExecResult {
+                rows_affected: 1,
+                ..Default::default()
+            },
+            MockExecResult {
+                rows_affected: 0,
+                ..Default::default()
+            },
+        ])
+        .into_connection();
+    let repo = PostgresRepository::from_mock(db, key);
+    let event = PaddleWebhookEvent {
+        event_id: "evt_123".to_string(),
+        event_type: "subscription.created".to_string(),
+        occurred_at: Utc::now(),
+        processed_at: Utc::now(),
+        processing_status: "processed".to_string(),
+        related_user_id: Some(Uuid::new_v4()),
+        related_subscription_id: Some("sub_123".to_string()),
+        error_code: None,
+        created_at: Utc::now(),
+    };
+
+    assert!(repo
+        .record_paddle_webhook_event_if_new(&event)
+        .await
+        .unwrap());
+    assert!(!repo
+        .record_paddle_webhook_event_if_new(&event)
+        .await
+        .unwrap());
+}
+
+#[tokio::test]
 async fn given_valid_user_when_updating_password_then_hash_changes() {
     let Some(pool) = connect_pool().await else {
         return;

@@ -1,11 +1,14 @@
 use crate::config::{BillingMode, Config, EnvironmentProvider};
+use crate::models::billing::{BillingEntitlement, TrialCodeRedemption};
 use crate::providers::paddle_provider::{CreateCheckoutRequest, MockPaddleClient};
 use crate::services::billing_service::{
-    verify_paddle_webhook_signature, BillingService, EntitlementAccessStatus, EntitlementDecision,
-    OwnDataAccessCheck, PaddleWebhookSignatureError,
+    verify_paddle_webhook_signature, BillingService, BillingWebhookError, EntitlementAccessStatus,
+    EntitlementDecision, OwnDataAccessCheck, PaddleWebhookSignatureError,
 };
 use crate::services::repository_service::MockDatabaseRepository;
 use chrono::{TimeZone, Utc};
+use hmac::{Hmac, KeyInit, Mac};
+use sha2::Sha256;
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -264,4 +267,229 @@ async fn given_billing_disabled_when_checking_own_data_access_then_allows_withou
     let result = service.check_own_data_access(Uuid::new_v4()).await.unwrap();
 
     assert_eq!(result, OwnDataAccessCheck::Allowed);
+}
+
+fn sign_paddle_webhook(secret: &str, body: &[u8], timestamp: i64) -> String {
+    type HmacSha256 = Hmac<Sha256>;
+    let mut signed_payload = timestamp.to_string().into_bytes();
+    signed_payload.push(b':');
+    signed_payload.extend_from_slice(body);
+    let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).unwrap();
+    mac.update(&signed_payload);
+    format!(
+        "ts={timestamp};h1={}",
+        hex::encode(mac.finalize().into_bytes())
+    )
+}
+
+fn subscription_activated_payload(user_id: Uuid, occurred_at: &str) -> Vec<u8> {
+    format!(
+        r#"{{
+            "event_id":"evt_sub_activated",
+            "event_type":"subscription.activated",
+            "occurred_at":"{occurred_at}",
+            "data":{{
+                "id":"sub_123",
+                "status":"trialing",
+                "customer_id":"ctm_123",
+                "custom_data":{{"sumurai_user_id":"{user_id}"}},
+                "items":[{{"price":{{"id":"pri_trial"}}}}],
+                "trial_dates":{{"ends_at":"2026-08-06T00:00:00Z"}},
+                "current_billing_period":{{"ends_at":"2026-08-06T00:00:00Z"}}
+            }}
+        }}"#
+    )
+    .into_bytes()
+}
+
+#[tokio::test]
+async fn given_invalid_paddle_signature_when_processing_webhook_then_rejects_before_repository() {
+    let config = Config::from_env_provider(&MockEnvironment::paddle()).unwrap();
+    let mut repository = MockDatabaseRepository::new();
+    repository
+        .expect_record_paddle_webhook_event_if_new()
+        .never();
+    let service = billing_service(
+        config,
+        Arc::new(repository),
+        Arc::new(MockPaddleClient::new()),
+    );
+    let body = br#"{"event_id":"evt_123"}"#;
+
+    let result = service
+        .process_paddle_webhook(Some("ts=1;h1=deadbeef"), body, 1_700_000_003)
+        .await;
+
+    assert_eq!(result, Err(BillingWebhookError::InvalidSignature));
+}
+
+#[tokio::test]
+async fn given_duplicate_paddle_webhook_when_processing_then_succeeds_without_entitlement_mutation()
+{
+    let config = Config::from_env_provider(&MockEnvironment::paddle()).unwrap();
+    let user_id = Uuid::new_v4();
+    let occurred_at = "2026-07-06T12:00:00Z";
+    let body = subscription_activated_payload(user_id, occurred_at);
+    let header = sign_paddle_webhook("pdl_ntfset_test", &body, 1_700_000_000);
+    let mut repository = MockDatabaseRepository::new();
+    repository
+        .expect_record_paddle_webhook_event_if_new()
+        .returning(|_| Box::pin(async { Ok(false) }));
+    repository.expect_get_billing_entitlement().never();
+    repository.expect_upsert_billing_entitlement().never();
+    let service = billing_service(
+        config,
+        Arc::new(repository),
+        Arc::new(MockPaddleClient::new()),
+    );
+
+    let result = service
+        .process_paddle_webhook(Some(&header), &body, 1_700_000_003)
+        .await;
+
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn given_older_paddle_webhook_when_processing_then_skips_entitlement_downgrade() {
+    let config = Config::from_env_provider(&MockEnvironment::paddle()).unwrap();
+    let user_id = Uuid::new_v4();
+    let occurred_at = "2026-07-06T11:00:00Z";
+    let body = subscription_activated_payload(user_id, occurred_at);
+    let header = sign_paddle_webhook("pdl_ntfset_test", &body, 1_700_000_000);
+    let newer_event_at = Utc.with_ymd_and_hms(2026, 7, 6, 12, 0, 0).unwrap();
+    let mut repository = MockDatabaseRepository::new();
+    repository
+        .expect_record_paddle_webhook_event_if_new()
+        .returning(|_| Box::pin(async { Ok(true) }));
+    repository
+        .expect_get_billing_entitlement()
+        .returning(move |_| {
+            Box::pin(async move {
+                Ok(Some(BillingEntitlement {
+                    user_id,
+                    access_status: "active".to_string(),
+                    source: "paddle".to_string(),
+                    paddle_subscription_id: Some("sub_123".to_string()),
+                    paddle_customer_id: Some("ctm_123".to_string()),
+                    paddle_price_id: Some("pri_trial".to_string()),
+                    trial_ends_at: None,
+                    current_period_ends_at: None,
+                    canceled_at: None,
+                    last_event_at: Some(newer_event_at),
+                    payment_method_required: false,
+                    created_at: newer_event_at,
+                    updated_at: newer_event_at,
+                }))
+            })
+        });
+    repository.expect_upsert_billing_entitlement().never();
+    let service = billing_service(
+        config,
+        Arc::new(repository),
+        Arc::new(MockPaddleClient::new()),
+    );
+
+    let result = service
+        .process_paddle_webhook(Some(&header), &body, 1_700_000_003)
+        .await;
+
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn given_subscription_activated_webhook_when_processing_then_updates_trialing_entitlement() {
+    let config = Config::from_env_provider(&MockEnvironment::paddle()).unwrap();
+    let user_id = Uuid::new_v4();
+    let occurred_at = "2026-07-06T12:00:00Z";
+    let body = subscription_activated_payload(user_id, occurred_at);
+    let header = sign_paddle_webhook("pdl_ntfset_test", &body, 1_700_000_000);
+    let mut repository = MockDatabaseRepository::new();
+    repository
+        .expect_record_paddle_webhook_event_if_new()
+        .returning(|_| Box::pin(async { Ok(true) }));
+    repository
+        .expect_get_billing_entitlement()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    repository
+        .expect_upsert_billing_entitlement()
+        .withf(move |entitlement| {
+            entitlement.user_id == user_id
+                && entitlement.access_status == "trialing"
+                && entitlement.payment_method_required
+                && entitlement.paddle_subscription_id.as_deref() == Some("sub_123")
+        })
+        .returning(|_| Box::pin(async { Ok(()) }));
+    repository
+        .expect_get_trial_code_redemption_for_user()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    let service = billing_service(
+        config,
+        Arc::new(repository),
+        Arc::new(MockPaddleClient::new()),
+    );
+
+    let result = service
+        .process_paddle_webhook(Some(&header), &body, 1_700_000_003)
+        .await;
+
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn given_trial_redeem_then_subscription_webhook_when_processing_then_fulfills_redemption() {
+    let config = Config::from_env_provider(&MockEnvironment::paddle()).unwrap();
+    let user_id = Uuid::new_v4();
+    let redemption_id = Uuid::new_v4();
+    let trial_code_id = Uuid::new_v4();
+    let occurred_at = "2026-07-06T12:00:00Z";
+    let body = subscription_activated_payload(user_id, occurred_at);
+    let header = sign_paddle_webhook("pdl_ntfset_test", &body, 1_700_000_000);
+    let pending = TrialCodeRedemption {
+        id: redemption_id,
+        trial_code_id,
+        user_id,
+        status: "pending".to_string(),
+        paddle_transaction_id: Some("txn_trial".to_string()),
+        paddle_subscription_id: None,
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+        fulfilled_at: None,
+        failed_at: None,
+    };
+    let mut repository = MockDatabaseRepository::new();
+    repository
+        .expect_record_paddle_webhook_event_if_new()
+        .returning(|_| Box::pin(async { Ok(true) }));
+    repository
+        .expect_get_billing_entitlement()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    repository
+        .expect_upsert_billing_entitlement()
+        .returning(|_| Box::pin(async { Ok(()) }));
+    repository
+        .expect_get_trial_code_redemption_for_user()
+        .returning(move |_| {
+            let pending = pending.clone();
+            Box::pin(async move { Ok(Some(pending)) })
+        });
+    repository
+        .expect_upsert_trial_code_redemption()
+        .withf(|redemption| {
+            redemption.status == "fulfilled"
+                && redemption.paddle_subscription_id.as_deref() == Some("sub_123")
+                && redemption.fulfilled_at.is_some()
+        })
+        .returning(|_| Box::pin(async { Ok(()) }));
+    let service = billing_service(
+        config,
+        Arc::new(repository),
+        Arc::new(MockPaddleClient::new()),
+    );
+
+    let result = service
+        .process_paddle_webhook(Some(&header), &body, 1_700_000_003)
+        .await;
+
+    assert!(result.is_ok());
 }

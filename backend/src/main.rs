@@ -157,8 +157,8 @@ use migration::MigratorTrait;
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DbBackend, Statement};
 use services::auto_categorization::service::AutoCategorizationError;
 use services::billing_service::{
-    verify_paddle_webhook_signature, BillingService, BillingServiceError, OwnDataAccessCheck,
-    PaddleWebhookEnvelope, TrialRedemptionInput,
+    BillingService, BillingServiceError, BillingWebhookError, OwnDataAccessCheck,
+    TrialRedemptionInput,
 };
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
 use services::category_management::service::CategoryManagementService;
@@ -2851,29 +2851,24 @@ pub async fn handle_paddle_billing_webhook(
     headers: HeaderMap,
     raw_body: Bytes,
 ) -> Result<StatusCode, (StatusCode, Json<ApiErrorResponse>)> {
-    if !state.config.is_billing_enabled() {
-        return Err(billing_disabled_response());
-    }
-
-    let paddle = state
-        .config
-        .paddle_billing()
-        .ok_or_else(|| api_internal_server_error("Paddle billing is not configured"))?;
-    let signature = headers
-        .get("Paddle-Signature")
-        .and_then(|value| value.to_str().ok())
-        .ok_or_else(|| api_bad_request("Missing Paddle signature"))?;
-    verify_paddle_webhook_signature(
-        &paddle.webhook_secret,
-        signature,
-        &raw_body,
-        Utc::now().timestamp(),
-        300,
-    )
-    .map_err(|_| api_bad_request("Invalid Paddle signature"))?;
-
-    let _event: PaddleWebhookEnvelope =
-        serde_json::from_slice(&raw_body).map_err(|_| api_bad_request("Invalid Paddle event"))?;
+    state
+        .billing_service
+        .process_paddle_webhook(
+            headers
+                .get("Paddle-Signature")
+                .and_then(|value| value.to_str().ok()),
+            &raw_body,
+            Utc::now().timestamp(),
+        )
+        .await
+        .map_err(|error| match error {
+            BillingWebhookError::BillingDisabled => billing_disabled_response(),
+            BillingWebhookError::InvalidSignature => api_bad_request("Invalid Paddle signature"),
+            BillingWebhookError::InvalidPayload => api_bad_request("Invalid Paddle event"),
+            BillingWebhookError::RepositoryRequestFailed => {
+                api_internal_server_error("Failed to process Paddle webhook")
+            }
+        })?;
 
     Ok(StatusCode::OK)
 }

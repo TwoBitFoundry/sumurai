@@ -386,6 +386,62 @@ async fn given_billing_disabled_when_paddle_webhook_called_then_returns_billing_
 }
 
 #[tokio::test]
+async fn given_valid_paddle_webhook_when_posting_then_returns_ok_without_entitlement_mutation_on_duplicate(
+) {
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_record_paddle_webhook_event_if_new()
+        .returning(|_| Box::pin(async { Ok(false) }));
+    mock_db.expect_get_billing_entitlement().never();
+    mock_db.expect_upsert_billing_entitlement().never();
+    let app = create_paddle_billing_app(mock_db, MockPaddleClient::new()).await;
+    let user_id = Uuid::new_v4();
+    let body = format!(
+        r#"{{
+            "event_id":"evt_duplicate",
+            "event_type":"subscription.activated",
+            "occurred_at":"2026-07-06T12:00:00Z",
+            "data":{{
+                "id":"sub_123",
+                "status":"trialing",
+                "customer_id":"ctm_123",
+                "custom_data":{{"sumurai_user_id":"{user_id}"}},
+                "items":[{{"price":{{"id":"pri_trial"}}}}]
+            }}
+        }}"#
+    );
+    let raw_body = body.as_bytes();
+    let timestamp = Utc::now().timestamp();
+    let header = sign_paddle_webhook("pdl_ntfset_test", raw_body, timestamp);
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/billing/webhooks/paddle")
+        .header("content-type", "application/json")
+        .header("Paddle-Signature", header)
+        .body(Body::from(body))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+fn sign_paddle_webhook(secret: &str, body: &[u8], timestamp: i64) -> String {
+    use hmac::{Hmac, KeyInit, Mac};
+    use sha2::Sha256;
+    type HmacSha256 = Hmac<Sha256>;
+    let mut signed_payload = timestamp.to_string().into_bytes();
+    signed_payload.push(b':');
+    signed_payload.extend_from_slice(body);
+    let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).unwrap();
+    mac.update(&signed_payload);
+    format!(
+        "ts={timestamp};h1={}",
+        hex::encode(mac.finalize().into_bytes())
+    )
+}
+
+#[tokio::test]
 async fn given_paddle_billing_when_get_status_then_returns_entitlement_projection() {
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
