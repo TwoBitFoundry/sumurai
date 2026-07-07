@@ -463,18 +463,32 @@ not just in the UI.
   log financial data or secrets.
 
 **Acceptance criteria**
-- [ ] In production billing mode, unpaid demo users cannot create a new DIY
+- [x] In production billing mode, unpaid demo users cannot create a new DIY
       institution, start Plaid link, exchange a Plaid token, import own data, or
       sync own data.
-- [ ] Those denied operations leave `demo_mode_active` unchanged.
-- [ ] Trialing/active users can create/connect/sync own data for `diy` and
+- [x] Those denied operations leave `demo_mode_active` unchanged.
+- [x] Trialing/active users can create/connect/sync own data for `diy` and
       `plaid`.
-- [ ] Expired/canceled/past-due users can read/export/disconnect/delete but
+- [x] Expired/canceled/past-due users can read/export/disconnect/delete but
       cannot mutate own-data resources.
-- [ ] Billing disabled mode preserves existing current behavior and does not
+- [x] Billing disabled mode preserves existing current behavior and does not
       call entitlement checks as blockers.
-- [ ] Teller and SimpleFIN direct calls are rejected in production compose even
+- [x] Teller and SimpleFIN direct calls are rejected in production compose even
       if credentials are configured.
+
+**TDD log**
+- Red: `cargo test -p sumurai-backend --locked billing_entitlement_gate_tests`
+  failed before own-data writes checked paid entitlement before provider/demo
+  side effects.
+- Green: `cargo test -p sumurai-backend --locked billing_entitlement_gate_tests`.
+- Green: `cargo test -p sumurai-backend --locked provider_selection_api_tests`.
+- Green: `cargo test -p sumurai-backend --locked diy_api_tests`.
+- Green: `cargo test -p sumurai-backend --locked transaction_import_api_tests`.
+- Verification: `cargo fmt --all --check`.
+- Verification: `cargo check --workspace --locked --all-targets`.
+- Verification: `cargo clippy --workspace --locked --all-targets --no-deps -- -D warnings`.
+- Verification: `cargo test -p sumurai-backend --locked` passed 769 tests with
+  1 ignored.
 
 ## Phase 6 - Frontend billing and production-only visibility
 

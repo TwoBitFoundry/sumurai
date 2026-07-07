@@ -12,6 +12,7 @@ mod auto_categorization_service_tests;
 mod balances_overview_helpers_tests;
 mod bank_level_sync_tests;
 mod billing_api_tests;
+mod billing_entitlement_gate_tests;
 mod billing_schema_tests;
 mod billing_service_tests;
 mod budget_api_integration_tests;
