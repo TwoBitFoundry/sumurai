@@ -211,6 +211,29 @@ async fn main() -> anyhow::Result<()> {
     let telemetry = telemetry_middleware::init(&telemetry_config)?;
 
     let config = Config::from_env()?;
+    let enabled_financial_provider_count = config
+        .enabled_financial_providers()
+        .map(|providers| providers.len())
+        .unwrap_or(0);
+    if let Some(paddle) = config.paddle_billing() {
+        tracing::info!(
+            billing_mode = ?config.billing_mode(),
+            enabled_financial_provider_count,
+            paddle_environment = %paddle.environment,
+            paddle_api_key_configured = !paddle.api_key.is_empty(),
+            paddle_webhook_secret_configured = !paddle.webhook_secret.is_empty(),
+            paddle_monthly_price_configured = !paddle.monthly_price_id.is_empty(),
+            paddle_cardless_trial_price_configured = !paddle.cardless_trial_price_id.is_empty(),
+            "Paddle billing enabled"
+        );
+    } else {
+        tracing::info!(
+            billing_mode = ?config.billing_mode(),
+            billing_enabled = config.is_billing_enabled(),
+            enabled_financial_provider_count,
+            "Billing disabled"
+        );
+    }
 
     let plaid_client_id = std::env::var("PLAID_CLIENT_ID").ok();
     let plaid_secret = std::env::var("PLAID_SECRET").ok();
@@ -2369,6 +2392,15 @@ fn api_forbidden(message: impl Into<String>) -> (StatusCode, Json<ApiErrorRespon
     ApiErrorResponse::new("FORBIDDEN", &message.into()).into_response(StatusCode::FORBIDDEN)
 }
 
+fn provider_disabled_response(provider: &str) -> (StatusCode, Json<ApiErrorResponse>) {
+    ApiErrorResponse::with_code(
+        "FORBIDDEN",
+        &format!("Provider '{}' is disabled in this deployment", provider),
+        "PROVIDER_DISABLED",
+    )
+    .into_response(StatusCode::FORBIDDEN)
+}
+
 fn api_internal_server_error(message: impl Into<String>) -> (StatusCode, Json<ApiErrorResponse>) {
     ApiErrorResponse::new("INTERNAL_SERVER_ERROR", &message.into())
         .into_response(StatusCode::INTERNAL_SERVER_ERROR)
@@ -2394,6 +2426,9 @@ async fn create_authenticated_link_token(
     Json(_req): Json<LinkTokenRequest>,
 ) -> Result<Json<LinkTokenResponse>, StatusCode> {
     let provider = "plaid";
+    if !state.config.is_financial_provider_enabled(provider) {
+        return Err(StatusCode::FORBIDDEN);
+    }
 
     match state
         .connection_service
@@ -2443,6 +2478,9 @@ async fn exchange_authenticated_public_token(
 ) -> Result<Json<ExchangeTokenResponse>, StatusCode> {
     let user_id = auth_context.user_id;
     let provider = "plaid";
+    if !state.config.is_financial_provider_enabled(provider) {
+        return Err(StatusCode::FORBIDDEN);
+    }
 
     match state
         .connection_service
@@ -2605,6 +2643,9 @@ async fn sync_authenticated_provider_transactions(
     let mut connection = connection;
 
     let provider = connection.provider.clone();
+    if !state.config.is_financial_provider_enabled(&provider) {
+        return Err(provider_disabled_response(&provider).into_response());
+    }
 
     match state
         .provider_sync_rate_limit_service
@@ -3571,6 +3612,12 @@ async fn connect_authenticated_provider(
     auth_context: AuthContext,
     Json(req): Json<ProviderConnectRequest>,
 ) -> Result<Json<ProviderConnectResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    if state.provider_registry.get(&req.provider).is_some()
+        && !state.config.is_financial_provider_enabled(&req.provider)
+    {
+        return Err(provider_disabled_response(&req.provider));
+    }
+
     match req.provider.as_str() {
         "teller" => match state
             .connection_service
@@ -3829,7 +3876,9 @@ async fn get_authenticated_provider_status(
 
     let provider = match state.db_repository.get_user_by_id(&user_id).await {
         Ok(Some(user)) => {
-            if state.provider_registry.get(&user.provider).is_some() {
+            if state.provider_registry.get(&user.provider).is_some()
+                && state.config.is_financial_provider_enabled(&user.provider)
+            {
                 user.provider
             } else {
                 String::new()
@@ -3866,6 +3915,10 @@ async fn get_authenticated_simplefin_ignored_institutions(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<crate::models::simplefin::SimpleFinIgnoredInstitutionsResponse>, StatusCode> {
+    if !state.config.is_financial_provider_enabled("simplefin") {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
     let institutions = state
         .connection_service
         .list_simplefin_ignored_institutions(&auth_context.user_id)
@@ -3904,6 +3957,10 @@ async fn restore_authenticated_simplefin_ignored_institution(
     Json(req): Json<crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionRequest>,
 ) -> Result<Json<crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse>, StatusCode>
 {
+    if !state.config.is_financial_provider_enabled("simplefin") {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
     let org_conn_id = req.org_conn_id.trim();
     if org_conn_id.is_empty() {
         return Err(StatusCode::BAD_REQUEST);
@@ -4358,6 +4415,10 @@ async fn create_diy_institution(
 > {
     let user_id = auth_context.user_id;
 
+    if !state.config.is_financial_provider_enabled("diy") {
+        return Err(provider_disabled_response("diy"));
+    }
+
     if req.name.trim().is_empty() {
         return Err(
             ApiErrorResponse::new("BAD_REQUEST", "Institution name cannot be empty")
@@ -4418,6 +4479,10 @@ async fn create_diy_account(
 ) -> Result<Json<crate::models::diy::CreateDiyAccountResponse>, (StatusCode, Json<ApiErrorResponse>)>
 {
     let user_id = auth_context.user_id;
+
+    if !state.config.is_financial_provider_enabled("diy") {
+        return Err(provider_disabled_response("diy"));
+    }
 
     if req.name.trim().is_empty() {
         return Err(
@@ -4594,6 +4659,10 @@ async fn get_authenticated_provider_info(
             continue;
         }
 
+        if !state.config.is_financial_provider_enabled(provider) {
+            continue;
+        }
+
         if provider == "teller"
             && state
                 .config
@@ -4609,6 +4678,7 @@ async fn get_authenticated_provider_info(
     let user_provider = user
         .active_provider()
         .filter(|provider| state.provider_registry.get(provider).is_some())
+        .filter(|provider| state.config.is_financial_provider_enabled(provider))
         .map(str::to_string);
 
     Ok(Json(ProviderInfoResponse {
@@ -4651,6 +4721,13 @@ async fn select_authenticated_provider(
             &format!("Provider '{}' is not registered", requested_provider),
         )
         .into_response(StatusCode::BAD_REQUEST));
+    }
+
+    if !state
+        .config
+        .is_financial_provider_enabled(&requested_provider)
+    {
+        return Err(provider_disabled_response(&requested_provider));
     }
 
     let _user = match state.db_repository.get_user_by_id(&user_id).await {

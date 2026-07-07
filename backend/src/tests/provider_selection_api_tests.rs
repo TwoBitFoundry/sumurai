@@ -102,9 +102,27 @@ fn build_test_config() -> Config {
     Config::from_env_provider(&env).unwrap()
 }
 
+fn build_test_config_with_provider_allowlist(providers: &str) -> Config {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "test");
+    env.set("TELLER_APPLICATION_ID", "app-test");
+    env.set("AUTH_COOKIE_SAME_SITE", "Lax");
+    env.set("APP_ORIGIN", "http://localhost:8080");
+    env.set("ENABLED_FINANCIAL_PROVIDERS", providers);
+    Config::from_env_provider(&env).unwrap()
+}
+
 async fn build_test_app(
+    mock_db: MockDatabaseRepository,
+    provider_registry: Arc<ProviderRegistry>,
+) -> Router {
+    build_test_app_with_config(mock_db, provider_registry, build_test_config()).await
+}
+
+async fn build_test_app_with_config(
     mut mock_db: MockDatabaseRepository,
     provider_registry: Arc<ProviderRegistry>,
+    config: Config,
 ) -> Router {
     apply_passkey_enrollment_mock_defaults(&mut mock_db);
     let plaid_client = Arc::new(RealPlaidClient::new(
@@ -160,7 +178,7 @@ async fn build_test_app(
         analytics_service,
         budget_service,
         authorization_service,
-        config: build_test_config(),
+        config,
         db_repository,
         cache_service,
         provider_sync_rate_limit_service,
@@ -859,6 +877,170 @@ async fn given_diy_registered_when_fetching_provider_info_then_lists_diy() {
         available.iter().any(|v| v == "diy"),
         "diy should be listed in available_providers"
     );
+}
+
+#[tokio::test]
+async fn given_provider_allowlist_when_fetching_provider_info_then_filters_registered_providers() {
+    let (user, token) = crate::test_fixtures::TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+    let mut mock_db = MockDatabaseRepository::new();
+
+    mock_db
+        .expect_get_user_by_id()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let user = User {
+                provider: "simplefin".to_string(),
+                ..user.clone()
+            };
+            Box::pin(async move { Ok(Some(user)) })
+        });
+
+    let app = build_test_app_with_config(
+        mock_db,
+        provider_registry(&["plaid", "teller", "simplefin", "diy"]),
+        build_test_config_with_provider_allowlist("diy,plaid"),
+    )
+    .await;
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::GET)
+        .uri("/api/providers/info")
+        .header("Cookie", format!("auth_token={}", token))
+        .body(axum::body::Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        payload["available_providers"],
+        json!(vec!["plaid".to_string(), "diy".to_string()])
+    );
+    assert_eq!(payload["user_provider"], serde_json::Value::Null);
+}
+
+#[tokio::test]
+async fn given_provider_allowlist_when_selecting_disabled_provider_then_returns_forbidden() {
+    let (_user, token) = crate::test_fixtures::TestFixtures::create_authenticated_user_with_token();
+    let mock_db = MockDatabaseRepository::new();
+
+    let app = build_test_app_with_config(
+        mock_db,
+        provider_registry(&["plaid", "simplefin", "diy"]),
+        build_test_config_with_provider_allowlist("diy,plaid"),
+    )
+    .await;
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::POST)
+        .uri("/api/providers/select")
+        .header("Cookie", format!("auth_token={}", token))
+        .header("Content-Type", "application/json")
+        .body(axum::body::Body::from(
+            serde_json::to_string(&json!({ "provider": "simplefin" })).unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 403);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(payload["code"], json!("PROVIDER_DISABLED"));
+}
+
+#[tokio::test]
+async fn given_provider_allowlist_when_connecting_disabled_provider_then_returns_forbidden() {
+    let (_user, token) = crate::test_fixtures::TestFixtures::create_authenticated_user_with_token();
+    let mock_db = MockDatabaseRepository::new();
+
+    let app = build_test_app_with_config(
+        mock_db,
+        provider_registry(&["plaid", "simplefin", "diy"]),
+        build_test_config_with_provider_allowlist("diy,plaid"),
+    )
+    .await;
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::POST)
+        .uri("/api/providers/connect")
+        .header("Cookie", format!("auth_token={}", token))
+        .header("Content-Type", "application/json")
+        .body(axum::body::Body::from(
+            serde_json::to_string(&json!({
+                "provider": "simplefin",
+                "access_token": "unused",
+                "enrollment_id": "unused",
+                "institution_name": "Unused",
+                "simplefin": {
+                    "simplefin_setup_token": "setup-token"
+                }
+            }))
+            .unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 403);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(payload["code"], json!("PROVIDER_DISABLED"));
+}
+
+#[tokio::test]
+async fn given_provider_allowlist_when_syncing_disabled_provider_then_returns_forbidden() {
+    let (user, token) = crate::test_fixtures::TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+    let connection_id = Uuid::new_v4();
+    let mut connection = ProviderConnection::new(user_id, "item-teller");
+    connection.id = connection_id;
+    connection.provider = "teller".to_string();
+    connection.mark_connected("Teller Bank");
+    let mut mock_db = MockDatabaseRepository::new();
+
+    mock_db
+        .expect_get_provider_connection_by_id()
+        .with(
+            mockall::predicate::eq(connection_id),
+            mockall::predicate::eq(user_id),
+        )
+        .returning(move |_, _| {
+            let connection = connection.clone();
+            Box::pin(async move { Ok(Some(connection)) })
+        });
+
+    let app = build_test_app_with_config(
+        mock_db,
+        provider_registry(&["plaid", "teller", "diy"]),
+        build_test_config_with_provider_allowlist("diy,plaid"),
+    )
+    .await;
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::POST)
+        .uri("/api/providers/sync-transactions")
+        .header("Cookie", format!("auth_token={}", token))
+        .header("Content-Type", "application/json")
+        .body(axum::body::Body::from(
+            serde_json::to_string(&json!({
+                "connection_id": connection_id.to_string(),
+                "client_date": "2026-07-06",
+                "client_timezone": "America/Chicago"
+            }))
+            .unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 403);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(payload["code"], json!("PROVIDER_DISABLED"));
 }
 
 #[tokio::test]
