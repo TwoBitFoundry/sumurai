@@ -21,6 +21,7 @@ use crate::services::{
     auth_service::AuthService,
     authorization_service::AuthorizationService,
     auto_categorization::AutoCategorizationService,
+    billing_service::BillingService,
     budget_service::BudgetService,
     cache_service::{CacheService, MockCacheService},
     categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS,
@@ -152,6 +153,14 @@ pub(crate) fn noop_categorizer() -> Arc<dyn Categorizer> {
 
 pub(crate) fn noop_paddle_client() -> Arc<dyn crate::providers::PaddleClient> {
     Arc::new(MockPaddleClient::new())
+}
+
+pub(crate) fn build_billing_service(
+    config: Config,
+    db_repository: Arc<dyn DatabaseRepository>,
+    paddle_client: Arc<dyn crate::providers::PaddleClient>,
+) -> Arc<BillingService> {
+    Arc::new(BillingService::new(config, db_repository, paddle_client))
 }
 
 pub(crate) fn build_credential_resolvers(
@@ -480,7 +489,11 @@ impl TestFixtures {
         let state = AppState {
             plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
-            paddle_client: noop_paddle_client(),
+            billing_service: build_billing_service(
+                config.clone(),
+                db_repository.clone(),
+                noop_paddle_client(),
+            ),
             sync_service,
             sync_service_factory,
             analytics_service,
@@ -642,7 +655,11 @@ impl TestFixtures {
         let state = AppState {
             plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
-            paddle_client: noop_paddle_client(),
+            billing_service: build_billing_service(
+                config.clone(),
+                db_repository.clone(),
+                noop_paddle_client(),
+            ),
             sync_service,
             sync_service_factory,
             analytics_service,
@@ -790,7 +807,11 @@ impl TestFixtures {
         let state = AppState {
             plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
-            paddle_client,
+            billing_service: build_billing_service(
+                config.clone(),
+                db_repository.clone(),
+                paddle_client,
+            ),
             sync_service,
             sync_service_factory,
             analytics_service,

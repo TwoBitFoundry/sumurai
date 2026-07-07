@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use std::sync::Arc;
+
 use crate::config::{BillingMode, Config};
 use crate::models::{
     auth::User,
@@ -56,14 +58,36 @@ pub struct TrialRedemptionInput<'a> {
     pub postal_code: &'a str,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OwnDataAccessCheck {
+    Allowed,
+    Denied {
+        access_status: EntitlementAccessStatus,
+    },
+}
+
 #[derive(Clone)]
 pub struct BillingService {
     config: Config,
+    repository: Arc<dyn DatabaseRepository>,
+    paddle_client: Arc<dyn PaddleClient>,
 }
 
 impl BillingService {
-    pub fn new(config: Config) -> Self {
-        Self { config }
+    pub fn new(
+        config: Config,
+        repository: Arc<dyn DatabaseRepository>,
+        paddle_client: Arc<dyn PaddleClient>,
+    ) -> Self {
+        Self {
+            config,
+            repository,
+            paddle_client,
+        }
+    }
+
+    pub fn config(&self) -> &Config {
+        &self.config
     }
 
     pub fn billing_mode(&self) -> BillingMode {
@@ -130,45 +154,85 @@ impl BillingService {
             .unwrap_or(true)
     }
 
-    pub async fn create_checkout<C: PaddleClient + ?Sized>(
+    pub async fn check_own_data_access(
         &self,
-        client: &C,
+        user_id: uuid::Uuid,
+    ) -> Result<OwnDataAccessCheck, BillingServiceError> {
+        if !self.config.is_billing_enabled() {
+            return Ok(OwnDataAccessCheck::Allowed);
+        }
+
+        let entitlement = self
+            .repository
+            .get_billing_entitlement(&user_id)
+            .await
+            .map_err(|_| BillingServiceError::RepositoryRequestFailed)?;
+        let access_status = Self::project_local_access_status(
+            entitlement.as_ref().map(|row| row.access_status.as_str()),
+        );
+        let decision = self.decision_for_status(access_status);
+
+        if decision.can_use_own_data {
+            Ok(OwnDataAccessCheck::Allowed)
+        } else {
+            Ok(OwnDataAccessCheck::Denied { access_status })
+        }
+    }
+
+    pub async fn check_own_data_access_after_demo(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> Result<OwnDataAccessCheck, BillingServiceError> {
+        if !self.config.is_billing_enabled() {
+            return Ok(OwnDataAccessCheck::Allowed);
+        }
+
+        let user = self
+            .repository
+            .get_user_by_id(&user_id)
+            .await
+            .map_err(|_| BillingServiceError::RepositoryRequestFailed)?
+            .ok_or(BillingServiceError::RepositoryRequestFailed)?;
+
+        if user.demo_mode_active {
+            return Ok(OwnDataAccessCheck::Allowed);
+        }
+
+        self.check_own_data_access(user_id).await
+    }
+
+    pub async fn create_checkout(
+        &self,
         request: CreateCheckoutRequest,
     ) -> Result<CreateCheckoutResponse, BillingServiceError> {
         if !self.config.is_billing_enabled() {
             return Err(BillingServiceError::BillingDisabled);
         }
 
-        client
+        self.paddle_client
             .create_checkout(request)
             .await
             .map_err(|_| BillingServiceError::PaddleRequestFailed)
     }
 
-    pub async fn create_checkout_for_user<C: PaddleClient + ?Sized>(
+    pub async fn create_checkout_for_user(
         &self,
-        client: &C,
         user: &User,
     ) -> Result<CreateCheckoutResponse, BillingServiceError> {
         let paddle = self
             .config
             .paddle_billing()
             .ok_or(BillingServiceError::BillingDisabled)?;
-        self.create_checkout(
-            client,
-            CreateCheckoutRequest {
-                user_email: user.email.clone(),
-                user_id: user.id,
-                price_id: paddle.monthly_price_id.clone(),
-            },
-        )
+        self.create_checkout(CreateCheckoutRequest {
+            user_email: user.email.clone(),
+            user_id: user.id,
+            price_id: paddle.monthly_price_id.clone(),
+        })
         .await
     }
 
-    pub async fn redeem_trial_code<R: DatabaseRepository + ?Sized, C: PaddleClient + ?Sized>(
+    pub async fn redeem_trial_code(
         &self,
-        repository: &R,
-        client: &C,
         user: &User,
         input: TrialRedemptionInput<'_>,
     ) -> Result<TrialCodeRedemption, BillingServiceError> {
@@ -188,7 +252,8 @@ impl BillingService {
             .ok_or(BillingServiceError::BillingDisabled)?;
         let code_hash = hash_trial_code(&paddle.trial_code_hash_key, input.code)?;
         let reserved_at = Utc::now();
-        let Some(redemption) = repository
+        let Some(redemption) = self
+            .repository
             .reserve_trial_code_redemption(&code_hash, &user.id, reserved_at)
             .await
             .map_err(|_| BillingServiceError::RepositoryRequestFailed)?
@@ -196,12 +261,14 @@ impl BillingService {
             return Err(BillingServiceError::TrialCodeUnavailable);
         };
 
-        let profile = repository
+        let profile = self
+            .repository
             .get_billing_profile(&user.id)
             .await
             .map_err(|_| BillingServiceError::RepositoryRequestFailed)?;
 
-        let trial = match client
+        let trial = match self
+            .paddle_client
             .create_cardless_trial(CreateCardlessTrialRequest {
                 user_id: user.id,
                 user_email: user.email.clone(),
@@ -219,7 +286,8 @@ impl BillingService {
         {
             Ok(trial) => trial,
             Err(_) => {
-                let _ = repository
+                let _ = self
+                    .repository
                     .release_trial_code_redemption(&code_hash, &user.id, Utc::now())
                     .await;
                 return Err(BillingServiceError::PaddleRequestFailed);
@@ -227,7 +295,7 @@ impl BillingService {
         };
 
         let now = Utc::now();
-        repository
+        self.repository
             .upsert_billing_profile(&BillingProfile {
                 user_id: user.id,
                 paddle_customer_id: Some(trial.customer_id),
@@ -248,7 +316,7 @@ impl BillingService {
             updated_at: now,
             ..redemption
         };
-        repository
+        self.repository
             .upsert_trial_code_redemption(&updated)
             .await
             .map_err(|_| BillingServiceError::RepositoryRequestFailed)?;
@@ -256,19 +324,15 @@ impl BillingService {
         Ok(updated)
     }
 
-    pub async fn create_payment_method_transaction<
-        R: DatabaseRepository + ?Sized,
-        C: PaddleClient + ?Sized,
-    >(
+    pub async fn create_payment_method_transaction(
         &self,
-        repository: &R,
-        client: &C,
         user: &User,
     ) -> Result<CreatePaymentMethodTransactionResponse, BillingServiceError> {
         if !self.config.is_billing_enabled() {
             return Err(BillingServiceError::BillingDisabled);
         }
-        let entitlement = repository
+        let entitlement = self
+            .repository
             .get_billing_entitlement(&user.id)
             .await
             .map_err(|_| BillingServiceError::RepositoryRequestFailed)?
@@ -276,7 +340,7 @@ impl BillingService {
         let subscription_id = entitlement
             .paddle_subscription_id
             .ok_or(BillingServiceError::EntitlementUnavailable)?;
-        client
+        self.paddle_client
             .create_payment_method_transaction(CreatePaymentMethodTransactionRequest {
                 subscription_id,
             })
@@ -284,16 +348,15 @@ impl BillingService {
             .map_err(|_| BillingServiceError::PaddleRequestFailed)
     }
 
-    pub async fn create_portal_session<R: DatabaseRepository + ?Sized, C: PaddleClient + ?Sized>(
+    pub async fn create_portal_session(
         &self,
-        repository: &R,
-        client: &C,
         user: &User,
     ) -> Result<CreatePortalSessionResponse, BillingServiceError> {
         if !self.config.is_billing_enabled() {
             return Err(BillingServiceError::BillingDisabled);
         }
-        let entitlement = repository
+        let entitlement = self
+            .repository
             .get_billing_entitlement(&user.id)
             .await
             .map_err(|_| BillingServiceError::RepositoryRequestFailed)?
@@ -302,7 +365,7 @@ impl BillingService {
             .paddle_customer_id
             .ok_or(BillingServiceError::EntitlementUnavailable)?;
         let subscription_ids = entitlement.paddle_subscription_id.into_iter().collect();
-        client
+        self.paddle_client
             .create_portal_session(CreatePortalSessionRequest {
                 customer_id,
                 subscription_ids,

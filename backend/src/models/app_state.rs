@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use crate::config::Config;
-use crate::providers::{PaddleClient, ProviderRegistry};
+use crate::providers::ProviderRegistry;
+use crate::services::billing_service::BillingService;
 use crate::services::categorization::categorization_service::Categorizer;
 use crate::services::category_management::service::CategoryManagementService;
 use crate::services::diy_service::DiyService;
@@ -20,7 +21,7 @@ use crate::services::{
 pub struct AppState {
     pub(crate) plaid_service: Arc<PlaidService>,
     pub(crate) plaid_client: Arc<RealPlaidClient>,
-    pub(crate) paddle_client: Arc<dyn PaddleClient>,
+    pub(crate) billing_service: Arc<BillingService>,
     pub(crate) sync_service: Arc<SyncService>,
     pub(crate) sync_service_factory: Arc<SyncServiceFactory>,
     pub(crate) analytics_service: Arc<crate::services::AnalyticsService>,
@@ -47,7 +48,7 @@ impl Clone for AppState {
         Self {
             plaid_service: self.plaid_service.clone(),
             plaid_client: self.plaid_client.clone(),
-            paddle_client: self.paddle_client.clone(),
+            billing_service: self.billing_service.clone(),
             sync_service: self.sync_service.clone(),
             sync_service_factory: self.sync_service_factory.clone(),
             analytics_service: self.analytics_service.clone(),

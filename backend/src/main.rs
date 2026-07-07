@@ -157,8 +157,8 @@ use migration::MigratorTrait;
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DbBackend, Statement};
 use services::auto_categorization::service::AutoCategorizationError;
 use services::billing_service::{
-    verify_paddle_webhook_signature, BillingService, BillingServiceError, PaddleWebhookEnvelope,
-    TrialRedemptionInput,
+    verify_paddle_webhook_signature, BillingService, BillingServiceError, OwnDataAccessCheck,
+    PaddleWebhookEnvelope, TrialRedemptionInput,
 };
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
 use services::category_management::service::CategoryManagementService;
@@ -289,13 +289,6 @@ async fn main() -> anyhow::Result<()> {
     ));
 
     let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
-    let paddle_client: Arc<dyn providers::PaddleClient> = match config.paddle_billing() {
-        Some(paddle) => Arc::new(providers::RealPaddleClient::new(
-            &paddle.environment,
-            paddle.api_key.clone(),
-        )),
-        None => Arc::new(providers::RealPaddleClient::new("sandbox", String::new())),
-    };
 
     let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
 
@@ -493,10 +486,23 @@ async fn main() -> anyhow::Result<()> {
         connection_service.clone(),
     ));
 
+    let paddle_client: Arc<dyn providers::PaddleClient> = match config.paddle_billing() {
+        Some(paddle) => Arc::new(providers::RealPaddleClient::new(
+            &paddle.environment,
+            paddle.api_key.clone(),
+        )),
+        None => Arc::new(providers::RealPaddleClient::new("sandbox", String::new())),
+    };
+    let billing_service = Arc::new(BillingService::new(
+        config.clone(),
+        db_repository.clone(),
+        paddle_client,
+    ));
+
     let state = AppState {
         plaid_service,
         plaid_client,
-        paddle_client,
+        billing_service,
         sync_service,
         sync_service_factory,
         analytics_service,
@@ -2473,40 +2479,29 @@ async fn require_paid_own_data_access(
     user_id: Uuid,
     operation: &'static str,
 ) -> Result<(), (StatusCode, Json<ApiErrorResponse>)> {
-    if !state.config.is_billing_enabled() {
-        return Ok(());
-    }
-
-    let entitlement = state
-        .db_repository
-        .get_billing_entitlement(&user_id)
-        .await
-        .map_err(|e| {
+    match state.billing_service.check_own_data_access(user_id).await {
+        Ok(OwnDataAccessCheck::Allowed) => Ok(()),
+        Ok(OwnDataAccessCheck::Denied { access_status }) => {
+            tracing::warn!(
+                user_id = %user_id,
+                operation,
+                access_status = access_status.as_str(),
+                "Blocked own-data write without paid access"
+            );
+            Err(paid_access_required_response())
+        }
+        Err(error) => {
             tracing::error!(
                 user_id = %user_id,
                 operation,
-                error = %e,
+                error = ?error,
                 "Failed to load billing entitlement"
             );
-            ApiErrorResponse::internal_server_error("Failed to check billing access")
-        })?;
-
-    let access_status = BillingService::project_local_access_status(
-        entitlement.as_ref().map(|row| row.access_status.as_str()),
-    );
-    let decision = BillingService::new(state.config.clone()).decision_for_status(access_status);
-
-    if decision.can_use_own_data {
-        return Ok(());
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to check billing access",
+            ))
+        }
     }
-
-    tracing::warn!(
-        user_id = %user_id,
-        operation,
-        access_status = access_status.as_str(),
-        "Blocked own-data write without paid access"
-    );
-    Err(paid_access_required_response())
 }
 
 async fn require_paid_own_data_access_after_demo(
@@ -2514,30 +2509,33 @@ async fn require_paid_own_data_access_after_demo(
     user_id: Uuid,
     operation: &'static str,
 ) -> Result<(), (StatusCode, Json<ApiErrorResponse>)> {
-    if !state.config.is_billing_enabled() {
-        return Ok(());
-    }
-
-    let user = state
-        .db_repository
-        .get_user_by_id(&user_id)
+    match state
+        .billing_service
+        .check_own_data_access_after_demo(user_id)
         .await
-        .map_err(|e| {
+    {
+        Ok(OwnDataAccessCheck::Allowed) => Ok(()),
+        Ok(OwnDataAccessCheck::Denied { access_status }) => {
+            tracing::warn!(
+                user_id = %user_id,
+                operation,
+                access_status = access_status.as_str(),
+                "Blocked own-data write without paid access"
+            );
+            Err(paid_access_required_response())
+        }
+        Err(error) => {
             tracing::error!(
                 user_id = %user_id,
                 operation,
-                error = %e,
-                "Failed to load user for billing access"
+                error = ?error,
+                "Failed to check billing access"
             );
-            ApiErrorResponse::internal_server_error("Failed to check billing access")
-        })?
-        .ok_or_else(|| ApiErrorResponse::internal_server_error("User not found"))?;
-
-    if user.demo_mode_active {
-        return Ok(());
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to check billing access",
+            ))
+        }
     }
-
-    require_paid_own_data_access(state, user_id, operation).await
 }
 
 fn api_internal_server_error(message: impl Into<String>) -> (StatusCode, Json<ApiErrorResponse>) {
@@ -2597,7 +2595,7 @@ pub async fn get_authenticated_billing_status(
             api_internal_server_error("Failed to load billing status")
         })?;
 
-    let billing_service = BillingService::new(state.config.clone());
+    let billing_service = &state.billing_service;
     let access_status = BillingService::project_local_access_status(
         entitlement.as_ref().map(|row| row.access_status.as_str()),
     );
@@ -2691,9 +2689,9 @@ pub async fn create_billing_checkout(
         return Err(billing_disabled_response());
     }
     let user = load_billing_user(&state, &auth_context.user_id).await?;
-    let billing_service = BillingService::new(state.config.clone());
-    let checkout = billing_service
-        .create_checkout_for_user(state.paddle_client.as_ref(), &user)
+    let checkout = state
+        .billing_service
+        .create_checkout_for_user(&user)
         .await
         .map_err(billing_service_error_response)?;
     Ok(Json(BillingCheckoutResponse {
@@ -2755,11 +2753,9 @@ pub async fn redeem_trial_code(
     }
 
     let user = load_billing_user(&state, &auth_context.user_id).await?;
-    let billing_service = BillingService::new(state.config.clone());
-    billing_service
+    state
+        .billing_service
         .redeem_trial_code(
-            state.db_repository.as_ref(),
-            state.paddle_client.as_ref(),
             &user,
             TrialRedemptionInput {
                 code: &req.code,
@@ -2795,13 +2791,9 @@ pub async fn create_billing_payment_method(
         return Err(billing_disabled_response());
     }
     let user = load_billing_user(&state, &auth_context.user_id).await?;
-    let billing_service = BillingService::new(state.config.clone());
-    let checkout = billing_service
-        .create_payment_method_transaction(
-            state.db_repository.as_ref(),
-            state.paddle_client.as_ref(),
-            &user,
-        )
+    let checkout = state
+        .billing_service
+        .create_payment_method_transaction(&user)
         .await
         .map_err(billing_service_error_response)?;
     Ok(Json(BillingCheckoutResponse {
@@ -2831,13 +2823,9 @@ pub async fn create_billing_portal_session(
         return Err(billing_disabled_response());
     }
     let user = load_billing_user(&state, &auth_context.user_id).await?;
-    let billing_service = BillingService::new(state.config.clone());
-    let portal = billing_service
-        .create_portal_session(
-            state.db_repository.as_ref(),
-            state.paddle_client.as_ref(),
-            &user,
-        )
+    let portal = state
+        .billing_service
+        .create_portal_session(&user)
         .await
         .map_err(billing_service_error_response)?;
     Ok(Json(BillingPortalSessionResponse {

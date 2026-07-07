@@ -2,10 +2,12 @@ use crate::config::{BillingMode, Config, EnvironmentProvider};
 use crate::providers::paddle_provider::{CreateCheckoutRequest, MockPaddleClient};
 use crate::services::billing_service::{
     verify_paddle_webhook_signature, BillingService, EntitlementAccessStatus, EntitlementDecision,
-    PaddleWebhookSignatureError,
+    OwnDataAccessCheck, PaddleWebhookSignatureError,
 };
+use crate::services::repository_service::MockDatabaseRepository;
 use chrono::{TimeZone, Utc};
 use std::collections::HashMap;
+use std::sync::Arc;
 use uuid::Uuid;
 
 struct MockEnvironment {
@@ -61,6 +63,14 @@ impl EnvironmentProvider for MockEnvironment {
     }
 }
 
+fn billing_service(
+    config: Config,
+    repository: Arc<MockDatabaseRepository>,
+    paddle: Arc<MockPaddleClient>,
+) -> BillingService {
+    BillingService::new(config, repository, paddle)
+}
+
 #[test]
 fn given_valid_paddle_signature_when_verifying_then_accepts_raw_body() {
     let raw_body = br#"{"event_id":"evt_123"}"#;
@@ -107,9 +117,8 @@ fn given_negative_signature_tolerance_when_verifying_then_rejects_non_exact_time
 
 #[test]
 fn given_mismatched_paddle_signature_when_verifying_then_rejects() {
-    let raw_body = br#"{"event_id":"evt_123","extra":true}"#;
-    let header =
-        "ts=1700000000;h1=3a197239aca6698888207b95b9e07653c1db1715a97746290f20f3f466752b2b";
+    let raw_body = br#"{"event_id":"evt_123"}"#;
+    let header = "ts=1700000000;h1=deadbeef";
 
     let result =
         verify_paddle_webhook_signature("pdl_ntfset_test", header, raw_body, 1_700_000_003, 5);
@@ -120,8 +129,11 @@ fn given_mismatched_paddle_signature_when_verifying_then_rejects() {
 #[test]
 fn given_billing_disabled_when_building_service_then_mode_is_unrestricted() {
     let config = Config::from_env_provider(&MockEnvironment::disabled()).unwrap();
-
-    let service = BillingService::new(config);
+    let service = billing_service(
+        config,
+        Arc::new(MockDatabaseRepository::new()),
+        Arc::new(MockPaddleClient::new()),
+    );
 
     assert_eq!(service.billing_mode(), BillingMode::Disabled);
     assert_eq!(
@@ -136,7 +148,11 @@ fn given_billing_disabled_when_building_service_then_mode_is_unrestricted() {
 #[test]
 fn given_paddle_billing_when_deciding_access_then_allows_only_trialing_and_active() {
     let config = Config::from_env_provider(&MockEnvironment::paddle()).unwrap();
-    let service = BillingService::new(config);
+    let service = billing_service(
+        config,
+        Arc::new(MockDatabaseRepository::new()),
+        Arc::new(MockPaddleClient::new()),
+    );
 
     assert_eq!(service.billing_mode(), BillingMode::Paddle);
     assert!(
@@ -215,20 +231,37 @@ fn given_existing_newer_entitlement_event_when_checking_order_then_rejects_older
 #[tokio::test]
 async fn given_billing_disabled_when_creating_checkout_then_paddle_client_is_not_called() {
     let config = Config::from_env_provider(&MockEnvironment::disabled()).unwrap();
-    let service = BillingService::new(config);
     let mut paddle = MockPaddleClient::new();
     paddle.expect_create_checkout().never();
+    let service = billing_service(
+        config,
+        Arc::new(MockDatabaseRepository::new()),
+        Arc::new(paddle),
+    );
 
     let result = service
-        .create_checkout(
-            &paddle,
-            CreateCheckoutRequest {
-                user_email: "me@example.com".to_string(),
-                price_id: "pri_monthly".to_string(),
-                user_id: Uuid::new_v4(),
-            },
-        )
+        .create_checkout(CreateCheckoutRequest {
+            user_email: "me@example.com".to_string(),
+            price_id: "pri_monthly".to_string(),
+            user_id: Uuid::new_v4(),
+        })
         .await;
 
     assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn given_billing_disabled_when_checking_own_data_access_then_allows_without_repository() {
+    let config = Config::from_env_provider(&MockEnvironment::disabled()).unwrap();
+    let mut repository = MockDatabaseRepository::new();
+    repository.expect_get_billing_entitlement().never();
+    let service = billing_service(
+        config,
+        Arc::new(repository),
+        Arc::new(MockPaddleClient::new()),
+    );
+
+    let result = service.check_own_data_access(Uuid::new_v4()).await.unwrap();
+
+    assert_eq!(result, OwnDataAccessCheck::Allowed);
 }

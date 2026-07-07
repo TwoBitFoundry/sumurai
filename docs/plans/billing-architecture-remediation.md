@@ -76,16 +76,17 @@ This plan closes those gaps without changing product behavior outside production
 
 **Acceptance criteria:**
 
-- [ ] No direct `BillingService::new` in handlers or guards.
-- [ ] All billing mutation handlers use `state.billing_service`.
-- [ ] Entitlement gate tests still pass without behavior change.
-- [ ] Disabled billing mode still short-circuits before repository/Paddle calls.
+- [x] No direct `BillingService::new` in handlers or guards.
+- [x] All billing mutation handlers use `state.billing_service`.
+- [x] Entitlement gate tests still pass without behavior change.
+- [x] Disabled billing mode still short-circuits before repository/Paddle calls.
 
-**TDD slices:**
-
-1. Red: test that disabled mode guard returns early without repository expectations (may already exist; extend if needed).
-2. Green: wire service on `AppState`; migrate guards first, then mutation handlers.
-3. Refactor: collapse duplicate billing-disabled checks into service methods where appropriate.
+**TDD log**
+- Red: `cargo test -p sumurai-backend --locked given_billing_disabled_when_checking_own_data_access_then_allows_without_repository` failed before service-owned access checks existed.
+- Green: `cargo test -p sumurai-backend --locked billing_service_tests billing_entitlement_gate_tests billing_api_tests`.
+- Verification: `cargo fmt --all --check`, `cargo check --workspace --locked --all-targets`, `cargo clippy -p sumurai-backend -p entity -p billing-common --locked --all-targets --no-deps -- -D warnings`.
+- Verification: `cargo test -p sumurai-backend --locked` passed 772 tests with 1 ignored.
+- Verification: `cargo test -p sumurai-cli --locked`.
 
 ---
 
