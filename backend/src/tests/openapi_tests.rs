@@ -104,6 +104,46 @@ fn given_billing_when_generating_openapi_then_documents_endpoints_and_schemas() 
             ["type"],
         serde_json::json!("boolean")
     );
+
+    for schema in [
+        "BillingCheckoutResponse",
+        "BillingPortalSessionResponse",
+        "TrialRedeemRequest",
+        "TrialRedeemResponse",
+    ] {
+        assert!(
+            spec["components"]["schemas"].get(schema).is_some(),
+            "missing billing schema {schema}"
+        );
+    }
+
+    assert_eq!(
+        spec["components"]["schemas"]["ApiErrorResponse"]["properties"]["code"]["type"],
+        serde_json::json!(["string", "null"])
+    );
+
+    for path in [
+        "/api/billing/checkout",
+        "/api/billing/payment-method",
+        "/api/billing/portal-session",
+        "/api/billing/trials/redeem",
+        "/api/billing/webhooks/paddle",
+    ] {
+        let responses = &spec["paths"][path]
+            .as_object()
+            .and_then(|item| item.values().next())
+            .and_then(|operation| operation["responses"].as_object())
+            .expect("billing operation responses");
+        let documents_disabled_billing = responses.iter().any(|(status, response)| {
+            status == "404"
+                && response["content"]["application/json"]["schema"]["$ref"]
+                    == serde_json::json!("#/components/schemas/ApiErrorResponse")
+        });
+        assert!(
+            documents_disabled_billing,
+            "expected billing disabled ApiErrorResponse on {path}"
+        );
+    }
 }
 
 #[test]

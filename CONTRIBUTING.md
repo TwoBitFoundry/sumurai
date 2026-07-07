@@ -75,7 +75,7 @@ docker compose -f docker-compose.dev.yml up -d --build
 
 Dev compose uses separate Postgres/Redis volumes (`postgres_data_dev`, `redis_data_dev`) from the default OSS stack (`postgres_data_oss`, `redis_data_oss`). The first run after switching stacks starts with a fresh database. Only the dev stack sets `SEED_DEMO_USER=true`, which recreates the demo account and workspace on startup. The dev backend image is built with the `dev-seed` Cargo feature so local development uses password auth instead of passkeys. The dev frontend sets `NEXT_PUBLIC_PASSWORD_AUTH=true` at build time (docker compose) and in the `bun run dev` script. The default OSS compose stack does not seed demo data and requires passkeys.
 
-For the **production-oriented** stack with Seq, use `docker-compose.prod.yml` and [docs/PRODUCTION_TLS.md](docs/PRODUCTION_TLS.md).
+For the **production-oriented** stack with Seq, use `docker-compose.prod.yml`, [docs/PRODUCTION_TLS.md](docs/PRODUCTION_TLS.md), and [docs/PRODUCTION_BILLING.md](docs/PRODUCTION_BILLING.md) for Paddle billing setup.
 
 Demo credentials (dev compose): `me@test.com` / `Test1234!`
 

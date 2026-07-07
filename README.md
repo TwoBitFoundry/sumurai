@@ -229,7 +229,7 @@ The app is a static Next.js export served by Nginx on port 8080, with `/api/*` a
 
 - Frontend: Next.js 16, React 19, TypeScript 6, Tailwind 4, Recharts 3, Biome 2, Bun, and browser OpenTelemetry (enabled per compose via `NEXT_PUBLIC_OTEL_*`)
 - Backend: Rust 1.95, Axum, SQLx, Redis, PostgreSQL, JWT auth, provider integrations, and OpenTelemetry tracing (export mode is set per environment; production compose sends OTLP to Seq)
-- Deployment: standalone Docker Compose files—default OSS (`docker-compose.yml`), local dev builds (`docker-compose.dev.yml`), or production with Seq (`docker-compose.prod.yml`); each includes nginx, frontend, backend, Postgres, and Redis
+- Deployment: standalone Docker Compose files—default OSS (`docker-compose.yml`), local dev builds (`docker-compose.dev.yml`), or production with Seq and Paddle billing (`docker-compose.prod.yml`); each includes nginx, frontend, backend, Postgres, and Redis. Paid billing applies only to the production compose stack; see [docs/PRODUCTION_BILLING.md](docs/PRODUCTION_BILLING.md).
 - Providers: Teller, Plaid, and SimpleFIN through a shared provider registry
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the deeper system breakdown.

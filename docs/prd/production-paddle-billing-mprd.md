@@ -571,11 +571,11 @@ environments free of billing UI.
   lockfile changes with the implementation.
 
 **Acceptance criteria**
-- [ ] Docs state that paid options apply only to production Docker Compose.
-- [ ] Docs state that billing UI must never show in non-production environments.
-- [ ] Docs list DIY/Plaid as the only production hosted providers.
-- [ ] OpenAPI contains billing endpoints and error codes.
-- [ ] Validation passes:
+- [x] Docs state that paid options apply only to production Docker Compose.
+- [x] Docs state that billing UI must never show in non-production environments.
+- [x] Docs list DIY/Plaid as the only production hosted providers.
+- [x] OpenAPI contains billing endpoints and error codes.
+- [x] Validation passes:
       `cargo fmt -p sumurai-backend -p entity --check`;
       `cargo check --workspace --locked --all-targets`;
       `cargo clippy -p sumurai-backend -p entity --locked --all-targets --no-deps -- -D warnings`;
@@ -583,6 +583,21 @@ environments free of billing UI.
       `bun --cwd=frontend run test`;
       `bun --cwd=frontend run typecheck`;
       `bun --cwd=frontend run build`.
+
+**TDD log**
+- Red: `cargo test -p sumurai-backend --locked production_billing_docs` failed before
+  `docs/PRODUCTION_BILLING.md` existed.
+- Red: `cargo test -p sumurai-backend --locked given_billing_when_generating_openapi`
+  failed before billing error-response and schema assertions were added.
+- Green: `cargo test -p sumurai-backend --locked production_billing_docs`.
+- Green: `cargo test -p sumurai-backend --locked given_billing_when_generating_openapi`.
+- Verification: `cargo fmt -p sumurai-backend -p entity --check`.
+- Verification: `cargo check --workspace --locked --all-targets`.
+- Verification: `cargo clippy -p sumurai-backend -p entity --locked --all-targets --no-deps -- -D warnings`.
+- Verification: `cargo test -p sumurai-backend --locked` passed 771 tests with 1 ignored.
+- Verification: `bun --cwd=frontend run typecheck`.
+- Verification: `bun --cwd=frontend run test` passed 1359 tests.
+- Verification: `bun --cwd=frontend run build`.
 
 ## Implementation notes for student agents
 
