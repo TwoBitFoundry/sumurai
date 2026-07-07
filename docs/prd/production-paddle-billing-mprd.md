@@ -320,15 +320,25 @@ entitlement decision.
   payloads.
 
 **Acceptance criteria**
-- [ ] Invalid, missing, stale, or mismatched webhook signatures are rejected
+- [x] Invalid, missing, stale, or mismatched webhook signatures are rejected
       before JSON parsing.
-- [ ] Duplicate webhook events return success without double mutation.
-- [ ] Out-of-order older events do not downgrade newer entitlement state when
+- [x] Duplicate webhook events return success without double mutation.
+- [x] Out-of-order older events do not downgrade newer entitlement state when
       `last_event_at` is newer.
-- [ ] Trialing and active subscriptions allow own-data writes in billing mode.
-- [ ] Paused/canceled/past-due/expired subscriptions block own-data writes in
+- [x] Trialing and active subscriptions allow own-data writes in billing mode.
+- [x] Paused/canceled/past-due/expired subscriptions block own-data writes in
       billing mode.
-- [ ] Billing disabled mode never calls Paddle.
+- [x] Billing disabled mode never calls Paddle.
+
+**TDD log**
+- Red: `cargo test -p sumurai-backend --locked billing_service_tests` failed
+  before the billing service and Paddle client boundary existed.
+- Green: `cargo test -p sumurai-backend --locked billing_service_tests`.
+- Verification: `cargo fmt -p sumurai-backend -p entity --check`.
+- Verification: `cargo check --workspace --locked --all-targets`.
+- Verification: `cargo clippy -p sumurai-backend -p entity --locked --all-targets --no-deps -- -D warnings`.
+- Verification: `cargo test -p sumurai-backend --locked` passed 749 tests with
+  1 ignored.
 
 ## Phase 4 - Billing API routes and CLI trial-code operations
 

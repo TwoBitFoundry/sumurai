@@ -1,5 +1,6 @@
 pub mod credential_resolver;
 pub mod diy_provider;
+pub mod paddle_provider;
 pub mod plaid_credential_resolver;
 pub mod plaid_provider;
 pub mod registry;
