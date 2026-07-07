@@ -53,6 +53,7 @@ interface ProviderSelectionCardProps {
   connectingProvider: FinancialProvider | null;
   onSelectProvider: (provider: FinancialProvider) => void | Promise<void>;
   isOnline?: boolean;
+  billingLocked?: boolean;
 }
 
 export const ProviderSelectionCard = ({
@@ -62,6 +63,7 @@ export const ProviderSelectionCard = ({
   connectingProvider,
   onSelectProvider,
   isOnline = true,
+  billingLocked = false,
 }: ProviderSelectionCardProps) => {
   const { isMobile } = useViewportBreakpoint();
   const details = getProviderCardConfig(provider);
@@ -77,25 +79,34 @@ export const ProviderSelectionCard = ({
   const needsNetwork = provider !== 'diy';
   const offline = needsNetwork && !isOnline;
   const disabled =
-    offline || !enabled || !isPrepared || isAnyProviderConnecting || credentialsUnavailable;
+    billingLocked ||
+    offline ||
+    !enabled ||
+    !isPrepared ||
+    isAnyProviderConnecting ||
+    credentialsUnavailable;
   const availabilityReason = offline
     ? 'No internet connection'
-    : credentialsUnavailable
-      ? null
-      : !enabled
-        ? blockedReason
-        : !isPrepared
-          ? 'Preparing secure connection'
-          : null;
+    : billingLocked
+      ? 'Upgrade or redeem a trial code in Settings'
+      : credentialsUnavailable
+        ? null
+        : !enabled
+          ? blockedReason
+          : !isPrepared
+            ? 'Preparing secure connection'
+            : null;
   const connectButtonLabel = isConnecting
     ? 'Connecting…'
-    : offline
-      ? 'Offline'
-      : credentialsUnavailable
-        ? 'Unavailable'
-        : !isPrepared
-          ? 'Loading…'
-          : 'Link Account';
+    : billingLocked
+      ? 'Upgrade'
+      : offline
+        ? 'Offline'
+        : credentialsUnavailable
+          ? 'Unavailable'
+          : !isPrepared
+            ? 'Loading…'
+            : 'Link Account';
   const connectButtonHoverLabel =
     availabilityReason ?? (credentialsUnavailable ? blockedReason : null) ?? connectButtonLabel;
 

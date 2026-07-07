@@ -529,16 +529,26 @@ environments free of billing UI.
   Paddle URLs with tokens.
 
 **Acceptance criteria**
-- [ ] Billing section is absent in dev, OSS/default compose, test stories, and
+- [x] Billing section is absent in dev, OSS/default compose, test stories, and
       billing-disabled API responses.
-- [ ] Billing section appears in production billing mode only.
-- [ ] Provider picker shows only DIY and Plaid in production billing mode.
-- [ ] Unpaid production users see a clear path to Upgrade/Redeem when attempting
+- [x] Billing section appears in production billing mode only.
+- [x] Provider picker shows only DIY and Plaid in production billing mode.
+- [x] Unpaid production users see a clear path to Upgrade/Redeem when attempting
       own-data flows.
-- [ ] Trial redemption never collects card details.
-- [ ] Active/trialing status unlocks own-data UI after billing status refresh.
-- [ ] Expired status keeps read/export/disconnect/delete discoverable while
+- [x] Trial redemption never collects card details.
+- [x] Active/trialing status unlocks own-data UI after billing status refresh.
+- [x] Expired status keeps read/export/disconnect/delete discoverable while
       blocking write actions.
+
+**TDD log**
+- Red: `bun --cwd=frontend test BillingService.test.ts useBillingStatus.test.tsx
+  SettingsPage.test.tsx ProviderSelectionPanel.test.tsx` failed before billing
+  service, conservative status hook, Settings billing section, and production
+  provider locks existed.
+- Green: `bun --cwd=frontend test BillingService.test.ts useBillingStatus.test.tsx
+  SettingsPage.test.tsx ProviderSelectionPanel.test.tsx`.
+- Verification: `bun --cwd=frontend run typecheck`.
+- Verification: `bun --cwd=frontend run test` passed 1359 tests.
 
 ## Phase 7 - Documentation, deployment checks, and verification
 

@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { ProviderSelectionPanel } from '@/features/plaid/components/ProviderSelectionPanel';
+import type { BillingStatusResponse } from '@/types/api';
 import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
 import { ThemeTestProvider } from '../../../utils/ThemeTestProvider';
 
@@ -22,6 +23,19 @@ function renderPanel(props: Partial<ComponentProps<typeof ProviderSelectionPanel
     </ThemeTestProvider>
   );
 }
+
+const billingStatus = (overrides: Partial<BillingStatusResponse>): BillingStatusResponse => ({
+  billing_enabled: true,
+  access_status: 'demo',
+  can_use_own_data: false,
+  is_demo_mode_active: true,
+  trial_ends_at: null,
+  current_period_ends_at: null,
+  payment_method_required: false,
+  billing_portal_available: false,
+  enabled_financial_providers: ['plaid', 'diy'],
+  ...overrides,
+});
 
 describe('ProviderSelectionPanel', () => {
   it('uses themed glass provider cards with themed nested feature rows', () => {
@@ -269,5 +283,54 @@ describe('ProviderSelectionPanel', () => {
     await waitFor(() => {
       expect(screen.getAllByText('Privacy details').length).toBeGreaterThan(1);
     });
+  });
+
+  it('shows only paid production providers and locks connection actions without paid access', () => {
+    renderPanel({
+      availableProviders: ['plaid', 'diy', 'simplefin', 'teller'],
+      billingStatus: billingStatus({}),
+    });
+
+    expect(screen.getByText('Plaid')).toBeInTheDocument();
+    expect(screen.getByText('DIY')).toBeInTheDocument();
+    expect(screen.queryByText('SimpleFIN')).not.toBeInTheDocument();
+    expect(screen.queryByText('Teller')).not.toBeInTheDocument();
+    expect(screen.getByText('Paid access required')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Upgrade' })).toHaveLength(2);
+    for (const button of screen.getAllByRole('button', { name: 'Upgrade' })) {
+      expect(button).toBeDisabled();
+    }
+  });
+
+  it('does not show paid locks when billing is disabled', () => {
+    renderPanel({
+      availableProviders: ['plaid', 'diy', 'simplefin', 'teller'],
+      billingStatus: billingStatus({
+        billing_enabled: false,
+        access_status: 'unrestricted',
+        can_use_own_data: true,
+        is_demo_mode_active: false,
+      }),
+    });
+
+    expect(screen.queryByText('Paid access required')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Link Account' }).length).toBeGreaterThan(0);
+  });
+
+  it('unlocks paid production providers when billing status allows own data', () => {
+    renderPanel({
+      availableProviders: ['plaid', 'diy', 'simplefin', 'teller'],
+      billingStatus: billingStatus({
+        access_status: 'trialing',
+        can_use_own_data: true,
+        is_demo_mode_active: false,
+      }),
+    });
+
+    expect(screen.queryByText('Paid access required')).not.toBeInTheDocument();
+    expect(screen.getByText('Plaid')).toBeInTheDocument();
+    expect(screen.getByText('DIY')).toBeInTheDocument();
+    expect(screen.queryByText('SimpleFIN')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Link Account' })).toHaveLength(2);
   });
 });

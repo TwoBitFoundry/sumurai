@@ -3,6 +3,7 @@ import { AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import { useTheme } from '@/context/ThemeContext';
+import { BillingSection } from '@/features/settings/BillingSection';
 import { PasskeySecuritySection } from '@/features/settings/PasskeySecuritySection';
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
 import { AuthService } from '@/services/authService';
@@ -101,6 +102,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
               </div>
               <ThemeModeSelector value={preference} onChange={setPreference} />
             </section>
+
+            <BillingSection />
 
             <PasskeySecuritySection />
           </div>
