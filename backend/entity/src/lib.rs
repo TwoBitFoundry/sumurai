@@ -3,14 +3,19 @@
 pub mod prelude;
 
 pub mod accounts;
+pub mod billing_entitlements;
+pub mod billing_profiles;
 pub mod budgets;
 pub mod merchant_aliases;
+pub mod paddle_webhook_events;
 pub mod provider_connections;
 pub mod provider_credentials;
 pub mod simplefin_hidden_orgs;
 pub mod simplefin_root_credentials;
 pub mod transaction_category_overrides;
 pub mod transactions;
+pub mod trial_code_redemptions;
+pub mod trial_codes;
 pub mod user_custom_categories;
 pub mod users;
 pub mod webauthn_credentials;

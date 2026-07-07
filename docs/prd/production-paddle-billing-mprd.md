@@ -250,12 +250,29 @@ webhook idempotency with tenant isolation.
   - find user by Paddle customer/subscription/custom data.
 
 **Acceptance criteria**
-- [ ] Migration applies cleanly and is registered.
-- [ ] User-owned billing tables have RLS and cross-tenant tests.
-- [ ] Trial codes never store plaintext codes.
-- [ ] Duplicate Paddle webhook event IDs cannot be processed twice.
-- [ ] A user cannot have more than one fulfilled local trial redemption.
-- [ ] Entity smoke tests include new entities.
+- [x] Migration applies cleanly and is registered.
+- [x] User-owned billing tables have RLS and cross-tenant tests.
+- [x] Trial codes never store plaintext codes.
+- [x] Duplicate Paddle webhook event IDs cannot be processed twice.
+- [x] A user cannot have more than one fulfilled local trial redemption.
+- [x] Entity smoke tests include new entities.
+
+**TDD log**
+- Red: `cargo test -p sumurai-backend --locked billing_schema_tests` failed
+  before the registered billing migration existed.
+- Red: `cargo test -p sumurai-backend --locked repository_service_tests::given_billing`
+  failed before billing models and repository contracts existed.
+- Red: `cargo test -p sumurai-backend --locked repository_service_tests::given_paddle_webhook_event_when_recording_then_event_id_is_idempotency_key`
+  failed before Paddle webhook idempotency storage existed.
+- Green: `cargo test -p sumurai-backend --locked billing_schema_tests`.
+- Green: `cargo test -p sumurai-backend --locked repository_service_tests::given_billing`.
+- Green: `cargo test -p sumurai-backend --locked repository_service_tests::given_paddle_webhook_event_when_recording_then_event_id_is_idempotency_key`.
+- Green: `cargo test -p sumurai-backend --locked entity_smoke_tests`.
+- Verification: `cargo fmt -p sumurai-backend -p entity --check`.
+- Verification: `cargo check --workspace --locked --all-targets`.
+- Verification: `cargo clippy -p sumurai-backend -p entity --locked --all-targets --no-deps -- -D warnings`.
+- Verification: `cargo test -p sumurai-backend --locked` passed 740 tests with
+  1 ignored.
 
 ## Phase 3 - Paddle client, webhook verification, and entitlement service
 

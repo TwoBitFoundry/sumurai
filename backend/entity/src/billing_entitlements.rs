@@ -1,0 +1,103 @@
+use sea_orm::entity::prelude::*;
+use serde::{Deserialize, Serialize};
+
+#[derive(Copy, Clone, Default, Debug, DeriveEntity)]
+pub struct Entity;
+
+impl EntityName for Entity {
+    fn table_name(&self) -> &str {
+        "billing_entitlements"
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, DeriveModel, DeriveActiveModel, Eq, Serialize, Deserialize)]
+pub struct Model {
+    pub user_id: Uuid,
+    pub access_status: String,
+    pub source: String,
+    pub paddle_subscription_id: Option<String>,
+    pub paddle_customer_id: Option<String>,
+    pub paddle_price_id: Option<String>,
+    pub trial_ends_at: Option<DateTimeWithTimeZone>,
+    pub current_period_ends_at: Option<DateTimeWithTimeZone>,
+    pub canceled_at: Option<DateTimeWithTimeZone>,
+    pub last_event_at: Option<DateTimeWithTimeZone>,
+    pub payment_method_required: bool,
+    pub created_at: DateTimeWithTimeZone,
+    pub updated_at: DateTimeWithTimeZone,
+}
+
+#[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
+pub enum Column {
+    UserId,
+    AccessStatus,
+    Source,
+    PaddleSubscriptionId,
+    PaddleCustomerId,
+    PaddlePriceId,
+    TrialEndsAt,
+    CurrentPeriodEndsAt,
+    CanceledAt,
+    LastEventAt,
+    PaymentMethodRequired,
+    CreatedAt,
+    UpdatedAt,
+}
+
+#[derive(Copy, Clone, Debug, EnumIter, DerivePrimaryKey)]
+pub enum PrimaryKey {
+    UserId,
+}
+
+impl PrimaryKeyTrait for PrimaryKey {
+    type ValueType = Uuid;
+    fn auto_increment() -> bool {
+        false
+    }
+}
+
+#[derive(Copy, Clone, Debug, EnumIter)]
+pub enum Relation {
+    Users,
+}
+
+impl ColumnTrait for Column {
+    type EntityName = Entity;
+    fn def(&self) -> ColumnDef {
+        match self {
+            Self::UserId => ColumnType::Uuid.def(),
+            Self::AccessStatus => ColumnType::Text.def(),
+            Self::Source => ColumnType::Text.def(),
+            Self::PaddleSubscriptionId => ColumnType::Text.def().null().unique(),
+            Self::PaddleCustomerId => ColumnType::Text.def().null(),
+            Self::PaddlePriceId => ColumnType::Text.def().null(),
+            Self::TrialEndsAt => ColumnType::TimestampWithTimeZone.def().null(),
+            Self::CurrentPeriodEndsAt => ColumnType::TimestampWithTimeZone.def().null(),
+            Self::CanceledAt => ColumnType::TimestampWithTimeZone.def().null(),
+            Self::LastEventAt => ColumnType::TimestampWithTimeZone.def().null(),
+            Self::PaymentMethodRequired => ColumnType::Boolean.def(),
+            Self::CreatedAt => ColumnType::TimestampWithTimeZone.def(),
+            Self::UpdatedAt => ColumnType::TimestampWithTimeZone.def(),
+        }
+    }
+}
+
+impl RelationTrait for Relation {
+    fn def(&self) -> RelationDef {
+        match self {
+            Self::Users => Entity::belongs_to(super::users::Entity)
+                .from(Column::UserId)
+                .to(super::users::Column::Id)
+                .on_delete(ForeignKeyAction::Cascade)
+                .into(),
+        }
+    }
+}
+
+impl Related<super::users::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Users.def()
+    }
+}
+
+impl ActiveModelBehavior for ActiveModel {}

@@ -68,6 +68,56 @@ async fn provider_credentials_entity_compiles_and_queries() {
 }
 
 #[tokio::test]
+async fn billing_profile_entities_compile_and_query() {
+    let Some(db) = connect().await else { return };
+    entity::billing_profiles::Entity::find()
+        .limit(1)
+        .all(&db)
+        .await
+        .expect("billing_profiles query failed");
+}
+
+#[tokio::test]
+async fn billing_entitlement_entities_compile_and_query() {
+    let Some(db) = connect().await else { return };
+    entity::billing_entitlements::Entity::find()
+        .limit(1)
+        .all(&db)
+        .await
+        .expect("billing_entitlements query failed");
+}
+
+#[tokio::test]
+async fn trial_code_entities_compile_and_query() {
+    let Some(db) = connect().await else { return };
+    entity::trial_codes::Entity::find()
+        .limit(1)
+        .all(&db)
+        .await
+        .expect("trial_codes query failed");
+}
+
+#[tokio::test]
+async fn trial_code_redemption_entities_compile_and_query() {
+    let Some(db) = connect().await else { return };
+    entity::trial_code_redemptions::Entity::find()
+        .limit(1)
+        .all(&db)
+        .await
+        .expect("trial_code_redemptions query failed");
+}
+
+#[tokio::test]
+async fn paddle_webhook_event_entities_compile_and_query() {
+    let Some(db) = connect().await else { return };
+    entity::paddle_webhook_events::Entity::find()
+        .limit(1)
+        .all(&db)
+        .await
+        .expect("paddle_webhook_events query failed");
+}
+
+#[tokio::test]
 async fn users_to_accounts_relation_traversable() {
     let Some(db) = connect().await else { return };
     entity::users::Entity::find()
