@@ -1,6 +1,8 @@
 use crate::config::{BillingMode, Config, EnvironmentProvider};
 use crate::models::billing::{BillingEntitlement, TrialCodeRedemption};
-use crate::providers::paddle_provider::{CreateCheckoutRequest, MockPaddleClient};
+use crate::providers::paddle_provider::{
+    CreateCheckoutRequest, MockPaddleHttpClient, NoOpPaddleClient,
+};
 use crate::services::billing_service::{
     verify_paddle_webhook_signature, BillingService, BillingWebhookError, EntitlementAccessStatus,
     EntitlementDecision, OwnDataAccessCheck, PaddleWebhookSignatureError,
@@ -66,10 +68,14 @@ impl EnvironmentProvider for MockEnvironment {
     }
 }
 
+fn noop_paddle() -> Arc<dyn crate::providers::PaddleHttpClient> {
+    Arc::new(NoOpPaddleClient)
+}
+
 fn billing_service(
     config: Config,
     repository: Arc<MockDatabaseRepository>,
-    paddle: Arc<MockPaddleClient>,
+    paddle: Arc<dyn crate::providers::PaddleHttpClient>,
 ) -> BillingService {
     BillingService::new(config, repository, paddle)
 }
@@ -135,7 +141,7 @@ fn given_billing_disabled_when_building_service_then_mode_is_unrestricted() {
     let service = billing_service(
         config,
         Arc::new(MockDatabaseRepository::new()),
-        Arc::new(MockPaddleClient::new()),
+        noop_paddle(),
     );
 
     assert_eq!(service.billing_mode(), BillingMode::Disabled);
@@ -154,7 +160,7 @@ fn given_paddle_billing_when_deciding_access_then_allows_only_trialing_and_activ
     let service = billing_service(
         config,
         Arc::new(MockDatabaseRepository::new()),
-        Arc::new(MockPaddleClient::new()),
+        noop_paddle(),
     );
 
     assert_eq!(service.billing_mode(), BillingMode::Paddle);
@@ -234,7 +240,7 @@ fn given_existing_newer_entitlement_event_when_checking_order_then_rejects_older
 #[tokio::test]
 async fn given_billing_disabled_when_creating_checkout_then_paddle_client_is_not_called() {
     let config = Config::from_env_provider(&MockEnvironment::disabled()).unwrap();
-    let mut paddle = MockPaddleClient::new();
+    let mut paddle = MockPaddleHttpClient::new();
     paddle.expect_create_checkout().never();
     let service = billing_service(
         config,
@@ -258,11 +264,7 @@ async fn given_billing_disabled_when_checking_own_data_access_then_allows_withou
     let config = Config::from_env_provider(&MockEnvironment::disabled()).unwrap();
     let mut repository = MockDatabaseRepository::new();
     repository.expect_get_billing_entitlement().never();
-    let service = billing_service(
-        config,
-        Arc::new(repository),
-        Arc::new(MockPaddleClient::new()),
-    );
+    let service = billing_service(config, Arc::new(repository), noop_paddle());
 
     let result = service.check_own_data_access(Uuid::new_v4()).await.unwrap();
 
@@ -309,11 +311,7 @@ async fn given_invalid_paddle_signature_when_processing_webhook_then_rejects_bef
     repository
         .expect_record_paddle_webhook_event_if_new()
         .never();
-    let service = billing_service(
-        config,
-        Arc::new(repository),
-        Arc::new(MockPaddleClient::new()),
-    );
+    let service = billing_service(config, Arc::new(repository), noop_paddle());
     let body = br#"{"event_id":"evt_123"}"#;
 
     let result = service
@@ -337,11 +335,7 @@ async fn given_duplicate_paddle_webhook_when_processing_then_succeeds_without_en
         .returning(|_| Box::pin(async { Ok(false) }));
     repository.expect_get_billing_entitlement().never();
     repository.expect_upsert_billing_entitlement().never();
-    let service = billing_service(
-        config,
-        Arc::new(repository),
-        Arc::new(MockPaddleClient::new()),
-    );
+    let service = billing_service(config, Arc::new(repository), noop_paddle());
 
     let result = service
         .process_paddle_webhook(Some(&header), &body, 1_700_000_003)
@@ -384,11 +378,7 @@ async fn given_older_paddle_webhook_when_processing_then_skips_entitlement_downg
             })
         });
     repository.expect_upsert_billing_entitlement().never();
-    let service = billing_service(
-        config,
-        Arc::new(repository),
-        Arc::new(MockPaddleClient::new()),
-    );
+    let service = billing_service(config, Arc::new(repository), noop_paddle());
 
     let result = service
         .process_paddle_webhook(Some(&header), &body, 1_700_000_003)
@@ -423,11 +413,7 @@ async fn given_subscription_activated_webhook_when_processing_then_updates_trial
     repository
         .expect_get_trial_code_redemption_for_user()
         .returning(|_| Box::pin(async { Ok(None) }));
-    let service = billing_service(
-        config,
-        Arc::new(repository),
-        Arc::new(MockPaddleClient::new()),
-    );
+    let service = billing_service(config, Arc::new(repository), noop_paddle());
 
     let result = service
         .process_paddle_webhook(Some(&header), &body, 1_700_000_003)
@@ -481,11 +467,7 @@ async fn given_trial_redeem_then_subscription_webhook_when_processing_then_fulfi
                 && redemption.fulfilled_at.is_some()
         })
         .returning(|_| Box::pin(async { Ok(()) }));
-    let service = billing_service(
-        config,
-        Arc::new(repository),
-        Arc::new(MockPaddleClient::new()),
-    );
+    let service = billing_service(config, Arc::new(repository), noop_paddle());
 
     let result = service
         .process_paddle_webhook(Some(&header), &body, 1_700_000_003)

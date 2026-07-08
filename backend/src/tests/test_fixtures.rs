@@ -150,14 +150,14 @@ pub(crate) fn noop_categorizer() -> Arc<dyn Categorizer> {
     Arc::new(NoopCategorizer)
 }
 
-pub(crate) fn noop_paddle_client() -> Arc<dyn crate::providers::PaddleClient> {
+pub(crate) fn noop_paddle_client() -> Arc<dyn crate::providers::PaddleHttpClient> {
     Arc::new(crate::providers::NoOpPaddleClient)
 }
 
 pub(crate) fn build_billing_service(
     config: Config,
     db_repository: Arc<dyn DatabaseRepository>,
-    paddle_client: Arc<dyn crate::providers::PaddleClient>,
+    paddle_client: Arc<dyn crate::providers::PaddleHttpClient>,
 ) -> Arc<BillingService> {
     Arc::new(BillingService::new(config, db_repository, paddle_client))
 }
@@ -734,7 +734,7 @@ impl TestFixtures {
         mock_cache: MockCacheService,
         categorizer: Arc<dyn Categorizer>,
         config: Config,
-        paddle_client: Arc<dyn crate::providers::PaddleClient>,
+        paddle_client: Arc<dyn crate::providers::PaddleHttpClient>,
     ) -> Result<Router, anyhow::Error> {
         let plaid_client = Arc::new(RealPlaidClient::new(
             "test_client_id".to_string(),

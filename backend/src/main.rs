@@ -483,8 +483,8 @@ async fn main() -> anyhow::Result<()> {
         connection_service.clone(),
     ));
 
-    let paddle_client: Arc<dyn providers::PaddleClient> = match config.paddle_billing() {
-        Some(paddle) => Arc::new(providers::RealPaddleClient::new(
+    let paddle_client: Arc<dyn providers::PaddleHttpClient> = match config.paddle_billing() {
+        Some(paddle) => Arc::new(providers::PaddleClient::new(
             &paddle.environment,
             paddle.api_key.clone(),
         )),

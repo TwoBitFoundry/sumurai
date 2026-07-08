@@ -12,7 +12,9 @@ pub mod trait_definition;
 
 pub use credential_resolver::ProviderCredentialResolver;
 pub use diy_provider::DiyProvider;
-pub use paddle_provider::{NoOpPaddleClient, PaddleClient, RealPaddleClient};
+#[cfg(test)]
+pub use paddle_provider::MockPaddleHttpClient;
+pub use paddle_provider::{NoOpPaddleClient, PaddleClient, PaddleHttpClient};
 pub use plaid_credential_resolver::PlaidCredentialResolver;
 pub use plaid_provider::PlaidProvider;
 pub use registry::ProviderRegistry;

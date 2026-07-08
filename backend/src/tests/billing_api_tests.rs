@@ -9,7 +9,7 @@ use uuid::Uuid;
 use crate::models::billing::{BillingEntitlement, TrialCodeRedemption};
 use crate::providers::paddle_provider::{
     CreateCardlessTrialResponse, CreateCheckoutResponse, CreatePaymentMethodTransactionResponse,
-    CreatePortalSessionResponse, MockPaddleClient,
+    CreatePortalSessionResponse, MockPaddleHttpClient,
 };
 use crate::services::billing_service::hash_trial_code;
 use crate::services::cache_service::MockCacheService;
@@ -44,7 +44,7 @@ async fn given_billing_disabled_when_get_status_then_returns_unrestricted_disabl
 #[tokio::test]
 async fn given_paddle_billing_when_create_checkout_then_returns_checkout_url() {
     let mock_db = MockDatabaseRepository::new();
-    let mut paddle = MockPaddleClient::new();
+    let mut paddle = MockPaddleHttpClient::new();
     paddle.expect_create_checkout().returning(|request| {
         assert_eq!(request.price_id, "pri_monthly");
         Box::pin(async {
@@ -111,7 +111,7 @@ async fn given_trial_paddle_setup_fails_when_redeeming_then_releases_reserved_co
     mock_db.expect_upsert_billing_profile().never();
     mock_db.expect_upsert_trial_code_redemption().never();
 
-    let mut paddle = MockPaddleClient::new();
+    let mut paddle = MockPaddleHttpClient::new();
     paddle
         .expect_create_cardless_trial()
         .returning(|_| Box::pin(async { Err(anyhow::anyhow!("paddle setup failed")) }));
@@ -145,7 +145,7 @@ async fn given_trial_code_already_reserved_when_redeeming_then_returns_conflict_
         .expect_reserve_trial_code_redemption()
         .returning(|_, _, _| Box::pin(async { Ok(None) }));
 
-    let mut paddle = MockPaddleClient::new();
+    let mut paddle = MockPaddleHttpClient::new();
     paddle.expect_create_cardless_trial().never();
     let app = create_paddle_billing_app(mock_db, paddle).await;
     let (_user, token) = TestFixtures::create_authenticated_user_with_token();
@@ -214,7 +214,7 @@ async fn given_trial_transaction_created_when_redeeming_then_returns_pending_and
             Box::pin(async { Ok(()) })
         });
 
-    let mut paddle = MockPaddleClient::new();
+    let mut paddle = MockPaddleHttpClient::new();
     paddle.expect_create_cardless_trial().returning(|request| {
         assert_eq!(request.price_id, "pri_trial");
         assert_eq!(request.country_code, "US");
@@ -261,7 +261,7 @@ async fn given_trialing_subscription_when_payment_method_requested_then_returns_
             let user_id = *user_id;
             Box::pin(async move { Ok(Some(active_entitlement(user_id))) })
         });
-    let mut paddle = MockPaddleClient::new();
+    let mut paddle = MockPaddleHttpClient::new();
     paddle
         .expect_create_payment_method_transaction()
         .returning(|request| {
@@ -307,7 +307,7 @@ async fn given_paddle_customer_when_portal_session_requested_then_returns_tempor
     mock_db.expect_upsert_billing_entitlement().never();
     mock_db.expect_upsert_trial_code_redemption().never();
 
-    let mut paddle = MockPaddleClient::new();
+    let mut paddle = MockPaddleHttpClient::new();
     paddle.expect_create_portal_session().returning(|request| {
         assert_eq!(request.customer_id, "ctm_123");
         assert_eq!(request.subscription_ids, vec!["sub_123".to_string()]);
@@ -394,7 +394,7 @@ async fn given_valid_paddle_webhook_when_posting_then_returns_ok_without_entitle
         .returning(|_| Box::pin(async { Ok(false) }));
     mock_db.expect_get_billing_entitlement().never();
     mock_db.expect_upsert_billing_entitlement().never();
-    let app = create_paddle_billing_app(mock_db, MockPaddleClient::new()).await;
+    let app = create_paddle_billing_app(mock_db, MockPaddleHttpClient::new()).await;
     let user_id = Uuid::new_v4();
     let body = format!(
         r#"{{
@@ -543,7 +543,7 @@ async fn given_paddle_billing_when_get_status_then_returns_entitlement_projectio
 
 async fn create_paddle_billing_app(
     mock_db: MockDatabaseRepository,
-    paddle: MockPaddleClient,
+    paddle: MockPaddleHttpClient,
 ) -> crate::Router {
     TestFixtures::create_test_app_with_db_cache_config_categorizer_and_paddle(
         mock_db,

@@ -10,7 +10,7 @@ use crate::models::{
 use crate::providers::paddle_provider::{
     CreateCardlessTrialRequest, CreateCheckoutRequest, CreateCheckoutResponse,
     CreatePaymentMethodTransactionRequest, CreatePaymentMethodTransactionResponse,
-    CreatePortalSessionRequest, CreatePortalSessionResponse, PaddleClient,
+    CreatePortalSessionRequest, CreatePortalSessionResponse, PaddleHttpClient,
 };
 use crate::services::repository_service::DatabaseRepository;
 use chrono::{DateTime, Utc};
@@ -70,14 +70,14 @@ pub enum OwnDataAccessCheck {
 pub struct BillingService {
     config: Config,
     repository: Arc<dyn DatabaseRepository>,
-    paddle_client: Arc<dyn PaddleClient>,
+    paddle_client: Arc<dyn PaddleHttpClient>,
 }
 
 impl BillingService {
     pub fn new(
         config: Config,
         repository: Arc<dyn DatabaseRepository>,
-        paddle_client: Arc<dyn PaddleClient>,
+        paddle_client: Arc<dyn PaddleHttpClient>,
     ) -> Self {
         Self {
             config,
