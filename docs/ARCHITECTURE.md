@@ -42,7 +42,7 @@ flowchart LR
 - **Providers** — Teller, Plaid, and SimpleFIN via a shared provider registry.
 - **Persistence** — PostgreSQL with row-level security; Redis for sessions, caching, and rate-limiting.
 - **Observability** — OpenTelemetry end-to-end; export target (`none` / `console` / OTLP to Seq) set by `OTEL_TRACES_EXPORTER`.
-- **Billing (production compose only)** — Paddle SaaS entitlement when `BILLING_MODE=paddle`. Own-data writes require `trialing` or `active` entitlement projected from verified webhooks. See [PRODUCTION_BILLING.md](PRODUCTION_BILLING.md).
+- **Billing (production compose only)** — Paddle SaaS entitlement when `BILLING_MODE=paddle`. Own-data writes require `trialing` or `active` entitlement projected from verified webhooks.
 
 Three standalone Compose files at the repo root (`docker-compose.yml`, `docker-compose.dev.yml`, `docker-compose.prod.yml`) — pick one, no merge overrides needed.
 
@@ -534,7 +534,7 @@ flowchart LR
 | POST | `/api/billing/portal-session` | JWT |
 | POST | `/api/billing/webhooks/paddle` | Paddle signature (no JWT) |
 
-When billing is disabled, mutations and the webhook return `404 BILLING_DISABLED`; status returns `billing_enabled: false`. See [PRODUCTION_BILLING.md](PRODUCTION_BILLING.md).
+When billing is disabled, mutations and the webhook return `404 BILLING_DISABLED`; status returns `billing_enabled: false`.
 
 ---
 
