@@ -712,24 +712,6 @@ fn parse_subscription_data(data: &serde_json::Value) -> Option<ParsedSubscriptio
     })
 }
 
-pub fn hash_trial_code(secret: &str, code: &str) -> Result<String, BillingServiceError> {
-    billing_common::hash_trial_code(secret, code).map_err(|error| match error {
-        billing_common::TrialCodeHashError::InvalidCode => BillingServiceError::InvalidTrialStart,
-        billing_common::TrialCodeHashError::InvalidHashKey => {
-            BillingServiceError::PaddleRequestFailed
-        }
-    })
-}
-
-pub fn normalize_trial_code(code: &str) -> Result<String, BillingServiceError> {
-    billing_common::normalize_trial_code(code).map_err(|error| match error {
-        billing_common::TrialCodeHashError::InvalidCode => BillingServiceError::InvalidTrialStart,
-        billing_common::TrialCodeHashError::InvalidHashKey => {
-            BillingServiceError::PaddleRequestFailed
-        }
-    })
-}
-
 fn has_used_paddle_trial_or_paid_entitlement(access_status: &str) -> bool {
     matches!(
         access_status,

@@ -14,11 +14,9 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1.0"
 async-trait = "0.1"
-billing-common = { path = "../billing-common" }
 chrono = "0.4"
 clap = { version = "4.5", features = ["derive", "env"] }
 entity = { path = "../backend/entity" }
-hex = "0.4.3"
 sea-orm = { version = "1", features = ["runtime-tokio-rustls", "sqlx-postgres", "with-uuid"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 uuid = { version = "1.23", features = ["v4"] }

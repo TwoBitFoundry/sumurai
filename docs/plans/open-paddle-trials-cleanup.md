@@ -1,6 +1,6 @@
 # Plan — Open Paddle Trials, Then Live Demo/Upgrade
 
-Status: In progress (Phases 3 and 1 complete)  
+Status: In progress (Phases 3, 1, and 2 complete)  
 Owner: Kody Buss  
 Last updated: 2026-07-08  
 Related: [production-paddle-billing-mprd.md](../prd/production-paddle-billing-mprd.md), [PRODUCTION_BILLING.md](../PRODUCTION_BILLING.md)
@@ -131,8 +131,19 @@ Existing `trialing` users when flipping live: soft default is let current trials
 - Deprecate or later-drop `trial_codes` / `trial_code_redemptions` tables.
 
 **Acceptance criteria**
-- [ ] No trial-codes CLI; cli tests pass.
-- [ ] No runtime `TRIAL_CODE_HASH_KEY` / `hash_trial_code` usage.
+- [x] No trial-codes CLI; cli tests pass.
+- [x] No runtime `TRIAL_CODE_HASH_KEY` / `hash_trial_code` usage.
+
+**Notes**
+- Removed `trial-codes` CLI commands, `billing-common` crate, and dead `hash_trial_code` wrappers.
+- `docker-compose.prod.yml` drops `TRIAL_CODE_HASH_KEY`; adds optional `BILLING_TRIALS_ENABLED` (default false).
+- Legacy `trial_codes` / `trial_code_redemptions` tables and webhook fulfillment helpers kept (no-op for open trials).
+- PRODUCTION_BILLING / ARCHITECTURE updated to open-trial start (overlaps Phase 4).
+
+**TDD log (Phase 2)**
+- Remove CLI trial-codes tests with the feature; remaining `sumurai-cli` tests pass (reset-passkeys).
+- Doc boundary test: assert `BILLING_TRIALS_ENABLED` + `/api/billing/trials/start` instead of `trial-codes create`.
+- Verify: `cargo test -p sumurai-cli --locked`; `cargo test -p sumurai-backend --locked billing_` — 48 pass; clippy clean.
 
 ---
 
@@ -210,7 +221,7 @@ bun --cwd=frontend run typecheck
 
 ## Definition of done
 
-- [ ] No Sumurai trial-code inventory or CLI.
+- [x] No Sumurai trial-code inventory or CLI.
 - [x] Backend supports open Paddle trial start + live kill switch.
 - [x] No in-app Paddle subscription / billing CTA surface.
 - [ ] Docs match backend stages and deferred frontend.

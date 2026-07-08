@@ -1,13 +1,12 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
-use entity::{trial_codes, users, webauthn_credentials};
+use entity::{users, webauthn_credentials};
 use sea_orm::{
-    sea_query::Expr, sea_query::Func, ActiveValue::Set, ColumnTrait, Database, DatabaseConnection,
-    EntityTrait, QueryFilter, QueryOrder,
+    sea_query::Expr, sea_query::Func, ColumnTrait, Database, DatabaseConnection, EntityTrait,
+    QueryFilter,
 };
 use uuid::Uuid;
 
-use crate::{PasskeyResetStore, TrialCodeRecord, TrialCodeStore, UserRecord};
+use crate::{PasskeyResetStore, UserRecord};
 
 pub struct PostgresAdminStore {
     db: DatabaseConnection,
@@ -61,72 +60,4 @@ impl PasskeyResetStore for PostgresAdminStore {
             .await?;
         Ok(result.rows_affected)
     }
-}
-
-#[async_trait]
-impl TrialCodeStore for PostgresAdminStore {
-    async fn insert_trial_code(&self, record: TrialCodeRecord) -> Result<(), anyhow::Error> {
-        trial_codes::Entity::insert(trial_codes::ActiveModel {
-            id: Set(record.id),
-            code_hash: Set(record.code_hash),
-            redeem_by_at: Set(to_db_time(record.redeem_by_at)),
-            redeemed_at: Set(record.redeemed_at.map(to_db_time)),
-            redeemed_by_user_id: Set(record.redeemed_by_user_id),
-            disabled_at: Set(record.disabled_at.map(to_db_time)),
-            created_at: Set(to_db_time(record.created_at)),
-            updated_at: Set(to_db_time(record.updated_at)),
-        })
-        .exec(&self.db)
-        .await?;
-        Ok(())
-    }
-
-    async fn list_trial_codes(&self) -> Result<Vec<TrialCodeRecord>, anyhow::Error> {
-        let rows = trial_codes::Entity::find()
-            .order_by_desc(trial_codes::Column::CreatedAt)
-            .all(&self.db)
-            .await?;
-
-        Ok(rows
-            .into_iter()
-            .map(|row| TrialCodeRecord {
-                id: row.id,
-                code_hash: row.code_hash,
-                redeem_by_at: from_db_time(row.redeem_by_at),
-                redeemed_at: row.redeemed_at.map(from_db_time),
-                redeemed_by_user_id: row.redeemed_by_user_id,
-                disabled_at: row.disabled_at.map(from_db_time),
-                created_at: from_db_time(row.created_at),
-                updated_at: from_db_time(row.updated_at),
-            })
-            .collect())
-    }
-
-    async fn disable_trial_code(
-        &self,
-        id: Uuid,
-        disabled_at: DateTime<Utc>,
-    ) -> Result<(), anyhow::Error> {
-        trial_codes::Entity::update_many()
-            .col_expr(
-                trial_codes::Column::DisabledAt,
-                Expr::value(to_db_time(disabled_at)),
-            )
-            .col_expr(
-                trial_codes::Column::UpdatedAt,
-                Expr::value(to_db_time(disabled_at)),
-            )
-            .filter(trial_codes::Column::Id.eq(id))
-            .exec(&self.db)
-            .await?;
-        Ok(())
-    }
-}
-
-fn to_db_time(value: DateTime<Utc>) -> DateTime<chrono::FixedOffset> {
-    value.with_timezone(&chrono::FixedOffset::east_opt(0).unwrap())
-}
-
-fn from_db_time(value: DateTime<chrono::FixedOffset>) -> DateTime<Utc> {
-    value.with_timezone(&Utc)
 }

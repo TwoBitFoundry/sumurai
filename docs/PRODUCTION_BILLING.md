@@ -2,7 +2,7 @@
 
 Production-only Paddle billing for the hosted Sumurai deployment. Paid options apply **only** when the backend runs through `docker-compose.prod.yml` with `BILLING_MODE=paddle`.
 
-Development (`docker-compose.dev.yml`), the default OSS stack (`docker-compose.yml`), local Next.js dev, and test environments keep billing disabled. Those environments must not show billing cards, upgrade buttons, trial-code inputs, paid labels, payment-required locks, or payment-related empty states. The frontend reads `GET /api/billing/status` and hides all billing UI when `billing_enabled` is false.
+Development (`docker-compose.dev.yml`), the default OSS stack (`docker-compose.yml`), local Next.js dev, and test environments keep billing disabled. Those environments must not show billing cards, upgrade buttons, trial-code inputs, paid labels, payment-required locks, or payment-related empty states. In-app Paddle subscription UI is currently deferred; the backend billing APIs and entitlement gates remain.
 
 See also [PRODUCTION_TLS.md](PRODUCTION_TLS.md) for certificate provisioning on the same stack.
 
@@ -32,7 +32,7 @@ Set these in the host `.env` referenced by `docker-compose.prod.yml`. `BILLING_M
 | `PADDLE_WEBHOOK_SECRET` | Yes | Secret for `Paddle-Signature` HMAC verification |
 | `PADDLE_MONTHLY_PRICE_ID` | Yes | $8/month paid subscription price ID |
 | `PADDLE_CARDLESS_TRIAL_PRICE_ID` | Yes | Cardless trial price ID (`trial_period.requires_payment_method = false`) |
-| `TRIAL_CODE_HASH_KEY` | Yes | Keyed HMAC secret for trial-code hashing (must match CLI) |
+| `BILLING_TRIALS_ENABLED` | No (defaults `false`) | When `true`, allows `POST /api/billing/trials/start` (early access). When `false`, new trial starts return `TRIALS_DISABLED`. |
 
 `BILLING_MODE` defaults to `disabled` when unset. Only `docker-compose.prod.yml` sets `BILLING_MODE=paddle`.
 
@@ -42,36 +42,30 @@ Placeholder names and comments live in [`.env.example`](../.env.example). Do not
 
 ## Cardless trials prerequisite
 
-Paddle cardless trials are early access. Before release:
+Paddle cardless trials are early access. Before enabling trials:
 
 1. Enable cardless trials on the Paddle account.
 2. Create a price with `trial_period.requires_payment_method = false`.
 3. Use that price ID for `PADDLE_CARDLESS_TRIAL_PRICE_ID`.
+4. Set `BILLING_TRIALS_ENABLED=true` for early access; leave `false` (or unset) for live with no new trials.
 
-Trials are created through the Paddle API (not Paddle Checkout). The server creates or reuses customer and address records, creates a transaction, and access is granted from verified webhook fulfillment—not from the frontend redemption response.
+Trials are created through the Paddle API (not Paddle Checkout). The server creates or reuses customer and address records, creates a transaction, and access is granted from verified webhook fulfillment—not from the start response.
 
 ```mermaid
 flowchart LR
-    subgraph Admin["Server admin"]
-        CLI["sumurai-cli trial-codes"]
-    end
-    subgraph Inventory["Global tables (no RLS)"]
-        TC["trial_codes\n(hash only)"]
-        PWE["paddle_webhook_events\n(idempotency)"]
-    end
     subgraph Tenant["User-scoped (RLS)"]
-        TCR["trial_code_redemptions"]
         BE["billing_entitlements"]
         BP["billing_profiles"]
     end
-    subgraph Shared["Workspace"]
-        BC["billing-common\nHMAC hash"]
+    subgraph Global["Global tables"]
+        PWE["paddle_webhook_events\n(idempotency)"]
     end
 
-    CLI --> BC
-    CLI --> TC
-    BC --> Backend["BillingService"]
-    Backend --> TC & TCR & BE & BP & PWE
+    Start["POST /api/billing/trials/start"] --> Backend["BillingService"]
+    Backend --> Paddle["Paddle cardless trial"]
+    Paddle --> WH["Webhooks"]
+    WH --> Backend
+    Backend --> BE & BP & PWE
 ```
 
 References:
@@ -120,61 +114,42 @@ sequenceDiagram
         Billing-->>Handler: Ok (no entitlement mutation)
     else new event + sumurai_user_id in custom_data
         Billing->>Repo: get/upsert billing_entitlements (with_tenant)
-        Billing->>Repo: fulfill trial_code_redemptions (with_tenant)
     end
     Handler-->>Paddle: 200 OK
 ```
 
 Reference: [Webhook signature verification](https://developer.paddle.com/webhooks/about/signature-verification/)
 
-## Trial-code CLI
+## Open trial start
 
-Trial codes are single-use, server-admin only. There is no web admin UI in v1.
-
-Run the CLI against the production database with `DATABASE_URL` set (same Postgres as the backend):
+There is no Sumurai invite trial-code inventory or CLI. Early-access trials start through the authenticated API:
 
 ```bash
-export DATABASE_URL='postgresql://...'
-export TRIAL_CODE_HASH_KEY='...'
-
-cargo run -p sumurai-cli -- trial-codes create \
-  --code 'SUMURAI-TRIAL-2026' \
-  --redeem-by '2026-12-31T23:59:59Z' \
-  --hash-key "$TRIAL_CODE_HASH_KEY"
+curl -X POST https://<DOMAIN>/api/billing/trials/start \
+  -H 'Content-Type: application/json' \
+  -H 'Cookie: auth_token=...' \
+  -d '{"country_code":"US","postal_code":"78701"}'
 ```
-
-List metadata (no plaintext codes):
-
-```bash
-cargo run -p sumurai-cli -- trial-codes list
-```
-
-Disable a code by ID:
-
-```bash
-cargo run -p sumurai-cli -- trial-codes disable --id '<uuid>'
-```
-
-The CLI uses the same keyed hash algorithm as the backend via the `billing-common` workspace crate. Store only hashes in `trial_codes`; never log or persist plaintext codes in application logs.
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant API as POST /api/billing/trials/redeem
+    participant API as POST /api/billing/trials/start
     participant Billing as BillingService
     participant Paddle
     participant WH as Webhook
 
-    User->>API: code + country + postal
-    API->>Billing: redeem_trial_code()
-    Billing->>Billing: hash via billing-common
+    User->>API: country + postal
+    API->>Billing: start_open_trial()
     Note over Billing: Returns pending — no entitlement yet
     Billing->>Paddle: create_cardless_trial
     API-->>User: { status: pending }
     Paddle->>WH: subscription.activated
     WH->>Billing: process_paddle_webhook()
-    Note over Billing: Grants trialing + fulfills redemption
+    Note over Billing: Grants trialing entitlement
 ```
+
+Once-per-user: a second start is rejected if the account already has a non-demo entitlement. When `BILLING_TRIALS_ENABLED=false`, start returns `404` with code `TRIALS_DISABLED`.
 
 ## API surface
 
@@ -182,9 +157,9 @@ Authenticated billing routes (production mode):
 
 | Method | Path | Purpose |
 | ------ | ---- | ------- |
-| GET | `/api/billing/status` | Billing enabled flag, access status, provider allowlist |
+| GET | `/api/billing/status` | Billing enabled flag, `trials_enabled`, access status, provider allowlist |
 | POST | `/api/billing/checkout` | Create Paddle checkout for monthly paid plan |
-| POST | `/api/billing/trials/redeem` | Redeem trial code (country + postal code, no card) |
+| POST | `/api/billing/trials/start` | Start open cardless trial (country + postal code, no card) |
 | POST | `/api/billing/payment-method` | Add payment method during cardless trial |
 | POST | `/api/billing/portal-session` | Temporary Paddle customer portal links (not cached) |
 
@@ -207,10 +182,10 @@ Customer portal session URLs are generated on demand and are not stored by Sumur
 ## Deployment checklist
 
 1. Provision TLS per [PRODUCTION_TLS.md](PRODUCTION_TLS.md).
-2. Set Paddle and trial-code hash secrets in host `.env`.
+2. Set Paddle secrets in host `.env`.
 3. Confirm cardless trial price exists in Paddle.
-4. Register the webhook URL and required event types.
-5. Start the stack: `DOMAIN=<domain> docker compose -f docker-compose.prod.yml up -d`
-6. Create trial codes through the CLI as needed.
+4. Set `BILLING_TRIALS_ENABLED` for early access (`true`) or live (`false`).
+5. Register the webhook URL and required event types.
+6. Start the stack: `DOMAIN=<domain> docker compose -f docker-compose.prod.yml up -d`
 7. Verify `GET /api/billing/status` returns `billing_enabled: true` when authenticated.
-8. Verify OSS/dev stacks still return `billing_enabled: false` and show no billing UI.
+8. Verify OSS/dev stacks still return `billing_enabled: false`.

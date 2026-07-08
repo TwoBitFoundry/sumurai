@@ -123,7 +123,7 @@ sequenceDiagram
 
 ### Production billing (Paddle)
 
-Production billing runs only when `BILLING_MODE=paddle` (`docker-compose.prod.yml`). `BillingService` is composed once on `AppState` with `DatabaseRepository` and `PaddleClient`. Trial-code hashing is shared with the admin CLI via the `billing-common` workspace crate.
+Production billing runs only when `BILLING_MODE=paddle` (`docker-compose.prod.yml`). `BillingService` is composed once on `AppState` with `DatabaseRepository` and `PaddleClient`. Open cardless trial starts are gated by `BILLING_TRIALS_ENABLED` (`POST /api/billing/trials/start`).
 
 **Entitlement source of truth:** verified Paddle webhooks update `billing_entitlements` and fulfill `trial_code_redemptions`. The frontend redeem response returns `pending` until webhook processing completes. Own-data write routes call `billing_service.check_own_data_access*` before mutating tenant data.
 
@@ -382,7 +382,7 @@ flowchart TD
 
 ### Container build
 
-GHCR backend images are produced from the **repository root** with `backend/Dockerfile` (see `publish-images` workflow). The image targets a Cargo **workspace** whose root manifest and lockfile live at `Cargo.toml` and `Cargo.lock`; members are `backend` (Axum API), `backend/entity` (SeaORM entities), `backend/migration` (SeaORM migrations), `billing-common` (shared trial-code hashing for backend + CLI), and `cli` (admin commands including trial-code management).
+GHCR backend images are produced from the **repository root** with `backend/Dockerfile` (see `publish-images` workflow). The image targets a Cargo **workspace** whose root manifest and lockfile live at `Cargo.toml` and `Cargo.lock`; members are `backend` (Axum API), `backend/entity` (SeaORM entities), `backend/migration` (SeaORM migrations), and `cli` (admin commands such as passkey reset).
 
 Docker builds use **cargo-chef** so dependency layers stay cached when only application source changes:
 
