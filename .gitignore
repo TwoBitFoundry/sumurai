@@ -52,8 +52,6 @@ docker-data/
 postgres-data/
 .docker/
 docker-compose.override.yml
-docker-compose.prod.yml
-docs/PRODUCTION_BILLING.md
 *.db
 *.sqlite
 *.sqlite3
