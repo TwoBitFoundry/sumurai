@@ -1655,7 +1655,7 @@
         "operationId": "create_billing_portal_session",
         "responses": {
           "200": {
-            "description": "Temporary Paddle portal session links",
+            "description": "Billing portal session created",
             "content": {
               "application/json": {
                 "schema": {
@@ -1743,17 +1743,17 @@
         ]
       }
     },
-    "/api/billing/trials/redeem": {
+    "/api/billing/trials/start": {
       "post": {
         "tags": [
           "Billing"
         ],
-        "operationId": "redeem_trial_code",
+        "operationId": "start_open_trial",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TrialRedeemRequest"
+                "$ref": "#/components/schemas/TrialStartRequest"
               }
             }
           },
@@ -1761,17 +1761,17 @@
         },
         "responses": {
           "200": {
-            "description": "Trial redemption pending webhook fulfillment",
+            "description": "Open trial start pending webhook fulfillment",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TrialRedeemResponse"
+                  "$ref": "#/components/schemas/TrialStartResponse"
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid trial redemption",
+            "description": "Invalid trial start",
             "content": {
               "application/json": {
                 "schema": {
@@ -1784,7 +1784,7 @@
             "description": "Unauthorized"
           },
           "404": {
-            "description": "Billing disabled",
+            "description": "Billing or trials disabled",
             "content": {
               "application/json": {
                 "schema": {
@@ -1794,7 +1794,7 @@
             }
           },
           "409": {
-            "description": "Trial code unavailable",
+            "description": "Trial already used",
             "content": {
               "application/json": {
                 "schema": {
@@ -4126,6 +4126,7 @@
         "type": "object",
         "required": [
           "billing_enabled",
+          "trials_enabled",
           "access_status",
           "can_use_own_data",
           "is_demo_mode_active",
@@ -4171,6 +4172,9 @@
               "null"
             ],
             "format": "date-time"
+          },
+          "trials_enabled": {
+            "type": "boolean"
           }
         }
       },
@@ -6613,17 +6617,13 @@
           }
         }
       },
-      "TrialRedeemRequest": {
+      "TrialStartRequest": {
         "type": "object",
         "required": [
-          "code",
           "country_code",
           "postal_code"
         ],
         "properties": {
-          "code": {
-            "type": "string"
-          },
           "country_code": {
             "type": "string"
           },
@@ -6632,7 +6632,7 @@
           }
         }
       },
-      "TrialRedeemResponse": {
+      "TrialStartResponse": {
         "type": "object",
         "required": [
           "status"

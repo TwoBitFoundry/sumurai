@@ -53,7 +53,7 @@ pub struct PaddleBillingConfig {
     pub webhook_secret: String,
     pub monthly_price_id: String,
     pub cardless_trial_price_id: String,
-    pub trial_code_hash_key: String,
+    pub trials_enabled: bool,
 }
 
 pub trait EnvironmentProvider {
@@ -151,6 +151,13 @@ impl Config {
         self.billing_mode == BillingMode::Paddle
     }
 
+    pub fn is_trials_enabled(&self) -> bool {
+        self.paddle_billing
+            .as_ref()
+            .map(|paddle| paddle.trials_enabled)
+            .unwrap_or(false)
+    }
+
     pub fn paddle_billing(&self) -> Option<&PaddleBillingConfig> {
         self.paddle_billing.as_ref()
     }
@@ -200,8 +207,19 @@ fn parse_paddle_billing_config(
         webhook_secret: parse_required_trimmed(env, "PADDLE_WEBHOOK_SECRET")?,
         monthly_price_id: parse_required_trimmed(env, "PADDLE_MONTHLY_PRICE_ID")?,
         cardless_trial_price_id: parse_required_trimmed(env, "PADDLE_CARDLESS_TRIAL_PRICE_ID")?,
-        trial_code_hash_key: parse_required_trimmed(env, "TRIAL_CODE_HASH_KEY")?,
+        trials_enabled: parse_bool_flag(env, "BILLING_TRIALS_ENABLED", false)?,
     }))
+}
+
+fn parse_bool_flag(env: &dyn EnvironmentProvider, key: &str, default: bool) -> Result<bool> {
+    match env.get_var(key) {
+        None => Ok(default),
+        Some(value) => match value.trim().to_ascii_lowercase().as_str() {
+            "true" | "1" | "yes" => Ok(true),
+            "false" | "0" | "no" => Ok(false),
+            _ => Err(anyhow!("{key} must be a boolean")),
+        },
+    }
 }
 
 fn parse_enabled_financial_providers(env: &dyn EnvironmentProvider) -> Result<Option<Vec<String>>> {

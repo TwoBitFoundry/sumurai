@@ -195,6 +195,10 @@ impl TestFixtures {
     }
 
     pub(crate) fn create_paddle_test_config() -> Config {
+        Self::create_paddle_test_config_with_trials(true)
+    }
+
+    pub(crate) fn create_paddle_test_config_with_trials(trials_enabled: bool) -> Config {
         std::env::set_var("OTEL_TRACES_EXPORTER", "none");
         let mut test_env = MockEnvironment::new();
         test_env.set("TELLER_ENV", "test");
@@ -206,7 +210,10 @@ impl TestFixtures {
         test_env.set("PADDLE_WEBHOOK_SECRET", "pdl_ntfset_test");
         test_env.set("PADDLE_MONTHLY_PRICE_ID", "pri_monthly");
         test_env.set("PADDLE_CARDLESS_TRIAL_PRICE_ID", "pri_trial");
-        test_env.set("TRIAL_CODE_HASH_KEY", "test-trial-code-hash-key");
+        test_env.set(
+            "BILLING_TRIALS_ENABLED",
+            if trials_enabled { "true" } else { "false" },
+        );
         test_env.set("ENABLED_FINANCIAL_PROVIDERS", "diy,plaid");
         Config::from_env_provider(&test_env).expect("Failed to create Paddle test config")
     }

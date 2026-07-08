@@ -102,19 +102,39 @@ fn given_paddle_billing_with_required_settings_when_from_env_provider_then_billi
     env.set("PADDLE_WEBHOOK_SECRET", "test-webhook-secret");
     env.set("PADDLE_MONTHLY_PRICE_ID", "pri_monthly");
     env.set("PADDLE_CARDLESS_TRIAL_PRICE_ID", "pri_trial");
-    env.set("TRIAL_CODE_HASH_KEY", "test-trial-code-hash-key");
+    env.set("BILLING_TRIALS_ENABLED", "true");
 
     let config = Config::from_env_provider(&env).unwrap();
     let paddle = config.paddle_billing().unwrap();
 
     assert_eq!(config.billing_mode(), crate::config::BillingMode::Paddle);
     assert!(config.is_billing_enabled());
+    assert!(config.is_trials_enabled());
     assert_eq!(paddle.environment, "sandbox");
     assert_eq!(paddle.api_key, "test-api-key");
     assert_eq!(paddle.webhook_secret, "test-webhook-secret");
     assert_eq!(paddle.monthly_price_id, "pri_monthly");
     assert_eq!(paddle.cardless_trial_price_id, "pri_trial");
-    assert_eq!(paddle.trial_code_hash_key, "test-trial-code-hash-key");
+    assert!(paddle.trials_enabled);
+}
+
+#[test]
+fn given_paddle_billing_without_trials_flag_when_from_env_provider_then_trials_default_disabled() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
+    env.set("BILLING_MODE", "paddle");
+    env.set("PADDLE_ENVIRONMENT", "sandbox");
+    env.set("PADDLE_API_KEY", "test-api-key");
+    env.set("PADDLE_WEBHOOK_SECRET", "test-webhook-secret");
+    env.set("PADDLE_MONTHLY_PRICE_ID", "pri_monthly");
+    env.set("PADDLE_CARDLESS_TRIAL_PRICE_ID", "pri_trial");
+
+    let config = Config::from_env_provider(&env).unwrap();
+
+    assert!(config.is_billing_enabled());
+    assert!(!config.is_trials_enabled());
 }
 
 #[test]

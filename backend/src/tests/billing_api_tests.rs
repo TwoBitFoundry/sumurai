@@ -6,12 +6,11 @@ use std::sync::Arc;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-use crate::models::billing::{BillingEntitlement, PaddleWebhookEvent, TrialCodeRedemption};
+use crate::models::billing::{BillingEntitlement, PaddleWebhookEvent};
 use crate::providers::paddle_provider::{
     CreateCardlessTrialResponse, CreateCheckoutResponse, CreatePaymentMethodTransactionResponse,
     CreatePortalSessionResponse, MockPaddleHttpClient,
 };
-use crate::services::billing_service::hash_trial_code;
 use crate::services::cache_service::MockCacheService;
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::test_fixtures::{noop_categorizer, TestFixtures};
@@ -36,6 +35,7 @@ async fn given_billing_disabled_when_get_status_then_returns_unrestricted_disabl
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let value: Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(value["billing_enabled"], false);
+    assert_eq!(value["trials_enabled"], false);
     assert_eq!(value["access_status"], "unrestricted");
     assert_eq!(value["can_use_own_data"], true);
     assert_eq!(value["billing_portal_available"], false);
@@ -76,40 +76,15 @@ async fn given_paddle_billing_when_create_checkout_then_returns_checkout_url() {
 }
 
 #[tokio::test]
-async fn given_trial_paddle_setup_fails_when_redeeming_then_releases_reserved_code() {
+async fn given_open_trial_paddle_setup_fails_when_starting_then_returns_bad_gateway() {
     let mut mock_db = MockDatabaseRepository::new();
-    let user_id = Arc::new(std::sync::Mutex::new(None));
-    let reserved_user_id = user_id.clone();
-    let code_hash = hash_trial_code("test-trial-code-hash-key", "TRIAL-2026").unwrap();
-    let trial_code_id = Uuid::new_v4();
-
     mock_db
-        .expect_reserve_trial_code_redemption()
-        .withf(move |hash, _, _| hash == code_hash)
-        .returning(move |_, user_id, reserved_at| {
-            *reserved_user_id.lock().unwrap() = Some(*user_id);
-            let redemption = TrialCodeRedemption {
-                id: Uuid::new_v4(),
-                trial_code_id,
-                user_id: *user_id,
-                status: "pending".to_string(),
-                paddle_transaction_id: None,
-                paddle_subscription_id: None,
-                created_at: reserved_at,
-                updated_at: reserved_at,
-                fulfilled_at: None,
-                failed_at: None,
-            };
-            Box::pin(async move { Ok(Some(redemption)) })
-        });
+        .expect_get_billing_entitlement()
+        .returning(|_| Box::pin(async { Ok(None) }));
     mock_db
         .expect_get_billing_profile()
         .returning(|_| Box::pin(async { Ok(None) }));
-    mock_db
-        .expect_release_trial_code_redemption()
-        .returning(|_, _, _| Box::pin(async { Ok(()) }));
     mock_db.expect_upsert_billing_profile().never();
-    mock_db.expect_upsert_trial_code_redemption().never();
 
     let mut paddle = MockPaddleHttpClient::new();
     paddle
@@ -120,12 +95,11 @@ async fn given_trial_paddle_setup_fails_when_redeeming_then_releases_reserved_co
 
     let request = Request::builder()
         .method("POST")
-        .uri("/api/billing/trials/redeem")
+        .uri("/api/billing/trials/start")
         .header("Cookie", format!("auth_token={token}"))
         .header("content-type", "application/json")
         .body(Body::from(
             serde_json::json!({
-                "code": "TRIAL-2026",
                 "country_code": "US",
                 "postal_code": "78701"
             })
@@ -135,15 +109,33 @@ async fn given_trial_paddle_setup_fails_when_redeeming_then_releases_reserved_co
 
     let response = app.oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
-    assert!(user_id.lock().unwrap().is_some());
 }
 
 #[tokio::test]
-async fn given_trial_code_already_reserved_when_redeeming_then_returns_conflict_without_paddle() {
+async fn given_existing_trial_entitlement_when_starting_then_returns_conflict_without_paddle() {
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
-        .expect_reserve_trial_code_redemption()
-        .returning(|_, _, _| Box::pin(async { Ok(None) }));
+        .expect_get_billing_entitlement()
+        .returning(|user_id| {
+            let user_id = *user_id;
+            Box::pin(async move {
+                Ok(Some(BillingEntitlement {
+                    user_id,
+                    access_status: "trialing".to_string(),
+                    source: "paddle".to_string(),
+                    paddle_subscription_id: Some("sub_existing".to_string()),
+                    paddle_customer_id: Some("ctm_existing".to_string()),
+                    paddle_price_id: Some("pri_trial".to_string()),
+                    trial_ends_at: None,
+                    current_period_ends_at: None,
+                    canceled_at: None,
+                    last_event_at: None,
+                    payment_method_required: true,
+                    created_at: Utc::now(),
+                    updated_at: Utc::now(),
+                }))
+            })
+        });
 
     let mut paddle = MockPaddleHttpClient::new();
     paddle.expect_create_cardless_trial().never();
@@ -152,12 +144,11 @@ async fn given_trial_code_already_reserved_when_redeeming_then_returns_conflict_
 
     let request = Request::builder()
         .method("POST")
-        .uri("/api/billing/trials/redeem")
+        .uri("/api/billing/trials/start")
         .header("Cookie", format!("auth_token={token}"))
         .header("content-type", "application/json")
         .body(Body::from(
             serde_json::json!({
-                "code": "TRIAL-2026",
                 "country_code": "US",
                 "postal_code": "78701"
             })
@@ -169,31 +160,15 @@ async fn given_trial_code_already_reserved_when_redeeming_then_returns_conflict_
     assert_eq!(response.status(), StatusCode::CONFLICT);
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let value: Value = serde_json::from_slice(&body).unwrap();
-    assert_eq!(value["code"], "TRIAL_CODE_UNAVAILABLE");
+    assert_eq!(value["code"], "TRIAL_ALREADY_USED");
 }
 
 #[tokio::test]
-async fn given_trial_transaction_created_when_redeeming_then_returns_pending_and_records_metadata()
-{
+async fn given_open_trial_when_starting_then_returns_pending_and_records_profile() {
     let mut mock_db = MockDatabaseRepository::new();
-    let trial_code_id = Uuid::new_v4();
     mock_db
-        .expect_reserve_trial_code_redemption()
-        .returning(move |_, user_id, reserved_at| {
-            let redemption = TrialCodeRedemption {
-                id: Uuid::new_v4(),
-                trial_code_id,
-                user_id: *user_id,
-                status: "pending".to_string(),
-                paddle_transaction_id: None,
-                paddle_subscription_id: None,
-                created_at: reserved_at,
-                updated_at: reserved_at,
-                fulfilled_at: None,
-                failed_at: None,
-            };
-            Box::pin(async move { Ok(Some(redemption)) })
-        });
+        .expect_get_billing_entitlement()
+        .returning(|_| Box::pin(async { Ok(None) }));
     mock_db
         .expect_get_billing_profile()
         .returning(|_| Box::pin(async { Ok(None) }));
@@ -202,15 +177,8 @@ async fn given_trial_transaction_created_when_redeeming_then_returns_pending_and
         .returning(|profile| {
             assert_eq!(profile.paddle_customer_id.as_deref(), Some("ctm_trial"));
             assert_eq!(profile.paddle_address_id.as_deref(), Some("add_trial"));
-            Box::pin(async { Ok(()) })
-        });
-    mock_db
-        .expect_upsert_trial_code_redemption()
-        .returning(|redemption| {
-            assert_eq!(
-                redemption.paddle_transaction_id.as_deref(),
-                Some("txn_trial")
-            );
+            assert_eq!(profile.billing_country_code.as_deref(), Some("US"));
+            assert_eq!(profile.billing_postal_code.as_deref(), Some("78701"));
             Box::pin(async { Ok(()) })
         });
 
@@ -232,12 +200,11 @@ async fn given_trial_transaction_created_when_redeeming_then_returns_pending_and
 
     let request = Request::builder()
         .method("POST")
-        .uri("/api/billing/trials/redeem")
+        .uri("/api/billing/trials/start")
         .header("Cookie", format!("auth_token={token}"))
         .header("content-type", "application/json")
         .body(Body::from(
             serde_json::json!({
-                "code": "TRIAL-2026",
                 "country_code": "us",
                 "postal_code": "78701"
             })
@@ -250,6 +217,46 @@ async fn given_trial_transaction_created_when_redeeming_then_returns_pending_and
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let value: Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(value["status"], "pending");
+}
+
+#[tokio::test]
+async fn given_trials_disabled_when_starting_then_returns_not_found() {
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db.expect_get_billing_entitlement().never();
+    mock_db.expect_get_billing_profile().never();
+    let mut paddle = MockPaddleHttpClient::new();
+    paddle.expect_create_cardless_trial().never();
+
+    let app = TestFixtures::create_test_app_with_db_cache_config_categorizer_and_paddle(
+        mock_db,
+        billing_cache(),
+        noop_categorizer(),
+        TestFixtures::create_paddle_test_config_with_trials(false),
+        Arc::new(paddle),
+    )
+    .await
+    .unwrap();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/billing/trials/start")
+        .header("Cookie", format!("auth_token={token}"))
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::json!({
+                "country_code": "US",
+                "postal_code": "78701"
+            })
+            .to_string(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let value: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(value["code"], "TRIALS_DISABLED");
 }
 
 #[tokio::test]
@@ -551,6 +558,7 @@ async fn given_paddle_billing_when_get_status_then_returns_entitlement_projectio
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let value: Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(value["billing_enabled"], true);
+    assert_eq!(value["trials_enabled"], true);
     assert_eq!(value["access_status"], "trialing");
     assert_eq!(value["can_use_own_data"], true);
     assert_eq!(value["payment_method_required"], true);

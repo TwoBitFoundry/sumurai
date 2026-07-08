@@ -72,6 +72,7 @@ pub struct PaddleWebhookEvent {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct BillingStatusResponse {
     pub billing_enabled: bool,
+    pub trials_enabled: bool,
     pub access_status: String,
     pub can_use_own_data: bool,
     pub is_demo_mode_active: bool,
@@ -89,14 +90,13 @@ pub struct BillingCheckoutResponse {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct TrialRedeemRequest {
-    pub code: String,
+pub struct TrialStartRequest {
     pub country_code: String,
     pub postal_code: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct TrialRedeemResponse {
+pub struct TrialStartResponse {
     pub status: String,
 }
 

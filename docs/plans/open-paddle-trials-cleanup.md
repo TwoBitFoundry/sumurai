@@ -1,6 +1,6 @@
 # Plan — Open Paddle Trials, Then Live Demo/Upgrade
 
-Status: In progress (Phase 3 complete)  
+Status: In progress (Phases 3 and 1 complete)  
 Owner: Kody Buss  
 Last updated: 2026-07-08  
 Related: [production-paddle-billing-mprd.md](../prd/production-paddle-billing-mprd.md), [PRODUCTION_BILLING.md](../PRODUCTION_BILLING.md)
@@ -100,12 +100,23 @@ Existing `trialing` users when flipping live: soft default is let current trials
 - Tests: start, once-per-user, trials-disabled, webhook without code fulfillment.
 
 **Acceptance criteria**
-- [ ] Start trial works without a code when `BILLING_TRIALS_ENABLED=true`.
-- [ ] Start trial rejected when flag is false.
-- [ ] Second start rejected for same user.
-- [ ] Redeem-with-code path removed.
-- [ ] Status includes `trials_enabled` (future UI).
-- [ ] `cargo test -p sumurai-backend --locked billing_` passes.
+- [x] Start trial works without a code when `BILLING_TRIALS_ENABLED=true`.
+- [x] Start trial rejected when flag is false.
+- [x] Second start rejected for same user.
+- [x] Redeem-with-code path removed.
+- [x] Status includes `trials_enabled` (future UI).
+- [x] `cargo test -p sumurai-backend --locked billing_` passes.
+
+**Notes**
+- `POST /api/billing/trials/start` `{ country_code, postal_code }` replaces redeem.
+- `BILLING_TRIALS_ENABLED` defaults to `false` when unset; paddle mode no longer requires `TRIAL_CODE_HASH_KEY`.
+- Once-per-user: any non-demo entitlement status blocks another start (`TRIAL_ALREADY_USED`).
+- Webhook entitlement still works without a trial-code redemption row; legacy fulfillment helpers remain until Phase 2.
+
+**TDD log (Phase 1)**
+- Red/green: API tests for start success, Paddle failure, once-per-user conflict, trials disabled.
+- Config: trials flag parse + default-off; OpenAPI path/schema rename + `trials_enabled`.
+- Verify: `cargo test -p sumurai-backend --locked billing_` — 48 pass; clippy `-D warnings` clean; OpenAPI regenerated.
 
 ---
 
@@ -200,7 +211,7 @@ bun --cwd=frontend run typecheck
 ## Definition of done
 
 - [ ] No Sumurai trial-code inventory or CLI.
-- [ ] Backend supports open Paddle trial start + live kill switch.
+- [x] Backend supports open Paddle trial start + live kill switch.
 - [x] No in-app Paddle subscription / billing CTA surface.
 - [ ] Docs match backend stages and deferred frontend.
 - [ ] Tests green.

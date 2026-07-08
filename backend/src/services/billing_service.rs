@@ -52,8 +52,7 @@ pub struct EntitlementDecision {
     pub payment_method_required: bool,
 }
 
-pub struct TrialRedemptionInput<'a> {
-    pub code: &'a str,
+pub struct TrialStartInput<'a> {
     pub country_code: &'a str,
     pub postal_code: &'a str,
 }
@@ -231,35 +230,37 @@ impl BillingService {
         .await
     }
 
-    pub async fn redeem_trial_code(
+    pub async fn start_open_trial(
         &self,
         user: &User,
-        input: TrialRedemptionInput<'_>,
-    ) -> Result<TrialCodeRedemption, BillingServiceError> {
+        input: TrialStartInput<'_>,
+    ) -> Result<(), BillingServiceError> {
         if !self.config.is_billing_enabled() {
             return Err(BillingServiceError::BillingDisabled);
         }
-        if input.code.trim().is_empty()
-            || input.country_code.trim().is_empty()
-            || input.postal_code.trim().is_empty()
-        {
-            return Err(BillingServiceError::InvalidTrialRedemption);
+        if !self.config.is_trials_enabled() {
+            return Err(BillingServiceError::TrialsDisabled);
+        }
+        if input.country_code.trim().is_empty() || input.postal_code.trim().is_empty() {
+            return Err(BillingServiceError::InvalidTrialStart);
         }
 
         let paddle = self
             .config
             .paddle_billing()
             .ok_or(BillingServiceError::BillingDisabled)?;
-        let code_hash = hash_trial_code(&paddle.trial_code_hash_key, input.code)?;
-        let reserved_at = Utc::now();
-        let Some(redemption) = self
+
+        let entitlement = self
             .repository
-            .reserve_trial_code_redemption(&code_hash, &user.id, reserved_at)
+            .get_billing_entitlement(&user.id)
             .await
-            .map_err(|_| BillingServiceError::RepositoryRequestFailed)?
-        else {
-            return Err(BillingServiceError::TrialCodeUnavailable);
-        };
+            .map_err(|_| BillingServiceError::RepositoryRequestFailed)?;
+        if entitlement
+            .as_ref()
+            .is_some_and(|row| has_used_paddle_trial_or_paid_entitlement(&row.access_status))
+        {
+            return Err(BillingServiceError::TrialAlreadyUsed);
+        }
 
         let profile = self
             .repository
@@ -267,7 +268,7 @@ impl BillingService {
             .await
             .map_err(|_| BillingServiceError::RepositoryRequestFailed)?;
 
-        let trial = match self
+        let trial = self
             .paddle_client
             .create_cardless_trial(CreateCardlessTrialRequest {
                 user_id: user.id,
@@ -283,16 +284,7 @@ impl BillingService {
                 price_id: paddle.cardless_trial_price_id.clone(),
             })
             .await
-        {
-            Ok(trial) => trial,
-            Err(_) => {
-                let _ = self
-                    .repository
-                    .release_trial_code_redemption(&code_hash, &user.id, Utc::now())
-                    .await;
-                return Err(BillingServiceError::PaddleRequestFailed);
-            }
-        };
+            .map_err(|_| BillingServiceError::PaddleRequestFailed)?;
 
         let now = Utc::now();
         self.repository
@@ -311,17 +303,7 @@ impl BillingService {
             .await
             .map_err(|_| BillingServiceError::RepositoryRequestFailed)?;
 
-        let updated = TrialCodeRedemption {
-            paddle_transaction_id: Some(trial.transaction_id),
-            updated_at: now,
-            ..redemption
-        };
-        self.repository
-            .upsert_trial_code_redemption(&updated)
-            .await
-            .map_err(|_| BillingServiceError::RepositoryRequestFailed)?;
-
-        Ok(updated)
+        Ok(())
     }
 
     pub async fn create_payment_method_transaction(
@@ -598,10 +580,11 @@ pub enum BillingWebhookError {
 pub enum BillingServiceError {
     BillingDisabled,
     EntitlementUnavailable,
-    InvalidTrialRedemption,
+    InvalidTrialStart,
     PaddleRequestFailed,
     RepositoryRequestFailed,
-    TrialCodeUnavailable,
+    TrialAlreadyUsed,
+    TrialsDisabled,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -731,9 +714,7 @@ fn parse_subscription_data(data: &serde_json::Value) -> Option<ParsedSubscriptio
 
 pub fn hash_trial_code(secret: &str, code: &str) -> Result<String, BillingServiceError> {
     billing_common::hash_trial_code(secret, code).map_err(|error| match error {
-        billing_common::TrialCodeHashError::InvalidCode => {
-            BillingServiceError::InvalidTrialRedemption
-        }
+        billing_common::TrialCodeHashError::InvalidCode => BillingServiceError::InvalidTrialStart,
         billing_common::TrialCodeHashError::InvalidHashKey => {
             BillingServiceError::PaddleRequestFailed
         }
@@ -742,13 +723,18 @@ pub fn hash_trial_code(secret: &str, code: &str) -> Result<String, BillingServic
 
 pub fn normalize_trial_code(code: &str) -> Result<String, BillingServiceError> {
     billing_common::normalize_trial_code(code).map_err(|error| match error {
-        billing_common::TrialCodeHashError::InvalidCode => {
-            BillingServiceError::InvalidTrialRedemption
-        }
+        billing_common::TrialCodeHashError::InvalidCode => BillingServiceError::InvalidTrialStart,
         billing_common::TrialCodeHashError::InvalidHashKey => {
             BillingServiceError::PaddleRequestFailed
         }
     })
+}
+
+fn has_used_paddle_trial_or_paid_entitlement(access_status: &str) -> bool {
+    matches!(
+        access_status,
+        "trialing" | "active" | "past_due" | "paused" | "canceled" | "expired"
+    )
 }
 
 pub fn verify_paddle_webhook_signature(

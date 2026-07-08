@@ -43,10 +43,7 @@ impl MockEnvironment {
             "PADDLE_CARDLESS_TRIAL_PRICE_ID".to_string(),
             "pri_trial".to_string(),
         );
-        vars.insert(
-            "TRIAL_CODE_HASH_KEY".to_string(),
-            "test-trial-code-hash-key".to_string(),
-        );
+        vars.insert("BILLING_TRIALS_ENABLED".to_string(), "true".to_string());
         Self { vars }
     }
 

@@ -78,7 +78,7 @@ fn given_billing_when_generating_openapi_then_documents_endpoints_and_schemas() 
     for path in [
         "/api/billing/status",
         "/api/billing/checkout",
-        "/api/billing/trials/redeem",
+        "/api/billing/trials/start",
         "/api/billing/payment-method",
         "/api/billing/portal-session",
         "/api/billing/webhooks/paddle",
@@ -95,12 +95,17 @@ fn given_billing_when_generating_openapi_then_documents_endpoints_and_schemas() 
         serde_json::json!("#/components/schemas/BillingStatusResponse")
     );
     assert_eq!(
-        spec["paths"]["/api/billing/trials/redeem"]["post"]["requestBody"]["content"]
+        spec["paths"]["/api/billing/trials/start"]["post"]["requestBody"]["content"]
             ["application/json"]["schema"]["$ref"],
-        serde_json::json!("#/components/schemas/TrialRedeemRequest")
+        serde_json::json!("#/components/schemas/TrialStartRequest")
     );
     assert_eq!(
         spec["components"]["schemas"]["BillingStatusResponse"]["properties"]["billing_enabled"]
+            ["type"],
+        serde_json::json!("boolean")
+    );
+    assert_eq!(
+        spec["components"]["schemas"]["BillingStatusResponse"]["properties"]["trials_enabled"]
             ["type"],
         serde_json::json!("boolean")
     );
@@ -108,8 +113,8 @@ fn given_billing_when_generating_openapi_then_documents_endpoints_and_schemas() 
     for schema in [
         "BillingCheckoutResponse",
         "BillingPortalSessionResponse",
-        "TrialRedeemRequest",
-        "TrialRedeemResponse",
+        "TrialStartRequest",
+        "TrialStartResponse",
     ] {
         assert!(
             spec["components"]["schemas"].get(schema).is_some(),
@@ -126,7 +131,7 @@ fn given_billing_when_generating_openapi_then_documents_endpoints_and_schemas() 
         "/api/billing/checkout",
         "/api/billing/payment-method",
         "/api/billing/portal-session",
-        "/api/billing/trials/redeem",
+        "/api/billing/trials/start",
         "/api/billing/webhooks/paddle",
     ] {
         let responses = &spec["paths"][path]
