@@ -1,6 +1,6 @@
 # Plan — Open Paddle Trials, Then Live Demo/Upgrade
 
-Status: In progress (Phases 3, 1, and 2 complete)  
+Status: Complete  
 Owner: Kody Buss  
 Last updated: 2026-07-08  
 Related: [production-paddle-billing-mprd.md](../prd/production-paddle-billing-mprd.md), [PRODUCTION_BILLING.md](../PRODUCTION_BILLING.md)
@@ -195,9 +195,19 @@ Existing `trialing` users when flipping live: soft default is let current trials
   4. Later: rebuild frontend billing CTAs against status + start/checkout/portal APIs.
 
 **Acceptance criteria**
-- [ ] Docs describe stages, flag, and deferred frontend.
-- [ ] No public doc tells operators to mint Sumurai trial codes.
-- [ ] Doc tests updated.
+- [x] Docs describe stages, flag, and deferred frontend.
+- [x] No public doc tells operators to mint Sumurai trial codes.
+- [x] Doc tests updated.
+
+**Notes**
+- PRODUCTION_BILLING documents early-access vs live via `BILLING_TRIALS_ENABLED`, open trial start API, deferred in-app UI.
+- ARCHITECTURE redeem flow → start; frontend BillingService node removed.
+- `.env.example` lists optional Paddle + trials flag placeholders.
+- Original MPRD marked superseded for invite codes / deferred frontend CTAs.
+
+**TDD log (Phase 4)**
+- Doc boundary: `production_billing_docs_tests` asserts stages/flag/start path (updated in Phase 2; still green).
+- Grep: no `TRIAL_CODE_HASH_KEY` / `trial-codes create` in PRODUCTION_BILLING, ARCHITECTURE, `.env.example`.
 
 ---
 
@@ -224,8 +234,8 @@ bun --cwd=frontend run typecheck
 - [x] No Sumurai trial-code inventory or CLI.
 - [x] Backend supports open Paddle trial start + live kill switch.
 - [x] No in-app Paddle subscription / billing CTA surface.
-- [ ] Docs match backend stages and deferred frontend.
-- [ ] Tests green.
+- [x] Docs match backend stages and deferred frontend.
+- [x] Tests green.
 
 ## Implementation order
 

@@ -123,27 +123,24 @@ sequenceDiagram
 
 ### Production billing (Paddle)
 
-Production billing runs only when `BILLING_MODE=paddle` (`docker-compose.prod.yml`). `BillingService` is composed once on `AppState` with `DatabaseRepository` and `PaddleClient`. Open cardless trial starts are gated by `BILLING_TRIALS_ENABLED` (`POST /api/billing/trials/start`).
+Production billing runs only when `BILLING_MODE=paddle` (`docker-compose.prod.yml`). `BillingService` is composed once on `AppState` with `DatabaseRepository` and `PaddleClient`. Open cardless trial starts are gated by `BILLING_TRIALS_ENABLED` (`POST /api/billing/trials/start`). In-app Paddle subscription / billing CTA UI is deferred; entitlement gates and billing APIs remain.
 
-**Entitlement source of truth:** verified Paddle webhooks update `billing_entitlements` and fulfill `trial_code_redemptions`. The frontend redeem response returns `pending` until webhook processing completes. Own-data write routes call `billing_service.check_own_data_access*` before mutating tenant data.
+**Entitlement source of truth:** verified Paddle webhooks update `billing_entitlements`. Trial start and checkout responses return `pending` until webhook processing completes. Own-data write routes call `billing_service.check_own_data_access*` before mutating tenant data.
 
 ```mermaid
 sequenceDiagram
-    participant Admin as Admin CLI
-    participant Postgres
-    participant Browser
+    participant Client
     participant Axum
     participant Billing as BillingService
     participant Paddle
+    participant Postgres
     participant WH as Paddle webhook
 
-    Admin->>Postgres: insert trial_codes (HMAC hash only)
-    Browser->>Axum: POST /api/billing/trials/redeem
-    Axum->>Billing: redeem_trial_code()
-    Billing->>Postgres: reserve trial_codes + insert trial_code_redemptions (pending)
+    Client->>Axum: POST /api/billing/trials/start
+    Axum->>Billing: start_open_trial()
     Billing->>Paddle: create_cardless_trial (custom_data.sumurai_user_id)
-    Billing->>Postgres: upsert billing_profile + link paddle_transaction_id
-    Axum-->>Browser: 200 { status: pending }
+    Billing->>Postgres: upsert billing_profile
+    Axum-->>Client: 200 { status: pending }
 
     Paddle->>WH: subscription.activated / transaction.completed
     WH->>Axum: POST /api/billing/webhooks/paddle (no JWT)
@@ -151,7 +148,6 @@ sequenceDiagram
     Billing->>Billing: verify Paddle-Signature HMAC
     Billing->>Postgres: record_paddle_webhook_event_if_new (global, no RLS)
     Billing->>Postgres: with_tenant(user_id) upsert billing_entitlements
-    Billing->>Postgres: with_tenant(user_id) fulfill trial_code_redemptions
     Axum-->>WH: 200 OK
 ```
 
@@ -183,8 +179,6 @@ sequenceDiagram
         else apply subscription lifecycle event
             Billing->>Repo: upsert_billing_entitlement
             Repo->>Postgres: SET app.current_user_id → upsert billing_entitlements
-            Billing->>Repo: upsert_trial_code_redemption (fulfilled)
-            Repo->>Postgres: SET app.current_user_id → update redemption
         end
     end
     Axum-->>Paddle: 200 OK
@@ -290,7 +284,6 @@ flowchart TD
         CatSvc["CategoryService"]
         ImportSvc["ImportService"]
         AutoCatSvc["AutoCategorizationService"]
-        BillingSvc["BillingService"]
         ProviderSvcs["TellerService\nPlaidService\nSimpleFinService"]
     end
 
@@ -301,7 +294,6 @@ flowchart TD
         FImport["import"]
         FProviders["teller · plaid · simplefin"]
         FAutoCat["auto-categorization"]
-        FBilling["settings · billing UI"]
     end
 
     App --> AuthSvc & ApiClient
@@ -311,9 +303,8 @@ flowchart TD
     FImport --> ImportSvc
     FProviders --> ProviderSvcs
     FAutoCat --> AutoCatSvc
-    FBilling --> BillingSvc
 
-    AuthSvc & TxSvc & AnalSvc & BudgetSvc & CatSvc & ImportSvc & AutoCatSvc & ProviderSvcs & BillingSvc --> ApiClient
+    AuthSvc & TxSvc & AnalSvc & BudgetSvc & CatSvc & ImportSvc & AutoCatSvc & ProviderSvcs --> ApiClient
 ```
 
 ---
@@ -529,7 +520,7 @@ flowchart LR
 |--------|------|------|
 | GET | `/api/billing/status` | JWT |
 | POST | `/api/billing/checkout` | JWT |
-| POST | `/api/billing/trials/redeem` | JWT |
+| POST | `/api/billing/trials/start` | JWT |
 | POST | `/api/billing/payment-method` | JWT |
 | POST | `/api/billing/portal-session` | JWT |
 | POST | `/api/billing/webhooks/paddle` | Paddle signature (no JWT) |
@@ -560,7 +551,7 @@ All keys are scoped to `jwt_id`. There are no cross-user keys.
 ## Multi-Tenancy & Security
 
 - `auth_middleware` sets `app.current_user_id` on the Postgres connection before every query. RLS policies on every user-scoped table enforce `USING (user_id = current_setting('app.current_user_id', true)::uuid)` — isolation holds even if application code omits a `WHERE user_id` clause.
-- Billing user-owned tables (`billing_profiles`, `billing_entitlements`, `trial_code_redemptions`) use the same RLS pattern. Repository methods call `with_tenant(user_id)` before reads or writes. Paddle webhook processing resolves `user_id` from verified payload `custom_data.sumurai_user_id`, then scopes entitlement and redemption updates through `with_tenant`. Global tables `trial_codes` (admin inventory) and `paddle_webhook_events` (idempotency audit) have no RLS by design.
+- Billing user-owned tables (`billing_profiles`, `billing_entitlements`, and legacy `trial_code_redemptions`) use the same RLS pattern. Repository methods call `with_tenant(user_id)` before reads or writes. Paddle webhook processing resolves `user_id` from verified payload `custom_data.sumurai_user_id`, then scopes entitlement updates through `with_tenant`. Global table `paddle_webhook_events` (idempotency audit) has no RLS by design. Legacy `trial_codes` inventory remains in schema but is no longer written by the product.
 - The app role cannot bypass RLS. Do not write queries that assume superuser access.
 - `resource_authorization` middleware validates connection and budget ownership before handlers run.
 - Redis keys are namespaced by `jwt_id` — never use a global key for user data.

@@ -1,8 +1,14 @@
 # MPRD - Production-Only Paddle Billing, Trials, And Hosted Access
 
-Status: Approved, ready for implementation
+Status: Superseded in part by [open-paddle-trials-cleanup.md](../plans/open-paddle-trials-cleanup.md)
 Owner: Kody Buss
-Last updated: 2026-07-06
+Last updated: 2026-07-08
+
+**Supersession notes (2026-07-08):** Sumurai invite trial codes and the
+`trial-codes` CLI are removed. Open cardless trials use
+`POST /api/billing/trials/start` gated by `BILLING_TRIALS_ENABLED`. In-app
+Paddle subscription / billing CTA UI is deferred; backend APIs and entitlement
+gates remain. Historical phase text below may still mention redeem/CLI.
 
 ## Context
 
@@ -11,8 +17,8 @@ their own financial data. Security and tenant isolation are paramount.
 
 The default product experience stays demo mode. A user can explore the seeded
 demo workspace without paying. In the production Docker Compose deployment
-only, the user can upgrade to paid access for $8/month or redeem a Paddle
-cardless trial code to use their own data.
+only, the user can upgrade to paid access for $8/month or start an open
+Paddle cardless trial (when trials are enabled) to use their own data.
 
 Billing must never appear or gate behavior outside the production Docker Compose
 environment. Development, OSS/self-host, local, and test deployments keep the
@@ -378,9 +384,10 @@ without exposing a web admin surface.
   - create the cardless-trial transaction with Sumurai user ID in Paddle custom
     data.
   - return `pending` until webhook fulfillment updates entitlement.
-- `POST /api/billing/payment-method` uses Paddle's update-payment-method
-  transaction flow for a trialing subscription and returns checkout data needed
-  for Paddle Checkout.
+- `POST /api/billing/payment-method` uses Paddle's
+  `GET /subscriptions/{subscription_id}/update-payment-method-transaction`
+  flow for a trialing subscription and returns checkout data needed for Paddle
+  Checkout.
 - `POST /api/billing/portal-session` creates a temporary Paddle customer portal
   session for existing Paddle customers and returns the overview URL plus
   subscription URLs when available.
