@@ -2,9 +2,9 @@ import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { HeroSubtitleInfo } from '@/layouts/HeroSubtitleInfo';
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
-import type { BillingStatusResponse, FinancialProvider } from '@/types/api';
+import type { FinancialProvider } from '@/types/api';
 import type { ProviderCatalogue } from '@/types/providerCatalog';
-import { Alert, cn, IconButton } from '@/ui/primitives';
+import { cn, IconButton } from '@/ui/primitives';
 import {
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
@@ -30,7 +30,6 @@ interface ProviderSelectionPanelProps {
   visibleProviders?: FinancialProvider[];
   footerContent?: ReactNode;
   isOnline?: boolean;
-  billingStatus?: BillingStatusResponse | null;
 }
 
 const providerPickerTitle = 'Choose how you connect accounts';
@@ -123,7 +122,6 @@ export const ProviderSelectionPanel = ({
   visibleProviders,
   footerContent,
   isOnline = true,
-  billingStatus = null,
 }: ProviderSelectionPanelProps) => {
   const currentConnectingProvider = connectingProvider ?? null;
 
@@ -169,12 +167,7 @@ export const ProviderSelectionPanel = ({
     user_provider: null,
     teller_application_id: tellerApplicationId ?? undefined,
   };
-  const billingEnabled = billingStatus?.billing_enabled === true;
-  const billingLocked = billingEnabled && !billingStatus.can_use_own_data;
-  const providerVisibility = billingEnabled
-    ? billingStatus.enabled_financial_providers
-    : (visibleProviders ?? PROVIDER_PRICE_ORDER);
-  const providersToRender = providerVisibility.filter((provider) =>
+  const providersToRender = (visibleProviders ?? PROVIDER_PRICE_ORDER).filter((provider) =>
     PROVIDER_PRICE_ORDER.includes(provider)
   );
 
@@ -186,12 +179,6 @@ export const ProviderSelectionPanel = ({
       <ProviderSelectionHero onClose={onClose} heroAction={heroAction} />
 
       <div className={cn('w-full', 'min-w-0', 'max-w-full')}>
-        {billingLocked ? (
-          <Alert variant="warning" title="Paid access required" className={cn('mb-5')}>
-            Upgrade or redeem a trial code in Settings to connect accounts with your own data.
-          </Alert>
-        ) : null}
-
         <div
           className={cn(
             'grid',
@@ -211,7 +198,6 @@ export const ProviderSelectionPanel = ({
               connectingProvider={currentConnectingProvider}
               onSelectProvider={onSelectProvider}
               isOnline={isOnline}
-              billingLocked={billingLocked}
             />
           ))}
         </div>

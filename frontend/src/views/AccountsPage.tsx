@@ -26,7 +26,6 @@ import { useSyncAllOrchestrator } from '../features/sync/hooks/useSyncAllOrchest
 import type { SyncAllRow } from '../features/sync/types/syncAllStatus';
 import { isProviderReconnectRequiredError } from '../features/sync/utils/isProviderReconnectRequiredError';
 import { useAccountFilter } from '../hooks/useAccountFilter';
-import { useBillingStatus } from '../hooks/useBillingStatus';
 import { useExport } from '../hooks/useExport';
 import { useFinancialConnection } from '../hooks/useFinancialConnection';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
@@ -106,9 +105,6 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
   const isOnline = useOnlineStatus();
   const accountFilter = useAccountFilter();
   const providerCatalog = useProviderCatalog();
-  const billing = useBillingStatus();
-  const paidAccessMissing =
-    billing.status?.billing_enabled === true && !billing.status.can_use_own_data;
   const preferredProvider = useMemo(() => {
     const preferred = providerCatalog.userProvider ?? providerCatalog.availableProviders[0];
     if (!preferred) {
@@ -519,9 +515,8 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
   }, [exportError, exportToast, isExporting, onError, pushAccountsToast]);
 
   const handlePrimaryConnect = useCallback(() => {
-    if (paidAccessMissing) return;
     setIsProviderPickerOpen(true);
-  }, [paidAccessMissing]);
+  }, []);
 
   useEffect(() => {
     if (
@@ -859,7 +854,7 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
 
   const catalogLoading = providerCatalog.loading || accountFilter.loading;
 
-  const connectDisabled = catalogLoading || !isOnline || paidAccessMissing;
+  const connectDisabled = catalogLoading || !isOnline;
   const showProviderPicker = isProviderPickerOpen || pickerConnectingProvider !== null;
 
   const lastSyncValue = syncingAll
@@ -925,15 +920,9 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
         <ConnectButton
           onClick={handlePrimaryConnect}
           disabled={connectDisabled}
-          title={
-            paidAccessMissing
-              ? 'Upgrade or redeem a trial code in Settings'
-              : !isOnline
-                ? 'Unavailable while offline'
-                : undefined
-          }
+          title={!isOnline ? 'Unavailable while offline' : undefined}
         >
-          {paidAccessMissing ? 'Upgrade' : connectAccountLabel}
+          {connectAccountLabel}
         </ConnectButton>
       </div>
       {!isOnline && (
@@ -970,7 +959,6 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
             error={providerCatalog.error}
             availableProviders={providerCatalog.availableProviders}
             visibleProviders={pickerVisibleProviders}
-            billingStatus={billing.status}
             tellerApplicationId={providerCatalog.tellerApplicationId}
             providerReadyState={pickerProviderReadyState}
             connectingProvider={activePickerConnectingProvider}
