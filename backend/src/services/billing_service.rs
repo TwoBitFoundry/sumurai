@@ -419,10 +419,24 @@ impl BillingService {
             .map_err(|_| BillingWebhookError::RepositoryRequestFailed)?;
 
         if !is_new {
-            return Ok(());
+            let existing = self
+                .repository
+                .get_paddle_webhook_event(&payload.event_id)
+                .await
+                .map_err(|_| BillingWebhookError::RepositoryRequestFailed)?;
+            if existing
+                .as_ref()
+                .is_some_and(|event| event.processing_status == "processed")
+            {
+                return Ok(());
+            }
         }
 
         let Some(user_id) = extract_sumurai_user_id(&payload.data) else {
+            self.repository
+                .mark_paddle_webhook_event_processed(&payload.event_id, Utc::now())
+                .await
+                .map_err(|_| BillingWebhookError::RepositoryRequestFailed)?;
             return Ok(());
         };
 
@@ -437,6 +451,11 @@ impl BillingService {
             self.fulfill_trial_redemption_for_transaction(user_id, &payload.data)
                 .await?;
         }
+
+        self.repository
+            .mark_paddle_webhook_event_processed(&payload.event_id, Utc::now())
+            .await
+            .map_err(|_| BillingWebhookError::RepositoryRequestFailed)?;
 
         Ok(())
     }

@@ -491,6 +491,12 @@ pub trait DatabaseRepository: Send + Sync {
     ) -> Result<Option<TrialCodeRedemption>>;
     async fn record_paddle_webhook_event(&self, event: &PaddleWebhookEvent) -> Result<()>;
     async fn record_paddle_webhook_event_if_new(&self, event: &PaddleWebhookEvent) -> Result<bool>;
+    async fn get_paddle_webhook_event(&self, event_id: &str) -> Result<Option<PaddleWebhookEvent>>;
+    async fn mark_paddle_webhook_event_processed(
+        &self,
+        event_id: &str,
+        processed_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<()>;
 }
 
 pub struct PostgresRepository {
@@ -650,6 +656,56 @@ impl PostgresRepository {
         .exec_without_returning(db)
         .await?;
         Ok(result > 0)
+    }
+
+    fn paddle_webhook_event_from_model(row: paddle_webhook_events::Model) -> PaddleWebhookEvent {
+        PaddleWebhookEvent {
+            event_id: row.event_id,
+            event_type: row.event_type,
+            occurred_at: Self::from_db_time(row.occurred_at),
+            processed_at: Self::from_db_time(row.processed_at),
+            processing_status: row.processing_status,
+            related_user_id: row.related_user_id,
+            related_subscription_id: row.related_subscription_id,
+            error_code: row.error_code,
+            created_at: Self::from_db_time(row.created_at),
+        }
+    }
+
+    async fn get_paddle_webhook_event_on<C>(
+        db: &C,
+        event_id: &str,
+    ) -> Result<Option<PaddleWebhookEvent>>
+    where
+        C: ConnectionTrait,
+    {
+        let row = paddle_webhook_events::Entity::find_by_id(event_id)
+            .one(db)
+            .await?;
+        Ok(row.map(Self::paddle_webhook_event_from_model))
+    }
+
+    async fn mark_paddle_webhook_event_processed_on<C>(
+        db: &C,
+        event_id: &str,
+        processed_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<()>
+    where
+        C: ConnectionTrait,
+    {
+        paddle_webhook_events::Entity::update_many()
+            .col_expr(
+                paddle_webhook_events::Column::ProcessingStatus,
+                Expr::value("processed"),
+            )
+            .col_expr(
+                paddle_webhook_events::Column::ProcessedAt,
+                Expr::value(Self::to_db_time(processed_at)),
+            )
+            .filter(paddle_webhook_events::Column::EventId.eq(event_id))
+            .exec(db)
+            .await?;
+        Ok(())
     }
 
     async fn with_tenant<T>(
@@ -4263,6 +4319,44 @@ impl DatabaseRepository for PostgresRepository {
         {
             let db = self.conn();
             Self::insert_paddle_webhook_event_on(&db, event).await
+        }
+    }
+
+    async fn get_paddle_webhook_event(&self, event_id: &str) -> Result<Option<PaddleWebhookEvent>> {
+        #[cfg(test)]
+        if let Some(db) = &self.mock_db {
+            return Self::get_paddle_webhook_event_on(db, event_id).await;
+        }
+        #[cfg(not(test))]
+        {
+            let db = self.conn();
+            return Self::get_paddle_webhook_event_on(&db, event_id).await;
+        }
+        #[cfg(test)]
+        {
+            let db = self.conn();
+            Self::get_paddle_webhook_event_on(&db, event_id).await
+        }
+    }
+
+    async fn mark_paddle_webhook_event_processed(
+        &self,
+        event_id: &str,
+        processed_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<()> {
+        #[cfg(test)]
+        if let Some(db) = &self.mock_db {
+            return Self::mark_paddle_webhook_event_processed_on(db, event_id, processed_at).await;
+        }
+        #[cfg(not(test))]
+        {
+            let db = self.conn();
+            return Self::mark_paddle_webhook_event_processed_on(&db, event_id, processed_at).await;
+        }
+        #[cfg(test)]
+        {
+            let db = self.conn();
+            Self::mark_paddle_webhook_event_processed_on(&db, event_id, processed_at).await
         }
     }
 }

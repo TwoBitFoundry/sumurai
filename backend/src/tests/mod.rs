@@ -42,6 +42,7 @@ mod merchant_normalization_tests;
 mod models_tests;
 mod openapi_tests;
 mod otel_traces_relay_tests;
+mod paddle_provider_tests;
 mod passkey_auth_flow_guard_tests;
 mod passkey_enrollment_middleware_tests;
 mod passkey_registration_tests;

@@ -137,6 +137,15 @@ impl PaddleClient {
         }
     }
 
+    #[cfg(test)]
+    pub fn new_for_test(base_url: String) -> Self {
+        Self {
+            http: reqwest::Client::new(),
+            api_key: "test-api-key".to_string(),
+            base_url,
+        }
+    }
+
     async fn post<T: serde::de::DeserializeOwned>(
         &self,
         path: &str,
@@ -149,6 +158,23 @@ impl PaddleClient {
             .json(&body)
             .send()
             .await?;
+        self.parse_response(response).await
+    }
+
+    async fn get<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T> {
+        let response = self
+            .http
+            .get(format!("{}{}", self.base_url, path))
+            .bearer_auth(&self.api_key)
+            .send()
+            .await?;
+        self.parse_response(response).await
+    }
+
+    async fn parse_response<T: serde::de::DeserializeOwned>(
+        &self,
+        response: reqwest::Response,
+    ) -> Result<T> {
         let status = response.status();
         if !status.is_success() {
             return Err(anyhow!("Paddle API request failed with status {}", status));
@@ -246,13 +272,10 @@ impl PaddleHttpClient for PaddleClient {
         request: CreatePaymentMethodTransactionRequest,
     ) -> Result<CreatePaymentMethodTransactionResponse> {
         let response: PaddleTransactionResponse = self
-            .post(
-                &format!(
-                    "/subscriptions/{}/update-payment-method-transaction",
-                    request.subscription_id
-                ),
-                json!({}),
-            )
+            .get(&format!(
+                "/subscriptions/{}/update-payment-method-transaction",
+                request.subscription_id
+            ))
             .await?;
         let data = response.data;
         Ok(CreatePaymentMethodTransactionResponse {

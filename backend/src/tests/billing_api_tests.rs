@@ -6,7 +6,7 @@ use std::sync::Arc;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-use crate::models::billing::{BillingEntitlement, TrialCodeRedemption};
+use crate::models::billing::{BillingEntitlement, PaddleWebhookEvent, TrialCodeRedemption};
 use crate::providers::paddle_provider::{
     CreateCardlessTrialResponse, CreateCheckoutResponse, CreatePaymentMethodTransactionResponse,
     CreatePortalSessionResponse, MockPaddleHttpClient,
@@ -392,8 +392,28 @@ async fn given_valid_paddle_webhook_when_posting_then_returns_ok_without_entitle
     mock_db
         .expect_record_paddle_webhook_event_if_new()
         .returning(|_| Box::pin(async { Ok(false) }));
+    mock_db
+        .expect_get_paddle_webhook_event()
+        .withf(|event_id| event_id == "evt_duplicate")
+        .returning(|_| {
+            let now = Utc::now();
+            Box::pin(async move {
+                Ok(Some(PaddleWebhookEvent {
+                    event_id: "evt_duplicate".to_string(),
+                    event_type: "subscription.activated".to_string(),
+                    occurred_at: now,
+                    processed_at: now,
+                    processing_status: "processed".to_string(),
+                    related_user_id: None,
+                    related_subscription_id: None,
+                    error_code: None,
+                    created_at: now,
+                }))
+            })
+        });
     mock_db.expect_get_billing_entitlement().never();
     mock_db.expect_upsert_billing_entitlement().never();
+    mock_db.expect_mark_paddle_webhook_event_processed().never();
     let app = create_paddle_billing_app(mock_db, MockPaddleHttpClient::new()).await;
     let user_id = Uuid::new_v4();
     let body = format!(
