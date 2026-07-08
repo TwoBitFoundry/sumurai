@@ -22,6 +22,7 @@ flowchart LR
     Teller["Teller API\n(mTLS)"]
     Plaid["Plaid API\n(OAuth)"]
     SimpleFIN["SimpleFIN Bridge\n(access URL)"]
+    Paddle["Paddle Billing\n(prod compose only)"]
     Seq["Seq\n(prod only)"]
 
     Browser -->|"SPA assets"| Nginx
@@ -33,6 +34,7 @@ flowchart LR
     Backend -.->|"mTLS"| Teller
     Backend -.->|"HTTPS"| Plaid
     Backend -.->|"HTTPS"| SimpleFIN
+    Backend -.->|"HTTPS API + webhooks"| Paddle
 ```
 
 - **Frontend** — Next.js static export served by Nginx on port 8080.
@@ -40,6 +42,7 @@ flowchart LR
 - **Providers** — Teller, Plaid, and SimpleFIN via a shared provider registry.
 - **Persistence** — PostgreSQL with row-level security; Redis for sessions, caching, and rate-limiting.
 - **Observability** — OpenTelemetry end-to-end; export target (`none` / `console` / OTLP to Seq) set by `OTEL_TRACES_EXPORTER`.
+- **Billing (production compose only)** — Paddle SaaS entitlement when `BILLING_MODE=paddle`. Own-data writes require `trialing` or `active` entitlement projected from verified webhooks. See [PRODUCTION_BILLING.md](PRODUCTION_BILLING.md).
 
 Three standalone Compose files at the repo root (`docker-compose.yml`, `docker-compose.dev.yml`, `docker-compose.prod.yml`) — pick one, no merge overrides needed.
 
@@ -118,6 +121,98 @@ sequenceDiagram
     Axum-->>Browser: 200 JSON
 ```
 
+### Production billing (Paddle)
+
+Production billing runs only when `BILLING_MODE=paddle` (`docker-compose.prod.yml`). `BillingService` is composed once on `AppState` with `DatabaseRepository` and `PaddleClient`. Trial-code hashing is shared with the admin CLI via the `billing-common` workspace crate.
+
+**Entitlement source of truth:** verified Paddle webhooks update `billing_entitlements` and fulfill `trial_code_redemptions`. The frontend redeem response returns `pending` until webhook processing completes. Own-data write routes call `billing_service.check_own_data_access*` before mutating tenant data.
+
+```mermaid
+sequenceDiagram
+    participant Admin as Admin CLI
+    participant Postgres
+    participant Browser
+    participant Axum
+    participant Billing as BillingService
+    participant Paddle
+    participant WH as Paddle webhook
+
+    Admin->>Postgres: insert trial_codes (HMAC hash only)
+    Browser->>Axum: POST /api/billing/trials/redeem
+    Axum->>Billing: redeem_trial_code()
+    Billing->>Postgres: reserve trial_codes + insert trial_code_redemptions (pending)
+    Billing->>Paddle: create_cardless_trial (custom_data.sumurai_user_id)
+    Billing->>Postgres: upsert billing_profile + link paddle_transaction_id
+    Axum-->>Browser: 200 { status: pending }
+
+    Paddle->>WH: subscription.activated / transaction.completed
+    WH->>Axum: POST /api/billing/webhooks/paddle (no JWT)
+    Axum->>Billing: process_paddle_webhook()
+    Billing->>Billing: verify Paddle-Signature HMAC
+    Billing->>Postgres: record_paddle_webhook_event_if_new (global, no RLS)
+    Billing->>Postgres: with_tenant(user_id) upsert billing_entitlements
+    Billing->>Postgres: with_tenant(user_id) fulfill trial_code_redemptions
+    Axum-->>WH: 200 OK
+```
+
+```mermaid
+sequenceDiagram
+    participant Paddle
+    participant Axum
+    participant Billing as BillingService
+    participant Repo as repository_service
+    participant Postgres
+
+    Paddle->>Axum: POST /api/billing/webhooks/paddle + Paddle-Signature
+    Axum->>Billing: process_paddle_webhook(signature, raw_body)
+    Billing->>Billing: verify_paddle_webhook_signature (before JSON parse)
+    Billing->>Billing: parse envelope + data.custom_data.sumurai_user_id
+    Billing->>Repo: record_paddle_webhook_event_if_new
+    Repo->>Postgres: INSERT paddle_webhook_events ON CONFLICT DO NOTHING
+    Postgres-->>Repo: rows_affected 0 or 1
+    alt duplicate event_id
+        Repo-->>Billing: false
+        Billing-->>Axum: Ok (ack, no mutation)
+    else new event
+        Repo-->>Billing: true
+        Billing->>Repo: get_billing_entitlement(user_id)
+        Repo->>Postgres: SET app.current_user_id → read billing_entitlements
+        Billing->>Billing: should_apply_event(last_event_at, occurred_at)
+        alt out-of-order older event
+            Billing-->>Axum: Ok (skip downgrade)
+        else apply subscription lifecycle event
+            Billing->>Repo: upsert_billing_entitlement
+            Repo->>Postgres: SET app.current_user_id → upsert billing_entitlements
+            Billing->>Repo: upsert_trial_code_redemption (fulfilled)
+            Repo->>Postgres: SET app.current_user_id → update redemption
+        end
+    end
+    Axum-->>Paddle: 200 OK
+```
+
+```mermaid
+flowchart TD
+    Write["Own-data write route\n(connect · sync · import · budget · DIY · Plaid)"]
+    Demo{"user.demo_mode_active?"}
+    BillingOn{"BILLING_MODE=paddle?"}
+    Check["billing_service.check_own_data_access*()"]
+    Entitlement{"access_status\ntrialing or active?"}
+    Allow["Handler proceeds"]
+    Block402["402 PAID_ACCESS_REQUIRED"]
+
+    Write --> Demo
+    Demo -- yes --> Allow
+    Demo -- no --> BillingOn
+    BillingOn -- disabled --> Allow
+    BillingOn -- paddle --> Check --> Entitlement
+    Entitlement -- yes --> Allow
+    Entitlement -- no --> Block402
+```
+
+Monthly paid checkout (`POST /api/billing/checkout`) follows the same webhook-driven entitlement path after Paddle Checkout completes. Customer portal and payment-method flows call Paddle through `paddle_provider` but do not grant entitlement directly.
+
+---
+
 ### Subscription Detection
 
 Subscription detection runs as a background pass — never user-invoked. It has two layers:
@@ -195,6 +290,7 @@ flowchart TD
         CatSvc["CategoryService"]
         ImportSvc["ImportService"]
         AutoCatSvc["AutoCategorizationService"]
+        BillingSvc["BillingService"]
         ProviderSvcs["TellerService\nPlaidService\nSimpleFinService"]
     end
 
@@ -205,6 +301,7 @@ flowchart TD
         FImport["import"]
         FProviders["teller · plaid · simplefin"]
         FAutoCat["auto-categorization"]
+        FBilling["settings · billing UI"]
     end
 
     App --> AuthSvc & ApiClient
@@ -214,8 +311,9 @@ flowchart TD
     FImport --> ImportSvc
     FProviders --> ProviderSvcs
     FAutoCat --> AutoCatSvc
+    FBilling --> BillingSvc
 
-    AuthSvc & TxSvc & AnalSvc & BudgetSvc & CatSvc & ImportSvc & AutoCatSvc & ProviderSvcs --> ApiClient
+    AuthSvc & TxSvc & AnalSvc & BudgetSvc & CatSvc & ImportSvc & AutoCatSvc & ProviderSvcs & BillingSvc --> ApiClient
 ```
 
 ---
@@ -242,13 +340,19 @@ flowchart TD
         H3["providers"]
         H4["analytics"]
         H5["budgets / categories"]
+        H6["billing\nhandlers/billing.rs"]
+    end
+
+    subgraph MiddlewareExt["Entitlement (billing gates)"]
+        Entitlement["middleware/entitlement.rs"]
     end
 
     subgraph Services
-        RepoSvc["repository_service\n(SeaORM)"]
+        RepoSvc["repository_service\n(SeaORM · with_tenant)"]
         CacheSvc["cache_service\n(Redis)"]
         SyncSvc["sync_service"]
         AuthSvc["auth_service"]
+        BillingSvc["billing_service\n(entitlement · webhooks)"]
         OtherSvcs["analytics · budget · import\ncategory · auto-categorization\nconnection · plaid · simplefin"]
     end
 
@@ -257,21 +361,28 @@ flowchart TD
         P1["Teller"]
         P2["Plaid"]
         P3["SimpleFIN"]
+        Paddle["paddle_provider\n(PaddleClient)"]
     end
 
     Nginx --> MW1 --> MW2 --> MW3 --> MW4 --> MW5
     MW5 --> H1 & H2 & H3 & H4 & H5
+    Nginx --> H6
 
     H1 & H2 & H4 & H5 --> RepoSvc & CacheSvc & OtherSvcs
     H3 --> SyncSvc & OtherSvcs
+    H3 & H5 --> Entitlement
+    Entitlement --> BillingSvc
+    H6 --> BillingSvc
     SyncSvc --> Registry --> P1 & P2 & P3
+    BillingSvc --> RepoSvc & Paddle
     RepoSvc --> Postgres[("PostgreSQL")]
     CacheSvc --> Redis[("Redis")]
+    Paddle -.->|"HTTPS"| PaddleAPI["Paddle Billing API"]
 ```
 
 ### Container build
 
-GHCR backend images are produced from the **repository root** with `backend/Dockerfile` (see `publish-images` workflow). The image targets a Cargo **workspace** whose root manifest and lockfile live at `Cargo.toml` and `Cargo.lock`; members are `backend` (Axum API), `backend/entity` (SeaORM entities), and `backend/migration` (SeaORM migrations).
+GHCR backend images are produced from the **repository root** with `backend/Dockerfile` (see `publish-images` workflow). The image targets a Cargo **workspace** whose root manifest and lockfile live at `Cargo.toml` and `Cargo.lock`; members are `backend` (Axum API), `backend/entity` (SeaORM entities), `backend/migration` (SeaORM migrations), `billing-common` (shared trial-code hashing for backend + CLI), and `cli` (admin commands including trial-code management).
 
 Docker builds use **cargo-chef** so dependency layers stay cached when only application source changes:
 
@@ -412,6 +523,19 @@ flowchart LR
 | GET/POST | `/api/budgets` |
 | PUT/DELETE | `/api/budgets/{id}` |
 
+**Billing (production `BILLING_MODE=paddle`; status readable when disabled)**
+
+| Method | Path | Auth |
+|--------|------|------|
+| GET | `/api/billing/status` | JWT |
+| POST | `/api/billing/checkout` | JWT |
+| POST | `/api/billing/trials/redeem` | JWT |
+| POST | `/api/billing/payment-method` | JWT |
+| POST | `/api/billing/portal-session` | JWT |
+| POST | `/api/billing/webhooks/paddle` | Paddle signature (no JWT) |
+
+When billing is disabled, mutations and the webhook return `404 BILLING_DISABLED`; status returns `billing_enabled: false`. See [PRODUCTION_BILLING.md](PRODUCTION_BILLING.md).
+
 ---
 
 ## Caching
@@ -436,6 +560,7 @@ All keys are scoped to `jwt_id`. There are no cross-user keys.
 ## Multi-Tenancy & Security
 
 - `auth_middleware` sets `app.current_user_id` on the Postgres connection before every query. RLS policies on every user-scoped table enforce `USING (user_id = current_setting('app.current_user_id', true)::uuid)` — isolation holds even if application code omits a `WHERE user_id` clause.
+- Billing user-owned tables (`billing_profiles`, `billing_entitlements`, `trial_code_redemptions`) use the same RLS pattern. Repository methods call `with_tenant(user_id)` before reads or writes. Paddle webhook processing resolves `user_id` from verified payload `custom_data.sumurai_user_id`, then scopes entitlement and redemption updates through `with_tenant`. Global tables `trial_codes` (admin inventory) and `paddle_webhook_events` (idempotency audit) have no RLS by design.
 - The app role cannot bypass RLS. Do not write queries that assume superuser access.
 - `resource_authorization` middleware validates connection and budget ownership before handlers run.
 - Redis keys are namespaced by `jwt_id` — never use a global key for user data.
@@ -548,6 +673,63 @@ erDiagram
         timestamptz created_at
         timestamptz updated_at
     }
+    billing_profiles {
+        uuid user_id PK
+        text paddle_customer_id UK
+        text paddle_address_id
+        text billing_country_code
+        text billing_postal_code
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    billing_entitlements {
+        uuid user_id PK
+        text access_status
+        text source
+        text paddle_subscription_id UK
+        text paddle_customer_id
+        text paddle_price_id
+        timestamptz trial_ends_at
+        timestamptz current_period_ends_at
+        timestamptz canceled_at
+        timestamptz last_event_at
+        boolean payment_method_required
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    trial_codes {
+        uuid id PK
+        text code_hash UK
+        timestamptz redeem_by_at
+        timestamptz redeemed_at
+        uuid redeemed_by_user_id FK
+        timestamptz disabled_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    trial_code_redemptions {
+        uuid id PK
+        uuid trial_code_id FK
+        uuid user_id FK
+        text status
+        text paddle_transaction_id UK
+        text paddle_subscription_id UK
+        timestamptz fulfilled_at
+        timestamptz failed_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    paddle_webhook_events {
+        text event_id PK
+        text event_type
+        timestamptz occurred_at
+        timestamptz processed_at
+        text processing_status
+        uuid related_user_id FK
+        text related_subscription_id
+        text error_code
+        timestamptz created_at
+    }
 
     users ||--o{ provider_connections : ""
     users ||--o{ provider_credentials : ""
@@ -558,6 +740,11 @@ erDiagram
     users ||--o{ budgets : ""
     users ||--o{ user_custom_categories : ""
     users ||--o{ transaction_category_overrides : ""
+    users ||--o| billing_profiles : ""
+    users ||--o| billing_entitlements : ""
+    users ||--o| trial_code_redemptions : ""
+    users ||--o{ paddle_webhook_events : "related_user_id"
+    trial_codes ||--o| trial_code_redemptions : ""
     provider_connections ||--o{ accounts : ""
     accounts ||--o{ transactions : ""
     user_custom_categories ||--o{ transaction_category_overrides : ""

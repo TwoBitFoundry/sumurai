@@ -82,6 +82,40 @@ pub trait PaddleClient: Send + Sync {
     ) -> Result<CreatePortalSessionResponse>;
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+pub struct NoOpPaddleClient;
+
+#[async_trait]
+impl PaddleClient for NoOpPaddleClient {
+    async fn create_checkout(
+        &self,
+        _request: CreateCheckoutRequest,
+    ) -> Result<CreateCheckoutResponse> {
+        Err(anyhow!("Paddle billing is disabled"))
+    }
+
+    async fn create_cardless_trial(
+        &self,
+        _request: CreateCardlessTrialRequest,
+    ) -> Result<CreateCardlessTrialResponse> {
+        Err(anyhow!("Paddle billing is disabled"))
+    }
+
+    async fn create_payment_method_transaction(
+        &self,
+        _request: CreatePaymentMethodTransactionRequest,
+    ) -> Result<CreatePaymentMethodTransactionResponse> {
+        Err(anyhow!("Paddle billing is disabled"))
+    }
+
+    async fn create_portal_session(
+        &self,
+        _request: CreatePortalSessionRequest,
+    ) -> Result<CreatePortalSessionResponse> {
+        Err(anyhow!("Paddle billing is disabled"))
+    }
+}
+
 #[derive(Clone)]
 pub struct RealPaddleClient {
     http: reqwest::Client,
@@ -314,4 +348,49 @@ struct PaddlePortalGeneralUrls {
 struct PaddlePortalSubscriptionUrls {
     cancel_subscription: String,
     update_subscription_payment_method: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn given_no_op_paddle_client_when_calling_api_methods_then_returns_error() {
+        let client = NoOpPaddleClient;
+        let user_id = Uuid::new_v4();
+
+        assert!(client
+            .create_checkout(CreateCheckoutRequest {
+                user_email: "me@example.com".to_string(),
+                price_id: "pri_monthly".to_string(),
+                user_id,
+            })
+            .await
+            .is_err());
+        assert!(client
+            .create_cardless_trial(CreateCardlessTrialRequest {
+                user_id,
+                user_email: "me@example.com".to_string(),
+                existing_customer_id: None,
+                existing_address_id: None,
+                country_code: "US".to_string(),
+                postal_code: "94107".to_string(),
+                price_id: "pri_trial".to_string(),
+            })
+            .await
+            .is_err());
+        assert!(client
+            .create_payment_method_transaction(CreatePaymentMethodTransactionRequest {
+                subscription_id: "sub_123".to_string(),
+            })
+            .await
+            .is_err());
+        assert!(client
+            .create_portal_session(CreatePortalSessionRequest {
+                customer_id: "ctm_123".to_string(),
+                subscription_ids: vec!["sub_123".to_string()],
+            })
+            .await
+            .is_err());
+    }
 }

@@ -10,7 +10,6 @@ use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 use crate::models::auth::WebAuthnCredential;
 use crate::models::predicted_category::PredictedCategory;
 use crate::models::{auth::User, transaction::Transaction};
-use crate::providers::paddle_provider::MockPaddleClient;
 use crate::providers::ProviderRegistry;
 
 use crate::providers::{
@@ -152,7 +151,7 @@ pub(crate) fn noop_categorizer() -> Arc<dyn Categorizer> {
 }
 
 pub(crate) fn noop_paddle_client() -> Arc<dyn crate::providers::PaddleClient> {
-    Arc::new(MockPaddleClient::new())
+    Arc::new(crate::providers::NoOpPaddleClient)
 }
 
 pub(crate) fn build_billing_service(

@@ -50,6 +50,30 @@ Paddle cardless trials are early access. Before release:
 
 Trials are created through the Paddle API (not Paddle Checkout). The server creates or reuses customer and address records, creates a transaction, and access is granted from verified webhook fulfillment—not from the frontend redemption response.
 
+```mermaid
+flowchart LR
+    subgraph Admin["Server admin"]
+        CLI["sumurai-cli trial-codes"]
+    end
+    subgraph Inventory["Global tables (no RLS)"]
+        TC["trial_codes\n(hash only)"]
+        PWE["paddle_webhook_events\n(idempotency)"]
+    end
+    subgraph Tenant["User-scoped (RLS)"]
+        TCR["trial_code_redemptions"]
+        BE["billing_entitlements"]
+        BP["billing_profiles"]
+    end
+    subgraph Shared["Workspace"]
+        BC["billing-common\nHMAC hash"]
+    end
+
+    CLI --> BC
+    CLI --> TC
+    BC --> Backend["BillingService"]
+    Backend --> TC & TCR & BE & BP & PWE
+```
+
 References:
 
 - [Cardless trials](https://developer.paddle.com/build/trials/cardless-trials/)
@@ -81,6 +105,26 @@ Subscribe at minimum to these event types:
 
 Duplicate Paddle event IDs are deduplicated; out-of-order older events do not downgrade newer entitlement when `last_event_at` is newer.
 
+```mermaid
+sequenceDiagram
+    participant Paddle
+    participant Handler as handle_paddle_billing_webhook
+    participant Billing as BillingService
+    participant Repo as repository_service
+
+    Paddle->>Handler: POST raw body + Paddle-Signature
+    Handler->>Billing: process_paddle_webhook()
+    Note over Billing: Signature verified before JSON business parsing
+    Billing->>Repo: record_paddle_webhook_event_if_new
+    alt duplicate event_id
+        Billing-->>Handler: Ok (no entitlement mutation)
+    else new event + sumurai_user_id in custom_data
+        Billing->>Repo: get/upsert billing_entitlements (with_tenant)
+        Billing->>Repo: fulfill trial_code_redemptions (with_tenant)
+    end
+    Handler-->>Paddle: 200 OK
+```
+
 Reference: [Webhook signature verification](https://developer.paddle.com/webhooks/about/signature-verification/)
 
 ## Trial-code CLI
@@ -111,7 +155,26 @@ Disable a code by ID:
 cargo run -p sumurai-cli -- trial-codes disable --id '<uuid>'
 ```
 
-The CLI uses the same keyed hash algorithm as the backend. Store only hashes in `trial_codes`; never log or persist plaintext codes in application logs.
+The CLI uses the same keyed hash algorithm as the backend via the `billing-common` workspace crate. Store only hashes in `trial_codes`; never log or persist plaintext codes in application logs.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant API as POST /api/billing/trials/redeem
+    participant Billing as BillingService
+    participant Paddle
+    participant WH as Webhook
+
+    User->>API: code + country + postal
+    API->>Billing: redeem_trial_code()
+    Billing->>Billing: hash via billing-common
+    Note over Billing: Returns pending — no entitlement yet
+    Billing->>Paddle: create_cardless_trial
+    API-->>User: { status: pending }
+    Paddle->>WH: subscription.activated
+    WH->>Billing: process_paddle_webhook()
+    Note over Billing: Grants trialing + fulfills redemption
+```
 
 ## API surface
 

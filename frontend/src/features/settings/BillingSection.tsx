@@ -1,7 +1,7 @@
 import { CreditCard, KeyRound, LockKeyhole } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
+import { useBillingActions } from '@/hooks/useBillingActions';
 import { useBillingStatus } from '@/hooks/useBillingStatus';
-import { BillingService } from '@/services/BillingService';
 import { Alert, Button, FormLabel, Input } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import {
@@ -30,18 +30,13 @@ const formatBillingDate = (iso: string) =>
     year: 'numeric',
   }).format(new Date(iso));
 
-const redirectTo = (url: string) => {
-  window.location.assign(url);
-};
-
 export function BillingSection() {
   const { status, shouldShowBilling, refresh } = useBillingStatus();
+  const { actionPending, message, error, upgrade, addPaymentMethod, openPortal, redeemTrial } =
+    useBillingActions(refresh);
   const [trialCode, setTrialCode] = useState('');
   const [countryCode, setCountryCode] = useState('US');
   const [postalCode, setPostalCode] = useState('');
-  const [actionPending, setActionPending] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   if (!shouldShowBilling || !status) {
     return null;
@@ -50,37 +45,6 @@ export function BillingSection() {
   const blocked = blockedAccessStates.has(status.access_status) && !status.can_use_own_data;
   const canManage = status.billing_portal_available;
 
-  const runAction = async (name: string, action: () => Promise<void>) => {
-    setActionPending(name);
-    setError(null);
-    setMessage(null);
-    try {
-      await action();
-    } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : 'Billing action failed');
-    } finally {
-      setActionPending(null);
-    }
-  };
-
-  const handleUpgrade = () =>
-    runAction('checkout', async () => {
-      const checkout = await BillingService.createCheckout();
-      redirectTo(checkout.checkout_url);
-    });
-
-  const handlePaymentMethod = () =>
-    runAction('payment-method', async () => {
-      const checkout = await BillingService.createPaymentMethodTransaction();
-      redirectTo(checkout.checkout_url);
-    });
-
-  const handlePortal = () =>
-    runAction('portal', async () => {
-      const portal = await BillingService.createPortalSession();
-      redirectTo(portal.overview_url);
-    });
-
   const handleTrialRedeem = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const code = trialCode.trim();
@@ -88,18 +52,13 @@ export function BillingSection() {
     const postal = postalCode.trim();
 
     if (!code || !country || !postal) {
-      setError('Enter a trial code, country, and postal code.');
       return;
     }
 
-    void runAction('trial', async () => {
-      await BillingService.redeemTrial({
-        code,
-        country_code: country,
-        postal_code: postal,
-      });
-      setMessage('Trial code accepted. Refreshing access status.');
-      await refresh();
+    void redeemTrial({
+      code,
+      country_code: country,
+      postal_code: postal,
     });
   };
 
@@ -128,7 +87,7 @@ export function BillingSection() {
               type="button"
               variant="primary"
               size="md"
-              onClick={handleUpgrade}
+              onClick={upgrade}
               disabled={actionPending !== null}
             >
               {actionPending === 'checkout' ? 'Opening...' : 'Upgrade'}
@@ -139,7 +98,7 @@ export function BillingSection() {
               type="button"
               variant="secondary"
               size="md"
-              onClick={handlePaymentMethod}
+              onClick={addPaymentMethod}
               disabled={actionPending !== null}
             >
               {actionPending === 'payment-method' ? 'Opening...' : 'Add payment method'}
@@ -150,7 +109,7 @@ export function BillingSection() {
               type="button"
               variant="secondary"
               size="md"
-              onClick={handlePortal}
+              onClick={openPortal}
               disabled={actionPending !== null}
             >
               {actionPending === 'portal' ? 'Opening...' : 'Manage billing'}

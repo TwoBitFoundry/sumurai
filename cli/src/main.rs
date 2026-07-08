@@ -3,8 +3,7 @@ use std::process::ExitCode;
 use chrono::{DateTime, Utc};
 use clap::{Parser, Subcommand};
 use sumurai_cli::{
-    create_trial_code, disable_trial_code, list_trial_codes, reset_passkeys,
-    PostgresPasskeyResetStore,
+    create_trial_code, disable_trial_code, list_trial_codes, reset_passkeys, PostgresAdminStore,
 };
 
 #[derive(Parser)]
@@ -114,8 +113,8 @@ async fn run() -> Result<(), anyhow::Error> {
     }
 }
 
-async fn connect_store(command: &str) -> Result<PostgresPasskeyResetStore, anyhow::Error> {
+async fn connect_store(command: &str) -> Result<PostgresAdminStore, anyhow::Error> {
     let database_url = std::env::var("DATABASE_URL")
         .map_err(|_| anyhow::anyhow!("DATABASE_URL is required to run {command}"))?;
-    Ok(PostgresPasskeyResetStore::connect(&database_url).await?)
+    Ok(PostgresAdminStore::connect(&database_url).await?)
 }

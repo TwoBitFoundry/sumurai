@@ -2,7 +2,7 @@ use chrono::Utc;
 use entity::{users, webauthn_credentials};
 use sea_orm::Database;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
-use sumurai_cli::{reset_passkeys, PostgresPasskeyResetStore};
+use sumurai_cli::{reset_passkeys, PostgresAdminStore};
 use uuid::Uuid;
 
 fn fake_passkey_json() -> serde_json::Value {
@@ -64,7 +64,7 @@ async fn given_user_with_passkeys_when_reset_passkeys_then_credentials_removed()
         .expect("insert credential");
     }
 
-    let store = PostgresPasskeyResetStore::connect(&database_url)
+    let store = PostgresAdminStore::connect(&database_url)
         .await
         .expect("connect store");
     let message = reset_passkeys(&store, &email)

@@ -9,11 +9,11 @@ use uuid::Uuid;
 
 use crate::{PasskeyResetStore, TrialCodeRecord, TrialCodeStore, UserRecord};
 
-pub struct PostgresPasskeyResetStore {
+pub struct PostgresAdminStore {
     db: DatabaseConnection,
 }
 
-impl PostgresPasskeyResetStore {
+impl PostgresAdminStore {
     pub async fn connect(database_url: &str) -> Result<Self, sea_orm::DbErr> {
         let db = Database::connect(database_url).await?;
         Ok(Self { db })
@@ -21,7 +21,7 @@ impl PostgresPasskeyResetStore {
 }
 
 #[async_trait]
-impl PasskeyResetStore for PostgresPasskeyResetStore {
+impl PasskeyResetStore for PostgresAdminStore {
     async fn find_user_by_identifier(
         &self,
         identifier: &str,
@@ -64,7 +64,7 @@ impl PasskeyResetStore for PostgresPasskeyResetStore {
 }
 
 #[async_trait]
-impl TrialCodeStore for PostgresPasskeyResetStore {
+impl TrialCodeStore for PostgresAdminStore {
     async fn insert_trial_code(&self, record: TrialCodeRecord) -> Result<(), anyhow::Error> {
         trial_codes::Entity::insert(trial_codes::ActiveModel {
             id: Set(record.id),
