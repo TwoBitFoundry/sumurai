@@ -6,6 +6,7 @@ use crate::models::{
     analytics::{CategoryAggregate, MonthlyCashFlowAggregate},
     auth::{User, WebAuthnCredential},
     auto_categorization_job::TransactionCategoryUpdate,
+    billing::{BillingEntitlement, BillingProfile, PaddleWebhookEvent},
     budget::Budget,
     custom_category::CustomCategory,
     plaid::{LatestAccountBalance, PlaidCredentials, ProviderConnection},
@@ -26,9 +27,10 @@ use anyhow::Result;
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use entity::{
-    accounts, budgets, merchant_aliases, provider_connections, provider_credentials,
-    simplefin_hidden_orgs, simplefin_root_credentials, transaction_category_overrides,
-    transactions, user_custom_categories, users, webauthn_credentials,
+    accounts, billing_entitlements, billing_profiles, budgets, merchant_aliases,
+    paddle_webhook_events, provider_connections, provider_credentials, simplefin_hidden_orgs,
+    simplefin_root_credentials, transaction_category_overrides, transactions,
+    user_custom_categories, users, webauthn_credentials,
 };
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -453,6 +455,19 @@ pub trait DatabaseRepository: Send + Sync {
         &self,
         user_id: &Uuid,
     ) -> Result<Vec<crate::models::subscription::FixedExpenseSummary>>;
+
+    async fn upsert_billing_profile(&self, profile: &BillingProfile) -> Result<()>;
+    async fn get_billing_profile(&self, user_id: &Uuid) -> Result<Option<BillingProfile>>;
+    async fn upsert_billing_entitlement(&self, entitlement: &BillingEntitlement) -> Result<()>;
+    async fn get_billing_entitlement(&self, user_id: &Uuid) -> Result<Option<BillingEntitlement>>;
+    async fn record_paddle_webhook_event(&self, event: &PaddleWebhookEvent) -> Result<()>;
+    async fn record_paddle_webhook_event_if_new(&self, event: &PaddleWebhookEvent) -> Result<bool>;
+    async fn get_paddle_webhook_event(&self, event_id: &str) -> Result<Option<PaddleWebhookEvent>>;
+    async fn mark_paddle_webhook_event_processed(
+        &self,
+        event_id: &str,
+        processed_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<()>;
 }
 
 pub struct PostgresRepository {
@@ -577,6 +592,91 @@ impl PostgresRepository {
         dt: Option<chrono::DateTime<chrono::Utc>>,
     ) -> Option<chrono::DateTime<chrono::FixedOffset>> {
         dt.map(Self::to_db_time)
+    }
+
+    fn from_db_time(dt: chrono::DateTime<chrono::FixedOffset>) -> chrono::DateTime<chrono::Utc> {
+        dt.with_timezone(&chrono::Utc)
+    }
+
+    fn opt_from_db_time(
+        dt: Option<chrono::DateTime<chrono::FixedOffset>>,
+    ) -> Option<chrono::DateTime<chrono::Utc>> {
+        dt.map(Self::from_db_time)
+    }
+
+    async fn insert_paddle_webhook_event_on<C>(db: &C, event: PaddleWebhookEvent) -> Result<bool>
+    where
+        C: ConnectionTrait,
+    {
+        let result = paddle_webhook_events::Entity::insert(paddle_webhook_events::ActiveModel {
+            event_id: Set(event.event_id),
+            event_type: Set(event.event_type),
+            occurred_at: Set(Self::to_db_time(event.occurred_at)),
+            processed_at: Set(Self::to_db_time(event.processed_at)),
+            processing_status: Set(event.processing_status),
+            related_user_id: Set(event.related_user_id),
+            related_subscription_id: Set(event.related_subscription_id),
+            error_code: Set(event.error_code),
+            created_at: Set(Self::to_db_time(event.created_at)),
+        })
+        .on_conflict(
+            OnConflict::column(paddle_webhook_events::Column::EventId)
+                .do_nothing()
+                .to_owned(),
+        )
+        .exec_without_returning(db)
+        .await?;
+        Ok(result > 0)
+    }
+
+    fn paddle_webhook_event_from_model(row: paddle_webhook_events::Model) -> PaddleWebhookEvent {
+        PaddleWebhookEvent {
+            event_id: row.event_id,
+            event_type: row.event_type,
+            occurred_at: Self::from_db_time(row.occurred_at),
+            processed_at: Self::from_db_time(row.processed_at),
+            processing_status: row.processing_status,
+            related_user_id: row.related_user_id,
+            related_subscription_id: row.related_subscription_id,
+            error_code: row.error_code,
+            created_at: Self::from_db_time(row.created_at),
+        }
+    }
+
+    async fn get_paddle_webhook_event_on<C>(
+        db: &C,
+        event_id: &str,
+    ) -> Result<Option<PaddleWebhookEvent>>
+    where
+        C: ConnectionTrait,
+    {
+        let row = paddle_webhook_events::Entity::find_by_id(event_id)
+            .one(db)
+            .await?;
+        Ok(row.map(Self::paddle_webhook_event_from_model))
+    }
+
+    async fn mark_paddle_webhook_event_processed_on<C>(
+        db: &C,
+        event_id: &str,
+        processed_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<()>
+    where
+        C: ConnectionTrait,
+    {
+        paddle_webhook_events::Entity::update_many()
+            .col_expr(
+                paddle_webhook_events::Column::ProcessingStatus,
+                Expr::value("processed"),
+            )
+            .col_expr(
+                paddle_webhook_events::Column::ProcessedAt,
+                Expr::value(Self::to_db_time(processed_at)),
+            )
+            .filter(paddle_webhook_events::Column::EventId.eq(event_id))
+            .exec(db)
+            .await?;
+        Ok(())
     }
 
     async fn with_tenant<T>(
@@ -3784,5 +3884,196 @@ impl DatabaseRepository for PostgresRepository {
         }
 
         Ok(summaries)
+    }
+
+    async fn upsert_billing_profile(&self, profile: &BillingProfile) -> Result<()> {
+        let profile = profile.clone();
+        self.with_tenant(&profile.user_id, move |txn| {
+            Box::pin(async move {
+                billing_profiles::Entity::insert(billing_profiles::ActiveModel {
+                    user_id: Set(profile.user_id),
+                    paddle_customer_id: Set(profile.paddle_customer_id),
+                    paddle_address_id: Set(profile.paddle_address_id),
+                    billing_country_code: Set(profile.billing_country_code),
+                    billing_postal_code: Set(profile.billing_postal_code),
+                    created_at: Set(Self::to_db_time(profile.created_at)),
+                    updated_at: Set(Self::to_db_time(profile.updated_at)),
+                })
+                .on_conflict(
+                    OnConflict::column(billing_profiles::Column::UserId)
+                        .update_columns([
+                            billing_profiles::Column::PaddleCustomerId,
+                            billing_profiles::Column::PaddleAddressId,
+                            billing_profiles::Column::BillingCountryCode,
+                            billing_profiles::Column::BillingPostalCode,
+                            billing_profiles::Column::UpdatedAt,
+                        ])
+                        .to_owned(),
+                )
+                .exec(txn)
+                .await?;
+                Ok(())
+            })
+        })
+        .await
+    }
+
+    async fn get_billing_profile(&self, user_id: &Uuid) -> Result<Option<BillingProfile>> {
+        let user_id = *user_id;
+        let row = self
+            .with_tenant(&user_id, move |txn| {
+                Box::pin(async move {
+                    Ok(billing_profiles::Entity::find_by_id(user_id)
+                        .one(txn)
+                        .await?)
+                })
+            })
+            .await?;
+
+        Ok(row.map(|row| BillingProfile {
+            user_id: row.user_id,
+            paddle_customer_id: row.paddle_customer_id,
+            paddle_address_id: row.paddle_address_id,
+            billing_country_code: row.billing_country_code,
+            billing_postal_code: row.billing_postal_code,
+            created_at: Self::from_db_time(row.created_at),
+            updated_at: Self::from_db_time(row.updated_at),
+        }))
+    }
+
+    async fn upsert_billing_entitlement(&self, entitlement: &BillingEntitlement) -> Result<()> {
+        let entitlement = entitlement.clone();
+        self.with_tenant(&entitlement.user_id, move |txn| {
+            Box::pin(async move {
+                billing_entitlements::Entity::insert(billing_entitlements::ActiveModel {
+                    user_id: Set(entitlement.user_id),
+                    access_status: Set(entitlement.access_status),
+                    source: Set(entitlement.source),
+                    paddle_subscription_id: Set(entitlement.paddle_subscription_id),
+                    paddle_customer_id: Set(entitlement.paddle_customer_id),
+                    paddle_price_id: Set(entitlement.paddle_price_id),
+                    trial_ends_at: Set(Self::opt_to_db_time(entitlement.trial_ends_at)),
+                    current_period_ends_at: Set(Self::opt_to_db_time(
+                        entitlement.current_period_ends_at,
+                    )),
+                    canceled_at: Set(Self::opt_to_db_time(entitlement.canceled_at)),
+                    last_event_at: Set(Self::opt_to_db_time(entitlement.last_event_at)),
+                    payment_method_required: Set(entitlement.payment_method_required),
+                    created_at: Set(Self::to_db_time(entitlement.created_at)),
+                    updated_at: Set(Self::to_db_time(entitlement.updated_at)),
+                })
+                .on_conflict(
+                    OnConflict::column(billing_entitlements::Column::UserId)
+                        .update_columns([
+                            billing_entitlements::Column::AccessStatus,
+                            billing_entitlements::Column::Source,
+                            billing_entitlements::Column::PaddleSubscriptionId,
+                            billing_entitlements::Column::PaddleCustomerId,
+                            billing_entitlements::Column::PaddlePriceId,
+                            billing_entitlements::Column::TrialEndsAt,
+                            billing_entitlements::Column::CurrentPeriodEndsAt,
+                            billing_entitlements::Column::CanceledAt,
+                            billing_entitlements::Column::LastEventAt,
+                            billing_entitlements::Column::PaymentMethodRequired,
+                            billing_entitlements::Column::UpdatedAt,
+                        ])
+                        .to_owned(),
+                )
+                .exec(txn)
+                .await?;
+                Ok(())
+            })
+        })
+        .await
+    }
+
+    async fn get_billing_entitlement(&self, user_id: &Uuid) -> Result<Option<BillingEntitlement>> {
+        let user_id = *user_id;
+        let row = self
+            .with_tenant(&user_id, move |txn| {
+                Box::pin(async move {
+                    Ok(billing_entitlements::Entity::find_by_id(user_id)
+                        .one(txn)
+                        .await?)
+                })
+            })
+            .await?;
+
+        Ok(row.map(|row| BillingEntitlement {
+            user_id: row.user_id,
+            access_status: row.access_status,
+            source: row.source,
+            paddle_subscription_id: row.paddle_subscription_id,
+            paddle_customer_id: row.paddle_customer_id,
+            paddle_price_id: row.paddle_price_id,
+            trial_ends_at: Self::opt_from_db_time(row.trial_ends_at),
+            current_period_ends_at: Self::opt_from_db_time(row.current_period_ends_at),
+            canceled_at: Self::opt_from_db_time(row.canceled_at),
+            last_event_at: Self::opt_from_db_time(row.last_event_at),
+            payment_method_required: row.payment_method_required,
+            created_at: Self::from_db_time(row.created_at),
+            updated_at: Self::from_db_time(row.updated_at),
+        }))
+    }
+
+    async fn record_paddle_webhook_event(&self, event: &PaddleWebhookEvent) -> Result<()> {
+        let _ = self.record_paddle_webhook_event_if_new(event).await?;
+        Ok(())
+    }
+
+    async fn record_paddle_webhook_event_if_new(&self, event: &PaddleWebhookEvent) -> Result<bool> {
+        let event = event.clone();
+        #[cfg(test)]
+        if let Some(db) = &self.mock_db {
+            return Self::insert_paddle_webhook_event_on(db, event).await;
+        }
+        #[cfg(not(test))]
+        {
+            let db = self.conn();
+            return Self::insert_paddle_webhook_event_on(&db, event).await;
+        }
+        #[cfg(test)]
+        {
+            let db = self.conn();
+            Self::insert_paddle_webhook_event_on(&db, event).await
+        }
+    }
+
+    async fn get_paddle_webhook_event(&self, event_id: &str) -> Result<Option<PaddleWebhookEvent>> {
+        #[cfg(test)]
+        if let Some(db) = &self.mock_db {
+            return Self::get_paddle_webhook_event_on(db, event_id).await;
+        }
+        #[cfg(not(test))]
+        {
+            let db = self.conn();
+            return Self::get_paddle_webhook_event_on(&db, event_id).await;
+        }
+        #[cfg(test)]
+        {
+            let db = self.conn();
+            Self::get_paddle_webhook_event_on(&db, event_id).await
+        }
+    }
+
+    async fn mark_paddle_webhook_event_processed(
+        &self,
+        event_id: &str,
+        processed_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<()> {
+        #[cfg(test)]
+        if let Some(db) = &self.mock_db {
+            return Self::mark_paddle_webhook_event_processed_on(db, event_id, processed_at).await;
+        }
+        #[cfg(not(test))]
+        {
+            let db = self.conn();
+            return Self::mark_paddle_webhook_event_processed_on(&db, event_id, processed_at).await;
+        }
+        #[cfg(test)]
+        {
+            let db = self.conn();
+            Self::mark_paddle_webhook_event_processed_on(&db, event_id, processed_at).await
+        }
     }
 }

@@ -8,35 +8,35 @@ pub struct Entity;
 
 impl EntityName for Entity {
     fn table_name(&self) -> &str {
-        "webauthn_credentials"
+        "billing_profiles"
     }
 }
 
 #[derive(Clone, Debug, PartialEq, DeriveModel, DeriveActiveModel, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub id: Uuid,
     pub user_id: Uuid,
-    pub credential_id: Vec<u8>,
-    pub passkey: Json,
-    pub name: String,
+    pub paddle_customer_id: Option<String>,
+    pub paddle_address_id: Option<String>,
+    pub billing_country_code: Option<String>,
+    pub billing_postal_code: Option<String>,
     pub created_at: DateTimeWithTimeZone,
-    pub last_used_at: Option<DateTimeWithTimeZone>,
+    pub updated_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
 pub enum Column {
-    Id,
     UserId,
-    CredentialId,
-    Passkey,
-    Name,
+    PaddleCustomerId,
+    PaddleAddressId,
+    BillingCountryCode,
+    BillingPostalCode,
     CreatedAt,
-    LastUsedAt,
+    UpdatedAt,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DerivePrimaryKey)]
 pub enum PrimaryKey {
-    Id,
+    UserId,
 }
 
 impl PrimaryKeyTrait for PrimaryKey {
@@ -55,13 +55,13 @@ impl ColumnTrait for Column {
     type EntityName = Entity;
     fn def(&self) -> ColumnDef {
         match self {
-            Self::Id => ColumnType::Uuid.def(),
             Self::UserId => ColumnType::Uuid.def(),
-            Self::CredentialId => ColumnType::VarBinary(StringLen::None).def().unique(),
-            Self::Passkey => ColumnType::JsonBinary.def(),
-            Self::Name => ColumnType::Text.def(),
+            Self::PaddleCustomerId => ColumnType::Text.def().null().unique(),
+            Self::PaddleAddressId => ColumnType::Text.def().null(),
+            Self::BillingCountryCode => ColumnType::Text.def().null(),
+            Self::BillingPostalCode => ColumnType::Text.def().null(),
             Self::CreatedAt => ColumnType::TimestampWithTimeZone.def(),
-            Self::LastUsedAt => ColumnType::TimestampWithTimeZone.def().null(),
+            Self::UpdatedAt => ColumnType::TimestampWithTimeZone.def(),
         }
     }
 }

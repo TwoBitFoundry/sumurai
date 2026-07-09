@@ -3,6 +3,7 @@ use crate::db;
 use crate::models::{
     account::Account,
     auth::User,
+    billing::{BillingEntitlement, BillingProfile, PaddleWebhookEvent},
     transaction::{InsightState, Transaction},
 };
 use crate::services::repository_service::{DatabaseRepository, PostgresRepository};
@@ -101,6 +102,171 @@ fn create_test_transaction(
         normalized_merchant: None,
         normalization_source: None,
     }
+}
+
+#[tokio::test]
+async fn given_billing_entitlement_when_upserting_then_statement_is_tenant_scoped() {
+    let user_id = Uuid::new_v4();
+    let key = parse_encryption_key_hex(
+        "0101010101010101010101010101010101010101010101010101010101010101",
+    )
+    .expect("test encryption key must be valid hex");
+    let db = MockDatabase::new(DbBackend::Postgres)
+        .append_exec_results([
+            MockExecResult {
+                rows_affected: 0,
+                ..Default::default()
+            },
+            MockExecResult {
+                rows_affected: 1,
+                ..Default::default()
+            },
+        ])
+        .into_connection();
+    let repo = PostgresRepository::from_mock(db, key);
+    let entitlement = BillingEntitlement {
+        user_id,
+        access_status: "active".to_string(),
+        source: "paddle".to_string(),
+        paddle_subscription_id: Some("sub_123".to_string()),
+        paddle_customer_id: Some("ctm_123".to_string()),
+        paddle_price_id: Some("pri_123".to_string()),
+        trial_ends_at: None,
+        current_period_ends_at: Some(Utc::now()),
+        canceled_at: None,
+        last_event_at: Some(Utc::now()),
+        payment_method_required: false,
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+    };
+
+    repo.upsert_billing_entitlement(&entitlement).await.unwrap();
+
+    let log = repo.into_mock_transaction_log();
+    let stmts = log[0].statements();
+    assert_eq!(stmts[1], tenant_set_config_statement(user_id));
+    let insert_sql = format!("{:?}", &stmts[2]);
+    assert!(insert_sql.contains("billing_entitlements"));
+    assert!(insert_sql.contains("paddle_subscription_id"));
+    assert!(insert_sql.contains("ON CONFLICT"));
+}
+
+#[tokio::test]
+async fn given_billing_profile_when_upserting_then_statement_is_tenant_scoped() {
+    let user_id = Uuid::new_v4();
+    let key = parse_encryption_key_hex(
+        "0101010101010101010101010101010101010101010101010101010101010101",
+    )
+    .expect("test encryption key must be valid hex");
+    let db = MockDatabase::new(DbBackend::Postgres)
+        .append_exec_results([
+            MockExecResult {
+                rows_affected: 0,
+                ..Default::default()
+            },
+            MockExecResult {
+                rows_affected: 1,
+                ..Default::default()
+            },
+        ])
+        .into_connection();
+    let repo = PostgresRepository::from_mock(db, key);
+    let profile = BillingProfile {
+        user_id,
+        paddle_customer_id: Some("ctm_123".to_string()),
+        paddle_address_id: Some("add_123".to_string()),
+        billing_country_code: Some("US".to_string()),
+        billing_postal_code: Some("78701".to_string()),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+    };
+
+    repo.upsert_billing_profile(&profile).await.unwrap();
+
+    let log = repo.into_mock_transaction_log();
+    let stmts = log[0].statements();
+    assert_eq!(stmts[1], tenant_set_config_statement(user_id));
+    let insert_sql = format!("{:?}", &stmts[2]);
+    assert!(insert_sql.contains("billing_profiles"));
+    assert!(insert_sql.contains("paddle_customer_id"));
+    assert!(insert_sql.contains("ON CONFLICT"));
+}
+
+#[tokio::test]
+async fn given_paddle_webhook_event_when_recording_then_event_id_is_idempotency_key() {
+    let key = parse_encryption_key_hex(
+        "0101010101010101010101010101010101010101010101010101010101010101",
+    )
+    .expect("test encryption key must be valid hex");
+    let db = MockDatabase::new(DbBackend::Postgres)
+        .append_exec_results([MockExecResult {
+            rows_affected: 1,
+            ..Default::default()
+        }])
+        .into_connection();
+    let repo = PostgresRepository::from_mock(db, key);
+    let event = PaddleWebhookEvent {
+        event_id: "evt_123".to_string(),
+        event_type: "subscription.created".to_string(),
+        occurred_at: Utc::now(),
+        processed_at: Utc::now(),
+        processing_status: "processed".to_string(),
+        related_user_id: Some(Uuid::new_v4()),
+        related_subscription_id: Some("sub_123".to_string()),
+        error_code: None,
+        created_at: Utc::now(),
+    };
+
+    repo.record_paddle_webhook_event(&event).await.unwrap();
+
+    let log = repo.into_mock_transaction_log();
+    let insert_sql = format!("{:?}", &log[0]);
+    assert!(insert_sql.contains("paddle_webhook_events"));
+    assert!(insert_sql.contains("event_id"));
+    assert!(insert_sql.contains("processing_status"));
+    assert!(!insert_sql.contains("payload"));
+    assert!(insert_sql.contains("DO NOTHING"));
+}
+
+#[tokio::test]
+async fn given_duplicate_paddle_webhook_event_when_recording_if_new_then_returns_false() {
+    let key = parse_encryption_key_hex(
+        "0101010101010101010101010101010101010101010101010101010101010101",
+    )
+    .expect("test encryption key must be valid hex");
+    let db = MockDatabase::new(DbBackend::Postgres)
+        .append_exec_results([
+            MockExecResult {
+                rows_affected: 1,
+                ..Default::default()
+            },
+            MockExecResult {
+                rows_affected: 0,
+                ..Default::default()
+            },
+        ])
+        .into_connection();
+    let repo = PostgresRepository::from_mock(db, key);
+    let event = PaddleWebhookEvent {
+        event_id: "evt_123".to_string(),
+        event_type: "subscription.created".to_string(),
+        occurred_at: Utc::now(),
+        processed_at: Utc::now(),
+        processing_status: "processed".to_string(),
+        related_user_id: Some(Uuid::new_v4()),
+        related_subscription_id: Some("sub_123".to_string()),
+        error_code: None,
+        created_at: Utc::now(),
+    };
+
+    assert!(repo
+        .record_paddle_webhook_event_if_new(&event)
+        .await
+        .unwrap());
+    assert!(!repo
+        .record_paddle_webhook_event_if_new(&event)
+        .await
+        .unwrap());
 }
 
 #[tokio::test]

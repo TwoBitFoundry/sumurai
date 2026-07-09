@@ -28,8 +28,8 @@ pub struct Model {
     pub pending: Option<bool>,
     pub created_at: Option<DateTimeWithTimeZone>,
     pub user_id: Option<Uuid>,
-    pub normalized_merchant: Option<String>,
     pub original_merchant_name: Option<String>,
+    pub normalized_merchant: Option<String>,
     pub normalization_source: Option<String>,
 }
 
@@ -48,8 +48,8 @@ pub enum Column {
     Pending,
     CreatedAt,
     UserId,
-    NormalizedMerchant,
     OriginalMerchantName,
+    NormalizedMerchant,
     NormalizationSource,
 }
 
@@ -89,8 +89,8 @@ impl ColumnTrait for Column {
             Self::Pending => ColumnType::Boolean.def().null(),
             Self::CreatedAt => ColumnType::TimestampWithTimeZone.def().null(),
             Self::UserId => ColumnType::Uuid.def().null(),
-            Self::NormalizedMerchant => ColumnType::Text.def().null(),
             Self::OriginalMerchantName => ColumnType::String(StringLen::None).def().null(),
+            Self::NormalizedMerchant => ColumnType::Text.def().null(),
             Self::NormalizationSource => ColumnType::Text.def().null(),
         }
     }

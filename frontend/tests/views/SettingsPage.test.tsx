@@ -55,4 +55,30 @@ describe('SettingsPage', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Light' }));
     expect(setPreference).toHaveBeenCalledWith('light');
   });
+
+  it('does not render paddle billing or subscription controls', () => {
+    jest.mocked(useTheme).mockReturnValue({
+      preference: 'system',
+      mode: 'dark',
+      setPreference: jest.fn(),
+      setMode: jest.fn(),
+      toggle: jest.fn(),
+      colors: {} as any,
+    } as any);
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ControlTooltipProvider>
+          <SettingsPage />
+        </ControlTooltipProvider>
+      </QueryClientProvider>
+    );
+
+    expect(screen.queryByRole('heading', { name: 'Billing' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Upgrade' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add payment method' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Manage billing' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Trial code')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /redeem trial/i })).not.toBeInTheDocument();
+  });
 });

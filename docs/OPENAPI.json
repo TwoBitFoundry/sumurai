@@ -138,6 +138,85 @@
         ]
       }
     },
+    "/api/analytics/cash-flow": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Produces a timeline of monthly income, expenses, and net savings for dashboard charts.",
+        "operationId": "get_authenticated_cash_flow",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "Start date in YYYY-MM-DD format",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "End date in YYYY-MM-DD format",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account_ids",
+            "in": "query",
+            "description": "Include only these account IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "exclude_account_ids",
+            "in": "query",
+            "description": "Exclude these account IDs (ignored when account_ids is set)",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Monthly cash flow data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashFlowResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid date range"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
     "/api/analytics/categories": {
       "get": {
         "tags": [
@@ -254,6 +333,64 @@
         ]
       }
     },
+    "/api/analytics/date-bounds": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Returns the earliest available transaction date in the active account scope and today's date as the maximum supported dashboard date.",
+        "operationId": "get_authenticated_date_bounds",
+        "parameters": [
+          {
+            "name": "account_ids",
+            "in": "query",
+            "description": "Include only these account IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "exclude_account_ids",
+            "in": "query",
+            "description": "Exclude these account IDs (ignored when account_ids is set)",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Available date bounds for dashboard analytics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DateBoundsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
     "/api/analytics/income-expense-totals": {
       "get": {
         "tags": [
@@ -327,19 +464,39 @@
         "operationId": "get_authenticated_monthly_totals",
         "parameters": [
           {
-            "name": "months",
+            "name": "start_date",
             "in": "query",
-            "description": "Number of months to retrieve (default: 6)",
-            "required": false,
+            "description": "Start date in YYYY-MM-DD format",
+            "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "End date in YYYY-MM-DD format",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
           },
           {
             "name": "account_ids",
             "in": "query",
             "description": "Filter by account IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "exclude_account_ids",
+            "in": "query",
+            "description": "Exclude these account IDs (ignored when account_ids is set)",
             "required": false,
             "schema": {
               "type": "array",
@@ -362,6 +519,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid date range"
           },
           "401": {
             "description": "Unauthorized"
@@ -815,6 +975,45 @@
         "responses": {
           "200": {
             "description": "Onboarding completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingCompleteResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/auth/onboarding/demo": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "description": "Seeds the shared demo workspace for the authenticated user and marks onboarding complete.",
+        "operationId": "activate_demo_mode_onboarding",
+        "responses": {
+          "200": {
+            "description": "Demo mode activated",
             "content": {
               "application/json": {
                 "schema": {
@@ -1342,6 +1541,349 @@
         }
       }
     },
+    "/api/billing/checkout": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "operationId": "create_billing_checkout",
+        "responses": {
+          "200": {
+            "description": "Paddle checkout created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingCheckoutResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Billing disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Paddle request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/billing/payment-method": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "operationId": "create_billing_payment_method",
+        "responses": {
+          "200": {
+            "description": "Payment method checkout transaction created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingCheckoutResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Billing disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Entitlement unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Paddle request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/billing/portal-session": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "operationId": "create_billing_portal_session",
+        "responses": {
+          "200": {
+            "description": "Billing portal session created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingPortalSessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Billing disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Entitlement unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Paddle request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/billing/status": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "operationId": "get_authenticated_billing_status",
+        "responses": {
+          "200": {
+            "description": "Billing status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingStatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/billing/trials/start": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "operationId": "start_open_trial",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrialStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Open trial start pending webhook fulfillment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrialStartResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid trial start",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Billing or trials disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Trial already used",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Paddle request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/billing/webhooks/paddle": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "operationId": "handle_paddle_billing_webhook",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook accepted"
+          },
+          "400": {
+            "description": "Invalid webhook",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Billing disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/budgets": {
       "get": {
         "tags": [
@@ -1422,6 +1964,16 @@
           },
           "401": {
             "description": "Unauthorized"
+          },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
           },
           "409": {
             "description": "Budget category already exists",
@@ -1689,6 +2241,16 @@
               }
             }
           },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -1724,6 +2286,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Paid access required",
             "content": {
               "application/json": {
                 "schema": {
@@ -1783,6 +2355,16 @@
           },
           "401": {
             "description": "Unauthorized"
+          },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
           },
           "500": {
             "description": "Internal server error",
@@ -2118,6 +2700,16 @@
           "401": {
             "description": "Unauthorized"
           },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error"
           },
@@ -2166,6 +2758,16 @@
           "401": {
             "description": "Unauthorized"
           },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Failed to create link token"
           }
@@ -2210,6 +2812,16 @@
           },
           "401": {
             "description": "Unauthorized"
+          },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
           },
           "500": {
             "description": "Failed to connect provider",
@@ -2352,6 +2964,16 @@
           },
           "401": {
             "description": "Unauthorized"
+          },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
           },
           "409": {
             "description": "Cannot switch while active connections exist",
@@ -2521,6 +3143,16 @@
           },
           "401": {
             "description": "Unauthorized"
+          },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
           },
           "404": {
             "description": "Connection not found or credentials missing"
@@ -2738,6 +3370,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Paid access required",
             "content": {
               "application/json": {
                 "schema": {
@@ -2973,6 +3615,16 @@
               }
             }
           },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Account belongs to another user"
           },
@@ -3198,6 +3850,16 @@
               }
             }
           },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Transaction not found"
           },
@@ -3352,9 +4014,13 @@
           "email",
           "expires_at",
           "onboarding_completed",
+          "demo_mode_active",
           "requires_passkey_enrollment"
         ],
         "properties": {
+          "demo_mode_active": {
+            "type": "boolean"
+          },
           "email": {
             "type": "string"
           },
@@ -3372,6 +4038,7 @@
           }
         },
         "example": {
+          "demo_mode_active": false,
           "email": "user@example.com",
           "expires_at": "2024-01-01T12:00:00Z",
           "onboarding_completed": false,
@@ -3540,6 +4207,95 @@
           "net": "6300.00",
           "positives_total": "7500.00",
           "ratio": "1.40"
+        }
+      },
+      "BillingCheckoutResponse": {
+        "type": "object",
+        "required": [
+          "checkout_url",
+          "transaction_id"
+        ],
+        "properties": {
+          "checkout_url": {
+            "type": "string"
+          },
+          "transaction_id": {
+            "type": "string"
+          }
+        }
+      },
+      "BillingPortalSessionResponse": {
+        "type": "object",
+        "required": [
+          "overview_url",
+          "subscription_urls"
+        ],
+        "properties": {
+          "overview_url": {
+            "type": "string"
+          },
+          "subscription_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "BillingStatusResponse": {
+        "type": "object",
+        "required": [
+          "billing_enabled",
+          "trials_enabled",
+          "access_status",
+          "can_use_own_data",
+          "is_demo_mode_active",
+          "payment_method_required",
+          "billing_portal_available",
+          "enabled_financial_providers"
+        ],
+        "properties": {
+          "access_status": {
+            "type": "string"
+          },
+          "billing_enabled": {
+            "type": "boolean"
+          },
+          "billing_portal_available": {
+            "type": "boolean"
+          },
+          "can_use_own_data": {
+            "type": "boolean"
+          },
+          "current_period_ends_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "enabled_financial_providers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "is_demo_mode_active": {
+            "type": "boolean"
+          },
+          "payment_method_required": {
+            "type": "boolean"
+          },
+          "trial_ends_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "trials_enabled": {
+            "type": "boolean"
+          }
         }
       },
       "Budget": {
@@ -3846,7 +4602,7 @@
           }
         },
         "example": {
-          "account_type": "checking",
+          "account_type": "depository",
           "balance": "1000.00",
           "mask": "1234",
           "name": "My Checking"
@@ -3872,7 +4628,7 @@
           }
         },
         "example": {
-          "account_type": "checking",
+          "account_type": "depository",
           "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
           "name": "My Checking"
         }
@@ -4077,6 +4833,27 @@
             "user123_bank_connection"
           ],
           "transactions": 25
+        }
+      },
+      "DateBoundsResponse": {
+        "type": "object",
+        "properties": {
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "example": {
+          "end_date": "2026-06-21",
+          "start_date": "2021-04-09"
         }
       },
       "DateRangeQueryParams": {
@@ -4648,38 +5425,6 @@
           "total": "1250.40"
         }
       },
-      "MonthlyTotalsQueryParams": {
-        "type": "object",
-        "properties": {
-          "account_ids": {
-            "type": [
-              "array",
-              "null"
-            ],
-            "items": {
-              "type": "string"
-            }
-          },
-          "exclude_account_ids": {
-            "type": [
-              "array",
-              "null"
-            ],
-            "items": {
-              "type": "string"
-            }
-          },
-          "months": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "example": 6,
-            "minimum": 0
-          }
-        }
-      },
       "NetWorthOverTimeResponse": {
         "type": "object",
         "required": [
@@ -4734,9 +5479,13 @@
         "type": "object",
         "required": [
           "message",
-          "onboarding_completed"
+          "onboarding_completed",
+          "demo_mode_active"
         ],
         "properties": {
+          "demo_mode_active": {
+            "type": "boolean"
+          },
           "message": {
             "type": "string"
           },
@@ -4745,6 +5494,7 @@
           }
         },
         "example": {
+          "demo_mode_active": false,
           "message": "Onboarding completed successfully",
           "onboarding_completed": true
         }
@@ -4967,6 +5717,7 @@
         "type": "object",
         "required": [
           "is_connected",
+          "provider",
           "transaction_count",
           "account_count",
           "sync_in_progress"
@@ -5002,6 +5753,9 @@
               "string",
               "null"
             ]
+          },
+          "provider": {
+            "type": "string"
           },
           "sync_in_progress": {
             "type": "boolean"
@@ -5980,6 +6734,32 @@
               "null"
             ],
             "example": "coffee"
+          }
+        }
+      },
+      "TrialStartRequest": {
+        "type": "object",
+        "required": [
+          "country_code",
+          "postal_code"
+        ],
+        "properties": {
+          "country_code": {
+            "type": "string"
+          },
+          "postal_code": {
+            "type": "string"
+          }
+        }
+      },
+      "TrialStartResponse": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string"
           }
         }
       },

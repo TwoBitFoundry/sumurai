@@ -65,6 +65,144 @@ fn given_minimal_env_when_from_env_provider_then_loads_successfully() {
 }
 
 #[test]
+fn given_minimal_env_when_from_env_provider_then_billing_is_disabled() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
+
+    let config = Config::from_env_provider(&env).unwrap();
+
+    assert!(!config.is_billing_enabled());
+    assert!(config.enabled_financial_providers().is_none());
+}
+
+#[test]
+fn given_paddle_billing_without_required_settings_when_from_env_provider_then_returns_error() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
+    env.set("BILLING_MODE", "paddle");
+
+    let result = Config::from_env_provider(&env);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn given_paddle_billing_with_required_settings_when_from_env_provider_then_billing_is_enabled() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
+    env.set("BILLING_MODE", "paddle");
+    env.set("PADDLE_ENVIRONMENT", "sandbox");
+    env.set("PADDLE_API_KEY", "test-api-key");
+    env.set("PADDLE_WEBHOOK_SECRET", "test-webhook-secret");
+    env.set("PADDLE_MONTHLY_PRICE_ID", "pri_monthly");
+    env.set("PADDLE_CARDLESS_TRIAL_PRICE_ID", "pri_trial");
+    env.set("BILLING_TRIALS_ENABLED", "true");
+
+    let config = Config::from_env_provider(&env).unwrap();
+    let paddle = config.paddle_billing().unwrap();
+
+    assert_eq!(config.billing_mode(), crate::config::BillingMode::Paddle);
+    assert!(config.is_billing_enabled());
+    assert!(config.is_trials_enabled());
+    assert_eq!(paddle.environment, "sandbox");
+    assert_eq!(paddle.api_key, "test-api-key");
+    assert_eq!(paddle.webhook_secret, "test-webhook-secret");
+    assert_eq!(paddle.monthly_price_id, "pri_monthly");
+    assert_eq!(paddle.cardless_trial_price_id.as_deref(), Some("pri_trial"));
+    assert!(paddle.trials_enabled);
+}
+
+#[test]
+fn given_paddle_billing_without_trials_flag_when_from_env_provider_then_trials_default_disabled() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
+    env.set("BILLING_MODE", "paddle");
+    env.set("PADDLE_ENVIRONMENT", "sandbox");
+    env.set("PADDLE_API_KEY", "test-api-key");
+    env.set("PADDLE_WEBHOOK_SECRET", "test-webhook-secret");
+    env.set("PADDLE_MONTHLY_PRICE_ID", "pri_monthly");
+
+    let config = Config::from_env_provider(&env).unwrap();
+    let paddle = config.paddle_billing().unwrap();
+
+    assert!(config.is_billing_enabled());
+    assert!(!config.is_trials_enabled());
+    assert!(paddle.cardless_trial_price_id.is_none());
+}
+
+#[test]
+fn given_paddle_trials_enabled_without_cardless_price_when_from_env_provider_then_returns_error() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
+    env.set("BILLING_MODE", "paddle");
+    env.set("PADDLE_ENVIRONMENT", "sandbox");
+    env.set("PADDLE_API_KEY", "test-api-key");
+    env.set("PADDLE_WEBHOOK_SECRET", "test-webhook-secret");
+    env.set("PADDLE_MONTHLY_PRICE_ID", "pri_monthly");
+    env.set("BILLING_TRIALS_ENABLED", "true");
+
+    let result = Config::from_env_provider(&env);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn given_provider_allowlist_when_from_env_provider_then_parses_providers() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
+    env.set("ENABLED_FINANCIAL_PROVIDERS", "diy,plaid");
+
+    let config = Config::from_env_provider(&env).unwrap();
+
+    assert_eq!(
+        config.enabled_financial_providers(),
+        Some(&["diy".to_string(), "plaid".to_string()][..])
+    );
+    assert!(config.is_financial_provider_enabled("diy"));
+    assert!(config.is_financial_provider_enabled("plaid"));
+    assert!(!config.is_financial_provider_enabled("simplefin"));
+}
+
+#[test]
+fn given_invalid_provider_allowlist_when_from_env_provider_then_returns_error() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
+    env.set("ENABLED_FINANCIAL_PROVIDERS", "diy,unknown");
+
+    let result = Config::from_env_provider(&env);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn given_compose_files_when_read_then_only_production_enables_paddle_billing() {
+    let production = include_str!("../../../docker-compose.prod.yml");
+    let default_compose = include_str!("../../../docker-compose.yml");
+    let development = include_str!("../../../docker-compose.dev.yml");
+
+    assert!(production.contains("BILLING_MODE: paddle"));
+    assert!(production.contains("ENABLED_FINANCIAL_PROVIDERS: diy,plaid"));
+    assert!(!default_compose.contains("BILLING_MODE"));
+    assert!(!development.contains("BILLING_MODE"));
+    assert!(!default_compose.contains("ENABLED_FINANCIAL_PROVIDERS"));
+    assert!(!development.contains("ENABLED_FINANCIAL_PROVIDERS"));
+}
+
+#[test]
 fn given_custom_database_url_when_from_env_provider_then_uses_custom_url() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "development");

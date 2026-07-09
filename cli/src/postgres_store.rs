@@ -8,11 +8,11 @@ use uuid::Uuid;
 
 use crate::{PasskeyResetStore, UserRecord};
 
-pub struct PostgresPasskeyResetStore {
+pub struct PostgresAdminStore {
     db: DatabaseConnection,
 }
 
-impl PostgresPasskeyResetStore {
+impl PostgresAdminStore {
     pub async fn connect(database_url: &str) -> Result<Self, sea_orm::DbErr> {
         let db = Database::connect(database_url).await?;
         Ok(Self { db })
@@ -20,7 +20,7 @@ impl PostgresPasskeyResetStore {
 }
 
 #[async_trait]
-impl PasskeyResetStore for PostgresPasskeyResetStore {
+impl PasskeyResetStore for PostgresAdminStore {
     async fn find_user_by_identifier(
         &self,
         identifier: &str,

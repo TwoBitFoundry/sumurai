@@ -1,4 +1,4 @@
-import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { expect, userEvent, waitFor, type within } from 'storybook/test';
 
 export const storyInteractionTimeoutMs = 15_000;
 

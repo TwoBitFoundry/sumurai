@@ -8,39 +8,43 @@ pub struct Entity;
 
 impl EntityName for Entity {
     fn table_name(&self) -> &str {
-        "webauthn_credentials"
+        "paddle_webhook_events"
     }
 }
 
 #[derive(Clone, Debug, PartialEq, DeriveModel, DeriveActiveModel, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub id: Uuid,
-    pub user_id: Uuid,
-    pub credential_id: Vec<u8>,
-    pub passkey: Json,
-    pub name: String,
+    pub event_id: String,
+    pub event_type: String,
+    pub occurred_at: DateTimeWithTimeZone,
+    pub processed_at: DateTimeWithTimeZone,
+    pub processing_status: String,
+    pub related_user_id: Option<Uuid>,
+    pub related_subscription_id: Option<String>,
+    pub error_code: Option<String>,
     pub created_at: DateTimeWithTimeZone,
-    pub last_used_at: Option<DateTimeWithTimeZone>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
 pub enum Column {
-    Id,
-    UserId,
-    CredentialId,
-    Passkey,
-    Name,
+    EventId,
+    EventType,
+    OccurredAt,
+    ProcessedAt,
+    ProcessingStatus,
+    RelatedUserId,
+    RelatedSubscriptionId,
+    ErrorCode,
     CreatedAt,
-    LastUsedAt,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DerivePrimaryKey)]
 pub enum PrimaryKey {
-    Id,
+    EventId,
 }
 
 impl PrimaryKeyTrait for PrimaryKey {
-    type ValueType = Uuid;
+    type ValueType = String;
     fn auto_increment() -> bool {
         false
     }
@@ -55,13 +59,15 @@ impl ColumnTrait for Column {
     type EntityName = Entity;
     fn def(&self) -> ColumnDef {
         match self {
-            Self::Id => ColumnType::Uuid.def(),
-            Self::UserId => ColumnType::Uuid.def(),
-            Self::CredentialId => ColumnType::VarBinary(StringLen::None).def().unique(),
-            Self::Passkey => ColumnType::JsonBinary.def(),
-            Self::Name => ColumnType::Text.def(),
+            Self::EventId => ColumnType::Text.def(),
+            Self::EventType => ColumnType::Text.def(),
+            Self::OccurredAt => ColumnType::TimestampWithTimeZone.def(),
+            Self::ProcessedAt => ColumnType::TimestampWithTimeZone.def(),
+            Self::ProcessingStatus => ColumnType::Text.def(),
+            Self::RelatedUserId => ColumnType::Uuid.def().null(),
+            Self::RelatedSubscriptionId => ColumnType::Text.def().null(),
+            Self::ErrorCode => ColumnType::Text.def().null(),
             Self::CreatedAt => ColumnType::TimestampWithTimeZone.def(),
-            Self::LastUsedAt => ColumnType::TimestampWithTimeZone.def().null(),
         }
     }
 }
@@ -70,7 +76,7 @@ impl RelationTrait for Relation {
     fn def(&self) -> RelationDef {
         match self {
             Self::Users => Entity::belongs_to(super::users::Entity)
-                .from(Column::UserId)
+                .from(Column::RelatedUserId)
                 .to(super::users::Column::Id)
                 .into(),
         }

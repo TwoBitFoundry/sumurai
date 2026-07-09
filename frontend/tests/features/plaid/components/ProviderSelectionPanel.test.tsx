@@ -270,4 +270,16 @@ describe('ProviderSelectionPanel', () => {
       expect(screen.getAllByText('Privacy details').length).toBeGreaterThan(1);
     });
   });
+
+  it('does not show paddle upgrade or trial-lock copy', () => {
+    renderPanel({
+      availableProviders: ['plaid', 'diy', 'simplefin', 'teller'],
+      tellerApplicationId: 'app-123',
+    });
+
+    expect(screen.queryByText('Paid access required')).not.toBeInTheDocument();
+    expect(screen.queryByText(/upgrade or redeem/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Upgrade' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /link account/i }).length).toBeGreaterThan(0);
+  });
 });

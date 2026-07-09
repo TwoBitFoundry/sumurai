@@ -20,8 +20,8 @@ pub struct Model {
     pub created_at: Option<DateTimeWithTimeZone>,
     pub updated_at: Option<DateTimeWithTimeZone>,
     pub onboarding_completed: bool,
-    pub demo_mode_active: bool,
     pub provider: String,
+    pub demo_mode_active: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
@@ -32,8 +32,8 @@ pub enum Column {
     CreatedAt,
     UpdatedAt,
     OnboardingCompleted,
-    DemoModeActive,
     Provider,
+    DemoModeActive,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DerivePrimaryKey)]
@@ -51,7 +51,10 @@ impl PrimaryKeyTrait for PrimaryKey {
 #[derive(Copy, Clone, Debug, EnumIter)]
 pub enum Relation {
     Accounts,
+    BillingEntitlements,
+    BillingProfiles,
     Budgets,
+    PaddleWebhookEvents,
     ProviderConnections,
     ProviderCredentials,
     SimplefinHiddenOrgs,
@@ -72,8 +75,8 @@ impl ColumnTrait for Column {
             Self::CreatedAt => ColumnType::TimestampWithTimeZone.def().null(),
             Self::UpdatedAt => ColumnType::TimestampWithTimeZone.def().null(),
             Self::OnboardingCompleted => ColumnType::Boolean.def(),
-            Self::DemoModeActive => ColumnType::Boolean.def(),
             Self::Provider => ColumnType::String(StringLen::N(20u32)).def(),
+            Self::DemoModeActive => ColumnType::Boolean.def(),
         }
     }
 }
@@ -82,7 +85,14 @@ impl RelationTrait for Relation {
     fn def(&self) -> RelationDef {
         match self {
             Self::Accounts => Entity::has_many(super::accounts::Entity).into(),
+            Self::BillingEntitlements => {
+                Entity::has_one(super::billing_entitlements::Entity).into()
+            }
+            Self::BillingProfiles => Entity::has_one(super::billing_profiles::Entity).into(),
             Self::Budgets => Entity::has_many(super::budgets::Entity).into(),
+            Self::PaddleWebhookEvents => {
+                Entity::has_many(super::paddle_webhook_events::Entity).into()
+            }
             Self::ProviderConnections => {
                 Entity::has_many(super::provider_connections::Entity).into()
             }
@@ -115,9 +125,27 @@ impl Related<super::accounts::Entity> for Entity {
     }
 }
 
+impl Related<super::billing_entitlements::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::BillingEntitlements.def()
+    }
+}
+
+impl Related<super::billing_profiles::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::BillingProfiles.def()
+    }
+}
+
 impl Related<super::budgets::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Budgets.def()
+    }
+}
+
+impl Related<super::paddle_webhook_events::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::PaddleWebhookEvents.def()
     }
 }
 

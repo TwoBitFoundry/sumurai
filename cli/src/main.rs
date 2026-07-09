@@ -1,7 +1,7 @@
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
-use sumurai_cli::{reset_passkeys, PostgresPasskeyResetStore, ResetPasskeysError};
+use sumurai_cli::{reset_passkeys, PostgresAdminStore};
 
 #[derive(Parser)]
 #[command(name = "sumurai", about = "Sumurai operator CLI")]
@@ -30,24 +30,22 @@ async fn main() -> ExitCode {
     }
 }
 
-async fn run() -> Result<(), ResetPasskeysError> {
+async fn run() -> Result<(), anyhow::Error> {
     let cli = Cli::parse();
 
     match cli.command {
         Commands::ResetPasskeys { identifier } => {
-            let database_url = std::env::var("DATABASE_URL").map_err(|_| {
-                ResetPasskeysError::Database(anyhow::anyhow!(
-                    "DATABASE_URL is required to run reset-passkeys"
-                ))
-            })?;
-
-            let store = PostgresPasskeyResetStore::connect(&database_url)
-                .await
-                .map_err(|error| ResetPasskeysError::Database(error.into()))?;
+            let store = connect_store("reset-passkeys").await?;
 
             let message = reset_passkeys(&store, &identifier).await?;
             println!("{message}");
             Ok(())
         }
     }
+}
+
+async fn connect_store(command: &str) -> Result<PostgresAdminStore, anyhow::Error> {
+    let database_url = std::env::var("DATABASE_URL")
+        .map_err(|_| anyhow::anyhow!("DATABASE_URL is required to run {command}"))?;
+    Ok(PostgresAdminStore::connect(&database_url).await?)
 }

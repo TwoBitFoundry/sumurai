@@ -72,6 +72,86 @@ fn given_sync_transactions_response_when_generating_openapi_then_documents_simpl
 }
 
 #[test]
+fn given_billing_when_generating_openapi_then_documents_endpoints_and_schemas() {
+    let spec = serde_json::to_value(init_openapi()).unwrap();
+
+    for path in [
+        "/api/billing/status",
+        "/api/billing/checkout",
+        "/api/billing/trials/start",
+        "/api/billing/payment-method",
+        "/api/billing/portal-session",
+        "/api/billing/webhooks/paddle",
+    ] {
+        assert!(
+            spec["paths"].get(path).is_some(),
+            "missing billing path {path}"
+        );
+    }
+
+    assert_eq!(
+        spec["paths"]["/api/billing/status"]["get"]["responses"]["200"]["content"]
+            ["application/json"]["schema"]["$ref"],
+        serde_json::json!("#/components/schemas/BillingStatusResponse")
+    );
+    assert_eq!(
+        spec["paths"]["/api/billing/trials/start"]["post"]["requestBody"]["content"]
+            ["application/json"]["schema"]["$ref"],
+        serde_json::json!("#/components/schemas/TrialStartRequest")
+    );
+    assert_eq!(
+        spec["components"]["schemas"]["BillingStatusResponse"]["properties"]["billing_enabled"]
+            ["type"],
+        serde_json::json!("boolean")
+    );
+    assert_eq!(
+        spec["components"]["schemas"]["BillingStatusResponse"]["properties"]["trials_enabled"]
+            ["type"],
+        serde_json::json!("boolean")
+    );
+
+    for schema in [
+        "BillingCheckoutResponse",
+        "BillingPortalSessionResponse",
+        "TrialStartRequest",
+        "TrialStartResponse",
+    ] {
+        assert!(
+            spec["components"]["schemas"].get(schema).is_some(),
+            "missing billing schema {schema}"
+        );
+    }
+
+    assert_eq!(
+        spec["components"]["schemas"]["ApiErrorResponse"]["properties"]["code"]["type"],
+        serde_json::json!(["string", "null"])
+    );
+
+    for path in [
+        "/api/billing/checkout",
+        "/api/billing/payment-method",
+        "/api/billing/portal-session",
+        "/api/billing/trials/start",
+        "/api/billing/webhooks/paddle",
+    ] {
+        let responses = &spec["paths"][path]
+            .as_object()
+            .and_then(|item| item.values().next())
+            .and_then(|operation| operation["responses"].as_object())
+            .expect("billing operation responses");
+        let documents_disabled_billing = responses.iter().any(|(status, response)| {
+            status == "404"
+                && response["content"]["application/json"]["schema"]["$ref"]
+                    == serde_json::json!("#/components/schemas/ApiErrorResponse")
+        });
+        assert!(
+            documents_disabled_billing,
+            "expected billing disabled ApiErrorResponse on {path}"
+        );
+    }
+}
+
+#[test]
 fn given_auto_categorize_when_generating_openapi_then_documents_endpoint_and_schemas() {
     let spec = serde_json::to_value(init_openapi()).unwrap();
     let path = &spec["paths"]["/api/transactions/auto-categorize"];
@@ -88,6 +168,10 @@ fn given_auto_categorize_when_generating_openapi_then_documents_endpoint_and_sch
         serde_json::json!("Unauthorized")
     );
     assert_eq!(
+        path["post"]["responses"]["402"]["content"]["application/json"]["schema"]["$ref"],
+        serde_json::json!("#/components/schemas/ApiErrorResponse")
+    );
+    assert_eq!(
         path["post"]["responses"]["409"]["content"]["application/json"]["schema"]["$ref"],
         serde_json::json!("#/components/schemas/AutoCategorizationJobState")
     );
@@ -95,6 +179,34 @@ fn given_auto_categorize_when_generating_openapi_then_documents_endpoint_and_sch
         spec["components"]["schemas"]["AutoCategorizationJobStatus"]["type"],
         serde_json::json!("string")
     );
+}
+
+#[test]
+fn given_entitlement_gated_routes_when_generating_openapi_then_documents_402() {
+    let spec = serde_json::to_value(init_openapi()).unwrap();
+
+    for (path, method) in [
+        ("/api/plaid/link-token", "post"),
+        ("/api/plaid/exchange-token", "post"),
+        ("/api/providers/connect", "post"),
+        ("/api/providers/select", "post"),
+        ("/api/providers/sync-transactions", "post"),
+        ("/api/diy/institutions", "post"),
+        ("/api/budgets", "post"),
+        ("/api/transactions/auto-categorize", "post"),
+        ("/api/transactions/{id}/category", "put"),
+        ("/api/transactions/import", "post"),
+    ] {
+        let responses = &spec["paths"][path][method]["responses"];
+        assert!(
+            responses.get("402").is_some(),
+            "missing 402 response for {method} {path}"
+        );
+        assert_eq!(
+            responses["402"]["content"]["application/json"]["schema"]["$ref"],
+            serde_json::json!("#/components/schemas/ApiErrorResponse")
+        );
+    }
 }
 
 #[test]

@@ -140,8 +140,12 @@ use crate::providers::{
 use crate::utils::encryption_key::parse_encryption_key_hex;
 use auth_middleware::auth_middleware;
 use config::Config;
+use handlers::billing::{billing_authenticated_routes, billing_webhook_routes};
 use handlers::export::build_authenticated_export_response;
 use middleware::auth_ip_ban::auth_ip_ban_middleware;
+use middleware::entitlement::{
+    require_paid_own_data_access, require_paid_own_data_access_after_demo,
+};
 use middleware::passkey_enrollment::{
     passkey_enrollment_middleware, PasskeyEnrollmentMiddlewareState,
 };
@@ -152,6 +156,7 @@ use middleware::telemetry_middleware::{self, request_tracing_middleware, Telemet
 use migration::MigratorTrait;
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DbBackend, Statement};
 use services::auto_categorization::service::AutoCategorizationError;
+use services::billing_service::BillingService;
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
 use services::category_management::service::CategoryManagementService;
 use services::import_service::ImportService;
@@ -211,6 +216,30 @@ async fn main() -> anyhow::Result<()> {
     let telemetry = telemetry_middleware::init(&telemetry_config)?;
 
     let config = Config::from_env()?;
+    let enabled_financial_provider_count = config
+        .enabled_financial_providers()
+        .map(|providers| providers.len())
+        .unwrap_or(0);
+    if let Some(paddle) = config.paddle_billing() {
+        tracing::info!(
+            billing_mode = ?config.billing_mode(),
+            enabled_financial_provider_count,
+            paddle_environment = %paddle.environment,
+            paddle_api_key_configured = !paddle.api_key.is_empty(),
+            paddle_webhook_secret_configured = !paddle.webhook_secret.is_empty(),
+            paddle_monthly_price_configured = !paddle.monthly_price_id.is_empty(),
+            paddle_cardless_trial_price_configured = paddle.cardless_trial_price_id.is_some(),
+            trials_enabled = paddle.trials_enabled,
+            "Paddle billing enabled"
+        );
+    } else {
+        tracing::info!(
+            billing_mode = ?config.billing_mode(),
+            billing_enabled = config.is_billing_enabled(),
+            enabled_financial_provider_count,
+            "Billing disabled"
+        );
+    }
 
     let plaid_client_id = std::env::var("PLAID_CLIENT_ID").ok();
     let plaid_secret = std::env::var("PLAID_SECRET").ok();
@@ -455,9 +484,23 @@ async fn main() -> anyhow::Result<()> {
         connection_service.clone(),
     ));
 
+    let paddle_client: Arc<dyn providers::PaddleHttpClient> = match config.paddle_billing() {
+        Some(paddle) => Arc::new(providers::PaddleClient::new(
+            &paddle.environment,
+            paddle.api_key.clone(),
+        )),
+        None => Arc::new(providers::NoOpPaddleClient),
+    };
+    let billing_service = Arc::new(BillingService::new(
+        config.clone(),
+        db_repository.clone(),
+        paddle_client,
+    ));
+
     let state = AppState {
         plaid_service,
         plaid_client,
+        billing_service,
         sync_service,
         sync_service_factory,
         analytics_service,
@@ -547,8 +590,10 @@ pub fn create_app(state: AppState) -> Router {
         .nest("/api/auth/register", auth_register)
         .route("/api/auth/refresh", post(refresh_user_session))
         .route("/api/auth/logout", post(logout_user));
+    let billing_webhook_routes = billing_webhook_routes();
 
     let protected_routes = Router::new()
+        .merge(billing_authenticated_routes())
         .route(
             "/api/auth/onboarding/complete",
             put(complete_user_onboarding),
@@ -766,6 +811,7 @@ pub fn create_app(state: AppState) -> Router {
 
     Router::new()
         .merge(public_routes)
+        .merge(billing_webhook_routes)
         .merge(protected_routes)
         .merge(docs_routes)
         .layer(middleware_stack)
@@ -1738,6 +1784,7 @@ async fn list_categories(
         (status = 200, description = "Custom category created", body = crate::models::custom_category::CustomCategory),
         (status = 400, description = "Validation error with error code"),
         (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 500, description = "Internal server error"),
     ),
     security(("auth_cookie" = [])),
@@ -1752,6 +1799,9 @@ async fn create_custom_category(
     (StatusCode, Json<ApiErrorResponse>),
 > {
     use crate::services::category_management::service::CategoryServiceError;
+
+    require_paid_own_data_access_after_demo(&state, auth_context.user_id, "custom_category.create")
+        .await?;
 
     match state
         .category_management_service
@@ -1835,6 +1885,7 @@ async fn create_custom_category(
     responses(
         (status = 204, description = "Custom category deleted"),
         (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 500, description = "Internal server error"),
     ),
     security(("auth_cookie" = [])),
@@ -1844,7 +1895,10 @@ async fn delete_custom_category(
     State(state): State<AppState>,
     auth_context: AuthContext,
     axum::extract::Path(id): axum::extract::Path<Uuid>,
-) -> Result<StatusCode, StatusCode> {
+) -> Result<StatusCode, (StatusCode, Json<ApiErrorResponse>)> {
+    require_paid_own_data_access_after_demo(&state, auth_context.user_id, "custom_category.delete")
+        .await?;
+
     match state
         .category_management_service
         .delete_custom_category(&*state.db_repository, &auth_context.user_id, &id)
@@ -1858,7 +1912,9 @@ async fn delete_custom_category(
                 auth_context.user_id,
                 e
             );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to delete custom category",
+            ))
         }
     }
 }
@@ -1874,6 +1930,7 @@ async fn delete_custom_category(
         (status = 200, description = "Category updated"),
         (status = 400, description = "Validation error"),
         (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 404, description = "Transaction not found"),
         (status = 500, description = "Internal server error"),
     ),
@@ -1887,6 +1944,13 @@ async fn set_transaction_category(
     Json(req): Json<crate::models::transaction_category_override::SetTransactionCategoryRequest>,
 ) -> Result<StatusCode, (StatusCode, Json<ApiErrorResponse>)> {
     use crate::services::category_management::service::CategoryServiceError;
+
+    require_paid_own_data_access_after_demo(
+        &state,
+        auth_context.user_id,
+        "transaction_category.update",
+    )
+    .await?;
 
     match state
         .category_management_service
@@ -1948,6 +2012,7 @@ async fn set_transaction_category(
     responses(
         (status = 200, description = "Background categorization started", body = AutoCategorizationJobState),
         (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 409, description = "Active job already exists", body = AutoCategorizationJobState),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
@@ -1958,6 +2023,13 @@ async fn start_auto_categorization(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Response, (StatusCode, Json<ApiErrorResponse>)> {
+    require_paid_own_data_access_after_demo(
+        &state,
+        auth_context.user_id,
+        "transactions.auto_categorize",
+    )
+    .await?;
+
     match state
         .auto_categorization_service
         .start(&auth_context.user_id, &auth_context.jwt_id)
@@ -2124,6 +2196,7 @@ async fn validate_authenticated_transaction_import(
         (status = 200, description = "Transactions imported successfully", body = ImportResponse),
         (status = 400, description = "Missing fields, invalid multipart payload, unsupported extension, invalid UTF-8, invalid CSV mapping, or file with no valid transactions"),
         (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 403, description = "Account belongs to another user"),
         (status = 413, description = "Payload too large"),
         (status = 500, description = "Internal server error"),
@@ -2136,6 +2209,8 @@ async fn import_authenticated_transactions(
     auth_context: AuthContext,
     mut multipart: Multipart,
 ) -> Result<Json<ImportResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    require_paid_own_data_access(&state, auth_context.user_id, "transactions.import").await?;
+
     let import = parse_transaction_import_multipart(&mut multipart).await?;
     let ParsedImportMultipart {
         file_name,
@@ -2369,6 +2444,15 @@ fn api_forbidden(message: impl Into<String>) -> (StatusCode, Json<ApiErrorRespon
     ApiErrorResponse::new("FORBIDDEN", &message.into()).into_response(StatusCode::FORBIDDEN)
 }
 
+fn provider_disabled_response(provider: &str) -> (StatusCode, Json<ApiErrorResponse>) {
+    ApiErrorResponse::with_code(
+        "FORBIDDEN",
+        &format!("Provider '{}' is disabled in this deployment", provider),
+        "PROVIDER_DISABLED",
+    )
+    .into_response(StatusCode::FORBIDDEN)
+}
+
 fn api_internal_server_error(message: impl Into<String>) -> (StatusCode, Json<ApiErrorResponse>) {
     ApiErrorResponse::new("INTERNAL_SERVER_ERROR", &message.into())
         .into_response(StatusCode::INTERNAL_SERVER_ERROR)
@@ -2383,6 +2467,7 @@ fn api_internal_server_error(message: impl Into<String>) -> (StatusCode, Json<Ap
         (status = 200, description = "Link token created successfully", body = LinkTokenResponse),
         (status = 400, description = "Unsupported provider"),
         (status = 401, description = "Unauthorized"),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 500, description = "Failed to create link token"),
     ),
     security(("auth_cookie" = [])),
@@ -2392,8 +2477,13 @@ async fn create_authenticated_link_token(
     State(state): State<AppState>,
     auth_context: AuthContext,
     Json(_req): Json<LinkTokenRequest>,
-) -> Result<Json<LinkTokenResponse>, StatusCode> {
+) -> Result<Json<LinkTokenResponse>, (StatusCode, Json<ApiErrorResponse>)> {
     let provider = "plaid";
+    if !state.config.is_financial_provider_enabled(provider) {
+        return Err(provider_disabled_response(provider));
+    }
+
+    require_paid_own_data_access(&state, auth_context.user_id, "plaid.link_token").await?;
 
     match state
         .connection_service
@@ -2407,7 +2497,7 @@ async fn create_authenticated_link_token(
                 p,
                 auth_context.user_id
             );
-            Err(StatusCode::BAD_REQUEST)
+            Err(api_bad_request("Unsupported provider"))
         }
         Err(LinkTokenError::ProviderRequest(e)) => {
             tracing::error!(
@@ -2416,7 +2506,7 @@ async fn create_authenticated_link_token(
                 auth_context.user_id,
                 e
             );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            Err(api_internal_server_error("Failed to create link token"))
         }
     }
 }
@@ -2430,6 +2520,7 @@ async fn create_authenticated_link_token(
         (status = 200, description = "Token exchanged successfully", body = ExchangeTokenResponse),
         (status = 400, description = "Unsupported provider"),
         (status = 401, description = "Unauthorized"),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 502, description = "Token exchange failed with provider"),
         (status = 500, description = "Internal server error"),
     ),
@@ -2440,9 +2531,14 @@ async fn exchange_authenticated_public_token(
     State(state): State<AppState>,
     auth_context: AuthContext,
     Json(req): Json<ExchangeTokenRequest>,
-) -> Result<Json<ExchangeTokenResponse>, StatusCode> {
+) -> Result<Json<ExchangeTokenResponse>, (StatusCode, Json<ApiErrorResponse>)> {
     let user_id = auth_context.user_id;
     let provider = "plaid";
+    if !state.config.is_financial_provider_enabled(provider) {
+        return Err(provider_disabled_response(provider));
+    }
+
+    require_paid_own_data_access(&state, user_id, "plaid.exchange_token").await?;
 
     match state
         .connection_service
@@ -2460,7 +2556,7 @@ async fn exchange_authenticated_public_token(
                 p,
                 user_id
             );
-            Err(StatusCode::BAD_REQUEST)
+            Err(api_bad_request("Unsupported provider"))
         }
         Err(ExchangeTokenError::ExchangeFailed(e)) => {
             log_provider_credential_outcome(
@@ -2474,7 +2570,12 @@ async fn exchange_authenticated_public_token(
                 user_id,
                 e
             );
-            Err(StatusCode::BAD_GATEWAY)
+            Err(ApiErrorResponse::with_code(
+                "BAD_GATEWAY",
+                "Token exchange failed with provider",
+                "PROVIDER_REQUEST_FAILED",
+            )
+            .into_response(StatusCode::BAD_GATEWAY))
         }
     }
 }
@@ -2574,6 +2675,7 @@ async fn get_authenticated_plaid_accounts(
         (status = 200, description = "Transactions synced successfully", body = SyncTransactionsResponse),
         (status = 400, description = "Missing connection_id"),
         (status = 401, description = "Unauthorized"),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 415, description = "Unsupported media type"),
         (status = 404, description = "Connection not found or credentials missing"),
         (status = 502, description = "Provider request failed"),
@@ -2605,6 +2707,13 @@ async fn sync_authenticated_provider_transactions(
     let mut connection = connection;
 
     let provider = connection.provider.clone();
+    if !state.config.is_financial_provider_enabled(&provider) {
+        return Err(provider_disabled_response(&provider).into_response());
+    }
+
+    require_paid_own_data_access(&state, user_id, "provider.sync")
+        .await
+        .map_err(|err| err.into_response())?;
 
     match state
         .provider_sync_rate_limit_service
@@ -3561,6 +3670,7 @@ async fn load_connection_statuses(
         (status = 200, description = "Provider connected successfully", body = ProviderConnectResponse),
         (status = 400, description = "Unsupported provider"),
         (status = 401, description = "Unauthorized"),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 500, description = "Failed to connect provider", body = ApiErrorResponse),
     ),
     security(("auth_cookie" = [])),
@@ -3571,6 +3681,14 @@ async fn connect_authenticated_provider(
     auth_context: AuthContext,
     Json(req): Json<ProviderConnectRequest>,
 ) -> Result<Json<ProviderConnectResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    if state.provider_registry.get(&req.provider).is_some()
+        && !state.config.is_financial_provider_enabled(&req.provider)
+    {
+        return Err(provider_disabled_response(&req.provider));
+    }
+
+    require_paid_own_data_access(&state, auth_context.user_id, "provider.connect").await?;
+
     match req.provider.as_str() {
         "teller" => match state
             .connection_service
@@ -3829,7 +3947,9 @@ async fn get_authenticated_provider_status(
 
     let provider = match state.db_repository.get_user_by_id(&user_id).await {
         Ok(Some(user)) => {
-            if state.provider_registry.get(&user.provider).is_some() {
+            if state.provider_registry.get(&user.provider).is_some()
+                && state.config.is_financial_provider_enabled(&user.provider)
+            {
                 user.provider
             } else {
                 String::new()
@@ -3866,6 +3986,10 @@ async fn get_authenticated_simplefin_ignored_institutions(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<crate::models::simplefin::SimpleFinIgnoredInstitutionsResponse>, StatusCode> {
+    if !state.config.is_financial_provider_enabled("simplefin") {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
     let institutions = state
         .connection_service
         .list_simplefin_ignored_institutions(&auth_context.user_id)
@@ -3904,6 +4028,10 @@ async fn restore_authenticated_simplefin_ignored_institution(
     Json(req): Json<crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionRequest>,
 ) -> Result<Json<crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse>, StatusCode>
 {
+    if !state.config.is_financial_provider_enabled("simplefin") {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
     let org_conn_id = req.org_conn_id.trim();
     if org_conn_id.is_empty() {
         return Err(StatusCode::BAD_REQUEST);
@@ -4113,6 +4241,7 @@ async fn get_authenticated_budgets_overview(
         (status = 200, description = "Budget created", body = crate::models::budget::Budget),
         (status = 400, description = "Invalid budget data", body = ApiErrorResponse),
         (status = 401, description = "Unauthorized"),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 409, description = "Budget category already exists", body = ApiErrorResponse),
     ),
     security(("auth_cookie" = [])),
@@ -4124,6 +4253,8 @@ async fn create_authenticated_budget(
     Json(req): Json<CreateBudgetRequest>,
 ) -> Result<Json<crate::models::budget::Budget>, (StatusCode, Json<ApiErrorResponse>)> {
     let user_id = auth_context.user_id;
+
+    require_paid_own_data_access_after_demo(&state, user_id, "budget.create").await?;
 
     match state
         .budget_service
@@ -4184,6 +4315,8 @@ async fn update_authenticated_budget(
     Json(req): Json<UpdateBudgetRequest>,
 ) -> Result<Json<crate::models::budget::Budget>, (StatusCode, Json<ApiErrorResponse>)> {
     let user_id = auth_context.user_id;
+
+    require_paid_own_data_access_after_demo(&state, user_id, "budget.update").await?;
 
     if req.amount <= rust_decimal::Decimal::ZERO {
         return Err(ApiErrorResponse::new(
@@ -4246,6 +4379,8 @@ async fn delete_authenticated_budget(
     AuthorizedBudgetId { budget_id }: AuthorizedBudgetId,
 ) -> Result<Json<DeleteBudgetResponse>, (StatusCode, Json<ApiErrorResponse>)> {
     let user_id = auth_context.user_id;
+
+    require_paid_own_data_access_after_demo(&state, user_id, "budget.delete").await?;
 
     match state
         .budget_service
@@ -4343,6 +4478,7 @@ async fn health_check() -> &'static str {
         (status = 200, description = "Institution created successfully", body = crate::models::diy::CreateDiyInstitutionResponse),
         (status = 400, description = "Invalid request body", body = ApiErrorResponse),
         (status = 401, description = "Unauthorized"),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
     security(("auth_cookie" = [])),
@@ -4357,6 +4493,12 @@ async fn create_diy_institution(
     (StatusCode, Json<ApiErrorResponse>),
 > {
     let user_id = auth_context.user_id;
+
+    if !state.config.is_financial_provider_enabled("diy") {
+        return Err(provider_disabled_response("diy"));
+    }
+
+    require_paid_own_data_access(&state, user_id, "diy.institution.create").await?;
 
     if req.name.trim().is_empty() {
         return Err(
@@ -4418,6 +4560,12 @@ async fn create_diy_account(
 ) -> Result<Json<crate::models::diy::CreateDiyAccountResponse>, (StatusCode, Json<ApiErrorResponse>)>
 {
     let user_id = auth_context.user_id;
+
+    if !state.config.is_financial_provider_enabled("diy") {
+        return Err(provider_disabled_response("diy"));
+    }
+
+    require_paid_own_data_access(&state, user_id, "diy.account.create").await?;
 
     if req.name.trim().is_empty() {
         return Err(
@@ -4594,6 +4742,10 @@ async fn get_authenticated_provider_info(
             continue;
         }
 
+        if !state.config.is_financial_provider_enabled(provider) {
+            continue;
+        }
+
         if provider == "teller"
             && state
                 .config
@@ -4609,6 +4761,7 @@ async fn get_authenticated_provider_info(
     let user_provider = user
         .active_provider()
         .filter(|provider| state.provider_registry.get(provider).is_some())
+        .filter(|provider| state.config.is_financial_provider_enabled(provider))
         .map(str::to_string);
 
     Ok(Json(ProviderInfoResponse {
@@ -4631,6 +4784,7 @@ async fn get_authenticated_provider_info(
         (status = 200, description = "Provider selected successfully", body = ProviderSelectResponse),
         (status = 400, description = "Invalid provider specified", body = ApiErrorResponse),
         (status = 401, description = "Unauthorized"),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 409, description = "Cannot switch while active connections exist", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
@@ -4652,6 +4806,15 @@ async fn select_authenticated_provider(
         )
         .into_response(StatusCode::BAD_REQUEST));
     }
+
+    if !state
+        .config
+        .is_financial_provider_enabled(&requested_provider)
+    {
+        return Err(provider_disabled_response(&requested_provider));
+    }
+
+    require_paid_own_data_access(&state, user_id, "provider.select").await?;
 
     let _user = match state.db_repository.get_user_by_id(&user_id).await {
         Ok(Some(user)) => user,
