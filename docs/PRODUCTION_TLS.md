@@ -2,7 +2,7 @@
 
 Production deployments must provision a publicly trusted nginx server certificate before Sumurai is exposed to users. Local development may use the generated 30-day self-signed certificate, but production startup now fails when nginx would serve missing, self-signed, or soon-expiring certificate material.
 
-This guide covers nginx server TLS only. Teller mTLS client certificates are separate backend credentials mounted from `TELLER_CERT_PATH` and `TELLER_KEY_PATH` as described in the README.
+This guide covers nginx server TLS only.
 
 ## Required Inputs
 

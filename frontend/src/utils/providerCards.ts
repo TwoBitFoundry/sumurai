@@ -41,7 +41,7 @@ export type ProviderCardConfig = {
   logoIcon?: LucideIcon;
 };
 
-export const PROVIDER_PRICE_ORDER: FinancialProvider[] = ['diy', 'simplefin', 'teller', 'plaid'];
+export const PROVIDER_PRICE_ORDER: FinancialProvider[] = ['diy', 'simplefin', 'plaid'];
 
 export function resolvePickerVisibleProviders(
   activeAggregator: SyncProvider | null,

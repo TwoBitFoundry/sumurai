@@ -55,24 +55,11 @@ export const ProviderPicker: StoryObj<ProviderPickerStoryArgs> = {
     await expect(canvas.getByText('Choose how you connect accounts')).toBeVisible();
     await expectStoryProviderCardsVisible(canvas);
     await expect(getStoryProviderPickerButton(canvas, 'plaid')).toBeEnabled();
-    await expect(getStoryProviderPickerButton(canvas, 'teller')).toBeEnabled();
     await expect(getStoryProviderPickerButton(canvas, 'simplefin')).toBeEnabled();
     await expect(getStoryProviderPickerButton(canvas, 'diy')).toBeEnabled();
+    await expect(canvas.queryByText('Teller')).toBeNull();
     await userEvent.click(getStoryProviderPickerButton(canvas, 'plaid'));
     await expect(args.onSelectProvider).toHaveBeenCalledWith('plaid');
-  },
-};
-
-export const ProviderPickerTellerConnect: StoryObj<ProviderPickerStoryArgs> = {
-  decorators: pickerDecorator,
-  args: {
-    onSelectProvider: fn(),
-  },
-  render: (args) => <AccountsProviderPickerSlice onSelectProvider={args.onSelectProvider} />,
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(getStoryProviderPickerButton(canvas, 'teller'));
-    await expect(args.onSelectProvider).toHaveBeenCalledWith('teller');
   },
 };
 

@@ -117,10 +117,18 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
   const plaidConnections = usePlaidConnections({
     enabled: isOnline && providerCatalog.canConnectWith('plaid'),
   });
+  const hasTellerConnections = useMemo(() => {
+    if (providerCatalog.userProvider === 'teller') {
+      return true;
+    }
+    return Object.values(accountFilter.accountsByBank)
+      .flat()
+      .some((account) => account.provider === 'teller');
+  }, [accountFilter.accountsByBank, providerCatalog.userProvider]);
   const tellerStatusQuery = useQuery({
     queryKey: ['teller', 'connections'],
     queryFn: () => TellerService.getStatus(),
-    enabled: isOnline && providerCatalog.canConnectWith('teller'),
+    enabled: isOnline && hasTellerConnections,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -303,24 +311,10 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
     onExit: handlePickerSdkExit,
     isOnline: isOnline && providerCatalog.canConnectWith('plaid'),
   });
-  const tellerPickerConnectionFlow = useFinancialConnection({
-    provider: 'teller',
-    mountKey: 'accounts-picker-teller',
-    onError: (message) => {
-      pushAccountsToast(message, 'error');
-      onError?.(message);
-    },
-    onExit: handlePickerSdkExit,
-    isOnline: isOnline && providerCatalog.canConnectWith('teller'),
-  });
   const [restoringIgnoredOrgConnId, setRestoringIgnoredOrgConnId] = useState<string | null>(null);
   const accountsDataLoading = providerCatalog.loading || accountFilter.loading;
   const pickerConnectionFlow =
-    pickerConnectingProvider === 'plaid'
-      ? plaidPickerConnectionFlow
-      : pickerConnectingProvider === 'teller'
-        ? tellerPickerConnectionFlow
-        : null;
+    pickerConnectingProvider === 'plaid' ? plaidPickerConnectionFlow : null;
   const activePickerConnectingProvider =
     pickerConnectingProvider === 'simplefin'
       ? pickerConnectingProvider
@@ -332,7 +326,6 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
     preferredProvider === 'simplefin' && banksWithSync.length === 0 && !accountsDataLoading;
   const pickerProviderReadyState = {
     plaid: plaidPickerConnectionFlow.isReady,
-    teller: tellerPickerConnectionFlow.isReady,
     simplefin: true,
   } satisfies Partial<Record<FinancialProvider, boolean>>;
   const ignoredInstitutionsQuery = useQuery({
@@ -438,7 +431,7 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
           return;
         }
 
-        if (!isSyncProvider(provider)) {
+        if (provider === 'teller' || !isSyncProvider(provider)) {
           return;
         }
 
@@ -453,18 +446,10 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
 
         if (provider === 'plaid') {
           await plaidPickerConnectionFlow.initiateConnection();
-          return;
         }
-
-        await tellerPickerConnectionFlow.initiateConnection();
       }, true);
     },
-    [
-      plaidPickerConnectionFlow,
-      runAfterDemoExitWarning,
-      setDiyModalTargetDirect,
-      tellerPickerConnectionFlow,
-    ]
+    [plaidPickerConnectionFlow, runAfterDemoExitWarning, setDiyModalTargetDirect]
   );
 
   const closeDiyInstitutionModal = useCallback(() => {
@@ -944,7 +929,6 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
       <div hidden>
         {connectionFlow.connectionMount}
         {plaidPickerConnectionFlow.connectionMount}
-        {tellerPickerConnectionFlow.connectionMount}
       </div>
       <PageLayout
         hideHero={showProviderPicker}
@@ -959,7 +943,6 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
             error={providerCatalog.error}
             availableProviders={providerCatalog.availableProviders}
             visibleProviders={pickerVisibleProviders}
-            tellerApplicationId={providerCatalog.tellerApplicationId}
             providerReadyState={pickerProviderReadyState}
             connectingProvider={activePickerConnectingProvider}
             onSelectProvider={(provider) => void startProviderPickerConnection(provider)}

@@ -11,6 +11,9 @@ use crate::services::connection_service::{
 };
 use crate::services::sync_service::SyncService;
 
+pub const TELLER_NO_LONGER_SUPPORTED_MESSAGE: &str =
+    "Teller is no longer supported because the provider no longer offers API access.";
+
 #[async_trait]
 pub trait SyncServiceDispatcher: Send + Sync {
     async fn sync(
@@ -118,19 +121,9 @@ impl SyncServiceDispatcher for TellerSyncDispatcher {
         self.connection_service
             .sync_teller_connection(params.user_id, params.jwt_id, connection, reference_date)
             .await
-            .map_err(provider_sync_error_from_teller)
-    }
-}
-
-fn provider_sync_error_from_teller(err: TellerSyncError) -> ProviderSyncError {
-    match err {
-        TellerSyncError::CredentialsMissing => ProviderSyncError::CredentialsMissing,
-        TellerSyncError::CredentialAccess(e) => ProviderSyncError::CredentialAccess(e),
-        TellerSyncError::ProviderInitialization(e) => ProviderSyncError::SyncFailure(e),
-        TellerSyncError::ProviderRequest(e) => ProviderSyncError::ProviderRequest(e),
-        TellerSyncError::AccountLookup(e) => ProviderSyncError::AccountLookup(e),
-        TellerSyncError::TransactionLookup(e) => ProviderSyncError::TransactionLookup(e),
-        TellerSyncError::ConnectionPersistence(e) => ProviderSyncError::SyncFailure(e),
+            .map_err(|err| match err {
+                TellerSyncError::NoLongerSupported => ProviderSyncError::TellerNoLongerSupported,
+            })
     }
 }
 
@@ -284,6 +277,20 @@ pub fn provider_sync_error_to_response(
                 "Sync failed unexpectedly. Try again.",
                 None,
                 None,
+            )
+        }
+        ProviderSyncError::TellerNoLongerSupported => {
+            tracing::info!(
+                "Teller sync rejected for user {} and item {}: provider no longer supported",
+                user_id,
+                item_id
+            );
+            provider_sync_error_json_response(
+                StatusCode::BAD_REQUEST,
+                "BAD_REQUEST",
+                TELLER_NO_LONGER_SUPPORTED_MESSAGE,
+                None,
+                Some("TELLER_NO_LONGER_SUPPORTED"),
             )
         }
     }

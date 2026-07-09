@@ -7,7 +7,6 @@ use crate::utils::auth_cookie::{
 
 fn create_cookie_config(same_site: &str) -> Config {
     let mut env = MockEnvironment::new();
-    env.set("TELLER_ENV", "test");
     env.set("AUTH_COOKIE_SAME_SITE", same_site);
     env.set("APP_ORIGIN", "http://localhost:8080");
     Config::from_env_provider(&env).unwrap()
@@ -15,8 +14,7 @@ fn create_cookie_config(same_site: &str) -> Config {
 
 #[test]
 fn given_missing_cookie_mode_when_loading_config_then_returns_error() {
-    let mut env = MockEnvironment::new();
-    env.set("TELLER_ENV", "test");
+    let env = MockEnvironment::new();
 
     let result = Config::from_env_provider(&env);
 
@@ -26,7 +24,6 @@ fn given_missing_cookie_mode_when_loading_config_then_returns_error() {
 #[test]
 fn given_valid_cookie_settings_when_loading_config_then_returns_values() {
     let mut env = MockEnvironment::new();
-    env.set("TELLER_ENV", "test");
     env.set("AUTH_COOKIE_SAME_SITE", "Lax");
     env.set("APP_ORIGIN", "http://localhost:8080");
 
@@ -38,7 +35,6 @@ fn given_valid_cookie_settings_when_loading_config_then_returns_values() {
 #[test]
 fn given_invalid_cookie_mode_when_loading_config_then_returns_error() {
     let mut env = MockEnvironment::new();
-    env.set("TELLER_ENV", "test");
     env.set("AUTH_COOKIE_SAME_SITE", "Relaxed");
 
     let result = Config::from_env_provider(&env);

@@ -6,7 +6,6 @@ import type {
 import { useDiyConnectionStrategy } from '@/hooks/financialConnection/useDiyConnectionStrategy';
 import { usePlaidConnectionStrategy } from '@/hooks/financialConnection/usePlaidConnectionStrategy';
 import { useSimpleFinConnectionStrategy } from '@/hooks/financialConnection/useSimpleFinConnectionStrategy';
-import { useTellerConnectionStrategy } from '@/hooks/financialConnection/useTellerConnectionStrategy';
 import type { FinancialProvider } from '@/types/api';
 
 interface FinancialConnectionStrategyBridgeProps {
@@ -20,19 +19,6 @@ function PlaidStrategyBridge({
   strategyRef,
 }: Omit<FinancialConnectionStrategyBridgeProps, 'provider'>) {
   const strategy = usePlaidConnectionStrategy(context);
-
-  useLayoutEffect(() => {
-    strategyRef.current = strategy;
-  });
-
-  return strategy.render();
-}
-
-function TellerStrategyBridge({
-  context,
-  strategyRef,
-}: Omit<FinancialConnectionStrategyBridgeProps, 'provider'>) {
-  const strategy = useTellerConnectionStrategy(context);
 
   useLayoutEffect(() => {
     strategyRef.current = strategy;
@@ -67,6 +53,33 @@ function DiyStrategyBridge({
   return strategy.render();
 }
 
+function TellerStrategyBridge({
+  strategyRef,
+}: Omit<FinancialConnectionStrategyBridgeProps, 'provider' | 'context'>) {
+  useLayoutEffect(() => {
+    strategyRef.current = {
+      getReady: () => true,
+      open: () => {
+        throw new Error(
+          'Teller is no longer supported because the provider no longer offers API access.'
+        );
+      },
+      load: async () => {},
+      reset: () => {},
+      loadFailedMessage:
+        'Teller is no longer supported because the provider no longer offers API access.',
+      render: () => null,
+      connect: async () => {
+        throw new Error(
+          'Teller is no longer supported because the provider no longer offers API access.'
+        );
+      },
+    };
+  });
+
+  return null;
+}
+
 export function FinancialConnectionStrategyBridge({
   provider,
   context,
@@ -76,7 +89,7 @@ export function FinancialConnectionStrategyBridge({
     case 'plaid':
       return <PlaidStrategyBridge context={context} strategyRef={strategyRef} />;
     case 'teller':
-      return <TellerStrategyBridge context={context} strategyRef={strategyRef} />;
+      return <TellerStrategyBridge strategyRef={strategyRef} />;
     case 'simplefin':
       return <SimpleFinStrategyBridge context={context} strategyRef={strategyRef} />;
     case 'diy':

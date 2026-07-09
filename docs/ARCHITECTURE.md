@@ -6,7 +6,7 @@ Authoritative reference for runtime architecture, data flow, API surface, cachin
 
 ## Overview
 
-Sumurai is a personal finance aggregator. Users connect one financial provider (Teller, Plaid, or SimpleFIN); the app syncs accounts and transactions, and provides analytics and budgets.
+Sumurai is a personal finance aggregator. Users connect one financial provider (Plaid, SimpleFIN, or DIY/self-managed); the app syncs accounts and transactions, and provides analytics and budgets. Legacy Teller connections may still appear in the UI (with icon); sync fails, and disconnect still works. Demo mode seeds SimpleFIN sample data.
 
 ```mermaid
 flowchart LR
@@ -19,7 +19,6 @@ flowchart LR
         Postgres[("PostgreSQL")]
     end
 
-    Teller["Teller API\n(mTLS)"]
     Plaid["Plaid API\n(OAuth)"]
     SimpleFIN["SimpleFIN Bridge\n(access URL)"]
     Paddle["Paddle Billing\n(prod compose only)"]
@@ -31,7 +30,6 @@ flowchart LR
     Backend -->|"SeaORM"| Postgres
     Backend -->|"Redis client"| Redis
     Backend -.->|"OTLP (prod)"| Seq
-    Backend -.->|"mTLS"| Teller
     Backend -.->|"HTTPS"| Plaid
     Backend -.->|"HTTPS"| SimpleFIN
     Backend -.->|"HTTPS API + webhooks"| Paddle
@@ -39,7 +37,7 @@ flowchart LR
 
 - **Frontend** — Next.js static export served by Nginx on port 8080.
 - **Backend** — Rust/Axum API on port 3000 (internal), behind Nginx proxy.
-- **Providers** — Teller, Plaid, and SimpleFIN via a shared provider registry.
+- **Providers** — Plaid, SimpleFIN, and DIY via a shared provider registry. Teller is not connectable (API sunset); legacy rows may still display.
 - **Persistence** — PostgreSQL with row-level security; Redis for sessions, caching, and rate-limiting.
 - **Observability** — OpenTelemetry end-to-end; export target (`none` / `console` / OTLP to Seq) set by `OTEL_TRACES_EXPORTER`.
 - **Billing (production compose only)** — Paddle SaaS entitlement when `BILLING_MODE=paddle`. Own-data writes require `trialing` or `active` entitlement projected from verified webhooks.
@@ -102,7 +100,7 @@ sequenceDiagram
     participant Axum
     participant SyncService
     participant ProviderRegistry
-    participant Provider as "Teller / Plaid / SimpleFIN"
+    participant Provider as "Plaid / SimpleFIN"
     participant Postgres
     participant Redis
 
@@ -284,7 +282,7 @@ flowchart TD
         CatSvc["CategoryService"]
         ImportSvc["ImportService"]
         AutoCatSvc["AutoCategorizationService"]
-        ProviderSvcs["TellerService\nPlaidService\nSimpleFinService"]
+        ProviderSvcs["PlaidService\nSimpleFinService"]
     end
 
     subgraph Features
@@ -292,7 +290,7 @@ flowchart TD
         FBudget["budgets"]
         FAnal["analytics"]
         FImport["import"]
-        FProviders["teller · plaid · simplefin"]
+        FProviders["plaid · simplefin · diy"]
         FAutoCat["auto-categorization"]
     end
 
@@ -349,9 +347,8 @@ flowchart TD
 
     subgraph Providers
         Registry["ProviderRegistry"]
-        P1["Teller"]
-        P2["Plaid"]
-        P3["SimpleFIN"]
+        P1["Plaid"]
+        P2["SimpleFIN"]
         Paddle["paddle_provider\n(PaddleClient)"]
     end
 
@@ -364,7 +361,7 @@ flowchart TD
     H3 & H5 --> Entitlement
     Entitlement --> BillingSvc
     H6 --> BillingSvc
-    SyncSvc --> Registry --> P1 & P2 & P3
+    SyncSvc --> Registry --> P1 & P2
     BillingSvc --> RepoSvc & Paddle
     RepoSvc --> Postgres[("PostgreSQL")]
     CacheSvc --> Redis[("Redis")]
@@ -404,13 +401,6 @@ Every provider implements `FinancialDataProvider` and registers by name in `prov
 
 ```mermaid
 flowchart LR
-    subgraph Teller
-        direction TB
-        T1["Teller Connect widget"] --> T2["enrollment token"]
-        T2 --> T3["POST /api/providers/connect"]
-        T3 --> T4["mTLS cert + key\nencrypted → provider_credentials"]
-    end
-
     subgraph Plaid
         direction TB
         P1["POST /api/plaid/link-token"] --> P2["Plaid Link widget"]
@@ -426,6 +416,8 @@ flowchart LR
         S3 --> S4["sync materializes\nprovider_connections rows"]
     end
 ```
+
+Legacy Teller connections are display-only: the UI may still show them with a provider icon, sync fails, and disconnect remains available.
 
 ### SimpleFIN specifics
 

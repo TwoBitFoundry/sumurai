@@ -97,7 +97,7 @@ fn expect_shared_demo_seed_mocks(
         .expect_update_user_provider()
         .with(
             mockall::predicate::eq(user_id),
-            mockall::predicate::eq("teller"),
+            mockall::predicate::eq("simplefin"),
         )
         .times(1)
         .returning(|_, _| Box::pin(async { Ok(()) }));
@@ -154,8 +154,8 @@ fn demo_provider_ids_are_unique_per_user() {
     let user_a = Uuid::new_v4();
     let user_b = Uuid::new_v4();
     assert_ne!(
-        seed::demo_teller_item_id(user_a),
-        seed::demo_teller_item_id(user_b)
+        seed::demo_simplefin_item_id(user_a),
+        seed::demo_simplefin_item_id(user_b)
     );
     assert_ne!(
         seed::demo_provider_account_id(user_a, "sumurai_demo_dep_checking"),
@@ -164,14 +164,14 @@ fn demo_provider_ids_are_unique_per_user() {
 }
 
 #[test]
-fn is_demo_teller_item_id_requires_user_scoped_item_id() {
-    assert!(!seed::is_demo_teller_item_id(
-        seed::SUMURAI_DEMO_TELLER_ITEM_ID
+fn is_demo_simplefin_item_id_requires_user_scoped_item_id() {
+    assert!(!seed::is_demo_simplefin_item_id(
+        seed::SUMURAI_DEMO_SIMPLEFIN_ORG_CONN_ID
     ));
     let user_id = Uuid::new_v4();
-    assert!(seed::is_demo_teller_item_id(&seed::demo_teller_item_id(
-        user_id
-    )));
+    assert!(seed::is_demo_simplefin_item_id(
+        &seed::demo_simplefin_item_id(user_id)
+    ));
 }
 
 #[test]
@@ -269,9 +269,9 @@ async fn maybe_seed_demo_dev_workspace_skips_when_demo_workspace_exists() {
         .returning(move |_| {
             let mut connection = crate::models::plaid::ProviderConnection::new(
                 user_id,
-                &seed::demo_teller_item_id(user_id),
+                &seed::demo_simplefin_item_id(user_id),
             );
-            connection.provider = "teller".to_string();
+            connection.provider = "simplefin".to_string();
             connection.mark_connected("Sumurai Demo Bank");
             Box::pin(async move { Ok(vec![connection]) })
         });
@@ -294,7 +294,7 @@ async fn seeds_demo_dataset_with_synced_and_diy_accounts() {
         .expect_upsert_provider_snapshot_bundle()
         .times(1)
         .returning(|_, connection, accounts, transactions| {
-            assert_eq!(connection.provider, "teller");
+            assert_eq!(connection.provider, "simplefin");
             assert_eq!(
                 connection.institution_name.as_deref(),
                 Some("Sumurai Demo Bank")

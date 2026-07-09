@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Sumurai Financial API",
-    "description": "Multi-tenant financial aggregation platform with unified Plaid and Teller integration",
+    "description": "Multi-tenant financial aggregation platform with Plaid, SimpleFIN, and DIY integration",
     "contact": {
       "name": "Sumurai Support",
       "url": "https://github.com/two-bit-foundry/sumurai"
@@ -2729,7 +2729,7 @@
         "tags": [
           "Plaid"
         ],
-        "description": "Generates a provider-specific link token for Plaid/Teller flows.",
+        "description": "Generates a provider-specific link token for Plaid flows.",
         "operationId": "create_authenticated_link_token",
         "requestBody": {
           "content": {
@@ -5676,12 +5676,12 @@
           }
         },
         "example": {
-          "access_token": "access-sandbox-xyz",
-          "enrollment_id": "enroll-123",
-          "institution_name": "Teller Demo Bank",
-          "provider": "teller",
+          "access_token": "",
+          "enrollment_id": "",
+          "institution_name": null,
+          "provider": "simplefin",
           "simplefin": {
-            "simplefin_setup_token": null
+            "simplefin_setup_token": "demo-setup-token"
           }
         }
       },
@@ -5778,8 +5778,7 @@
       "ProviderInfoResponse": {
         "type": "object",
         "required": [
-          "available_providers",
-          "teller_environment"
+          "available_providers"
         ],
         "properties": {
           "available_providers": {
@@ -5787,15 +5786,6 @@
             "items": {
               "type": "string"
             }
-          },
-          "teller_application_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "teller_environment": {
-            "type": "string"
           },
           "user_provider": {
             "type": [
@@ -5807,12 +5797,10 @@
         "example": {
           "available_providers": [
             "plaid",
-            "teller",
-            "simplefin"
+            "simplefin",
+            "diy"
           ],
-          "teller_application_id": "app-123",
-          "teller_environment": "sandbox",
-          "user_provider": "teller"
+          "user_provider": "simplefin"
         }
       },
       "ProviderSelectRequest": {
@@ -5841,7 +5829,7 @@
           }
         },
         "example": {
-          "user_provider": "teller"
+          "user_provider": "simplefin"
         }
       },
       "ProviderStatusResponse": {
@@ -6890,10 +6878,6 @@
     {
       "name": "Plaid",
       "description": "Plaid-specific endpoints for link token creation, token exchange, and account retrieval."
-    },
-    {
-      "name": "Teller",
-      "description": "Reserved for Teller Connect operations when expanded beyond provider selection flows."
     },
     {
       "name": "Analytics",

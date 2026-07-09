@@ -22,8 +22,8 @@ export class AuthenticationError extends ApiError {
 export class ValidationError extends ApiError {
   public details?: unknown;
 
-  constructor(message = 'Invalid input data', details?: unknown) {
-    super(400, message, 'VALIDATION_ERROR');
+  constructor(message = 'Invalid input data', details?: unknown, code = 'VALIDATION_ERROR') {
+    super(400, message, code);
     if (details) {
       this.details = details;
     }

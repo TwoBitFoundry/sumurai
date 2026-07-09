@@ -8,7 +8,6 @@ const chooseProviderMock = jest.fn(
   async (_provider: 'plaid' | 'teller' | 'simplefin' | 'diy') => undefined
 );
 const plaidInitiateConnectionMock = jest.fn(async (_setupToken?: string) => undefined);
-const tellerInitiateConnectionMock = jest.fn(async (_setupToken?: string) => undefined);
 
 jest.mock('@/hooks/useProviderCatalog', () => {
   const React = require('react') as typeof import('react');
@@ -20,10 +19,8 @@ jest.mock('@/hooks/useProviderCatalog', () => {
       return {
         loading: false,
         error: null,
-        availableProviders: ['teller', 'simplefin', 'plaid', 'diy'],
+        availableProviders: ['simplefin', 'plaid', 'diy'],
         userProvider,
-        tellerApplicationId: 'app-123',
-        tellerEnvironment: 'development',
         isProviderAvailable: jest.fn(),
         canConnectWith: jest.fn(),
         getConnectBlockedReason: jest.fn(),
@@ -46,8 +43,7 @@ jest.mock('@/hooks/useFinancialConnection', () => ({
     isSyncing: false,
     institutionName: null,
     error: null,
-    initiateConnection:
-      provider === 'plaid' ? plaidInitiateConnectionMock : tellerInitiateConnectionMock,
+    initiateConnection: provider === 'plaid' ? plaidInitiateConnectionMock : jest.fn(),
     retryConnection: jest.fn(),
     reset: jest.fn(),
     setError: jest.fn(),
@@ -107,9 +103,6 @@ jest.mock('@/features/plaid/components/ProviderSelectionPanel', () => ({
   }) => (
     <div>
       {heroAction}
-      <button type="button" onClick={() => onSelectProvider('teller')}>
-        Pick Teller
-      </button>
       <button type="button" onClick={() => onSelectProvider('simplefin')}>
         Pick SimpleFIN
       </button>
@@ -118,6 +111,9 @@ jest.mock('@/features/plaid/components/ProviderSelectionPanel', () => ({
       </button>
       <button type="button" onClick={() => onSelectProvider('diy')}>
         Pick DIY
+      </button>
+      <button type="button" onClick={() => onSelectProvider('teller')}>
+        Pick Teller
       </button>
     </div>
   ),
@@ -142,7 +138,6 @@ describe('OnboardingProviderPicker', () => {
   beforeEach(() => {
     chooseProviderMock.mockClear();
     plaidInitiateConnectionMock.mockClear();
-    tellerInitiateConnectionMock.mockClear();
     jest.mocked(AuthService.completeOnboarding).mockClear();
     jest.mocked(AuthService.activateDemoModeOnboarding).mockClear();
   });
@@ -204,7 +199,7 @@ describe('OnboardingProviderPicker', () => {
     expect(screen.getByRole('button', { name: /pick simplefin/i })).toBeVisible();
   });
 
-  it('starts teller connect without opening the modal', async () => {
+  it('ignores teller selection without starting a connect flow', async () => {
     const user = userEvent.setup();
 
     render(
@@ -215,8 +210,9 @@ describe('OnboardingProviderPicker', () => {
 
     await user.click(screen.getByRole('button', { name: /pick teller/i }));
 
-    expect(tellerInitiateConnectionMock).toHaveBeenCalledTimes(1);
+    expect(plaidInitiateConnectionMock).not.toHaveBeenCalled();
     expect(screen.queryByTestId('provider-connect-modal')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('teller-connection-mount')).not.toBeInTheDocument();
   });
 
   it('starts Plaid connect from the picker click', async () => {

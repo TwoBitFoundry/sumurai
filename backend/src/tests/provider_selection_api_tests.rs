@@ -95,8 +95,6 @@ fn create_auth_cookie_cache() -> MockCacheService {
 
 fn build_test_config() -> Config {
     let mut env = MockEnvironment::new();
-    env.set("TELLER_ENV", "test");
-    env.set("TELLER_APPLICATION_ID", "app-test");
     env.set("AUTH_COOKIE_SAME_SITE", "Lax");
     env.set("APP_ORIGIN", "http://localhost:8080");
     Config::from_env_provider(&env).unwrap()
@@ -104,8 +102,6 @@ fn build_test_config() -> Config {
 
 fn build_test_config_with_provider_allowlist(providers: &str) -> Config {
     let mut env = MockEnvironment::new();
-    env.set("TELLER_ENV", "test");
-    env.set("TELLER_APPLICATION_ID", "app-test");
     env.set("AUTH_COOKIE_SAME_SITE", "Lax");
     env.set("APP_ORIGIN", "http://localhost:8080");
     env.set("ENABLED_FINANCIAL_PROVIDERS", providers);
@@ -830,7 +826,7 @@ async fn given_unregistered_stored_provider_when_fetching_provider_info_then_ret
     assert_eq!(payload["user_provider"], serde_json::Value::Null);
     assert_eq!(
         payload["available_providers"],
-        json!(vec!["plaid".to_string(), "teller".to_string()])
+        json!(vec!["plaid".to_string()])
     );
 }
 
@@ -1001,10 +997,10 @@ async fn given_provider_allowlist_when_syncing_disabled_provider_then_returns_fo
     let (user, token) = crate::test_fixtures::TestFixtures::create_authenticated_user_with_token();
     let user_id = user.id;
     let connection_id = Uuid::new_v4();
-    let mut connection = ProviderConnection::new(user_id, "item-teller");
+    let mut connection = ProviderConnection::new(user_id, "item-plaid");
     connection.id = connection_id;
-    connection.provider = "teller".to_string();
-    connection.mark_connected("Teller Bank");
+    connection.provider = "plaid".to_string();
+    connection.mark_connected("Plaid Bank");
     let mut mock_db = MockDatabaseRepository::new();
 
     mock_db
@@ -1020,8 +1016,8 @@ async fn given_provider_allowlist_when_syncing_disabled_provider_then_returns_fo
 
     let app = build_test_app_with_config(
         mock_db,
-        provider_registry(&["plaid", "teller", "diy"]),
-        build_test_config_with_provider_allowlist("diy,plaid"),
+        provider_registry(&["plaid", "diy"]),
+        build_test_config_with_provider_allowlist("diy"),
     )
     .await;
 
@@ -1046,6 +1042,53 @@ async fn given_provider_allowlist_when_syncing_disabled_provider_then_returns_fo
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(payload["code"], json!("PROVIDER_DISABLED"));
+}
+
+#[tokio::test]
+async fn given_legacy_teller_connection_when_syncing_then_returns_no_longer_supported() {
+    let (user, token) = crate::test_fixtures::TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+    let connection_id = Uuid::new_v4();
+    let mut connection = ProviderConnection::new(user_id, "item-teller");
+    connection.id = connection_id;
+    connection.provider = "teller".to_string();
+    connection.mark_connected("Teller Bank");
+    let mut mock_db = MockDatabaseRepository::new();
+
+    mock_db
+        .expect_get_provider_connection_by_id()
+        .with(
+            mockall::predicate::eq(connection_id),
+            mockall::predicate::eq(user_id),
+        )
+        .returning(move |_, _| {
+            let connection = connection.clone();
+            Box::pin(async move { Ok(Some(connection)) })
+        });
+
+    let app = build_test_app(mock_db, provider_registry(&["plaid", "diy"])).await;
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::POST)
+        .uri("/api/providers/sync-transactions")
+        .header("Cookie", format!("auth_token={}", token))
+        .header("Content-Type", "application/json")
+        .body(axum::body::Body::from(
+            serde_json::to_string(&json!({
+                "connection_id": connection_id.to_string(),
+                "client_date": "2026-07-06",
+                "client_timezone": "America/Chicago"
+            }))
+            .unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 400);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(payload["code"], json!("TELLER_NO_LONGER_SUPPORTED"));
 }
 
 #[tokio::test]
@@ -1084,7 +1127,7 @@ async fn given_active_aggregator_when_selecting_diy_then_returns_ok() {
         )
         .returning(|_, _| Box::pin(async { Ok(()) }));
 
-    let app = build_test_app(mock_db, provider_registry(&["teller", "diy"])).await;
+    let app = build_test_app(mock_db, provider_registry(&["diy"])).await;
 
     let request = axum::http::Request::builder()
         .method(axum::http::Method::POST)
@@ -1132,15 +1175,7 @@ async fn given_diy_connection_when_selecting_aggregator_then_returns_ok() {
             Box::pin(async move { Ok(vec![conn]) })
         });
 
-    mock_db
-        .expect_update_user_provider()
-        .with(
-            mockall::predicate::eq(user_id),
-            mockall::predicate::eq("teller"),
-        )
-        .returning(|_, _| Box::pin(async { Ok(()) }));
-
-    let app = build_test_app(mock_db, provider_registry(&["teller", "diy"])).await;
+    let app = build_test_app(mock_db, provider_registry(&["diy", "plaid"])).await;
 
     let request = axum::http::Request::builder()
         .method(axum::http::Method::POST)
@@ -1153,11 +1188,11 @@ async fn given_diy_connection_when_selecting_aggregator_then_returns_ok() {
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), 200);
+    assert_eq!(response.status(), 400);
 
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    assert_eq!(payload["user_provider"], json!("teller"));
+    assert_eq!(payload["code"], json!("TELLER_NO_LONGER_SUPPORTED"));
 }
 
 #[tokio::test]
@@ -1188,7 +1223,7 @@ async fn given_active_teller_connection_when_selecting_plaid_then_conflict_prese
             Box::pin(async move { Ok(vec![conn]) })
         });
 
-    let app = build_test_app(mock_db, provider_registry(&["teller", "plaid", "diy"])).await;
+    let app = build_test_app(mock_db, provider_registry(&["plaid", "diy"])).await;
 
     let request = axum::http::Request::builder()
         .method(axum::http::Method::POST)

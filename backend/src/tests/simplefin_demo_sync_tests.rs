@@ -4,11 +4,12 @@ mod tests {
     use crate::models::plaid::ProviderConnection;
     use crate::models::transaction::Transaction;
     use crate::providers::ProviderRegistry;
-    use crate::seed::demo_teller_item_id;
+    use crate::seed::demo_simplefin_item_id;
     use crate::services::cache_service::MockCacheService;
-    use crate::services::connection_service::ConnectionService;
+    use crate::services::connection_service::{ConnectionService, SyncConnectionParams};
     use crate::services::merchant_normalization::service::MerchantNormalizationService;
     use crate::services::repository_service::MockDatabaseRepository;
+    use crate::services::sync_service::SyncService;
     use crate::test_fixtures::{build_credential_resolvers, noop_categorizer};
     use crate::utils::merchant_name::normalize_merchant_for_match;
     use chrono::{NaiveDate, Utc};
@@ -60,6 +61,7 @@ mod tests {
 
     struct DemoSyncHarness {
         service: ConnectionService,
+        sync_service: SyncService,
         user_id: Uuid,
         connection: ProviderConnection,
         captured_transactions: Arc<Mutex<Vec<Transaction>>>,
@@ -71,10 +73,10 @@ mod tests {
         demo_accounts: Vec<Account>,
         demo_transactions: Vec<Transaction>,
     ) -> DemoSyncHarness {
-        let mut connection = ProviderConnection::new(user_id, &demo_teller_item_id(user_id));
+        let mut connection = ProviderConnection::new(user_id, &demo_simplefin_item_id(user_id));
         connection.id = connection_id;
-        connection.provider = "teller".to_string();
-        connection.institution_id = Some("teller".to_string());
+        connection.provider = "simplefin".to_string();
+        connection.institution_id = Some("sumurai_demo".to_string());
 
         let captured = Arc::new(Mutex::new(Vec::<Transaction>::new()));
 
@@ -128,6 +130,7 @@ mod tests {
         ));
 
         let provider_registry = Arc::new(ProviderRegistry::new());
+        let sync_service = SyncService::new(provider_registry.clone());
 
         let service = ConnectionService::new(
             Arc::clone(&db_repository),
@@ -139,6 +142,7 @@ mod tests {
 
         DemoSyncHarness {
             service,
+            sync_service,
             user_id,
             connection,
             captured_transactions: captured,
@@ -167,7 +171,16 @@ mod tests {
 
         let result = harness
             .service
-            .sync_teller_connection(&harness.user_id, "jwt_demo", &mut harness.connection, None)
+            .sync_simplefin_connection(
+                SyncConnectionParams {
+                    provider: "simplefin",
+                    user_id: &harness.user_id,
+                    jwt_id: "jwt_demo",
+                },
+                &harness.sync_service,
+                &mut harness.connection,
+                None,
+            )
             .await;
 
         assert!(
@@ -197,7 +210,16 @@ mod tests {
 
         harness
             .service
-            .sync_teller_connection(&harness.user_id, "jwt_demo", &mut harness.connection, None)
+            .sync_simplefin_connection(
+                SyncConnectionParams {
+                    provider: "simplefin",
+                    user_id: &harness.user_id,
+                    jwt_id: "jwt_demo",
+                },
+                &harness.sync_service,
+                &mut harness.connection,
+                None,
+            )
             .await
             .unwrap();
 
@@ -244,7 +266,16 @@ mod tests {
 
         let result = harness
             .service
-            .sync_teller_connection(&harness.user_id, "jwt_demo", &mut harness.connection, None)
+            .sync_simplefin_connection(
+                SyncConnectionParams {
+                    provider: "simplefin",
+                    user_id: &harness.user_id,
+                    jwt_id: "jwt_demo",
+                },
+                &harness.sync_service,
+                &mut harness.connection,
+                None,
+            )
             .await
             .unwrap();
 

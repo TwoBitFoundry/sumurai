@@ -30,23 +30,13 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
     provider: 'plaid',
     isOnline,
   });
-  const tellerConnectionFlow = useFinancialConnection({
-    provider: 'teller',
-    isOnline,
-  });
   const prevInProgressRef = useRef(false);
   const providerReadyState = {
     plaid: plaidConnectionFlow.isReady,
-    teller: tellerConnectionFlow.isReady,
     simplefin: true,
   } satisfies Partial<Record<FinancialProvider, boolean>>;
 
-  const activeConnectionFlow =
-    connectingProvider === 'plaid'
-      ? plaidConnectionFlow
-      : connectingProvider === 'teller'
-        ? tellerConnectionFlow
-        : null;
+  const activeConnectionFlow = connectingProvider === 'plaid' ? plaidConnectionFlow : null;
 
   const handleSelectProvider = useCallback(
     async (provider: FinancialProvider) => {
@@ -55,15 +45,16 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
         return;
       }
 
+      if (provider === 'teller') {
+        return;
+      }
+
       setConnectingProvider(provider);
       if (provider === 'plaid') {
         await plaidConnectionFlow.initiateConnection();
       }
-      if (provider === 'teller') {
-        await tellerConnectionFlow.initiateConnection();
-      }
     },
-    [plaidConnectionFlow, tellerConnectionFlow]
+    [plaidConnectionFlow]
   );
 
   const completeAndExit = useCallback(async () => {
@@ -172,7 +163,6 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
               loading={providerCatalog.loading}
               error={providerCatalog.error}
               availableProviders={providerCatalog.availableProviders}
-              tellerApplicationId={providerCatalog.tellerApplicationId}
               providerReadyState={providerReadyState}
               connectingProvider={connectingProvider}
               onSelectProvider={handleSelectProvider}
@@ -191,10 +181,7 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
           </div>
         </main>
 
-        <div hidden>
-          {plaidConnectionFlow.connectionMount}
-          {tellerConnectionFlow.connectionMount}
-        </div>
+        <div hidden>{plaidConnectionFlow.connectionMount}</div>
 
         {connectingProvider === 'simplefin' ? (
           <OnboardingProviderConnectModal

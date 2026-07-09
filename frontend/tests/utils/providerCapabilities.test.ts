@@ -12,14 +12,13 @@ const plaidOnlyCatalogue: ProviderCatalogue = {
   available_providers: ['plaid'],
 };
 
-const tellerWithoutAppId: ProviderCatalogue = {
-  available_providers: ['plaid', 'teller'],
+const tellerLegacyCatalogue: ProviderCatalogue = {
+  available_providers: ['plaid', 'simplefin'],
   user_provider: 'teller',
 };
 
-const tellerReadyCatalogue: ProviderCatalogue = {
-  ...tellerWithoutAppId,
-  teller_application_id: 'app-123',
+const fullCatalogue: ProviderCatalogue = {
+  available_providers: ['plaid', 'simplefin', 'diy'],
 };
 
 describe('providerCapabilities', () => {
@@ -35,17 +34,12 @@ describe('providerCapabilities', () => {
     expect(isProviderConnectable('teller', plaidOnlyCatalogue)).toBe(false);
   });
 
-  it('given teller without application id when checked then is listed but not connectable', () => {
-    expect(isProviderListed('teller', tellerWithoutAppId)).toBe(true);
-    expect(isProviderConnectable('teller', tellerWithoutAppId)).toBe(false);
-    expect(isPickerEnabled('teller', tellerWithoutAppId)).toBe(false);
-    expect(getConnectBlockedReason('teller', tellerWithoutAppId)).toBe('Missing credentials');
-  });
-
-  it('given teller with application id when checked then is connectable', () => {
-    expect(isProviderConnectable('teller', tellerReadyCatalogue)).toBe(true);
-    expect(getConnectBlockedReason('teller', tellerReadyCatalogue)).toBeNull();
-    expect(isPickerEnabled('teller', tellerReadyCatalogue)).toBe(true);
+  it('given teller when checked then is never connectable or picker-enabled', () => {
+    expect(isProviderConnectable('teller', tellerLegacyCatalogue)).toBe(false);
+    expect(isPickerEnabled('teller', tellerLegacyCatalogue)).toBe(false);
+    expect(getConnectBlockedReason('teller', tellerLegacyCatalogue)).toBe(
+      'Teller is no longer supported'
+    );
   });
 
   it('given simplefin missing from catalogue when checked then remains enabled', () => {
@@ -54,22 +48,17 @@ describe('providerCapabilities', () => {
     expect(getConnectBlockedReason('simplefin', plaidOnlyCatalogue)).toBeNull();
   });
 
-  it('given preferred provider is not connectable when resolved then falls back to connectable provider', () => {
-    expect(resolveConnectProvider(tellerWithoutAppId, 'teller')).toBe('plaid');
-    expect(resolveConnectProvider(tellerReadyCatalogue, 'teller')).toBe('teller');
+  it('given preferred provider is teller when resolved then falls back to connectable provider', () => {
+    expect(resolveConnectProvider(tellerLegacyCatalogue, 'teller')).toBe('plaid');
+    expect(resolveConnectProvider(fullCatalogue, 'teller')).toBe('plaid');
   });
 
-  it('given providers are fully configured when checked then picker enables all three', () => {
-    const fullCatalogue: ProviderCatalogue = {
-      available_providers: ['plaid', 'teller', 'simplefin'],
-      teller_application_id: 'app-123',
-    };
-
+  it('given providers are fully configured when checked then picker enables connectable providers', () => {
     expect(isPickerEnabled('plaid', fullCatalogue)).toBe(true);
-    expect(isPickerEnabled('teller', fullCatalogue)).toBe(true);
+    expect(isPickerEnabled('teller', fullCatalogue)).toBe(false);
     expect(isPickerEnabled('simplefin', fullCatalogue)).toBe(true);
     expect(getConnectBlockedReason('plaid', fullCatalogue)).toBeNull();
-    expect(getConnectBlockedReason('teller', fullCatalogue)).toBeNull();
+    expect(getConnectBlockedReason('teller', fullCatalogue)).toBe('Teller is no longer supported');
     expect(getConnectBlockedReason('simplefin', fullCatalogue)).toBeNull();
   });
 
@@ -80,26 +69,19 @@ describe('providerCapabilities', () => {
     expect(getConnectBlockedReason('diy', plaidOnlyCatalogue)).toBeNull();
   });
 
-  it('given an aggregator is connected when checking a competing aggregator then it is gated', () => {
-    const tellerConnected: ProviderCatalogue = {
-      available_providers: ['plaid', 'teller', 'simplefin'],
-      teller_application_id: 'app-123',
-      user_provider: 'teller',
-    };
-
-    expect(isPickerEnabled('plaid', tellerConnected)).toBe(false);
-    expect(isPickerEnabled('simplefin', tellerConnected)).toBe(true);
-    expect(isPickerEnabled('teller', tellerConnected)).toBe(true);
-    expect(getConnectBlockedReason('plaid', tellerConnected)).toBe('Disconnect teller first');
-    expect(getConnectBlockedReason('simplefin', tellerConnected)).toBeNull();
-    expect(getConnectBlockedReason('teller', tellerConnected)).toBeNull();
+  it('given teller connections remain when checking plaid then plaid stays gated', () => {
+    expect(isPickerEnabled('plaid', tellerLegacyCatalogue)).toBe(false);
+    expect(isPickerEnabled('simplefin', tellerLegacyCatalogue)).toBe(true);
+    expect(isPickerEnabled('teller', tellerLegacyCatalogue)).toBe(false);
+    expect(getConnectBlockedReason('plaid', tellerLegacyCatalogue)).toBe('Disconnect teller first');
+    expect(getConnectBlockedReason('simplefin', tellerLegacyCatalogue)).toBeNull();
   });
 
-  it('given plaid or teller without credentials when checked then credentials are unavailable', () => {
-    expect(isCredentialsEnvUnavailable('teller', tellerWithoutAppId)).toBe(true);
-    expect(isCredentialsEnvUnavailable('plaid', { available_providers: ['teller'] })).toBe(true);
-    expect(isCredentialsEnvUnavailable('simplefin', tellerWithoutAppId)).toBe(false);
-    expect(isCredentialsEnvUnavailable('diy', tellerWithoutAppId)).toBe(false);
+  it('given plaid without credentials when checked then credentials are unavailable', () => {
+    expect(isCredentialsEnvUnavailable('teller', tellerLegacyCatalogue)).toBe(false);
+    expect(isCredentialsEnvUnavailable('plaid', { available_providers: ['simplefin'] })).toBe(true);
+    expect(isCredentialsEnvUnavailable('simplefin', tellerLegacyCatalogue)).toBe(false);
+    expect(isCredentialsEnvUnavailable('diy', tellerLegacyCatalogue)).toBe(false);
   });
 
   it('given an aggregator is connected when checking diy then diy stays enabled', () => {

@@ -17,7 +17,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use uuid::Uuid;
 
-const TELLER_CONNECTION_KEY: &str = "connection:sumurai_demo";
+const SIMPLEFIN_CONNECTION_KEY: &str = "connection:sumurai_demo";
 const DIY_CONNECTION_KEY: &str = "connection:sumurai_demo_diy";
 const DIY_ITEM_KEY: &str = "diy_sumurai_demo";
 const DIY_INSTITUTION_NAME: &str = "Sumurai Demo DIY";
@@ -95,7 +95,7 @@ impl DemoModeService {
         let connections = db.get_all_provider_connections_by_user(user_id).await?;
         Ok(connections.iter().any(|connection| {
             connection.user_id == *user_id
-                && connection.item_id == seed::demo_teller_item_id(*user_id)
+                && connection.item_id == seed::demo_simplefin_item_id(*user_id)
         }))
     }
 
@@ -111,9 +111,9 @@ impl DemoModeService {
             MerchantNormalizationService::new(Arc::clone(db), Arc::clone(cache_service));
 
         let synced_accounts = synced_account_ids(user_id);
-        let teller_connection = build_teller_connection(user_id, now);
+        let simplefin_connection = build_simplefin_connection(user_id, now);
         let synced_account_rows =
-            build_synced_accounts(user_id, &teller_connection, &synced_accounts);
+            build_synced_accounts(user_id, &simplefin_connection, &synced_accounts);
         let mut authored_transactions = build_authored_transactions(&synced_accounts);
         let offset_days = runtime_offset_days(Utc::now().date_naive());
         apply_runtime_offset(&mut authored_transactions, offset_days);
@@ -123,7 +123,7 @@ impl DemoModeService {
         ensure_category_coverage(&transactions)?;
         ensure_transaction_contract(&transactions)?;
 
-        let mut connection = teller_connection.clone();
+        let mut connection = simplefin_connection.clone();
         connection.transaction_count = transactions.len() as i32;
         connection.account_count = synced_account_rows.len() as i32;
         db.upsert_provider_snapshot_bundle(
@@ -161,7 +161,7 @@ impl DemoModeService {
         let mut all_transactions = transactions;
         all_transactions.extend(diy_transactions);
         seed_budgets(db, user_id, &all_transactions).await?;
-        db.update_user_provider(&user_id, "teller").await?;
+        db.update_user_provider(&user_id, "simplefin").await?;
 
         if mark_onboarding_complete {
             db.mark_onboarding_complete(&user_id).await?;
@@ -246,17 +246,17 @@ fn synced_account_ids(user_id: Uuid) -> SyncedAccountIds {
     }
 }
 
-fn build_teller_connection(user_id: Uuid, now: chrono::DateTime<Utc>) -> ProviderConnection {
+fn build_simplefin_connection(user_id: Uuid, now: chrono::DateTime<Utc>) -> ProviderConnection {
     ProviderConnection {
-        id: seed::demo_entity_id(user_id, TELLER_CONNECTION_KEY),
+        id: seed::demo_entity_id(user_id, SIMPLEFIN_CONNECTION_KEY),
         user_id,
-        item_id: seed::demo_teller_item_id(user_id),
-        provider: "teller".to_string(),
+        item_id: seed::demo_simplefin_item_id(user_id),
+        provider: "simplefin".to_string(),
         is_connected: true,
         last_sync_at: Some(now),
         connected_at: Some(now),
         disconnected_at: None,
-        institution_id: Some("teller".to_string()),
+        institution_id: Some(seed::SUMURAI_DEMO_SIMPLEFIN_ORG_CONN_ID.to_string()),
         institution_name: Some("Sumurai Demo Bank".to_string()),
         institution_logo_url: None,
         sync_cursor: None,
@@ -272,7 +272,7 @@ fn build_synced_accounts(
     connection: &ProviderConnection,
     ids: &SyncedAccountIds,
 ) -> Vec<Account> {
-    let item_id = connection.item_id.clone();
+    let org_conn_id = seed::SUMURAI_DEMO_SIMPLEFIN_ORG_CONN_ID.to_string();
     vec![
         Account {
             id: ids.checking,
@@ -287,7 +287,7 @@ fn build_synced_accounts(
             balance_current: Some(decimal("6480.42")),
             mask: Some("1001".to_string()),
             institution_name: Some("Sumurai Demo Bank".to_string()),
-            provider_conn_id: Some(item_id.clone()),
+            provider_conn_id: Some(org_conn_id.clone()),
         },
         Account {
             id: ids.savings,
@@ -302,7 +302,7 @@ fn build_synced_accounts(
             balance_current: Some(decimal("18220.00")),
             mask: Some("2001".to_string()),
             institution_name: Some("Sumurai Demo Bank".to_string()),
-            provider_conn_id: Some(item_id.clone()),
+            provider_conn_id: Some(org_conn_id.clone()),
         },
         Account {
             id: ids.credit,
@@ -317,7 +317,7 @@ fn build_synced_accounts(
             balance_current: Some(decimal("-1438.24")),
             mask: Some("3001".to_string()),
             institution_name: Some("Sumurai Demo Bank".to_string()),
-            provider_conn_id: Some(item_id.clone()),
+            provider_conn_id: Some(org_conn_id.clone()),
         },
         Account {
             id: ids.investment,
@@ -332,7 +332,7 @@ fn build_synced_accounts(
             balance_current: Some(decimal("47215.89")),
             mask: Some("4001".to_string()),
             institution_name: Some("Sumurai Demo Bank".to_string()),
-            provider_conn_id: Some(item_id.clone()),
+            provider_conn_id: Some(org_conn_id.clone()),
         },
         Account {
             id: ids.loan,
@@ -344,7 +344,7 @@ fn build_synced_accounts(
             balance_current: Some(decimal("-18420.77")),
             mask: Some("5001".to_string()),
             institution_name: Some("Sumurai Demo Bank".to_string()),
-            provider_conn_id: Some(item_id),
+            provider_conn_id: Some(org_conn_id),
         },
     ]
 }

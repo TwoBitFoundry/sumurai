@@ -6,8 +6,14 @@ import {
 } from '@/utils/providerCards';
 
 describe('providerCards', () => {
-  it('PROVIDER_PRICE_ORDER lists DIY, SimpleFIN, Teller, then Plaid', () => {
-    expect(PROVIDER_PRICE_ORDER).toEqual(['diy', 'simplefin', 'teller', 'plaid']);
+  it('PROVIDER_PRICE_ORDER lists DIY, SimpleFIN, then Plaid', () => {
+    expect(PROVIDER_PRICE_ORDER).toEqual(['diy', 'simplefin', 'plaid']);
+  });
+
+  it('PROVIDER_CARD_CONFIG keeps teller for legacy bank logos', () => {
+    expect(PROVIDER_CARD_CONFIG.teller).toBeDefined();
+    expect(PROVIDER_CARD_CONFIG.teller.logoSrc).toBe('/teller.webp');
+    expect(PROVIDER_CARD_CONFIG.teller.title).toBe('Teller');
   });
 
   it('PROVIDER_CARD_CONFIG has a diy entry with expected top-level fields', () => {
@@ -17,7 +23,7 @@ describe('providerCards', () => {
     expect(PROVIDER_CARD_CONFIG.diy.region).toBe('Any (USD)');
   });
 
-  it('every provider card has a Sync section', () => {
+  it('every picker provider card has a Sync section', () => {
     for (const provider of PROVIDER_PRICE_ORDER) {
       const config = PROVIDER_CARD_CONFIG[provider];
       const syncSection = config.sections.find((s) => s.label === 'Sync');
@@ -44,17 +50,17 @@ describe('providerCards', () => {
     expect(CONNECT_ACCOUNT_PROVIDER_CONTENT.diy.displayName).toBe('DIY');
   });
 
-  it('resolvePickerVisibleProviders returns all providers when no aggregator is active', () => {
+  it('resolvePickerVisibleProviders returns all pickable providers when no aggregator is active', () => {
     expect(resolvePickerVisibleProviders(null)).toEqual(PROVIDER_PRICE_ORDER);
   });
 
   it('resolvePickerVisibleProviders returns diy and the active aggregator only', () => {
-    expect(resolvePickerVisibleProviders('teller')).toEqual(['diy', 'teller']);
+    expect(resolvePickerVisibleProviders('teller')).toEqual(['diy']);
     expect(resolvePickerVisibleProviders('plaid')).toEqual(['diy', 'plaid']);
     expect(resolvePickerVisibleProviders('simplefin')).toEqual(['diy', 'simplefin']);
   });
 
-  it('resolvePickerVisibleProviders returns all providers in demo mode even with an active aggregator', () => {
+  it('resolvePickerVisibleProviders returns all pickable providers in demo mode even with an active aggregator', () => {
     expect(resolvePickerVisibleProviders('teller', true)).toEqual(PROVIDER_PRICE_ORDER);
     expect(resolvePickerVisibleProviders('plaid', true)).toEqual(PROVIDER_PRICE_ORDER);
     expect(resolvePickerVisibleProviders(null, true)).toEqual(PROVIDER_PRICE_ORDER);

@@ -12,9 +12,7 @@ use crate::models::predicted_category::PredictedCategory;
 use crate::models::{auth::User, transaction::Transaction};
 use crate::providers::ProviderRegistry;
 
-use crate::providers::{
-    PlaidCredentialResolver, SimpleFinCredentialResolver, TellerCredentialResolver,
-};
+use crate::providers::{PlaidCredentialResolver, SimpleFinCredentialResolver};
 use crate::services::{
     analytics_service::AnalyticsService,
     auth_service::AuthService,
@@ -176,11 +174,6 @@ pub(crate) fn build_credential_resolvers(
         Arc::new(PlaidCredentialResolver::new(Arc::clone(&db_repository)))
             as Arc<dyn crate::providers::ProviderCredentialResolver>,
     );
-    resolvers.insert(
-        "teller".to_string(),
-        Arc::new(TellerCredentialResolver::new(Arc::clone(&db_repository)))
-            as Arc<dyn crate::providers::ProviderCredentialResolver>,
-    );
     resolvers
 }
 
@@ -188,7 +181,6 @@ impl TestFixtures {
     fn create_test_config() -> Config {
         std::env::set_var("OTEL_TRACES_EXPORTER", "none");
         let mut test_env = MockEnvironment::new();
-        test_env.set("TELLER_ENV", "test");
         test_env.set("AUTH_COOKIE_SAME_SITE", "Lax");
         test_env.set("APP_ORIGIN", "http://localhost:8080");
         Config::from_env_provider(&test_env).expect("Failed to create test config")
@@ -201,7 +193,6 @@ impl TestFixtures {
     pub(crate) fn create_paddle_test_config_with_trials(trials_enabled: bool) -> Config {
         std::env::set_var("OTEL_TRACES_EXPORTER", "none");
         let mut test_env = MockEnvironment::new();
-        test_env.set("TELLER_ENV", "test");
         test_env.set("AUTH_COOKIE_SAME_SITE", "Lax");
         test_env.set("APP_ORIGIN", "http://localhost:8080");
         test_env.set("BILLING_MODE", "paddle");

@@ -69,8 +69,6 @@ mod subscription_detection_tests;
 mod sync_service_factory_tests;
 mod sync_service_tests;
 mod sync_service_with_provider_tests;
-mod teller_model_tests;
-mod teller_provider_tests;
 pub mod test_fixtures;
 mod transaction_import_api_tests;
 mod user_model_tests;

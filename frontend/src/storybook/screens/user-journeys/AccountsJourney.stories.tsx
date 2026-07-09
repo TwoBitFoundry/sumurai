@@ -482,15 +482,12 @@ export const TellerEmptyState: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const body = within(canvasElement.ownerDocument.body);
 
     await openProviderPicker(canvas);
-    await expect(canvas.getByAltText('Teller logo')).toBeVisible();
     await waitForPickerLinkButtons(canvas);
-
-    await userEvent.click(getStoryProviderPickerButton(canvas, 'teller'));
-    await waitForPickerSdkConnect(canvas, body);
-    await expect(body.queryByRole('dialog')).not.toBeInTheDocument();
+    await expect(canvas.queryByText('Teller')).toBeNull();
+    await expect(canvas.queryByAltText('Teller logo')).toBeNull();
+    await expect(getStoryProviderPickerButton(canvas, 'plaid')).toBeVisible();
   },
 };
 

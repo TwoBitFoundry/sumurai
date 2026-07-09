@@ -27,14 +27,12 @@ export function isProviderConnectable(
     return false;
   }
 
-  if (provider !== 'diy' && !isProviderListed(provider, catalogue)) {
+  if (provider === 'teller') {
     return false;
   }
 
-  if (provider === 'teller') {
-    return (
-      isProviderListed(provider, catalogue) && Boolean(catalogue.teller_application_id?.trim())
-    );
+  if (provider !== 'diy' && !isProviderListed(provider, catalogue)) {
+    return false;
   }
 
   return true;
@@ -44,6 +42,10 @@ export function isPickerEnabled(
   provider: FinancialProvider,
   catalogue: ProviderCatalogue | null
 ): boolean {
+  if (provider === 'teller') {
+    return false;
+  }
+
   if (provider === 'diy' || provider === 'simplefin') {
     return true;
   }
@@ -64,6 +66,10 @@ export function getConnectBlockedReason(
   provider: FinancialProvider,
   catalogue: ProviderCatalogue | null
 ): string | null {
+  if (provider === 'teller') {
+    return 'Teller is no longer supported';
+  }
+
   if (provider === 'diy' || provider === 'simplefin') {
     return null;
   }
@@ -78,7 +84,7 @@ export function getConnectBlockedReason(
   }
 
   if (!catalogue) {
-    return provider === 'teller' ? 'Missing credentials' : null;
+    return null;
   }
 
   if (isProviderConnectable(provider, catalogue)) {
@@ -92,7 +98,7 @@ export function isCredentialsEnvUnavailable(
   provider: FinancialProvider,
   catalogue: ProviderCatalogue | null
 ): boolean {
-  if (provider !== 'plaid' && provider !== 'teller') {
+  if (provider !== 'plaid') {
     return false;
   }
 
@@ -104,7 +110,14 @@ export function resolveConnectProvider(
   preferred: FinancialProvider
 ): FinancialProvider {
   if (!catalogue) {
-    return preferred;
+    return preferred === 'teller' ? 'simplefin' : preferred;
+  }
+
+  if (preferred === 'teller') {
+    const fallback = catalogue.available_providers.find((provider) =>
+      isProviderConnectable(provider, catalogue)
+    );
+    return fallback ?? 'simplefin';
   }
 
   if (isProviderConnectable(preferred, catalogue)) {
