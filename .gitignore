@@ -79,6 +79,7 @@ plaid.env
 *.backup
 frontend/src/*.bak
 backend/src/*.bak
+docs/PRODUCTION_BILLING.md
 
 *storybook.log
 storybook-static

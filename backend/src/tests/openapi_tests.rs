@@ -168,6 +168,10 @@ fn given_auto_categorize_when_generating_openapi_then_documents_endpoint_and_sch
         serde_json::json!("Unauthorized")
     );
     assert_eq!(
+        path["post"]["responses"]["402"]["content"]["application/json"]["schema"]["$ref"],
+        serde_json::json!("#/components/schemas/ApiErrorResponse")
+    );
+    assert_eq!(
         path["post"]["responses"]["409"]["content"]["application/json"]["schema"]["$ref"],
         serde_json::json!("#/components/schemas/AutoCategorizationJobState")
     );
@@ -175,6 +179,34 @@ fn given_auto_categorize_when_generating_openapi_then_documents_endpoint_and_sch
         spec["components"]["schemas"]["AutoCategorizationJobStatus"]["type"],
         serde_json::json!("string")
     );
+}
+
+#[test]
+fn given_entitlement_gated_routes_when_generating_openapi_then_documents_402() {
+    let spec = serde_json::to_value(init_openapi()).unwrap();
+
+    for (path, method) in [
+        ("/api/plaid/link-token", "post"),
+        ("/api/plaid/exchange-token", "post"),
+        ("/api/providers/connect", "post"),
+        ("/api/providers/select", "post"),
+        ("/api/providers/sync-transactions", "post"),
+        ("/api/diy/institutions", "post"),
+        ("/api/budgets", "post"),
+        ("/api/transactions/auto-categorize", "post"),
+        ("/api/transactions/{id}/category", "put"),
+        ("/api/transactions/import", "post"),
+    ] {
+        let responses = &spec["paths"][path][method]["responses"];
+        assert!(
+            responses.get("402").is_some(),
+            "missing 402 response for {method} {path}"
+        );
+        assert_eq!(
+            responses["402"]["content"]["application/json"]["schema"]["$ref"],
+            serde_json::json!("#/components/schemas/ApiErrorResponse")
+        );
+    }
 }
 
 #[test]

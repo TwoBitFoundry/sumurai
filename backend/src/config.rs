@@ -52,7 +52,7 @@ pub struct PaddleBillingConfig {
     pub api_key: String,
     pub webhook_secret: String,
     pub monthly_price_id: String,
-    pub cardless_trial_price_id: String,
+    pub cardless_trial_price_id: Option<String>,
     pub trials_enabled: bool,
 }
 
@@ -201,13 +201,26 @@ fn parse_paddle_billing_config(
         return Ok(None);
     }
 
+    let trials_enabled = parse_bool_flag(env, "BILLING_TRIALS_ENABLED", false)?;
+    let cardless_trial_price_id = if trials_enabled {
+        Some(parse_required_trimmed(
+            env,
+            "PADDLE_CARDLESS_TRIAL_PRICE_ID",
+        )?)
+    } else {
+        match env.get_var("PADDLE_CARDLESS_TRIAL_PRICE_ID") {
+            Some(value) if !value.trim().is_empty() => Some(value.trim().to_string()),
+            _ => None,
+        }
+    };
+
     Ok(Some(PaddleBillingConfig {
         environment: parse_required_trimmed(env, "PADDLE_ENVIRONMENT")?,
         api_key: parse_required_trimmed(env, "PADDLE_API_KEY")?,
         webhook_secret: parse_required_trimmed(env, "PADDLE_WEBHOOK_SECRET")?,
         monthly_price_id: parse_required_trimmed(env, "PADDLE_MONTHLY_PRICE_ID")?,
-        cardless_trial_price_id: parse_required_trimmed(env, "PADDLE_CARDLESS_TRIAL_PRICE_ID")?,
-        trials_enabled: parse_bool_flag(env, "BILLING_TRIALS_ENABLED", false)?,
+        cardless_trial_price_id,
+        trials_enabled,
     }))
 }
 

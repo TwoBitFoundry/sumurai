@@ -268,6 +268,11 @@ impl BillingService {
             .await
             .map_err(|_| BillingServiceError::RepositoryRequestFailed)?;
 
+        let price_id = paddle
+            .cardless_trial_price_id
+            .clone()
+            .ok_or(BillingServiceError::TrialsDisabled)?;
+
         let trial = self
             .paddle_client
             .create_cardless_trial(CreateCardlessTrialRequest {
@@ -281,7 +286,7 @@ impl BillingService {
                     .and_then(|profile| profile.paddle_address_id.clone()),
                 country_code: input.country_code.trim().to_uppercase(),
                 postal_code: input.postal_code.trim().to_string(),
-                price_id: paddle.cardless_trial_price_id.clone(),
+                price_id,
             })
             .await
             .map_err(|_| BillingServiceError::PaddleRequestFailed)?;
@@ -423,10 +428,11 @@ impl BillingService {
         };
 
         if is_subscription_lifecycle_event(&payload.event_type) {
-            if let Some(subscription) = parse_subscription_data(&payload.data) {
-                self.apply_subscription_entitlement(user_id, &subscription, payload.occurred_at)
-                    .await?;
-            }
+            let Some(subscription) = parse_subscription_data(&payload.data) else {
+                return Err(BillingWebhookError::UnparseableSubscription);
+            };
+            self.apply_subscription_entitlement(user_id, &subscription, payload.occurred_at)
+                .await?;
         }
 
         self.repository
@@ -489,6 +495,7 @@ pub enum BillingWebhookError {
     BillingDisabled,
     InvalidSignature,
     InvalidPayload,
+    UnparseableSubscription,
     RepositoryRequestFailed,
 }
 

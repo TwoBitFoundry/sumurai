@@ -228,7 +228,8 @@ async fn main() -> anyhow::Result<()> {
             paddle_api_key_configured = !paddle.api_key.is_empty(),
             paddle_webhook_secret_configured = !paddle.webhook_secret.is_empty(),
             paddle_monthly_price_configured = !paddle.monthly_price_id.is_empty(),
-            paddle_cardless_trial_price_configured = !paddle.cardless_trial_price_id.is_empty(),
+            paddle_cardless_trial_price_configured = paddle.cardless_trial_price_id.is_some(),
+            trials_enabled = paddle.trials_enabled,
             "Paddle billing enabled"
         );
     } else {
@@ -1783,6 +1784,7 @@ async fn list_categories(
         (status = 200, description = "Custom category created", body = crate::models::custom_category::CustomCategory),
         (status = 400, description = "Validation error with error code"),
         (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 500, description = "Internal server error"),
     ),
     security(("auth_cookie" = [])),
@@ -1883,6 +1885,7 @@ async fn create_custom_category(
     responses(
         (status = 204, description = "Custom category deleted"),
         (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 500, description = "Internal server error"),
     ),
     security(("auth_cookie" = [])),
@@ -1927,6 +1930,7 @@ async fn delete_custom_category(
         (status = 200, description = "Category updated"),
         (status = 400, description = "Validation error"),
         (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 404, description = "Transaction not found"),
         (status = 500, description = "Internal server error"),
     ),
@@ -2008,6 +2012,7 @@ async fn set_transaction_category(
     responses(
         (status = 200, description = "Background categorization started", body = AutoCategorizationJobState),
         (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 409, description = "Active job already exists", body = AutoCategorizationJobState),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
@@ -2018,6 +2023,13 @@ async fn start_auto_categorization(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Response, (StatusCode, Json<ApiErrorResponse>)> {
+    require_paid_own_data_access_after_demo(
+        &state,
+        auth_context.user_id,
+        "transactions.auto_categorize",
+    )
+    .await?;
+
     match state
         .auto_categorization_service
         .start(&auth_context.user_id, &auth_context.jwt_id)
@@ -2184,6 +2196,7 @@ async fn validate_authenticated_transaction_import(
         (status = 200, description = "Transactions imported successfully", body = ImportResponse),
         (status = 400, description = "Missing fields, invalid multipart payload, unsupported extension, invalid UTF-8, invalid CSV mapping, or file with no valid transactions"),
         (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 403, description = "Account belongs to another user"),
         (status = 413, description = "Payload too large"),
         (status = 500, description = "Internal server error"),
@@ -2454,6 +2467,7 @@ fn api_internal_server_error(message: impl Into<String>) -> (StatusCode, Json<Ap
         (status = 200, description = "Link token created successfully", body = LinkTokenResponse),
         (status = 400, description = "Unsupported provider"),
         (status = 401, description = "Unauthorized"),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 500, description = "Failed to create link token"),
     ),
     security(("auth_cookie" = [])),
@@ -2506,6 +2520,7 @@ async fn create_authenticated_link_token(
         (status = 200, description = "Token exchanged successfully", body = ExchangeTokenResponse),
         (status = 400, description = "Unsupported provider"),
         (status = 401, description = "Unauthorized"),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 502, description = "Token exchange failed with provider"),
         (status = 500, description = "Internal server error"),
     ),
@@ -2660,6 +2675,7 @@ async fn get_authenticated_plaid_accounts(
         (status = 200, description = "Transactions synced successfully", body = SyncTransactionsResponse),
         (status = 400, description = "Missing connection_id"),
         (status = 401, description = "Unauthorized"),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 415, description = "Unsupported media type"),
         (status = 404, description = "Connection not found or credentials missing"),
         (status = 502, description = "Provider request failed"),
@@ -3654,6 +3670,7 @@ async fn load_connection_statuses(
         (status = 200, description = "Provider connected successfully", body = ProviderConnectResponse),
         (status = 400, description = "Unsupported provider"),
         (status = 401, description = "Unauthorized"),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 500, description = "Failed to connect provider", body = ApiErrorResponse),
     ),
     security(("auth_cookie" = [])),
@@ -4224,6 +4241,7 @@ async fn get_authenticated_budgets_overview(
         (status = 200, description = "Budget created", body = crate::models::budget::Budget),
         (status = 400, description = "Invalid budget data", body = ApiErrorResponse),
         (status = 401, description = "Unauthorized"),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 409, description = "Budget category already exists", body = ApiErrorResponse),
     ),
     security(("auth_cookie" = [])),
@@ -4460,6 +4478,7 @@ async fn health_check() -> &'static str {
         (status = 200, description = "Institution created successfully", body = crate::models::diy::CreateDiyInstitutionResponse),
         (status = 400, description = "Invalid request body", body = ApiErrorResponse),
         (status = 401, description = "Unauthorized"),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
     security(("auth_cookie" = [])),
@@ -4765,6 +4784,7 @@ async fn get_authenticated_provider_info(
         (status = 200, description = "Provider selected successfully", body = ProviderSelectResponse),
         (status = 400, description = "Invalid provider specified", body = ApiErrorResponse),
         (status = 401, description = "Unauthorized"),
+        (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 409, description = "Cannot switch while active connections exist", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),

@@ -393,6 +393,9 @@ pub async fn handle_paddle_billing_webhook(
             BillingWebhookError::BillingDisabled => billing_disabled_response(),
             BillingWebhookError::InvalidSignature => api_bad_request("Invalid Paddle signature"),
             BillingWebhookError::InvalidPayload => api_bad_request("Invalid Paddle event"),
+            BillingWebhookError::UnparseableSubscription => {
+                api_bad_request("Unparseable Paddle subscription event")
+            }
             BillingWebhookError::RepositoryRequestFailed => {
                 api_internal_server_error("Failed to process Paddle webhook")
             }

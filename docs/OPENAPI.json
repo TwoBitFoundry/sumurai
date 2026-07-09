@@ -1965,6 +1965,16 @@
           "401": {
             "description": "Unauthorized"
           },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Budget category already exists",
             "content": {
@@ -2231,6 +2241,16 @@
               }
             }
           },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -2266,6 +2286,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Paid access required",
             "content": {
               "application/json": {
                 "schema": {
@@ -2325,6 +2355,16 @@
           },
           "401": {
             "description": "Unauthorized"
+          },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
           },
           "500": {
             "description": "Internal server error",
@@ -2660,6 +2700,16 @@
           "401": {
             "description": "Unauthorized"
           },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error"
           },
@@ -2708,6 +2758,16 @@
           "401": {
             "description": "Unauthorized"
           },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Failed to create link token"
           }
@@ -2752,6 +2812,16 @@
           },
           "401": {
             "description": "Unauthorized"
+          },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
           },
           "500": {
             "description": "Failed to connect provider",
@@ -2894,6 +2964,16 @@
           },
           "401": {
             "description": "Unauthorized"
+          },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
           },
           "409": {
             "description": "Cannot switch while active connections exist",
@@ -3063,6 +3143,16 @@
           },
           "401": {
             "description": "Unauthorized"
+          },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
           },
           "404": {
             "description": "Connection not found or credentials missing"
@@ -3280,6 +3370,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Paid access required",
             "content": {
               "application/json": {
                 "schema": {
@@ -3515,6 +3615,16 @@
               }
             }
           },
+          "402": {
+            "description": "Paid access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Account belongs to another user"
           },
@@ -3732,6 +3842,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Paid access required",
             "content": {
               "application/json": {
                 "schema": {

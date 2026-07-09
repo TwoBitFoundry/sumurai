@@ -466,6 +466,42 @@ async fn given_older_paddle_webhook_when_processing_then_skips_entitlement_downg
 }
 
 #[tokio::test]
+async fn given_lifecycle_webhook_without_parseable_subscription_when_processing_then_leaves_unprocessed(
+) {
+    let config = Config::from_env_provider(&MockEnvironment::paddle()).unwrap();
+    let user_id = Uuid::new_v4();
+    let body = format!(
+        r#"{{
+            "event_id":"evt_sub_unparseable",
+            "event_type":"subscription.activated",
+            "occurred_at":"2026-07-06T12:00:00Z",
+            "data":{{
+                "custom_data":{{"sumurai_user_id":"{user_id}"}},
+                "status":"trialing"
+            }}
+        }}"#
+    )
+    .into_bytes();
+    let header = sign_paddle_webhook("pdl_ntfset_test", &body, 1_700_000_000);
+    let mut repository = MockDatabaseRepository::new();
+    repository
+        .expect_record_paddle_webhook_event_if_new()
+        .returning(|_| Box::pin(async { Ok(true) }));
+    repository.expect_get_billing_entitlement().never();
+    repository.expect_upsert_billing_entitlement().never();
+    repository
+        .expect_mark_paddle_webhook_event_processed()
+        .never();
+    let service = billing_service(config, Arc::new(repository), noop_paddle());
+
+    let result = service
+        .process_paddle_webhook(Some(&header), &body, 1_700_000_003)
+        .await;
+
+    assert_eq!(result, Err(BillingWebhookError::UnparseableSubscription));
+}
+
+#[tokio::test]
 async fn given_subscription_activated_webhook_when_processing_then_updates_trialing_entitlement() {
     let config = Config::from_env_provider(&MockEnvironment::paddle()).unwrap();
     let user_id = Uuid::new_v4();

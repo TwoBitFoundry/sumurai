@@ -394,6 +394,38 @@ async fn given_expired_billing_user_when_disconnecting_then_disconnect_remains_a
 }
 
 #[tokio::test]
+async fn given_expired_billing_user_when_starting_auto_categorize_then_returns_paid_access_required(
+) {
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+    let mut mock_db = MockDatabaseRepository::new();
+
+    mock_db
+        .expect_get_billing_entitlement()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let entitlement = entitlement(user_id, "expired");
+            Box::pin(async move { Ok(Some(entitlement)) })
+        });
+
+    let app = billing_app(mock_db).await;
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::POST)
+        .uri("/api/transactions/auto-categorize")
+        .header("Cookie", format!("auth_token={token}"))
+        .body(axum::body::Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 402);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(payload["code"], json!("PAID_ACCESS_REQUIRED"));
+}
+
+#[tokio::test]
 async fn given_billing_disabled_when_creating_budget_then_preserves_existing_behavior() {
     let (user, token) = TestFixtures::create_authenticated_user_with_token();
     let user_id = user.id;
