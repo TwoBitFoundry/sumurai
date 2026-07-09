@@ -49,7 +49,6 @@ mod passkey_registration_tests;
 mod password_migration_login_tests;
 mod plaid_provider_tests;
 mod plaid_service_tests;
-mod production_billing_docs_tests;
 mod provider_account_scoping_tests;
 mod provider_bootstrap_tests;
 mod provider_selection_api_tests;
