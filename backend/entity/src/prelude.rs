@@ -12,8 +12,6 @@ pub use super::simplefin_hidden_orgs::Entity as SimplefinHiddenOrgs;
 pub use super::simplefin_root_credentials::Entity as SimplefinRootCredentials;
 pub use super::transaction_category_overrides::Entity as TransactionCategoryOverrides;
 pub use super::transactions::Entity as Transactions;
-pub use super::trial_code_redemptions::Entity as TrialCodeRedemptions;
-pub use super::trial_codes::Entity as TrialCodes;
 pub use super::user_custom_categories::Entity as UserCustomCategories;
 pub use super::users::Entity as Users;
 pub use super::webauthn_credentials::Entity as WebauthnCredentials;

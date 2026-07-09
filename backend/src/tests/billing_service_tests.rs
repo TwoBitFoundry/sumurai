@@ -1,5 +1,5 @@
 use crate::config::{BillingMode, Config, EnvironmentProvider};
-use crate::models::billing::{BillingEntitlement, PaddleWebhookEvent, TrialCodeRedemption};
+use crate::models::billing::{BillingEntitlement, PaddleWebhookEvent};
 use crate::providers::paddle_provider::{
     CreateCheckoutRequest, MockPaddleHttpClient, NoOpPaddleClient,
 };
@@ -407,9 +407,6 @@ async fn given_retried_webhook_after_partial_failure_when_processing_then_reappl
         })
         .returning(|_| Box::pin(async { Ok(()) }));
     repository
-        .expect_get_trial_code_redemption_for_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
-    repository
         .expect_mark_paddle_webhook_event_processed()
         .withf(|event_id, _| event_id == "evt_sub_activated")
         .returning(|_, _| Box::pin(async { Ok(()) }));
@@ -489,66 +486,6 @@ async fn given_subscription_activated_webhook_when_processing_then_updates_trial
                 && entitlement.access_status == "trialing"
                 && entitlement.payment_method_required
                 && entitlement.paddle_subscription_id.as_deref() == Some("sub_123")
-        })
-        .returning(|_| Box::pin(async { Ok(()) }));
-    repository
-        .expect_get_trial_code_redemption_for_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
-    repository
-        .expect_mark_paddle_webhook_event_processed()
-        .returning(|_, _| Box::pin(async { Ok(()) }));
-    let service = billing_service(config, Arc::new(repository), noop_paddle());
-
-    let result = service
-        .process_paddle_webhook(Some(&header), &body, 1_700_000_003)
-        .await;
-
-    assert!(result.is_ok());
-}
-
-#[tokio::test]
-async fn given_trial_redeem_then_subscription_webhook_when_processing_then_fulfills_redemption() {
-    let config = Config::from_env_provider(&MockEnvironment::paddle()).unwrap();
-    let user_id = Uuid::new_v4();
-    let redemption_id = Uuid::new_v4();
-    let trial_code_id = Uuid::new_v4();
-    let occurred_at = "2026-07-06T12:00:00Z";
-    let body = subscription_activated_payload(user_id, occurred_at);
-    let header = sign_paddle_webhook("pdl_ntfset_test", &body, 1_700_000_000);
-    let pending = TrialCodeRedemption {
-        id: redemption_id,
-        trial_code_id,
-        user_id,
-        status: "pending".to_string(),
-        paddle_transaction_id: Some("txn_trial".to_string()),
-        paddle_subscription_id: None,
-        created_at: Utc::now(),
-        updated_at: Utc::now(),
-        fulfilled_at: None,
-        failed_at: None,
-    };
-    let mut repository = MockDatabaseRepository::new();
-    repository
-        .expect_record_paddle_webhook_event_if_new()
-        .returning(|_| Box::pin(async { Ok(true) }));
-    repository
-        .expect_get_billing_entitlement()
-        .returning(|_| Box::pin(async { Ok(None) }));
-    repository
-        .expect_upsert_billing_entitlement()
-        .returning(|_| Box::pin(async { Ok(()) }));
-    repository
-        .expect_get_trial_code_redemption_for_user()
-        .returning(move |_| {
-            let pending = pending.clone();
-            Box::pin(async move { Ok(Some(pending)) })
-        });
-    repository
-        .expect_upsert_trial_code_redemption()
-        .withf(|redemption| {
-            redemption.status == "fulfilled"
-                && redemption.paddle_subscription_id.as_deref() == Some("sub_123")
-                && redemption.fulfilled_at.is_some()
         })
         .returning(|_| Box::pin(async { Ok(()) }));
     repository

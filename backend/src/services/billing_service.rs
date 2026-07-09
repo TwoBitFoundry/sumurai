@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::config::{BillingMode, Config};
 use crate::models::{
     auth::User,
-    billing::{BillingEntitlement, BillingProfile, PaddleWebhookEvent, TrialCodeRedemption},
+    billing::{BillingEntitlement, BillingProfile, PaddleWebhookEvent},
 };
 use crate::providers::paddle_provider::{
     CreateCardlessTrialRequest, CreateCheckoutRequest, CreateCheckoutResponse,
@@ -429,11 +429,6 @@ impl BillingService {
             }
         }
 
-        if payload.event_type == "transaction.completed" {
-            self.fulfill_trial_redemption_for_transaction(user_id, &payload.data)
-                .await?;
-        }
-
         self.repository
             .mark_paddle_webhook_event_processed(&payload.event_id, Utc::now())
             .await
@@ -482,85 +477,6 @@ impl BillingService {
 
         self.repository
             .upsert_billing_entitlement(&entitlement)
-            .await
-            .map_err(|_| BillingWebhookError::RepositoryRequestFailed)?;
-
-        if matches!(
-            access_status,
-            EntitlementAccessStatus::Trialing | EntitlementAccessStatus::Active
-        ) {
-            self.fulfill_pending_trial_redemption(
-                user_id,
-                Some(subscription.subscription_id.as_str()),
-            )
-            .await?;
-        }
-
-        Ok(())
-    }
-
-    async fn fulfill_trial_redemption_for_transaction(
-        &self,
-        user_id: uuid::Uuid,
-        data: &serde_json::Value,
-    ) -> Result<(), BillingWebhookError> {
-        let Some(transaction_id) = data.get("id").and_then(|value| value.as_str()) else {
-            return Ok(());
-        };
-
-        let redemption = self
-            .repository
-            .get_trial_code_redemption_for_user(&user_id)
-            .await
-            .map_err(|_| BillingWebhookError::RepositoryRequestFailed)?;
-
-        let Some(redemption) = redemption else {
-            return Ok(());
-        };
-
-        if redemption.status != "pending" {
-            return Ok(());
-        }
-
-        if redemption.paddle_transaction_id.as_deref() != Some(transaction_id) {
-            return Ok(());
-        }
-
-        let subscription_id = extract_subscription_id(data);
-        self.fulfill_pending_trial_redemption(user_id, subscription_id.as_deref())
-            .await
-    }
-
-    async fn fulfill_pending_trial_redemption(
-        &self,
-        user_id: uuid::Uuid,
-        subscription_id: Option<&str>,
-    ) -> Result<(), BillingWebhookError> {
-        let redemption = self
-            .repository
-            .get_trial_code_redemption_for_user(&user_id)
-            .await
-            .map_err(|_| BillingWebhookError::RepositoryRequestFailed)?;
-
-        let Some(redemption) = redemption else {
-            return Ok(());
-        };
-
-        if redemption.status != "pending" {
-            return Ok(());
-        }
-
-        let now = Utc::now();
-        let updated = TrialCodeRedemption {
-            status: "fulfilled".to_string(),
-            paddle_subscription_id: subscription_id.map(str::to_string),
-            fulfilled_at: Some(now),
-            updated_at: now,
-            ..redemption
-        };
-
-        self.repository
-            .upsert_trial_code_redemption(&updated)
             .await
             .map_err(|_| BillingWebhookError::RepositoryRequestFailed)?;
 

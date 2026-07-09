@@ -31,32 +31,6 @@ pub struct BillingEntitlement {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TrialCode {
-    pub id: Uuid,
-    pub code_hash: String,
-    pub redeem_by_at: DateTime<Utc>,
-    pub redeemed_at: Option<DateTime<Utc>>,
-    pub redeemed_by_user_id: Option<Uuid>,
-    pub disabled_at: Option<DateTime<Utc>>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TrialCodeRedemption {
-    pub id: Uuid,
-    pub trial_code_id: Uuid,
-    pub user_id: Uuid,
-    pub status: String,
-    pub paddle_transaction_id: Option<String>,
-    pub paddle_subscription_id: Option<String>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-    pub fulfilled_at: Option<DateTime<Utc>>,
-    pub failed_at: Option<DateTime<Utc>>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PaddleWebhookEvent {
     pub event_id: String,
     pub event_type: String,

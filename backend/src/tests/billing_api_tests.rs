@@ -312,7 +312,6 @@ async fn given_paddle_customer_when_portal_session_requested_then_returns_tempor
         });
     mock_db.expect_upsert_billing_profile().never();
     mock_db.expect_upsert_billing_entitlement().never();
-    mock_db.expect_upsert_trial_code_redemption().never();
 
     let mut paddle = MockPaddleHttpClient::new();
     paddle.expect_create_portal_session().returning(|request| {

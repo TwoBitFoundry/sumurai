@@ -551,7 +551,7 @@ All keys are scoped to `jwt_id`. There are no cross-user keys.
 ## Multi-Tenancy & Security
 
 - `auth_middleware` sets `app.current_user_id` on the Postgres connection before every query. RLS policies on every user-scoped table enforce `USING (user_id = current_setting('app.current_user_id', true)::uuid)` — isolation holds even if application code omits a `WHERE user_id` clause.
-- Billing user-owned tables (`billing_profiles`, `billing_entitlements`, and legacy `trial_code_redemptions`) use the same RLS pattern. Repository methods call `with_tenant(user_id)` before reads or writes. Paddle webhook processing resolves `user_id` from verified payload `custom_data.sumurai_user_id`, then scopes entitlement updates through `with_tenant`. Global table `paddle_webhook_events` (idempotency audit) has no RLS by design. Legacy `trial_codes` inventory remains in schema but is no longer written by the product.
+- Billing user-owned tables (`billing_profiles`, `billing_entitlements`) use the same RLS pattern. Repository methods call `with_tenant(user_id)` before reads or writes. Paddle webhook processing resolves `user_id` from verified payload `custom_data.sumurai_user_id`, then scopes entitlement updates through `with_tenant`. Global table `paddle_webhook_events` (idempotency audit) has no RLS by design.
 - The app role cannot bypass RLS. Do not write queries that assume superuser access.
 - `resource_authorization` middleware validates connection and budget ownership before handlers run.
 - Redis keys are namespaced by `jwt_id` — never use a global key for user data.
@@ -688,28 +688,6 @@ erDiagram
         timestamptz created_at
         timestamptz updated_at
     }
-    trial_codes {
-        uuid id PK
-        text code_hash UK
-        timestamptz redeem_by_at
-        timestamptz redeemed_at
-        uuid redeemed_by_user_id FK
-        timestamptz disabled_at
-        timestamptz created_at
-        timestamptz updated_at
-    }
-    trial_code_redemptions {
-        uuid id PK
-        uuid trial_code_id FK
-        uuid user_id FK
-        text status
-        text paddle_transaction_id UK
-        text paddle_subscription_id UK
-        timestamptz fulfilled_at
-        timestamptz failed_at
-        timestamptz created_at
-        timestamptz updated_at
-    }
     paddle_webhook_events {
         text event_id PK
         text event_type
@@ -733,9 +711,7 @@ erDiagram
     users ||--o{ transaction_category_overrides : ""
     users ||--o| billing_profiles : ""
     users ||--o| billing_entitlements : ""
-    users ||--o| trial_code_redemptions : ""
     users ||--o{ paddle_webhook_events : "related_user_id"
-    trial_codes ||--o| trial_code_redemptions : ""
     provider_connections ||--o{ accounts : ""
     accounts ||--o{ transactions : ""
     user_custom_categories ||--o{ transaction_category_overrides : ""

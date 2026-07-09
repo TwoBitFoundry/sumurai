@@ -14,8 +14,6 @@ pub mod simplefin_hidden_orgs;
 pub mod simplefin_root_credentials;
 pub mod transaction_category_overrides;
 pub mod transactions;
-pub mod trial_code_redemptions;
-pub mod trial_codes;
 pub mod user_custom_categories;
 pub mod users;
 pub mod webauthn_credentials;

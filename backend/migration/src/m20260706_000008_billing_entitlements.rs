@@ -41,38 +41,6 @@ impl MigrationTrait for Migration {
         .await?;
 
         db.execute_unprepared(
-            "CREATE TABLE trial_codes (
-                id uuid PRIMARY KEY,
-                code_hash text UNIQUE NOT NULL,
-                redeem_by_at timestamptz NOT NULL,
-                redeemed_at timestamptz,
-                redeemed_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
-                disabled_at timestamptz,
-                created_at timestamptz NOT NULL,
-                updated_at timestamptz NOT NULL
-            )",
-        )
-        .await?;
-
-        db.execute_unprepared(
-            "CREATE TABLE trial_code_redemptions (
-                id uuid PRIMARY KEY,
-                trial_code_id uuid NOT NULL REFERENCES trial_codes(id) ON DELETE CASCADE,
-                user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                status text NOT NULL,
-                paddle_transaction_id text UNIQUE,
-                paddle_subscription_id text UNIQUE,
-                created_at timestamptz NOT NULL,
-                updated_at timestamptz NOT NULL,
-                fulfilled_at timestamptz,
-                failed_at timestamptz,
-                UNIQUE (trial_code_id),
-                UNIQUE (user_id)
-            )",
-        )
-        .await?;
-
-        db.execute_unprepared(
             "CREATE TABLE paddle_webhook_events (
                 event_id text PRIMARY KEY,
                 event_type text NOT NULL,
@@ -89,14 +57,6 @@ impl MigrationTrait for Migration {
 
         db.execute_unprepared(
             "CREATE INDEX idx_billing_entitlements_access_status ON billing_entitlements(access_status)",
-        )
-        .await?;
-        db.execute_unprepared(
-            "CREATE INDEX idx_trial_codes_redeem_by_at ON trial_codes(redeem_by_at)",
-        )
-        .await?;
-        db.execute_unprepared(
-            "CREATE INDEX idx_trial_code_redemptions_user_status ON trial_code_redemptions(user_id, status)",
         )
         .await?;
         db.execute_unprepared(
@@ -122,15 +82,6 @@ impl MigrationTrait for Migration {
         )
         .await?;
 
-        db.execute_unprepared("ALTER TABLE trial_code_redemptions ENABLE ROW LEVEL SECURITY")
-            .await?;
-        db.execute_unprepared(
-            "CREATE POLICY trial_code_redemptions_user_isolation ON trial_code_redemptions
-                USING (user_id = current_setting('app.current_user_id', true)::uuid)
-                WITH CHECK (user_id = current_setting('app.current_user_id', true)::uuid)",
-        )
-        .await?;
-
         Ok(())
     }
 
@@ -138,10 +89,6 @@ impl MigrationTrait for Migration {
         let db = manager.get_connection();
 
         db.execute_unprepared("DROP TABLE IF EXISTS paddle_webhook_events CASCADE")
-            .await?;
-        db.execute_unprepared("DROP TABLE IF EXISTS trial_code_redemptions CASCADE")
-            .await?;
-        db.execute_unprepared("DROP TABLE IF EXISTS trial_codes CASCADE")
             .await?;
         db.execute_unprepared("DROP TABLE IF EXISTS billing_entitlements CASCADE")
             .await?;
