@@ -174,6 +174,11 @@ async fn given_authenticated_user_when_activating_demo_mode_then_seeds_workspace
             Box::pin(async move { Ok(Some(user)) })
         });
     mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user_id))
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+    mock_db
         .expect_upsert_provider_snapshot_bundle()
         .times(1)
         .returning(|_, connection, accounts, transactions| {
