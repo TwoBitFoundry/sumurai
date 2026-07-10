@@ -2688,6 +2688,14 @@ async fn sync_authenticated_provider_transactions(
         .await
         .map_err(|err| err.into_response())?;
 
+    if provider == "teller" {
+        return Err(provider_sync_error_to_response(
+            crate::services::connection_service::ProviderSyncError::TellerNoLongerSupported,
+            user_id,
+            &connection.item_id,
+        ));
+    }
+
     match state
         .provider_sync_rate_limit_service
         .try_consume_sync_quota(

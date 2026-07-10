@@ -52,12 +52,12 @@ fn create_auth_cookie_cache() -> MockCacheService {
 
     mock_cache
         .expect_get_counter()
-        .times(0..)
+        .times(0)
         .returning(|_| Box::pin(async { Ok(None) }));
 
     mock_cache
         .expect_increment_counter()
-        .times(0..)
+        .times(0)
         .returning(|_, _| Box::pin(async { Ok(1i64) }));
 
     mock_cache
