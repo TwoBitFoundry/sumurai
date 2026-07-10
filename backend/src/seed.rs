@@ -10,6 +10,7 @@ use uuid::Uuid;
 pub const DEMO_EMAIL: &str = "me@test.com";
 const DEMO_PASSWORD: &str = "Test1234!";
 pub const SUMURAI_DEMO_SIMPLEFIN_ORG_CONN_ID: &str = "sumurai_demo";
+pub const LEGACY_UNSCOPED_DEMO_TELLER_ITEM_ID: &str = "teller_sumurai_demo";
 
 pub fn demo_scoped_provider_id(user_id: Uuid, key: &str) -> String {
     format!("{key}_{user_id}")
@@ -22,6 +23,14 @@ pub fn demo_simplefin_item_id(user_id: Uuid) -> String {
     )
 }
 
+pub fn demo_diy_item_id(user_id: Uuid) -> String {
+    format!("diy_{user_id}_diy_sumurai_demo")
+}
+
+pub fn demo_teller_item_id(user_id: Uuid) -> String {
+    format!("{LEGACY_UNSCOPED_DEMO_TELLER_ITEM_ID}_{user_id}")
+}
+
 pub fn demo_provider_account_id(user_id: Uuid, account_key: &str) -> String {
     demo_scoped_provider_id(user_id, account_key)
 }
@@ -32,6 +41,13 @@ pub fn is_demo_simplefin_item_id(item_id: &str) -> bool {
         .strip_prefix("simplefin_")
         .and_then(|rest| rest.strip_suffix(&suffix))
         .is_some_and(|user_part| Uuid::parse_str(user_part).is_ok())
+}
+
+pub fn is_demo_seed_item_id(user_id: Uuid, item_id: &str) -> bool {
+    item_id == demo_simplefin_item_id(user_id)
+        || item_id == demo_diy_item_id(user_id)
+        || item_id == demo_teller_item_id(user_id)
+        || item_id == LEGACY_UNSCOPED_DEMO_TELLER_ITEM_ID
 }
 
 fn seed_demo_user_enabled() -> bool {

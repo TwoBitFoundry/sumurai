@@ -45,6 +45,11 @@ fn expect_shared_demo_seed_mocks(
 ) {
     let user_id = user.id;
     mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user_id))
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+    mock_db
         .expect_get_active_merchant_aliases()
         .returning(|| Box::pin(async { Ok(vec![]) }));
     mock_db
@@ -175,6 +180,31 @@ fn is_demo_simplefin_item_id_requires_user_scoped_item_id() {
 }
 
 #[test]
+fn is_demo_seed_item_id_matches_known_demo_item_ids() {
+    let user_id = Uuid::new_v4();
+    assert!(seed::is_demo_seed_item_id(
+        user_id,
+        &seed::demo_simplefin_item_id(user_id)
+    ));
+    assert!(seed::is_demo_seed_item_id(
+        user_id,
+        &seed::demo_diy_item_id(user_id)
+    ));
+    assert!(seed::is_demo_seed_item_id(
+        user_id,
+        &seed::demo_teller_item_id(user_id)
+    ));
+    assert!(seed::is_demo_seed_item_id(
+        user_id,
+        seed::LEGACY_UNSCOPED_DEMO_TELLER_ITEM_ID
+    ));
+    assert!(!seed::is_demo_seed_item_id(
+        user_id,
+        &format!("plaid_{user_id}_real_bank")
+    ));
+}
+
+#[test]
 fn runtime_offset_stays_zero_before_authored_latest_date() {
     let current_date = NaiveDate::from_ymd_opt(2026, 6, 10).unwrap();
     assert_eq!(runtime_offset_days(current_date), 0);
@@ -281,6 +311,349 @@ async fn maybe_seed_demo_dev_workspace_skips_when_demo_workspace_exists() {
         Arc::new(MockCacheService::new());
 
     seed::maybe_seed_demo_dev_workspace(&db, &cache)
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn maybe_seed_demo_dev_workspace_reseeds_when_only_legacy_demo_connections_exist() {
+    std::env::set_var("SEED_DEMO_USER", "true");
+
+    let user = demo_user();
+    let user_id = user.id;
+    let teller_item_id = seed::demo_teller_item_id(user_id);
+    let diy_item_id = seed::demo_diy_item_id(user_id);
+    let mut teller_connection =
+        crate::models::plaid::ProviderConnection::new(user_id, &teller_item_id);
+    teller_connection.id = seed::demo_entity_id(user_id, "connection:sumurai_demo");
+    teller_connection.provider = "teller".to_string();
+    teller_connection.mark_connected("Sumurai Demo Bank");
+    let mut diy_connection = crate::models::plaid::ProviderConnection::new(user_id, &diy_item_id);
+    diy_connection.id = seed::demo_entity_id(user_id, "connection:sumurai_demo_diy");
+    diy_connection.provider = "diy".to_string();
+    diy_connection.mark_connected("Sumurai Demo DIY");
+
+    let (mut mock_db, mut mock_cache) = (MockDatabaseRepository::new(), MockCacheService::new());
+    mock_db
+        .expect_get_user_by_email()
+        .with(mockall::predicate::eq(seed::DEMO_EMAIL))
+        .times(1)
+        .returning({
+            let user = user.clone();
+            move |_| {
+                let user = user.clone();
+                Box::pin(async move { Ok(Some(user)) })
+            }
+        });
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user_id))
+        .times(2)
+        .returning({
+            let teller_connection = teller_connection.clone();
+            let diy_connection = diy_connection.clone();
+            move |_| {
+                let teller_connection = teller_connection.clone();
+                let diy_connection = diy_connection.clone();
+                Box::pin(async move { Ok(vec![teller_connection, diy_connection]) })
+            }
+        });
+    mock_db
+        .expect_disconnect_provider_connection_cascade()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq(teller_item_id),
+        )
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok((10, 5)) }));
+    mock_db
+        .expect_disconnect_provider_connection_cascade()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq(diy_item_id),
+        )
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok((4, 2)) }));
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .returning(|| Box::pin(async { Ok(vec![]) }));
+    mock_db
+        .expect_save_provider_connection()
+        .times(1)
+        .returning(|connection| {
+            assert_eq!(connection.provider, "diy");
+            let id = connection.id;
+            Box::pin(async move { Ok(id) })
+        });
+    mock_db
+        .expect_upsert_transactions_batch()
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_upsert_account()
+        .times(2)
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_get_budgets_for_user()
+        .with(mockall::predicate::eq(user_id))
+        .times(13)
+        .returning(|_| Box::pin(async { Ok(Vec::new()) }));
+    mock_db
+        .expect_create_budget_for_user()
+        .times(12)
+        .returning(|budget| {
+            let budget = budget.clone();
+            Box::pin(async move { Ok(budget) })
+        });
+    mock_db
+        .expect_update_user_provider()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq("simplefin"),
+        )
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_upsert_provider_snapshot_bundle()
+        .times(1)
+        .returning(|_, connection, accounts, transactions| {
+            assert_eq!(connection.provider, "simplefin");
+            assert_eq!(
+                connection.item_id,
+                seed::demo_simplefin_item_id(connection.user_id)
+            );
+            assert_eq!(accounts.len(), 5);
+            assert!(transactions.len() >= MIN_DEMO_TRANSACTION_COUNT);
+            Box::pin(async { Ok(()) })
+        });
+    mock_cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_cache
+        .expect_set_with_ttl()
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
+
+    let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
+    let cache: Arc<dyn crate::services::cache_service::CacheService> = Arc::new(mock_cache);
+
+    seed::maybe_seed_demo_dev_workspace(&db, &cache)
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn seeds_demo_dataset_clears_demo_connections_and_keeps_non_demo() {
+    let user = demo_user();
+    let user_id = user.id;
+    let teller_item_id = seed::demo_teller_item_id(user_id);
+    let diy_item_id = seed::demo_diy_item_id(user_id);
+    let mut teller_connection =
+        crate::models::plaid::ProviderConnection::new(user_id, &teller_item_id);
+    teller_connection.id = seed::demo_entity_id(user_id, "connection:sumurai_demo");
+    teller_connection.provider = "teller".to_string();
+    teller_connection.mark_connected("Sumurai Demo Bank");
+    let mut diy_connection = crate::models::plaid::ProviderConnection::new(user_id, &diy_item_id);
+    diy_connection.id = seed::demo_entity_id(user_id, "connection:sumurai_demo_diy");
+    diy_connection.provider = "diy".to_string();
+    diy_connection.mark_connected("Sumurai Demo DIY");
+    let mut real_connection = crate::models::plaid::ProviderConnection::new(
+        user_id,
+        &format!("plaid_{user_id}_real_bank"),
+    );
+    real_connection.provider = "plaid".to_string();
+    real_connection.mark_connected("Real Bank");
+
+    let (mut mock_db, mut mock_cache) = (MockDatabaseRepository::new(), MockCacheService::new());
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user_id))
+        .times(1)
+        .returning({
+            let teller_connection = teller_connection.clone();
+            let diy_connection = diy_connection.clone();
+            let real_connection = real_connection.clone();
+            move |_| {
+                let teller_connection = teller_connection.clone();
+                let diy_connection = diy_connection.clone();
+                let real_connection = real_connection.clone();
+                Box::pin(
+                    async move { Ok(vec![teller_connection, diy_connection, real_connection]) },
+                )
+            }
+        });
+    mock_db
+        .expect_disconnect_provider_connection_cascade()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq(teller_item_id),
+        )
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok((10, 5)) }));
+    mock_db
+        .expect_disconnect_provider_connection_cascade()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq(diy_item_id),
+        )
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok((4, 2)) }));
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .returning(|| Box::pin(async { Ok(vec![]) }));
+    mock_db
+        .expect_save_provider_connection()
+        .times(1)
+        .returning(|connection| {
+            assert_eq!(connection.provider, "diy");
+            let id = connection.id;
+            Box::pin(async move { Ok(id) })
+        });
+    mock_db
+        .expect_upsert_transactions_batch()
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_upsert_account()
+        .times(2)
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_get_budgets_for_user()
+        .with(mockall::predicate::eq(user_id))
+        .times(13)
+        .returning(|_| Box::pin(async { Ok(Vec::new()) }));
+    mock_db
+        .expect_create_budget_for_user()
+        .times(12)
+        .returning(|budget| {
+            let budget = budget.clone();
+            Box::pin(async move { Ok(budget) })
+        });
+    mock_db
+        .expect_update_user_provider()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq("simplefin"),
+        )
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_upsert_provider_snapshot_bundle()
+        .times(1)
+        .returning(|_, connection, _, _| {
+            assert_eq!(connection.provider, "simplefin");
+            assert_eq!(
+                connection.id,
+                seed::demo_entity_id(connection.user_id, "connection:sumurai_demo")
+            );
+            Box::pin(async { Ok(()) })
+        });
+    mock_cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_cache
+        .expect_set_with_ttl()
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
+
+    let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
+    let cache: Arc<dyn crate::services::CacheService> = Arc::new(mock_cache);
+
+    DemoModeService::seed_demo_workspace_for_user(&db, &cache, &user)
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn seeds_demo_dataset_clears_unscoped_legacy_teller_connection_before_insert() {
+    let user = demo_user();
+    let user_id = user.id;
+    let unscoped_item_id = seed::LEGACY_UNSCOPED_DEMO_TELLER_ITEM_ID.to_string();
+    let mut legacy_connection =
+        crate::models::plaid::ProviderConnection::new(user_id, &unscoped_item_id);
+    legacy_connection.id = seed::demo_entity_id(user_id, "connection:sumurai_demo");
+    legacy_connection.provider = "teller".to_string();
+    legacy_connection.mark_connected("Sumurai Demo Bank");
+
+    let (mut mock_db, mut mock_cache) = (MockDatabaseRepository::new(), MockCacheService::new());
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user_id))
+        .times(1)
+        .returning({
+            let legacy_connection = legacy_connection.clone();
+            move |_| {
+                let legacy_connection = legacy_connection.clone();
+                Box::pin(async move { Ok(vec![legacy_connection]) })
+            }
+        });
+    mock_db
+        .expect_disconnect_provider_connection_cascade()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq(unscoped_item_id),
+        )
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok((10, 5)) }));
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .returning(|| Box::pin(async { Ok(vec![]) }));
+    mock_db
+        .expect_save_provider_connection()
+        .times(1)
+        .returning(|connection| {
+            assert_eq!(connection.provider, "diy");
+            let id = connection.id;
+            Box::pin(async move { Ok(id) })
+        });
+    mock_db
+        .expect_upsert_transactions_batch()
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_upsert_account()
+        .times(2)
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_get_budgets_for_user()
+        .with(mockall::predicate::eq(user_id))
+        .times(13)
+        .returning(|_| Box::pin(async { Ok(Vec::new()) }));
+    mock_db
+        .expect_create_budget_for_user()
+        .times(12)
+        .returning(|budget| {
+            let budget = budget.clone();
+            Box::pin(async move { Ok(budget) })
+        });
+    mock_db
+        .expect_update_user_provider()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq("simplefin"),
+        )
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_upsert_provider_snapshot_bundle()
+        .times(1)
+        .returning(|_, connection, _, _| {
+            assert_eq!(connection.provider, "simplefin");
+            assert_eq!(
+                connection.id,
+                seed::demo_entity_id(connection.user_id, "connection:sumurai_demo")
+            );
+            Box::pin(async { Ok(()) })
+        });
+    mock_cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_cache
+        .expect_set_with_ttl()
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
+
+    let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
+    let cache: Arc<dyn crate::services::CacheService> = Arc::new(mock_cache);
+
+    DemoModeService::seed_demo_workspace_for_user(&db, &cache, &user)
         .await
         .unwrap();
 }
@@ -493,6 +866,11 @@ async fn seeded_diy_institution_includes_transactions() {
 async fn seeds_budgets_for_budgetable_demo_categories() {
     let user = demo_user();
     let (mut mock_db, mut mock_cache) = (MockDatabaseRepository::new(), MockCacheService::new());
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user.id))
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock_db
         .expect_get_active_merchant_aliases()
         .returning(|| Box::pin(async { Ok(vec![]) }));

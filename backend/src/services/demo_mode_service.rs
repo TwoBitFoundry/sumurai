@@ -19,7 +19,6 @@ use uuid::Uuid;
 
 const SIMPLEFIN_CONNECTION_KEY: &str = "connection:sumurai_demo";
 const DIY_CONNECTION_KEY: &str = "connection:sumurai_demo_diy";
-const DIY_ITEM_KEY: &str = "diy_sumurai_demo";
 const DIY_INSTITUTION_NAME: &str = "Sumurai Demo DIY";
 const MIN_BUDGET_AMOUNT: &str = "50.00";
 pub const MIN_DEMO_TRANSACTION_COUNT: usize = 300;
@@ -106,6 +105,7 @@ impl DemoModeService {
         mark_onboarding_complete: bool,
     ) -> Result<()> {
         let user_id = user.id;
+        Self::clear_existing_demo_provider_connections(db, &user_id).await?;
         let now = Utc::now();
         let normalization_service =
             MerchantNormalizationService::new(Arc::clone(db), Arc::clone(cache_service));
@@ -224,6 +224,20 @@ impl DemoModeService {
         }
 
         Ok(true)
+    }
+
+    async fn clear_existing_demo_provider_connections(
+        db: &Arc<dyn DatabaseRepository>,
+        user_id: &Uuid,
+    ) -> Result<()> {
+        let connections = db.get_all_provider_connections_by_user(user_id).await?;
+        for connection in connections {
+            if seed::is_demo_seed_item_id(*user_id, &connection.item_id) {
+                db.disconnect_provider_connection_cascade(user_id, &connection.item_id)
+                    .await?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -353,7 +367,7 @@ fn build_diy_connection(user_id: Uuid, now: chrono::DateTime<Utc>) -> ProviderCo
     ProviderConnection {
         id: seed::demo_entity_id(user_id, DIY_CONNECTION_KEY),
         user_id,
-        item_id: format!("diy_{user_id}_{DIY_ITEM_KEY}"),
+        item_id: seed::demo_diy_item_id(user_id),
         provider: "diy".to_string(),
         is_connected: true,
         last_sync_at: None,
