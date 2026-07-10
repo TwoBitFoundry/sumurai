@@ -89,7 +89,7 @@ async function openProviderPicker(canvas: ReturnType<typeof within>) {
 async function waitForPickerLinkButtons(canvas: ReturnType<typeof within>) {
   await waitFor(
     () => {
-      expect(canvas.getAllByRole('button', { name: STORY_PICKER_LINK_BUTTON })).toHaveLength(4);
+      expect(canvas.getAllByRole('button', { name: STORY_PICKER_LINK_BUTTON })).toHaveLength(3);
     },
     { timeout: storyInteractionTimeoutMs }
   );
