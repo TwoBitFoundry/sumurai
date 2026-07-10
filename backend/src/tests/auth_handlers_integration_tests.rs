@@ -177,7 +177,7 @@ async fn given_authenticated_user_when_activating_demo_mode_then_seeds_workspace
         .expect_upsert_provider_snapshot_bundle()
         .times(1)
         .returning(|_, connection, accounts, transactions| {
-            assert_eq!(connection.provider, "teller");
+            assert_eq!(connection.provider, "simplefin");
             assert_eq!(accounts.len(), 5);
             assert!(
                 transactions.len()
@@ -222,7 +222,7 @@ async fn given_authenticated_user_when_activating_demo_mode_then_seeds_workspace
         });
     mock_db
         .expect_update_user_provider()
-        .withf(move |id, provider| *id == user_id && provider == "teller")
+        .withf(move |id, provider| *id == user_id && provider == "simplefin")
         .times(1)
         .returning(|_, _| Box::pin(async { Ok(()) }));
     mock_db

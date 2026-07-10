@@ -325,10 +325,6 @@ Plaid values when using Plaid:
 - `PLAID_CLIENT_ID`
 - `PLAID_SECRET`
 
-Teller values when using Teller:
-
-- `TELLER_APPLICATION_ID`
-
 Optional values:
 
 - `NGROK_AUTHTOKEN`
@@ -341,27 +337,16 @@ Optional values:
 
 Login and register under `/api/auth/` are rate limited in the Axum backend with progressive lockouts after repeated 429s. Nginx also applies a looser edge limit on `/api/auth` so only unusually high request rates are rejected before proxying to the backend.
 
-## Teller Setup
-
-1. Create a Teller developer account at [https://teller.io](https://teller.io).
-2. Download the mTLS certificate and private key.
-3. Set `TELLER_APPLICATION_ID`.
-4. Open Teller from the UI to link accounts.
-
 ## Sandbox Credentials
 
 Use these sandbox credentials for local provider flows with `me@test.com` / `Test1234!`:
 
 - SimpleFIN
-  - Start the stack, choose SimpleFIN in the provider picker, and paste a setup token from [beta-bridge.simplefin.org/info/developers](https://beta-bridge.simplefin.org/info/developers) when prompted. The shared beta demo bridge works with any account.
-- Teller
-  - Teller Connect sandbox (when prompted): `username` / `password`
+  - Start the stack, choose SimpleFIN in the provider picker, and paste a setup token from [beta-bridge.simplefin.org/info/developers](https://beta-bridge.simplefin.org/info/developers) when prompted. The shared beta demo bridge works with any account. Demo mode seeds SimpleFIN sample data.
 - Plaid
   - Plaid Link sandbox (when prompted): `user_good` / `pass_good`
 
 If a sandbox provider prompts for 2FA, click through with empty fields.
-
-For sandbox testing, allow the local origin in your Teller dashboard.
 
 ## HTTPS with Let's Encrypt
 

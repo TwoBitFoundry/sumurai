@@ -71,20 +71,17 @@ impl FinancialDataProvider for DummyProvider {
 }
 
 #[test]
-fn given_plaid_and_teller_unavailable_when_building_provider_registry_then_only_simplefin_is_registered(
+fn given_plaid_unavailable_when_building_provider_registry_then_only_simplefin_and_diy_are_registered(
 ) {
     let simplefin_provider: Arc<dyn FinancialDataProvider> =
         Arc::new(DummyProvider { name: "simplefin" });
 
-    let registry = crate::build_provider_registry(
-        None,
-        Err(anyhow::anyhow!("teller unavailable")),
-        simplefin_provider,
-    );
+    let registry = crate::build_provider_registry(None, simplefin_provider);
 
     assert!(registry.get("plaid").is_none());
     assert!(registry.get("teller").is_none());
 
     let simplefin = registry.get("simplefin").expect("simplefin provider");
     assert_eq!(simplefin.provider_name(), "simplefin");
+    assert!(registry.get("diy").is_some());
 }

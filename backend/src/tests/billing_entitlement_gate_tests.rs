@@ -96,7 +96,6 @@ fn entitlement(user_id: Uuid, status: &str) -> BillingEntitlement {
 
 fn disabled_billing_config() -> Config {
     let mut env = MockEnvironment::new();
-    env.set("TELLER_ENV", "test");
     env.set("AUTH_COOKIE_SAME_SITE", "Lax");
     env.set("APP_ORIGIN", "http://localhost:8080");
     Config::from_env_provider(&env).unwrap()

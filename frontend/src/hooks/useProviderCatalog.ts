@@ -14,7 +14,6 @@ import {
 import { ApiClient } from '../services/ApiClient';
 import type { FinancialProvider } from '../types/api';
 import { invalidateStaleCacheQueries, type SyncProvider } from '../utils/queryInvalidation';
-import type { TellerEnvironment } from './useTellerConnect';
 
 export interface ProviderCatalogGateway {
   fetchInfo: () => Promise<ProviderCatalogue>;
@@ -39,8 +38,6 @@ export interface ProviderCatalogState {
   error: string | null;
   availableProviders: FinancialProvider[];
   userProvider: FinancialProvider | null;
-  tellerApplicationId: string | null;
-  tellerEnvironment: TellerEnvironment;
   isProviderAvailable: (provider: FinancialProvider) => boolean;
   canConnectWith: (provider: FinancialProvider) => boolean;
   getConnectBlockedReason: (provider: FinancialProvider) => string | null;
@@ -109,9 +106,6 @@ export function useProviderCatalog(options: UseProviderCatalogOptions = {}): Pro
     [gateway, queryClient]
   );
 
-  const environment = catalogue?.teller_environment;
-  const tellerEnvironment: TellerEnvironment =
-    environment === 'sandbox' || environment === 'production' ? environment : 'development';
   const refresh = useCallback(async () => {
     const result = await query.refetch();
     if (result.error) {
@@ -144,8 +138,6 @@ export function useProviderCatalog(options: UseProviderCatalogOptions = {}): Pro
     error: mutationError ?? query.error?.message ?? null,
     availableProviders: availableProviders.length > 0 ? availableProviders : emptyProviders,
     userProvider,
-    tellerApplicationId: catalogue?.teller_application_id ?? null,
-    tellerEnvironment,
     isProviderAvailable,
     canConnectWith,
     getConnectBlockedReason: getConnectBlockedReasonForProvider,

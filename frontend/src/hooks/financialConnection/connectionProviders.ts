@@ -1,6 +1,7 @@
 /**
  * Registry mapping each provider to its connection strategy.
  */
+import { useMemo } from 'react';
 import type {
   FinancialConnectionStrategy,
   FinancialConnectionStrategyContext,
@@ -8,7 +9,6 @@ import type {
 import { useDiyConnectionStrategy } from '@/hooks/financialConnection/useDiyConnectionStrategy';
 import { usePlaidConnectionStrategy } from '@/hooks/financialConnection/usePlaidConnectionStrategy';
 import { useSimpleFinConnectionStrategy } from '@/hooks/financialConnection/useSimpleFinConnectionStrategy';
-import { useTellerConnectionStrategy } from '@/hooks/financialConnection/useTellerConnectionStrategy';
 import type { FinancialProvider } from '@/types/api';
 
 export type UseConnectionStrategyHook = (
@@ -30,9 +30,35 @@ function defineConnectionProvider<P extends FinancialProvider>(
   };
 }
 
+function useLegacyTellerConnectionStrategy(
+  _context: FinancialConnectionStrategyContext
+): FinancialConnectionStrategy {
+  return useMemo(
+    () => ({
+      getReady: () => true,
+      open: () => {
+        throw new Error(
+          'Teller is no longer supported because the provider no longer offers API access.'
+        );
+      },
+      load: async () => {},
+      reset: () => {},
+      loadFailedMessage:
+        'Teller is no longer supported because the provider no longer offers API access.',
+      render: () => null,
+      connect: async () => {
+        throw new Error(
+          'Teller is no longer supported because the provider no longer offers API access.'
+        );
+      },
+    }),
+    []
+  );
+}
+
 export const connectionProviders = {
   plaid: defineConnectionProvider('plaid', usePlaidConnectionStrategy),
-  teller: defineConnectionProvider('teller', useTellerConnectionStrategy),
+  teller: defineConnectionProvider('teller', useLegacyTellerConnectionStrategy),
   simplefin: defineConnectionProvider('simplefin', useSimpleFinConnectionStrategy),
   diy: defineConnectionProvider('diy', useDiyConnectionStrategy),
 } as const satisfies Record<FinancialProvider, ConnectionProvider<FinancialProvider>>;

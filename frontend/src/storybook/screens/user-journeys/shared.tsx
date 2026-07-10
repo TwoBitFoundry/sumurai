@@ -217,10 +217,8 @@ export function buildStoryLastInstitutionDisconnectHandlers(): StoryApiRoute[] {
 }
 
 export const storyProviderInfo = {
-  available_providers: ['plaid', 'teller'] as FinancialProvider[],
+  available_providers: ['plaid', 'simplefin'] as FinancialProvider[],
   user_provider: null,
-  teller_application_id: 'story-teller-app',
-  teller_environment: 'sandbox',
 };
 
 export const storyProviderSelect = {

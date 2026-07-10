@@ -7,7 +7,7 @@ use utoipa::OpenApi;
 #[openapi(
     info(
         title = "Sumurai Financial API",
-        description = "Multi-tenant financial aggregation platform with unified Plaid and Teller integration",
+        description = "Multi-tenant financial aggregation platform with Plaid, SimpleFIN, and DIY integration",
         version = "1.0.0",
         contact(
             name = "Sumurai Support",

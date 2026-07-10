@@ -22,7 +22,6 @@ struct MockEnvironment {
 impl MockEnvironment {
     fn paddle() -> Self {
         let mut vars = HashMap::new();
-        vars.insert("TELLER_ENV".to_string(), "test".to_string());
         vars.insert("AUTH_COOKIE_SAME_SITE".to_string(), "Lax".to_string());
         vars.insert(
             "APP_ORIGIN".to_string(),
@@ -49,7 +48,6 @@ impl MockEnvironment {
 
     fn disabled() -> Self {
         let mut vars = HashMap::new();
-        vars.insert("TELLER_ENV".to_string(), "test".to_string());
         vars.insert("AUTH_COOKIE_SAME_SITE".to_string(), "Lax".to_string());
         vars.insert(
             "APP_ORIGIN".to_string(),

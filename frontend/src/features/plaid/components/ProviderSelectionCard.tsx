@@ -72,7 +72,7 @@ export const ProviderSelectionCard = ({
   const privacyLinkLabel = `${details.title} privacy policy`;
   const isConnecting = connectingProvider === provider;
   const isAnyProviderConnecting = connectingProvider !== null;
-  const requiresPreparedSdk = provider === 'teller';
+  const requiresPreparedSdk = false;
   const isPrepared = !requiresPreparedSdk || ready;
   const needsNetwork = provider !== 'diy';
   const offline = needsNetwork && !isOnline;

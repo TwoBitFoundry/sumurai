@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { OnboardingProviderConnectModal } from '@/components/onboarding/OnboardingProviderConnectModal';
 import { ThemeTestProvider } from '../../utils/ThemeTestProvider';
@@ -28,77 +28,6 @@ describe('OnboardingProviderConnectModal', () => {
     initiateConnectionMock.mockClear();
     mockConnectionInProgress = false;
     mockIsConnected = false;
-  });
-
-  it('auto-initiates teller connect without showing a modal dialog', async () => {
-    const onClose = jest.fn();
-
-    render(
-      <ThemeTestProvider>
-        <OnboardingProviderConnectModal
-          provider="teller"
-          isOpen
-          onClose={onClose}
-          onConnected={jest.fn()}
-        />
-      </ThemeTestProvider>
-    );
-
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.getByTestId('connection-mount')).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(initiateConnectionMock).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  it('calls onClose when teller sdk exits without connecting', async () => {
-    const onClose = jest.fn();
-
-    const { rerender } = render(
-      <ThemeTestProvider>
-        <OnboardingProviderConnectModal
-          provider="teller"
-          isOpen
-          onClose={onClose}
-          onConnected={jest.fn()}
-        />
-      </ThemeTestProvider>
-    );
-
-    act(() => {
-      mockConnectionInProgress = true;
-    });
-
-    rerender(
-      <ThemeTestProvider>
-        <OnboardingProviderConnectModal
-          provider="teller"
-          isOpen
-          onClose={onClose}
-          onConnected={jest.fn()}
-        />
-      </ThemeTestProvider>
-    );
-
-    act(() => {
-      mockConnectionInProgress = false;
-    });
-
-    rerender(
-      <ThemeTestProvider>
-        <OnboardingProviderConnectModal
-          provider="teller"
-          isOpen
-          onClose={onClose}
-          onConnected={jest.fn()}
-        />
-      </ThemeTestProvider>
-    );
-
-    await waitFor(() => {
-      expect(onClose).toHaveBeenCalledTimes(1);
-    });
   });
 
   it('shows the simplefin setup token field in a modal and submits it', async () => {

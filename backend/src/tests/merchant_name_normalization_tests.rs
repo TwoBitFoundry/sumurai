@@ -35,30 +35,3 @@ fn merchant_name_from_plaid_normalizes() {
         Some("American Express".to_string())
     );
 }
-
-#[test]
-fn merchant_name_from_teller_normalizes_counterparty() {
-    let v = json!({
-        "description": "ignored when counterparty set",
-        "details": {
-            "category": "general",
-            "counterparty": { "name": "CENTURYLINK", "type": "organization" }
-        }
-    });
-    assert_eq!(
-        Transaction::merchant_name_from_teller(&v),
-        Some("Centurylink".to_string())
-    );
-}
-
-#[test]
-fn merchant_name_from_teller_normalizes_description_fallback() {
-    let v = json!({
-        "description": "ATM WITHDRAWAL",
-        "details": { "category": "general" }
-    });
-    assert_eq!(
-        Transaction::merchant_name_from_teller(&v),
-        Some("Atm Withdrawal".to_string())
-    );
-}

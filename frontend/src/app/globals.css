@@ -69,33 +69,6 @@
 }
 
 @media (max-width: 767px) {
-  body[data-provider-sdk-inset='mobile'] iframe[src*="teller.io/connect"],
-  body[data-provider-sdk-inset='mobile'] #teller-connect-window {
-    position: fixed !important;
-    top: 50% !important;
-    right: auto !important;
-    bottom: auto !important;
-    left: 50% !important;
-    width: min(
-      calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 1rem),
-      28rem
-    ) !important;
-    max-width: min(
-      calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 1rem),
-      28rem
-    ) !important;
-    height: min(
-      calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1rem),
-      42rem
-    ) !important;
-    max-height: min(
-      calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1rem),
-      42rem
-    ) !important;
-    transform: translate(-50%, -50%) !important;
-    overflow: hidden !important;
-  }
-
   body[data-provider-sdk-inset='mobile'] iframe[src*="plaid.com"] {
     position: fixed !important;
     top: env(safe-area-inset-top) !important;
@@ -112,8 +85,6 @@
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
-  body[data-provider-sdk-inset='tablet'] iframe[src*="teller.io/connect"],
-  body[data-provider-sdk-inset='tablet'] #teller-connect-window,
   body[data-provider-sdk-inset='tablet'] iframe[src*="plaid.com"] {
     top: 50% !important;
     right: auto !important;

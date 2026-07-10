@@ -134,9 +134,7 @@ pub async fn get_authenticated_export(
     build_authenticated_export_response(State(state), auth_context, Query(query)).await
 }
 
-use crate::providers::{
-    PlaidCredentialResolver, SimpleFinCredentialResolver, TellerCredentialResolver,
-};
+use crate::providers::{PlaidCredentialResolver, SimpleFinCredentialResolver};
 use crate::utils::encryption_key::parse_encryption_key_hex;
 use auth_middleware::auth_middleware;
 use config::Config;
@@ -178,7 +176,6 @@ use utils::auth_cookie::{build_auth_cookie, build_clearing_auth_cookie, extract_
 
 pub(crate) fn build_provider_registry(
     plaid_provider: Option<Arc<dyn providers::FinancialDataProvider>>,
-    teller_provider: anyhow::Result<Arc<dyn providers::FinancialDataProvider>>,
     simplefin_provider: Arc<dyn providers::FinancialDataProvider>,
 ) -> providers::ProviderRegistry {
     let mut provider_registry = providers::ProviderRegistry::new();
@@ -187,18 +184,6 @@ pub(crate) fn build_provider_registry(
         provider_registry.register("plaid", plaid_provider);
     } else {
         tracing::warn!("Plaid provider not configured; skipping Plaid initialization");
-    }
-
-    match teller_provider {
-        Ok(teller_provider) => {
-            provider_registry.register("teller", teller_provider);
-        }
-        Err(e) => {
-            tracing::warn!(
-                error = %e,
-                "Teller provider not configured; skipping Teller initialization"
-            );
-        }
     }
 
     provider_registry.register("simplefin", simplefin_provider);
@@ -274,17 +259,10 @@ async fn main() -> anyhow::Result<()> {
         None
     };
 
-    let teller_provider = providers::TellerProvider::new()
-        .map(|provider| Arc::new(provider) as Arc<dyn providers::FinancialDataProvider>);
-
     let simplefin_provider: Arc<dyn providers::FinancialDataProvider> =
         Arc::new(providers::SimpleFinProvider::new_with_real_client().await?);
 
-    let provider_registry = Arc::new(build_provider_registry(
-        plaid_provider,
-        teller_provider,
-        simplefin_provider,
-    ));
+    let provider_registry = Arc::new(build_provider_registry(plaid_provider, simplefin_provider));
 
     let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
 
@@ -386,11 +364,6 @@ async fn main() -> anyhow::Result<()> {
     credential_resolvers.insert(
         "plaid".to_string(),
         Arc::new(PlaidCredentialResolver::new(db_repository.clone()))
-            as Arc<dyn crate::providers::ProviderCredentialResolver>,
-    );
-    credential_resolvers.insert(
-        "teller".to_string(),
-        Arc::new(TellerCredentialResolver::new(db_repository.clone()))
             as Arc<dyn crate::providers::ProviderCredentialResolver>,
     );
 
@@ -2461,7 +2434,7 @@ fn api_internal_server_error(message: impl Into<String>) -> (StatusCode, Json<Ap
 #[utoipa::path(
     post,
     path = "/api/plaid/link-token",
-    description = "Generates a provider-specific link token for Plaid/Teller flows.",
+    description = "Generates a provider-specific link token for Plaid flows.",
     request_body = LinkTokenRequest,
     responses(
         (status = 200, description = "Link token created successfully", body = LinkTokenResponse),
@@ -2707,13 +2680,21 @@ async fn sync_authenticated_provider_transactions(
     let mut connection = connection;
 
     let provider = connection.provider.clone();
-    if !state.config.is_financial_provider_enabled(&provider) {
+    if provider != "teller" && !state.config.is_financial_provider_enabled(&provider) {
         return Err(provider_disabled_response(&provider).into_response());
     }
 
     require_paid_own_data_access(&state, user_id, "provider.sync")
         .await
         .map_err(|err| err.into_response())?;
+
+    if provider == "teller" {
+        return Err(provider_sync_error_to_response(
+            crate::services::connection_service::ProviderSyncError::TellerNoLongerSupported,
+            user_id,
+            &connection.item_id,
+        ));
+    }
 
     match state
         .provider_sync_rate_limit_service
@@ -3699,44 +3680,18 @@ async fn connect_authenticated_provider(
                 log_provider_credential_outcome("teller", StatusCode::OK, "provider.connect");
                 Ok(Json(response))
             }
-            Err(TellerConnectError::InvalidProvider(_)) => {
+            Err(TellerConnectError::NoLongerSupported) => {
                 log_provider_credential_outcome(
-                    &req.provider,
+                    "teller",
                     StatusCode::BAD_REQUEST,
                     "provider.connect",
                 );
-                Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
-                    .into_response(StatusCode::BAD_REQUEST))
-            }
-            Err(TellerConnectError::CredentialStorage(e)) => {
-                log_provider_credential_outcome(
-                    "teller",
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "provider.connect",
-                );
-                tracing::error!(
-                    "Failed to store Teller credentials for user {}: {}",
-                    auth_context.user_id,
-                    e
-                );
-                Err(ApiErrorResponse::internal_server_error(
-                    "Failed to store credentials",
-                ))
-            }
-            Err(TellerConnectError::ConnectionPersistence(e)) => {
-                log_provider_credential_outcome(
-                    "teller",
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "provider.connect",
-                );
-                tracing::error!(
-                    "Failed to persist Teller connection for user {}: {}",
-                    auth_context.user_id,
-                    e
-                );
-                Err(ApiErrorResponse::internal_server_error(
-                    "Failed to save connection",
-                ))
+                Err(ApiErrorResponse::with_code(
+                    "BAD_REQUEST",
+                    services::sync_service_dispatcher::TELLER_NO_LONGER_SUPPORTED_MESSAGE,
+                    "TELLER_NO_LONGER_SUPPORTED",
+                )
+                .into_response(StatusCode::BAD_REQUEST))
             }
         },
         "simplefin" => match state
@@ -4737,7 +4692,7 @@ async fn get_authenticated_provider_info(
         })?;
 
     let mut available_providers = Vec::new();
-    for provider in ["plaid", "teller", "simplefin", "diy"] {
+    for provider in ["plaid", "simplefin", "diy"] {
         if state.provider_registry.get(provider).is_none() {
             continue;
         }
@@ -4746,20 +4701,12 @@ async fn get_authenticated_provider_info(
             continue;
         }
 
-        if provider == "teller"
-            && state
-                .config
-                .get_teller_application_id()
-                .is_none_or(|value| value.trim().is_empty())
-        {
-            continue;
-        }
-
         available_providers.push(provider.to_string());
     }
 
     let user_provider = user
         .active_provider()
+        .filter(|provider| *provider != "teller")
         .filter(|provider| state.provider_registry.get(provider).is_some())
         .filter(|provider| state.config.is_financial_provider_enabled(provider))
         .map(str::to_string);
@@ -4767,11 +4714,6 @@ async fn get_authenticated_provider_info(
     Ok(Json(ProviderInfoResponse {
         available_providers,
         user_provider,
-        teller_application_id: state
-            .config
-            .get_teller_application_id()
-            .map(|value| value.to_string()),
-        teller_environment: state.config.get_teller_environment().to_string(),
     }))
 }
 
@@ -4798,6 +4740,15 @@ async fn select_authenticated_provider(
 ) -> Result<Json<ProviderSelectResponse>, (StatusCode, Json<ApiErrorResponse>)> {
     let user_id = auth_context.user_id;
     let requested_provider = req.provider;
+
+    if requested_provider == "teller" {
+        return Err(ApiErrorResponse::with_code(
+            "BAD_REQUEST",
+            services::sync_service_dispatcher::TELLER_NO_LONGER_SUPPORTED_MESSAGE,
+            "TELLER_NO_LONGER_SUPPORTED",
+        )
+        .into_response(StatusCode::BAD_REQUEST));
+    }
 
     if state.provider_registry.get(&requested_provider).is_none() {
         return Err(ApiErrorResponse::new(

@@ -1,6 +1,6 @@
 # Sumurai
 
-Personal finance dashboard. Self-hosted. Connects to your bank via Teller, Plaid, or SimpleFIN, syncs transactions, and shows where your money goes.
+Personal finance dashboard. Self-hosted. Connects to your bank via Plaid, SimpleFIN, or self-managed DIY import, syncs transactions, and shows where your money goes.
 
 ![Sumurai](frontend/public/screenshots/sumurai-hero.webp)
 
@@ -10,7 +10,7 @@ Sumurai exists because there are not a lot of free, simple, and modern budgeting
 
 ## What It Does
 
-- Connects and syncs your bank accounts through Teller, Plaid, SimpleFIN, or Self-Manage your own
+- Connects and syncs your bank accounts through Plaid, SimpleFIN, or Self-Manage your own
 ![Provider Picker](frontend/public/screenshots/sumurai-provider-picker-dark.webp)
 
 - Import/export data into your accounts or add custom ones
@@ -33,27 +33,24 @@ Import your own data, or connect through an aggregator. For aggregators, check w
 
 - [SimpleFIN institutions search](https://beta-bridge.simplefin.org/search-institutions)
 - [Plaid US/Canada coverage](https://plaid.com/docs/institutions/) · [Plaid Europe coverage](https://plaid.com/docs/institutions/europe/)
-- [Teller institutions search](https://teller.io/#:~:text=Thousands%20of%20supported%20institutions)
 
-ℹ️ Sumurai never stores your bank login when using an aggregator. Pick the path that's right for you. Teller/Plaid require a developer account.
+ℹ️ Sumurai never stores your bank login when using an aggregator. Pick the path that's right for you. Plaid requires a developer account. Teller is no longer connectable (API sunset); legacy Teller connections may still display with icon, sync fails, and disconnect still works.
 
 
-|               | Self-Managed | Teller              | SimpleFIN            | Plaid                |
-| ------------- | ------------ | ------------------- | -------------------- | -------------------- |
-| Focus         | DIY          | Budget Friendly     | Privacy First        | Organizations        |
-| Region        | Any          | US Only             | US, CA               | US, CA, UK, EU       |
-| Provider Cost | Free         | Free                | $1.50/mo             | Pay/use              |
-| Coverage      | Any          | ~7,000 Institutions | ~16,000 Institutions | ~12,000 Institutions |
-| Privacy       | Strongest    | Moderate            | Strong               | Broad                |
+|               | Self-Managed | SimpleFIN            | Plaid                |
+| ------------- | ------------ | -------------------- | -------------------- |
+| Focus         | DIY          | Privacy First        | Organizations        |
+| Region        | Any          | US, CA               | US, CA, UK, EU       |
+| Provider Cost | Free         | $1.50/mo             | Pay/use              |
+| Coverage      | Any          | ~16,000 Institutions | ~12,000 Institutions |
+| Privacy       | Strongest    | Strong               | Broad                |
 
 
 ## Privacy Disclosure for 3rd Party Financial Aggregators
 
-While this app is designed to handle your information securely after it is received, 3rd party aggregators still control how their own services collect and process your data. Sumurai uses external financial aggregation APIs, including Teller, Plaid, and (when available) SimpleFIN, to connect accounts and sync transactions. Using those services requires accepting their terms of service and privacy policies.
+While this app is designed to handle your information securely after it is received, 3rd party aggregators still control how their own services collect and process your data. Sumurai uses external financial aggregation APIs, including Plaid and SimpleFIN, to connect accounts and sync transactions. Using those services requires accepting their terms of service and privacy policies.
 
 SimpleFIN security: [https://beta-bridge.simplefin.org/info/security](https://beta-bridge.simplefin.org/info/security)
-
-Teller policy: [https://teller.io/legal](https://teller.io/legal)
 
 Plaid policy: [https://plaid.com/legal/#consumers](https://plaid.com/legal/#consumers)
 
@@ -187,21 +184,6 @@ docker compose up -d
 
 1. Open [http://localhost:8080](http://localhost:8080), sign in, choose SimpleFIN in the provider picker, and paste your setup token when prompted.
 
-#### Teller (Budget Friendly)
-
-Free for US banks. Best balance of cost, setup, and coverage for most self-hosters.
-
-1. Follow the [Teller Quickstart](https://teller.io/docs/guides/quickstart).
-2. Set `TELLER_APPLICATION_ID` in `.env`.
-3. Download your Teller client certificate and private key from the Teller dashboard, then place them at `.certs/teller/certificate.pem` and `.certs/teller/private_key.pem`.
-4. Start the app:
-
-```bash
-docker compose up -d
-```
-
-1. Open [http://localhost:8080](http://localhost:8080).
-
 #### Plaid (Organization)
 
 Broadest regional coverage. Best when you already have a company Plaid account and can pass production review.
@@ -230,7 +212,7 @@ The app is a static Next.js export served by Nginx on port 8080, with `/api/*` a
 - Frontend: Next.js 16, React 19, TypeScript 6, Tailwind 4, Recharts 3, Biome 2, Bun, and browser OpenTelemetry (enabled per compose via `NEXT_PUBLIC_OTEL_*`)
 - Backend: Rust 1.95, Axum, SQLx, Redis, PostgreSQL, JWT auth, provider integrations, and OpenTelemetry tracing (export mode is set per environment; production compose sends OTLP to Seq)
 - Deployment: standalone Docker Compose files—default OSS (`docker-compose.yml`), local dev builds (`docker-compose.dev.yml`), or production with Seq (`docker-compose.prod.yml`); each includes nginx, frontend, backend, Postgres, and Redis.
-- Providers: Teller, Plaid, and SimpleFIN through a shared provider registry
+- Providers: Plaid, SimpleFIN, and DIY through a shared provider registry. Legacy Teller connections may still display; sync fails and disconnect works. Demo mode seeds SimpleFIN.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the deeper system breakdown.
 

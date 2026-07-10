@@ -12,8 +12,7 @@ function renderPanel(props: Partial<ComponentProps<typeof ProviderSelectionPanel
         <ProviderSelectionPanel
           loading={false}
           error={null}
-          availableProviders={['plaid', 'teller']}
-          tellerApplicationId={null}
+          availableProviders={['plaid', 'simplefin']}
           connectingProvider={null}
           onSelectProvider={jest.fn()}
           {...props}
@@ -41,8 +40,7 @@ describe('ProviderSelectionPanel', () => {
 
   it('renders the fixed provider order, wireframe copy, and privacy links', () => {
     renderPanel({
-      availableProviders: ['plaid', 'teller', 'simplefin'],
-      tellerApplicationId: 'app-123',
+      availableProviders: ['plaid', 'simplefin'],
     });
 
     expect(screen.getByText('Choose how you connect accounts')).toBeVisible();
@@ -51,13 +49,13 @@ describe('ProviderSelectionPanel', () => {
     ).not.toBeInTheDocument();
     expect(screen.getByText('Self-Managed')).toBeVisible();
     expect(screen.getAllByText('DIY')).toHaveLength(1);
-    expect(screen.getByText('US Only')).toBeVisible();
+    expect(screen.queryByText('US Only')).not.toBeInTheDocument();
     expect(screen.getByText('US, CA')).toBeVisible();
     expect(screen.getByText('US, CA, UK, EU')).toBeVisible();
     expect(screen.getByText('Any (USD)')).toBeVisible();
     expect(screen.getByText('$1.50/mo')).toBeVisible();
     expect(screen.getByText('Pay/use')).toBeVisible();
-    expect(screen.getByText('~7K Banks')).toBeVisible();
+    expect(screen.queryByText('~7K Banks')).not.toBeInTheDocument();
     expect(screen.getByText('~16K Banks')).toBeVisible();
     expect(screen.getByText('~12K Banks')).toBeVisible();
     expect(screen.getByText('Strong')).toBeVisible();
@@ -65,46 +63,29 @@ describe('ProviderSelectionPanel', () => {
 
     const privacyLinks = screen.getAllByRole('link', { name: /privacy policy/i });
 
-    expect(privacyLinks).toHaveLength(3);
+    expect(privacyLinks).toHaveLength(2);
     expect(privacyLinks[0]).toHaveAttribute(
       'href',
       'https://beta-bridge.simplefin.org/info/privacy'
     );
-    expect(privacyLinks[1]).toHaveAttribute('href', 'https://teller.io/legal');
-    expect(privacyLinks[2]).toHaveAttribute('href', 'https://plaid.com/legal/#consumers');
+    expect(privacyLinks[1]).toHaveAttribute('href', 'https://plaid.com/legal/#consumers');
 
     const buttons = screen.getAllByRole('button', { name: /link account/i });
 
-    expect(buttons).toHaveLength(4);
+    expect(buttons).toHaveLength(3);
     expect(buttons[0]).toHaveAccessibleName('Link Account');
     expect(buttons[1]).toHaveAccessibleName('Link Account');
     expect(buttons[2]).toHaveAccessibleName('Link Account');
-    expect(buttons[3]).toHaveAccessibleName('Link Account');
   });
 
-  it('keeps Teller unavailable with missing credentials while SimpleFIN stays enabled', async () => {
-    const user = userEvent.setup();
-    const onSelectProvider = jest.fn();
-
+  it('does not render a Teller card in the picker', () => {
     renderPanel({
-      availableProviders: ['plaid', 'simplefin'],
-      onSelectProvider,
+      availableProviders: ['plaid', 'simplefin', 'teller'],
     });
 
-    const buttons = screen.getAllByRole('button', { name: 'Link Account' });
-    const simpleFinButton = buttons[1];
-    const tellerButton = screen.getByRole('button', { name: 'Unavailable' });
-
-    expect(tellerButton).toBeDisabled();
-    expect(simpleFinButton).toBeEnabled();
-    expect(screen.queryByText('Missing credentials')).not.toBeInTheDocument();
-
-    expect(screen.queryByRole('button', { name: 'Loading…' })).not.toBeInTheDocument();
-    expect(screen.queryByText('Preparing secure connection')).not.toBeInTheDocument();
-
-    await user.click(tellerButton);
-
-    expect(onSelectProvider).not.toHaveBeenCalled();
+    expect(screen.queryByText('Teller')).not.toBeInTheDocument();
+    expect(screen.queryByText('US Only')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /link account|unavailable/i })).toHaveLength(3);
   });
 
   it('keeps Plaid disabled when its credentials are missing', async () => {
@@ -120,12 +101,12 @@ describe('ProviderSelectionPanel', () => {
     const simpleFinButton = buttons[1];
     const unavailableButtons = screen.getAllByRole('button', { name: 'Unavailable' });
 
-    expect(unavailableButtons).toHaveLength(2);
-    expect(unavailableButtons.every((button) => button.hasAttribute('disabled'))).toBe(true);
+    expect(unavailableButtons).toHaveLength(1);
+    expect(unavailableButtons[0]).toBeDisabled();
     expect(simpleFinButton).toBeEnabled();
     expect(screen.queryByText('Missing credentials')).not.toBeInTheDocument();
 
-    await user.click(unavailableButtons[1]!);
+    await user.click(unavailableButtons[0]!);
 
     expect(onSelectProvider).not.toHaveBeenCalled();
   });
@@ -139,7 +120,7 @@ describe('ProviderSelectionPanel', () => {
 
     expect(buttons[0]).toBeEnabled();
     expect(buttons[1]).toBeEnabled();
-    expect(screen.getAllByRole('button', { name: 'Unavailable' })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: 'Unavailable' })).toHaveLength(1);
     expect(screen.queryByText('Missing credentials')).not.toBeInTheDocument();
   });
 
@@ -148,52 +129,42 @@ describe('ProviderSelectionPanel', () => {
     const onSelectProvider = jest.fn();
 
     renderPanel({
-      availableProviders: ['plaid', 'teller', 'simplefin'],
-      tellerApplicationId: 'app-123',
+      availableProviders: ['plaid', 'simplefin'],
       onSelectProvider,
     });
 
     await user.click(screen.getAllByRole('button', { name: 'Link Account' })[2]);
 
-    expect(onSelectProvider).toHaveBeenCalledWith('teller');
+    expect(onSelectProvider).toHaveBeenCalledWith('plaid');
     expect(screen.queryByRole('button', { name: 'Selected' })).not.toBeInTheDocument();
   });
 
-  it('renders DIY as fourth card with Sync row showing Import', () => {
+  it('renders DIY as third card with Sync row showing Import', () => {
     renderPanel({
-      availableProviders: ['plaid', 'teller', 'simplefin', 'diy'],
-      tellerApplicationId: 'app-123',
+      availableProviders: ['plaid', 'simplefin', 'diy'],
     });
 
     expect(screen.getAllByText('DIY')).toHaveLength(1);
     expect(screen.getByText('Self-Managed')).toBeVisible();
     expect(screen.getAllByText('Any (USD)').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Sync')).toHaveLength(4);
+    expect(screen.getAllByText('Sync')).toHaveLength(3);
     expect(screen.getByText('Import')).toBeVisible();
-    expect(screen.getAllByText('Yes')).toHaveLength(3);
+    expect(screen.getAllByText('Yes')).toHaveLength(2);
     expect(document.querySelectorAll('svg.lucide-x')).toHaveLength(1);
   });
 
-  it('keeps popup providers disabled until their secure connection is prepared', () => {
+  it('does not gate picker cards on Teller SDK readiness', () => {
     renderPanel({
-      availableProviders: ['plaid', 'teller', 'simplefin'],
-      tellerApplicationId: 'app-123',
+      availableProviders: ['plaid', 'simplefin'],
       providerReadyState: {
         plaid: false,
-        teller: false,
         simplefin: true,
       },
     });
 
-    const buttons = screen.getAllByRole('button', { name: /^(Loading…|Link Account)$/ });
-
-    expect(buttons[0]).toHaveAccessibleName('Link Account');
-    expect(buttons[0]).toBeEnabled();
-    expect(buttons[1]).toHaveAccessibleName('Link Account');
-    expect(buttons[1]).toBeEnabled();
-    expect(buttons[2]).toHaveAccessibleName('Loading…');
-    expect(buttons[2]).toBeDisabled();
-    expect(screen.getAllByText('Preparing secure connection')).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Link Account' })).toHaveLength(3);
+    expect(screen.queryByText('Preparing secure connection')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Loading…' })).not.toBeInTheDocument();
   });
 
   it('renders a top-right close control when onClose is provided', async () => {
@@ -219,15 +190,14 @@ describe('ProviderSelectionPanel', () => {
 
   it('renders only the providers listed in visibleProviders', () => {
     renderPanel({
-      availableProviders: ['plaid', 'teller', 'simplefin', 'diy'],
-      tellerApplicationId: 'app-123',
-      visibleProviders: ['diy', 'teller'],
+      availableProviders: ['plaid', 'simplefin', 'diy'],
+      visibleProviders: ['diy', 'plaid'],
     });
 
     expect(screen.getByText('Self-Managed')).toBeVisible();
-    expect(screen.getByText('Teller')).toBeVisible();
+    expect(screen.getByText('Plaid')).toBeVisible();
     expect(screen.queryByText('SimpleFIN')).not.toBeInTheDocument();
-    expect(screen.queryByText('Plaid')).not.toBeInTheDocument();
+    expect(screen.queryByText('Teller')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /link account/i })).toHaveLength(2);
   });
 
@@ -235,8 +205,7 @@ describe('ProviderSelectionPanel', () => {
     const user = userEvent.setup();
 
     renderPanel({
-      availableProviders: ['plaid', 'teller', 'simplefin'],
-      tellerApplicationId: 'app-123',
+      availableProviders: ['plaid', 'simplefin'],
     });
 
     const simpleFinButton = screen.getAllByRole('button', { name: 'Link Account' })[1]!;
@@ -254,8 +223,7 @@ describe('ProviderSelectionPanel', () => {
     const user = userEvent.setup();
 
     renderPanel({
-      availableProviders: ['plaid', 'teller', 'simplefin'],
-      tellerApplicationId: 'app-123',
+      availableProviders: ['plaid', 'simplefin'],
     });
 
     const privacyInfoButton = screen.getAllByRole('button', {
@@ -273,8 +241,7 @@ describe('ProviderSelectionPanel', () => {
 
   it('does not show paddle upgrade or trial-lock copy', () => {
     renderPanel({
-      availableProviders: ['plaid', 'diy', 'simplefin', 'teller'],
-      tellerApplicationId: 'app-123',
+      availableProviders: ['plaid', 'diy', 'simplefin'],
     });
 
     expect(screen.queryByText('Paid access required')).not.toBeInTheDocument();

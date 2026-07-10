@@ -27,7 +27,6 @@ import {
   type FinancialConnectionStrategyContext,
   PENDING_CONNECTION_STRATEGY,
 } from '@/hooks/financialConnection/types';
-import { useProviderCatalog } from '@/hooks/useProviderCatalog';
 import { recordHandledIssue } from '@/observability';
 import type { SimpleFinInstitutionAuthRequired } from '@/types/api';
 import { POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
@@ -73,7 +72,6 @@ export function useFinancialConnection(
     isOnline = true,
   } = options;
   const queryClient = useQueryClient();
-  const providerCatalog = useProviderCatalog();
 
   const [state, dispatch] = useReducer(financialConnectionReducer, initialFinancialConnectionState);
   const [sdkNonce, setSdkNonce] = useState(0);
@@ -116,8 +114,6 @@ export function useFinancialConnection(
       onExit,
       onSimpleFinAuthRequired,
       invalidateCache,
-      tellerApplicationId: providerCatalog.tellerApplicationId,
-      tellerEnvironment: providerCatalog.tellerEnvironment,
     }),
     [
       handleError,
@@ -126,8 +122,6 @@ export function useFinancialConnection(
       onConnectionSuccess,
       onExit,
       onSimpleFinAuthRequired,
-      providerCatalog.tellerApplicationId,
-      providerCatalog.tellerEnvironment,
       sdkNonce,
       state,
     ]

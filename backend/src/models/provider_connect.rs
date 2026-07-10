@@ -7,24 +7,24 @@ use serde_json::json;
 
 pub fn provider_connect_request_example() -> serde_json::Value {
     json!({
-        "provider": "teller",
-        "access_token": "access-sandbox-xyz",
-        "enrollment_id": "enroll-123",
-        "institution_name": "Teller Demo Bank",
+        "provider": "simplefin",
+        "access_token": "",
+        "enrollment_id": "",
+        "institution_name": null,
         "simplefin": {
-            "simplefin_setup_token": null
+            "simplefin_setup_token": "demo-setup-token"
         }
     })
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[schema(example = json!({
-    "provider": "teller",
-    "access_token": "access-sandbox-xyz",
-    "enrollment_id": "enroll-123",
-    "institution_name": "Teller Demo Bank",
+    "provider": "simplefin",
+    "access_token": "",
+    "enrollment_id": "",
+    "institution_name": null,
     "simplefin": {
-        "simplefin_setup_token": null
+        "simplefin_setup_token": "demo-setup-token"
     }
 }))]
 pub struct ProviderConnectRequest {

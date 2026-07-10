@@ -4,7 +4,6 @@ pub const AUTH_TAG: &str = "Authentication";
 pub const TRANSACTIONS_TAG: &str = "Transactions";
 pub const PROVIDERS_TAG: &str = "Financial Providers";
 pub const PLAID_TAG: &str = "Plaid";
-pub const TELLER_TAG: &str = "Teller";
 pub const ANALYTICS_TAG: &str = "Analytics";
 pub const BUDGETS_TAG: &str = "Budgets";
 pub const HEALTH_TAG: &str = "Health";
@@ -26,10 +25,6 @@ pub fn add_tags(openapi: &mut OpenApi) {
         openapi::tag::TagBuilder::new()
             .name(PLAID_TAG)
             .description(Some("Plaid-specific endpoints for link token creation, token exchange, and account retrieval."))
-            .build(),
-        openapi::tag::TagBuilder::new()
-            .name(TELLER_TAG)
-            .description(Some("Reserved for Teller Connect operations when expanded beyond provider selection flows."))
             .build(),
         openapi::tag::TagBuilder::new()
             .name(ANALYTICS_TAG)

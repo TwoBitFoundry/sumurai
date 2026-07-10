@@ -25,11 +25,11 @@ describe('useProviderCatalog', () => {
 
   const createGateway = (): ProviderCatalogGateway => ({
     fetchInfo: jest.fn().mockResolvedValue({
-      available_providers: ['plaid', 'teller'],
+      available_providers: ['plaid', 'simplefin'],
       user_provider: null,
     }),
     selectProvider: jest.fn().mockResolvedValue({
-      user_provider: 'teller',
+      user_provider: 'plaid',
     }),
   });
 
@@ -39,12 +39,12 @@ describe('useProviderCatalog', () => {
     const { result } = renderHook(() => useProviderCatalog({ gateway }), { wrapper });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.availableProviders).toEqual(['plaid', 'teller']);
+    expect(result.current.availableProviders).toEqual(['plaid', 'simplefin']);
     expect(result.current.userProvider).toBeNull();
     expect(gateway.fetchInfo).toHaveBeenCalledTimes(1);
   });
 
-  it('reports teller as not connectable without application id', async () => {
+  it('reports teller as never connectable', async () => {
     const gateway = createGateway();
     const wrapper = createWrapper();
     const { result } = renderHook(() => useProviderCatalog({ gateway }), { wrapper });
@@ -53,7 +53,7 @@ describe('useProviderCatalog', () => {
 
     expect(result.current.canConnectWith('plaid')).toBe(true);
     expect(result.current.canConnectWith('teller')).toBe(false);
-    expect(result.current.getConnectBlockedReason('teller')).toBe('Missing credentials');
+    expect(result.current.getConnectBlockedReason('teller')).toBe('Teller is no longer supported');
   });
 
   it('keeps the selected provider in the shared query cache across remounts', async () => {
@@ -64,28 +64,28 @@ describe('useProviderCatalog', () => {
     await waitFor(() => expect(first.result.current.loading).toBe(false));
 
     await act(async () => {
-      await first.result.current.chooseProvider('teller');
+      await first.result.current.chooseProvider('plaid');
     });
 
-    expect(first.result.current.userProvider).toBe('teller');
+    expect(first.result.current.userProvider).toBe('plaid');
 
     first.unmount();
 
     const second = renderHook(() => useProviderCatalog({ gateway }), { wrapper });
 
     expect(second.result.current.loading).toBe(false);
-    expect(second.result.current.userProvider).toBe('teller');
+    expect(second.result.current.userProvider).toBe('plaid');
     expect(gateway.fetchInfo).toHaveBeenCalledTimes(1);
   });
 
   it('accepts diy as a stored provider selection', async () => {
     const gateway: ProviderCatalogGateway = {
       fetchInfo: jest.fn().mockResolvedValue({
-        available_providers: ['plaid', 'teller', 'diy'],
+        available_providers: ['plaid', 'simplefin', 'diy'],
         user_provider: 'diy',
       }),
       selectProvider: jest.fn().mockResolvedValue({
-        user_provider: 'teller',
+        user_provider: 'plaid',
       }),
     };
     const wrapper = createWrapper();
@@ -93,7 +93,7 @@ describe('useProviderCatalog', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    expect(result.current.availableProviders).toEqual(['plaid', 'teller', 'diy']);
+    expect(result.current.availableProviders).toEqual(['plaid', 'simplefin', 'diy']);
     expect(result.current.userProvider).toBe('diy');
   });
 });

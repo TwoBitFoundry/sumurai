@@ -19,8 +19,6 @@ export function makeProviderCatalogMock(
     error: null,
     availableProviders: catalogue.available_providers,
     userProvider: catalogue.user_provider ?? null,
-    tellerApplicationId: catalogue.teller_application_id ?? null,
-    tellerEnvironment: 'development',
     isProviderAvailable: (provider: FinancialProvider) => isProviderListed(provider, catalogue),
     canConnectWith: (provider: FinancialProvider) => isProviderConnectable(provider, catalogue),
     getConnectBlockedReason: (provider: FinancialProvider) =>

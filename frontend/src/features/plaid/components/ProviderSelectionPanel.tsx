@@ -21,7 +21,6 @@ interface ProviderSelectionPanelProps {
   loading: boolean;
   error: string | null;
   availableProviders: FinancialProvider[];
-  tellerApplicationId?: string | null;
   providerReadyState?: Partial<Record<FinancialProvider, boolean>>;
   connectingProvider?: FinancialProvider | null;
   onSelectProvider: (provider: FinancialProvider) => void | Promise<void>;
@@ -113,7 +112,6 @@ export const ProviderSelectionPanel = ({
   loading,
   error,
   availableProviders,
-  tellerApplicationId,
   providerReadyState,
   connectingProvider,
   onSelectProvider,
@@ -165,7 +163,6 @@ export const ProviderSelectionPanel = ({
   const providerCatalogue: ProviderCatalogue = {
     available_providers: availableProviders,
     user_provider: null,
-    teller_application_id: tellerApplicationId ?? undefined,
   };
   const providersToRender = (visibleProviders ?? PROVIDER_PRICE_ORDER).filter((provider) =>
     PROVIDER_PRICE_ORDER.includes(provider)

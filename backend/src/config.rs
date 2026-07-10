@@ -70,8 +70,6 @@ impl EnvironmentProvider for SystemEnvironment {
 
 #[derive(Clone)]
 pub struct Config {
-    teller_application_id: Option<String>,
-    teller_environment: Option<String>,
     auth_cookie_same_site: AuthCookieSameSite,
     clear_sessions_on_boot: bool,
     app_origins: Vec<String>,
@@ -86,10 +84,6 @@ impl Config {
     }
 
     pub fn from_env_provider(env: &dyn EnvironmentProvider) -> Result<Self> {
-        let teller_application_id = env.get_var("TELLER_APPLICATION_ID");
-        let teller_environment = env
-            .get_var("TELLER_ENV")
-            .or_else(|| env.get_var("TELLER_ENVIRONMENT"));
         let auth_cookie_same_site = parse_same_site(
             env.get_var("AUTH_COOKIE_SAME_SITE")
                 .ok_or_else(|| anyhow!("AUTH_COOKIE_SAME_SITE must be set"))?,
@@ -104,8 +98,6 @@ impl Config {
         let enabled_financial_providers = parse_enabled_financial_providers(env)?;
 
         Ok(Self {
-            teller_application_id,
-            teller_environment,
             auth_cookie_same_site,
             clear_sessions_on_boot,
             app_origins,
@@ -113,14 +105,6 @@ impl Config {
             paddle_billing,
             enabled_financial_providers,
         })
-    }
-
-    pub fn get_teller_application_id(&self) -> Option<&str> {
-        self.teller_application_id.as_deref()
-    }
-
-    pub fn get_teller_environment(&self) -> &str {
-        self.teller_environment.as_deref().unwrap_or("sandbox")
     }
 
     pub fn get_auth_cookie_same_site(&self) -> AuthCookieSameSite {
@@ -254,7 +238,7 @@ fn parse_enabled_financial_providers(env: &dyn EnvironmentProvider) -> Result<Op
     }
 
     for provider in &providers {
-        if !matches!(provider.as_str(), "plaid" | "teller" | "simplefin" | "diy") {
+        if !matches!(provider.as_str(), "plaid" | "simplefin" | "diy") {
             return Err(anyhow!(
                 "ENABLED_FINANCIAL_PROVIDERS contains unsupported provider '{}'",
                 provider

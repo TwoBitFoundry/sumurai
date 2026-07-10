@@ -25,7 +25,7 @@ use crate::services::{
 use anyhow::{Error, Result};
 use chrono::NaiveDate;
 use chrono::Utc;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -42,10 +42,7 @@ pub struct ConnectionService {
 
 #[derive(Debug)]
 pub enum TellerConnectError {
-    #[allow(dead_code)]
-    InvalidProvider(String),
-    CredentialStorage(Error),
-    ConnectionPersistence(Error),
+    NoLongerSupported,
 }
 
 #[derive(Debug)]
@@ -67,13 +64,7 @@ pub enum SimpleFinConnectError {
 
 #[derive(Debug)]
 pub enum TellerSyncError {
-    CredentialsMissing,
-    CredentialAccess(Error),
-    ProviderInitialization(Error),
-    ProviderRequest(Error),
-    AccountLookup(Error),
-    TransactionLookup(Error),
-    ConnectionPersistence(Error),
+    NoLongerSupported,
 }
 
 #[derive(Debug)]
@@ -97,6 +88,7 @@ pub enum ProviderSyncError {
     AccountLookup(Error),
     TransactionLookup(Error),
     SyncFailure(Error),
+    TellerNoLongerSupported,
     RateLimited {
         message: String,
         retry_after_secs: String,
@@ -357,127 +349,11 @@ impl ConnectionService {
 
     pub async fn connect_teller_provider(
         &self,
-        user_id: &Uuid,
-        jwt_id: &str,
-        request: &ProviderConnectRequest,
+        _user_id: &Uuid,
+        _jwt_id: &str,
+        _request: &ProviderConnectRequest,
     ) -> Result<ProviderConnectResponse, TellerConnectError> {
-        if request.provider.as_str() != "teller" {
-            return Err(TellerConnectError::InvalidProvider(
-                request.provider.clone(),
-            ));
-        }
-
-        let provider = self
-            .resolve_provider("teller")
-            .ok_or_else(|| TellerConnectError::InvalidProvider("teller".to_string()))?;
-
-        self.exit_demo_mode_before_new_institution(user_id, jwt_id)
-            .await
-            .map_err(TellerConnectError::ConnectionPersistence)?;
-
-        let item_id = format!("teller_{}", request.enrollment_id);
-        self.db_repository
-            .store_provider_credentials_for_user(user_id, &item_id, &request.access_token)
-            .await
-            .map_err(TellerConnectError::CredentialStorage)?;
-
-        let institution_name = request
-            .institution_name
-            .clone()
-            .unwrap_or_else(|| "Connected Bank".to_string());
-
-        let mut connection = ProviderConnection::new(*user_id, &item_id);
-        connection.provider = "teller".to_string();
-        connection.mark_connected(&institution_name);
-        connection.institution_id = Some("teller".to_string());
-        connection.transaction_count = 0;
-        connection.account_count = 0;
-        connection.last_sync_at = None;
-        connection.sync_cursor = None;
-
-        self.db_repository
-            .save_provider_connection(&connection)
-            .await
-            .map_err(TellerConnectError::ConnectionPersistence)?;
-
-        let provider_credentials = ProviderCredentials {
-            provider: "teller".to_string(),
-            access_token: request.access_token.clone(),
-            item_id: item_id.clone(),
-            certificate: None,
-            private_key: None,
-        };
-
-        let mut persisted_accounts = Vec::new();
-
-        match provider.get_accounts(&provider_credentials).await {
-            Ok(accounts) => {
-                for mut account in accounts {
-                    account.user_id = Some(*user_id);
-                    account.provider_connection_id = Some(connection.id);
-
-                    match self.db_repository.upsert_account(&account).await {
-                        Ok(_) => persisted_accounts.push(account),
-                        Err(e) => {
-                            tracing::warn!(
-                                "Failed to persist Teller account {} for user {}: {}",
-                                account.provider_account_id.as_deref().unwrap_or("unknown"),
-                                user_id,
-                                e
-                            );
-                        }
-                    }
-                }
-            }
-            Err(e) => {
-                tracing::warn!(
-                    "Failed to fetch Teller accounts during connect for user {}: {}",
-                    user_id,
-                    e
-                );
-            }
-        }
-
-        if !persisted_accounts.is_empty() {
-            connection.account_count = persisted_accounts.len() as i32;
-
-            if let Err(e) = self
-                .db_repository
-                .save_provider_connection(&connection)
-                .await
-            {
-                tracing::warn!(
-                    "Failed to update Teller connection account count for user {}: {}",
-                    user_id,
-                    e
-                );
-            }
-
-            if let Err(e) = self
-                .complete_sync_with_jwt_cache_update(jwt_id, &connection, &persisted_accounts)
-                .await
-            {
-                tracing::warn!(
-                    "Failed to update JWT-scoped caches after Teller connect for user {}: {}",
-                    user_id,
-                    e
-                );
-            }
-        }
-
-        if let Err(error) = self.set_user_provider(user_id, "teller").await {
-            tracing::warn!(
-                "Failed to persist active provider after Teller connect for user {}: {}",
-                user_id,
-                error
-            );
-        }
-
-        Ok(ProviderConnectResponse {
-            connection_id: connection.id.to_string(),
-            institution_name,
-            simplefin_institutions_requiring_auth: None,
-        })
+        Err(TellerConnectError::NoLongerSupported)
     }
 
     pub async fn list_simplefin_ignored_institutions(
@@ -1202,6 +1078,12 @@ impl ConnectionService {
         connection: &mut ProviderConnection,
         reference_date: Option<NaiveDate>,
     ) -> Result<SyncTransactionsResponse, ProviderSyncError> {
+        if crate::seed::is_demo_simplefin_item_id(&connection.item_id) {
+            return self
+                .sync_demo_simplefin_connection(params.user_id, params.jwt_id, connection)
+                .await;
+        }
+
         if let Some(service) = self.simplefin_connection_service.as_ref() {
             return service
                 .sync(params, sync_service, connection, reference_date)
@@ -1574,301 +1456,27 @@ impl ConnectionService {
     )]
     pub async fn sync_teller_connection(
         &self,
-        user_id: &Uuid,
-        jwt_id: &str,
+        _user_id: &Uuid,
+        _jwt_id: &str,
         connection: &mut ProviderConnection,
-        reference_date: Option<NaiveDate>,
+        _reference_date: Option<NaiveDate>,
     ) -> Result<SyncTransactionsResponse, TellerSyncError> {
-        let sync_timestamp = Utc::now();
-
-        if crate::seed::is_demo_teller_item_id(&connection.item_id) {
-            return self
-                .sync_demo_teller_connection(user_id, jwt_id, connection, sync_timestamp)
-                .await;
-        }
-
-        let (sync_start_date, sync_end_date) =
-            SyncService::calculate_sync_date_range_static(connection.last_sync_at, reference_date);
-
-        let credentials = self
-            .db_repository
-            .get_provider_credentials_for_user(user_id, &connection.item_id)
-            .await
-            .map_err(TellerSyncError::CredentialAccess)?
-            .ok_or(TellerSyncError::CredentialsMissing)?;
-
-        let provider_credentials = ProviderCredentials {
-            provider: "teller".to_string(),
-            access_token: credentials.access_token.clone(),
-            item_id: connection.item_id.clone(),
-            certificate: None,
-            private_key: None,
-        };
-
-        let provider = self.resolve_provider("teller").ok_or_else(|| {
-            TellerSyncError::ProviderInitialization(anyhow::anyhow!(
-                "Teller provider not registered"
-            ))
-        })?;
-
-        let mut fetched_accounts = provider
-            .as_ref()
-            .get_accounts(&provider_credentials)
-            .await
-            .map_err(TellerSyncError::ProviderRequest)?;
-
-        for account in &mut fetched_accounts {
-            account.user_id = Some(*user_id);
-            account.provider_connection_id = Some(connection.id);
-
-            if let Err(e) = self.db_repository.upsert_account(account).await {
-                tracing::warn!(
-                    "Failed to persist Teller account {} for user {}: {}",
-                    account.provider_account_id.as_deref().unwrap_or("unknown"),
-                    user_id,
-                    e
-                );
-            }
-        }
-
-        let db_accounts = self
-            .db_repository
-            .get_accounts_for_user(user_id)
-            .await
-            .map_err(TellerSyncError::AccountLookup)?;
-
-        let accounts_for_connection: Vec<_> = db_accounts
-            .iter()
-            .filter(|acct| acct.provider_connection_id == Some(connection.id))
-            .cloned()
-            .collect();
-
-        let account_map: HashMap<String, Uuid> = accounts_for_connection
-            .iter()
-            .filter_map(|acct| {
-                acct.provider_account_id
-                    .as_ref()
-                    .map(|pid| (pid.clone(), acct.id))
-            })
-            .collect();
-
-        let crate::models::transaction::ProviderTransactionsResult {
-            transactions: mut teller_transactions,
-            page_count,
-        } = provider
-            .as_ref()
-            .get_transactions(&provider_credentials, sync_start_date, sync_end_date)
-            .await
-            .map_err(TellerSyncError::ProviderRequest)?;
-
-        let existing_provider_transaction_ids = self
-            .db_repository
-            .get_provider_transaction_ids_for_user(user_id)
-            .await
-            .map_err(TellerSyncError::TransactionLookup)?;
-
-        let mut existing_ids: HashSet<String> =
-            existing_provider_transaction_ids.into_iter().collect();
-
-        teller_transactions.retain(|txn| {
-            txn.provider_transaction_id
-                .as_ref()
-                .map(|id| !existing_ids.contains(id))
-                .unwrap_or(true)
-        });
-
-        let mut synced_transactions: Vec<Transaction> = Vec::new();
-
-        for mut transaction in teller_transactions {
-            transaction.user_id = Some(*user_id);
-
-            let provider_account_id = match transaction.provider_account_id.as_ref() {
-                Some(id) => id,
-                None => {
-                    tracing::warn!(
-                        "Skipping Teller transaction without provider_account_id: {:?}",
-                        transaction.provider_transaction_id
-                    );
-                    continue;
-                }
-            };
-
-            let Some(&internal_account_id) = account_map.get(provider_account_id) else {
-                tracing::warn!(
-                    "Skipping Teller transaction with unknown account {}",
-                    provider_account_id
-                );
-                continue;
-            };
-
-            transaction.account_id = internal_account_id;
-
-            if let Some(provider_transaction_id) = transaction.provider_transaction_id.clone() {
-                existing_ids.insert(provider_transaction_id);
-            }
-
-            synced_transactions.push(transaction);
-        }
-
-        if let Err(e) = self
-            .merchant_normalization_service
-            .normalize_batch(&mut synced_transactions)
-            .await
-        {
-            tracing::warn!("Merchant normalization failed for user {}: {}", user_id, e);
-        }
-
-        apply_deterministic_categories(&mut synced_transactions);
-
-        for chunk in synced_transactions.chunks(500) {
-            if let Err(e) = self
-                .db_repository
-                .upsert_transactions_batch(chunk, user_id)
-                .await
-            {
-                tracing::warn!(
-                    "Failed to persist Teller transaction batch for user {}: {}",
-                    user_id,
-                    e
-                );
-            }
-        }
-
-        {
-            let db_clone = Arc::clone(&self.db_repository);
-            let cache_clone = Arc::clone(&self.cache_service);
-            let user_id_owned = *user_id;
-            let jwt_id_owned = jwt_id.to_string();
-            tokio::spawn(async move {
-                match crate::services::subscription_detection::service::detect_and_assign_for_user(
-                    &*db_clone,
-                    &user_id_owned,
-                )
-                .await
-                {
-                    Ok(count) => {
-                        tracing::debug!(
-                            user_id = %user_id_owned,
-                            count,
-                            "Post-sync subscription detection completed"
-                        );
-                        if count > 0 {
-                            if let Err(e) = cache_clone.clear_transactions(&jwt_id_owned).await {
-                                tracing::warn!(
-                                    user_id = %user_id_owned,
-                                    "Failed to clear transactions cache after post-sync detection: {e}"
-                                );
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        tracing::warn!(
-                            user_id = %user_id_owned,
-                            "Post-sync subscription detection failed: {e}"
-                        );
-                    }
-                }
-            });
-        }
-
-        for transaction in &synced_transactions {
-            if let Err(e) = self
-                .cache_service
-                .add_transaction(jwt_id, transaction)
-                .await
-            {
-                tracing::warn!(
-                    "Failed to cache Teller transaction {:?}: {}",
-                    transaction.provider_transaction_id,
-                    e
-                );
-            }
-        }
-
-        let total_transactions = match self
-            .db_repository
-            .count_transactions(user_id, None, None, None, None, None)
-            .await
-        {
-            Ok(count) => count as i32,
-            Err(e) => {
-                tracing::warn!(
-                    "Failed to load total transaction count for Teller user {}: {}",
-                    user_id,
-                    e
-                );
-                0
-            }
-        };
-
-        let total_accounts = accounts_for_connection.len() as i32;
-
-        let random_suffix: String = Uuid::new_v4().to_string().chars().take(8).collect();
-
-        connection.update_sync_info(total_transactions, total_accounts);
-        connection.sync_cursor = Some(format!(
-            "teller_cursor_{}_{}",
-            Utc::now().timestamp(),
-            random_suffix
-        ));
-        connection.last_sync_at = Some(sync_timestamp);
-
-        self.db_repository
-            .save_provider_connection(connection)
-            .await
-            .map_err(TellerSyncError::ConnectionPersistence)?;
-
-        if let Err(e) = self
-            .complete_sync_with_jwt_cache_update(jwt_id, connection, &accounts_for_connection)
-            .await
-        {
-            tracing::warn!(
-                "Failed to update JWT-scoped caches after Teller sync for user {}: {}",
-                user_id,
-                e
-            );
-        }
-
-        let metadata = SyncMetadata {
-            transaction_count: total_transactions,
-            account_count: total_accounts,
-            sync_timestamp: sync_timestamp.to_rfc3339(),
-            start_date: sync_start_date.to_string(),
-            end_date: sync_end_date.to_string(),
-            connection_updated: true,
-        };
-
-        tracing::info!(
-            provider = "teller",
-            connection_id = %connection.id,
-            transaction_count = total_transactions,
-            account_count = total_accounts,
-            page_count = page_count,
-            start_date = %sync_start_date,
-            end_date = %sync_end_date,
-            "Transaction sync completed"
-        );
-
-        Ok(SyncTransactionsResponse {
-            transactions: synced_transactions,
-            metadata,
-            simplefin_institution_results: None,
-            bridge_warnings: None,
-        })
+        let _ = connection;
+        Err(TellerSyncError::NoLongerSupported)
     }
 
-    async fn sync_demo_teller_connection(
+    async fn sync_demo_simplefin_connection(
         &self,
         user_id: &Uuid,
         jwt_id: &str,
         connection: &ProviderConnection,
-        sync_timestamp: chrono::DateTime<Utc>,
-    ) -> Result<SyncTransactionsResponse, TellerSyncError> {
+    ) -> Result<SyncTransactionsResponse, ProviderSyncError> {
+        let sync_timestamp = Utc::now();
         let accounts: Vec<Account> = self
             .db_repository
             .get_accounts_for_user(user_id)
             .await
-            .map_err(TellerSyncError::AccountLookup)?
+            .map_err(ProviderSyncError::AccountLookup)?
             .into_iter()
             .filter(|account| account.provider_connection_id == Some(connection.id))
             .collect();
@@ -1879,7 +1487,7 @@ impl ConnectionService {
             .db_repository
             .get_transactions_for_user(user_id)
             .await
-            .map_err(TellerSyncError::TransactionLookup)?
+            .map_err(ProviderSyncError::TransactionLookup)?
             .into_iter()
             .filter(|transaction| account_ids.contains(&transaction.account_id))
             .collect();

@@ -404,23 +404,6 @@ impl Transaction {
         }
     }
 
-    fn teller_raw_merchant_name(teller_txn: &serde_json::Value) -> Option<String> {
-        Self::non_empty_trimmed(teller_txn.get("description").and_then(|v| v.as_str()))
-    }
-
-    fn teller_provider_merchant_name(teller_txn: &serde_json::Value) -> Option<String> {
-        let merchant = teller_txn["details"]["counterparty"]["name"]
-            .as_str()
-            .map(str::trim)
-            .filter(|s| !s.is_empty())?;
-        let normalized = normalize_merchant_display_case(merchant);
-        if normalized.is_empty() {
-            None
-        } else {
-            Some(normalized)
-        }
-    }
-
     #[allow(clippy::too_many_arguments)]
     pub fn from_ofx(
         fitid: &str,
@@ -602,69 +585,6 @@ impl Transaction {
         hex::encode(hasher.finalize())
     }
 
-    pub fn merchant_name_from_teller(teller_txn: &serde_json::Value) -> Option<String> {
-        let raw = teller_txn["details"]["counterparty"]["name"]
-            .as_str()
-            .map(str::trim)
-            .filter(|s| !s.is_empty())
-            .or_else(|| {
-                teller_txn["description"]
-                    .as_str()
-                    .map(str::trim)
-                    .filter(|s| !s.is_empty())
-            })?;
-        let normalized = normalize_merchant_display_case(raw);
-        if normalized.is_empty() {
-            None
-        } else {
-            Some(normalized)
-        }
-    }
-
-    pub fn from_teller(
-        teller_txn: &serde_json::Value,
-        account_id: &Uuid,
-        provider_account_id: Option<&str>,
-    ) -> Self {
-        let amount_str = teller_txn["amount"].as_str().unwrap_or("0");
-        let raw_amount = Decimal::from_str(amount_str).unwrap_or(Decimal::ZERO);
-
-        let date = teller_txn["date"]
-            .as_str()
-            .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
-            .unwrap_or_else(|| chrono::Utc::now().date_naive());
-
-        let category = teller_txn["details"]["category"].as_str().unwrap_or("");
-        let (category_primary, category_detailed) =
-            Self::normalize_teller_category(category, &raw_amount);
-        let amount = raw_amount;
-
-        let merchant_name = Self::teller_provider_merchant_name(teller_txn);
-        let original_merchant_name = Self::teller_raw_merchant_name(teller_txn);
-        let normalized_merchant = merchant_name.as_deref().map(canonical_key);
-        let normalization_source = merchant_name.as_ref().map(|_| "teller".to_string());
-
-        Self {
-            id: Uuid::new_v4(),
-            account_id: *account_id,
-            user_id: None,
-            provider_account_id: provider_account_id.map(String::from),
-            provider_transaction_id: teller_txn["id"].as_str().map(String::from),
-            amount,
-            date,
-            merchant_name,
-            category_primary,
-            category_detailed,
-            category_confidence: String::new(),
-            payment_channel: None,
-            pending: teller_txn["status"].as_str() != Some("posted"),
-            created_at: Some(chrono::Utc::now()),
-            original_merchant_name,
-            normalized_merchant,
-            normalization_source,
-        }
-    }
-
     pub fn merchant_name_from_plaid(plaid_txn: &serde_json::Value) -> Option<String> {
         let merchant = plaid_txn
             .get("merchant_name")
@@ -738,74 +658,5 @@ impl Transaction {
             normalized_merchant,
             normalization_source,
         }
-    }
-
-    fn normalize_teller_category(teller_cat: &str, amount: &Decimal) -> (String, String) {
-        let (primary, detailed) = match teller_cat {
-            "accommodation" => ("TRAVEL", "TRAVEL_LODGING"),
-            "advertising" => ("GENERAL_SERVICES", "GENERAL_SERVICES_CONSULTING_AND_LEGAL"),
-            "bar" => ("ENTERTAINMENT", "ENTERTAINMENT_OTHER_ENTERTAINMENT"),
-            "charity" => (
-                "GOVERNMENT_AND_NON_PROFIT",
-                "GOVERNMENT_AND_NON_PROFIT_DONATIONS",
-            ),
-            "clothing" => (
-                "GENERAL_MERCHANDISE",
-                "GENERAL_MERCHANDISE_CLOTHING_AND_ACCESSORIES",
-            ),
-            "dining" => ("FOOD_AND_DRINK", "FOOD_AND_DRINK_RESTAURANT"),
-            "education" => ("GENERAL_SERVICES", "GENERAL_SERVICES_EDUCATION"),
-            "electronics" => ("GENERAL_MERCHANDISE", "GENERAL_MERCHANDISE_ELECTRONICS"),
-            "entertainment" => ("ENTERTAINMENT", "ENTERTAINMENT_OTHER_ENTERTAINMENT"),
-            "fuel" => ("TRANSPORTATION", "TRANSPORTATION_GAS"),
-            "general" => (
-                "GENERAL_MERCHANDISE",
-                "GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE",
-            ),
-            "groceries" => ("FOOD_AND_DRINK", "FOOD_AND_DRINK_GROCERIES"),
-            "health" => ("MEDICAL", "MEDICAL_OTHER_MEDICAL"),
-            "home" => (
-                "HOME_IMPROVEMENT",
-                "HOME_IMPROVEMENT_OTHER_HOME_IMPROVEMENT",
-            ),
-            "income" => ("INCOME", "INCOME_WAGES"),
-            "insurance" => ("GENERAL_SERVICES", "GENERAL_SERVICES_INSURANCE"),
-            "investment" if !amount.is_sign_negative() => {
-                ("TRANSFER_IN", "TRANSFER_IN_INVESTMENT_AND_RETIREMENT_FUNDS")
-            }
-            "investment" => (
-                "TRANSFER_OUT",
-                "TRANSFER_OUT_INVESTMENT_AND_RETIREMENT_FUNDS",
-            ),
-            "loan" => ("LOAN_PAYMENTS", "LOAN_PAYMENTS_OTHER_PAYMENT"),
-            "office" => ("GENERAL_MERCHANDISE", "GENERAL_MERCHANDISE_OFFICE_SUPPLIES"),
-            "phone" => ("RENT_AND_UTILITIES", "RENT_AND_UTILITIES_TELEPHONE"),
-            "service" => (
-                "GENERAL_SERVICES",
-                "GENERAL_SERVICES_OTHER_GENERAL_SERVICES",
-            ),
-            "shopping" => (
-                "GENERAL_MERCHANDISE",
-                "GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE",
-            ),
-            "software" => (
-                "GENERAL_MERCHANDISE",
-                "GENERAL_MERCHANDISE_ONLINE_MARKETPLACES",
-            ),
-            "sport" => ("PERSONAL_CARE", "PERSONAL_CARE_GYMS_AND_FITNESS_CENTERS"),
-            "tax" => (
-                "GOVERNMENT_AND_NON_PROFIT",
-                "GOVERNMENT_AND_NON_PROFIT_TAX_PAYMENT",
-            ),
-            "transport" | "transportation" => {
-                ("TRANSPORTATION", "TRANSPORTATION_OTHER_TRANSPORTATION")
-            }
-            "utilities" => (
-                "RENT_AND_UTILITIES",
-                "RENT_AND_UTILITIES_GAS_AND_ELECTRICITY",
-            ),
-            _ => ("OTHER", "OTHER"),
-        };
-        (primary.to_string(), detailed.to_string())
     }
 }

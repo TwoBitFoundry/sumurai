@@ -54,8 +54,6 @@ describe('useSimpleFinConnectionStrategy', () => {
         handleError: jest.fn(),
         onConnectionSuccess,
         invalidateCache,
-        tellerApplicationId: null,
-        tellerEnvironment: 'development',
       })
     );
 
@@ -102,8 +100,6 @@ describe('useSimpleFinConnectionStrategy', () => {
         handleError: jest.fn(),
         onConnectionSuccess: jest.fn(),
         invalidateCache: jest.fn().mockResolvedValue(undefined),
-        tellerApplicationId: null,
-        tellerEnvironment: 'development',
       })
     );
 
@@ -143,8 +139,6 @@ describe('useSimpleFinConnectionStrategy', () => {
         handleError: jest.fn(),
         onConnectionSuccess: jest.fn(),
         invalidateCache: jest.fn().mockResolvedValue(undefined),
-        tellerApplicationId: null,
-        tellerEnvironment: 'development',
       })
     );
 
@@ -172,8 +166,6 @@ describe('useSimpleFinConnectionStrategy', () => {
         handleError: jest.fn(),
         onConnectionSuccess: jest.fn(),
         invalidateCache: jest.fn().mockResolvedValue(undefined),
-        tellerApplicationId: null,
-        tellerEnvironment: 'development',
       })
     );
 
@@ -199,8 +191,6 @@ describe('useSimpleFinConnectionStrategy', () => {
         handleError: jest.fn(),
         onConnectionSuccess: jest.fn(),
         invalidateCache: jest.fn().mockResolvedValue(undefined),
-        tellerApplicationId: null,
-        tellerEnvironment: 'development',
       })
     );
 
@@ -238,8 +228,6 @@ describe('useSimpleFinConnectionStrategy', () => {
         onConnectionSuccess: jest.fn(),
         onSimpleFinAuthRequired,
         invalidateCache: jest.fn().mockResolvedValue(undefined),
-        tellerApplicationId: null,
-        tellerEnvironment: 'development',
       })
     );
 
@@ -271,8 +259,6 @@ describe('useSimpleFinConnectionStrategy', () => {
         handleError: jest.fn(),
         onConnectionSuccess: jest.fn(),
         invalidateCache: jest.fn().mockResolvedValue(undefined),
-        tellerApplicationId: null,
-        tellerEnvironment: 'development',
       })
     );
 
@@ -325,8 +311,6 @@ describe('useSimpleFinConnectionStrategy', () => {
         onConnectionSuccess: jest.fn(),
         onSimpleFinAuthRequired,
         invalidateCache: jest.fn().mockResolvedValue(undefined),
-        tellerApplicationId: null,
-        tellerEnvironment: 'development',
       })
     );
 

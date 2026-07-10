@@ -10,9 +10,7 @@ use crate::models::simplefin::{
 use crate::models::transaction::Transaction;
 use crate::providers::simplefin_provider::{MockSimpleFinHttpClient, SimpleFinProvider};
 use crate::providers::{FinancialDataProvider, ProviderRegistry};
-use crate::providers::{
-    PlaidCredentialResolver, SimpleFinCredentialResolver, TellerCredentialResolver,
-};
+use crate::providers::{PlaidCredentialResolver, SimpleFinCredentialResolver};
 use crate::services::cache_service::{CacheService, MockCacheService};
 use crate::services::connection_service::{
     ConnectionService, SimpleFinConnectError, SyncConnectionParams,
@@ -222,11 +220,6 @@ fn build_credential_resolvers(
     resolvers.insert(
         "plaid".to_string(),
         Arc::new(PlaidCredentialResolver::new(Arc::clone(&db_repository)))
-            as Arc<dyn crate::providers::ProviderCredentialResolver>,
-    );
-    resolvers.insert(
-        "teller".to_string(),
-        Arc::new(TellerCredentialResolver::new(Arc::clone(&db_repository)))
             as Arc<dyn crate::providers::ProviderCredentialResolver>,
     );
     resolvers
@@ -994,7 +987,6 @@ async fn build_simplefin_handler_app(
 
     std::env::set_var("OTEL_TRACES_EXPORTER", "none");
     let mut test_env = MockEnvironment::new();
-    test_env.set("TELLER_ENV", "test");
     test_env.set("AUTH_COOKIE_SAME_SITE", "Lax");
     test_env.set("APP_ORIGIN", "http://localhost:8080");
     let config = Config::from_env_provider(&test_env).expect("Failed to create test config");

@@ -475,35 +475,12 @@ async fn given_provider_sync_with_raw_only_merchant_when_persisting_then_normali
 }
 
 #[tokio::test]
-async fn given_existing_user_provider_when_connecting_teller_then_overwrites_active_provider() {
+async fn given_teller_connect_request_when_connecting_then_returns_no_longer_supported() {
+    use crate::services::connection_service::TellerConnectError;
+
     let user_id = Uuid::new_v4();
-    let connection_id = Uuid::new_v4();
-    let accounts = vec![];
-
-    let teller_provider = build_provider_mock("teller", accounts.clone(), vec![]);
-    let provider_registry = Arc::new(ProviderRegistry::from_providers([(
-        "teller",
-        teller_provider,
-    )]));
-
-    let mut mock_db = MockDatabaseRepository::new();
-    crate::test_fixtures::apply_demo_mode_exit_mock_defaults(&mut mock_db);
-    mock_db
-        .expect_update_user_provider()
-        .with(
-            mockall::predicate::eq(user_id),
-            mockall::predicate::eq("teller"),
-        )
-        .times(1)
-        .returning(|_, _| Box::pin(async { Ok(()) }));
-    mock_db
-        .expect_store_provider_credentials_for_user()
-        .returning(|_, _, _| Box::pin(async { Ok(Uuid::new_v4()) }));
-    mock_db
-        .expect_save_provider_connection()
-        .returning(move |_| Box::pin(async move { Ok(connection_id) }));
-
-    let db_repository = Arc::new(mock_db);
+    let provider_registry = Arc::new(ProviderRegistry::new());
+    let db_repository = Arc::new(MockDatabaseRepository::new());
     let credential_resolvers = build_credential_resolvers(db_repository.clone());
     let connection_service = ConnectionService::new(
         db_repository,
@@ -513,7 +490,7 @@ async fn given_existing_user_provider_when_connecting_teller_then_overwrites_act
         credential_resolvers,
     );
 
-    let response = connection_service
+    let result = connection_service
         .connect_teller_provider(
             &user_id,
             "jwt_123",
@@ -525,9 +502,7 @@ async fn given_existing_user_provider_when_connecting_teller_then_overwrites_act
                 simplefin: Default::default(),
             },
         )
-        .await
-        .expect("teller connect should succeed");
+        .await;
 
-    assert_eq!(response.institution_name, "Teller Demo Bank");
-    assert!(!response.connection_id.is_empty());
+    assert!(matches!(result, Err(TellerConnectError::NoLongerSupported)));
 }

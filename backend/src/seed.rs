@@ -9,25 +9,29 @@ use uuid::Uuid;
 
 pub const DEMO_EMAIL: &str = "me@test.com";
 const DEMO_PASSWORD: &str = "Test1234!";
-pub const SUMURAI_DEMO_TELLER_ITEM_ID: &str = "teller_sumurai_demo";
+pub const SUMURAI_DEMO_SIMPLEFIN_ORG_CONN_ID: &str = "sumurai_demo";
 
 pub fn demo_scoped_provider_id(user_id: Uuid, key: &str) -> String {
     format!("{key}_{user_id}")
 }
 
-pub fn demo_teller_item_id(user_id: Uuid) -> String {
-    demo_scoped_provider_id(user_id, SUMURAI_DEMO_TELLER_ITEM_ID)
+pub fn demo_simplefin_item_id(user_id: Uuid) -> String {
+    crate::services::simplefin_org_service::simplefin_org_item_id(
+        &user_id,
+        SUMURAI_DEMO_SIMPLEFIN_ORG_CONN_ID,
+    )
 }
 
 pub fn demo_provider_account_id(user_id: Uuid, account_key: &str) -> String {
     demo_scoped_provider_id(user_id, account_key)
 }
 
-pub fn is_demo_teller_item_id(item_id: &str) -> bool {
-    let prefix = format!("{SUMURAI_DEMO_TELLER_ITEM_ID}_");
+pub fn is_demo_simplefin_item_id(item_id: &str) -> bool {
+    let suffix = format!("_{SUMURAI_DEMO_SIMPLEFIN_ORG_CONN_ID}");
     item_id
-        .strip_prefix(&prefix)
-        .is_some_and(|suffix| Uuid::parse_str(suffix).is_ok())
+        .strip_prefix("simplefin_")
+        .and_then(|rest| rest.strip_suffix(&suffix))
+        .is_some_and(|user_part| Uuid::parse_str(user_part).is_ok())
 }
 
 fn seed_demo_user_enabled() -> bool {

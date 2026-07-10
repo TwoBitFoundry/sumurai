@@ -15,8 +15,6 @@ describe('useDiyConnectionStrategy', () => {
         dispatch: jest.fn(),
         handleError: jest.fn(),
         invalidateCache: jest.fn().mockResolvedValue(undefined),
-        tellerApplicationId: null,
-        tellerEnvironment: 'development',
       })
     );
 
