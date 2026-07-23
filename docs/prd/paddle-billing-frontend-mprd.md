@@ -523,13 +523,23 @@ transaction, and can load through the production nginx security policy.
   the full and slim templates cannot drift.
 
 ### Acceptance criteria
-- [ ] Boundary tests prove one SDK initialization, sandbox/production mapping,
+- [x] Boundary tests prove one SDK initialization, sandbox/production mapping,
       transaction-correlated completed/closed/error events, concurrent-open
       rejection, and late-event cleanup.
-- [ ] A completed checkout followed by `checkout.closed` remains completed.
-- [ ] Both nginx templates retain their existing CSP sources and allow Paddle's
+- [x] A completed checkout followed by `checkout.closed` remains completed.
+- [x] Both nginx templates retain their existing CSP sources and allow Paddle's
       SDK, overlay frame, and browser connections.
-- [ ] Static frontend build and nginx config validation are green.
+- [x] Static frontend build and nginx config validation are green.
+
+### TDD log
+
+- Red: added SDK lifecycle/event and dual-template CSP boundary tests; they
+  failed on the absent Paddle boundary and vendor allowlist.
+- Green/refactor: added and updated `@paddle/paddle-js`, isolated its mutable
+  lifecycle behind one callback, enforced one active transaction and one SDK
+  configuration, and extended both nginx policies without broad HTTPS access.
+- Verification: 6 Paddle boundary tests, frontend lint/typecheck/static build,
+  and the nginx policy configuration test passed.
 
 ## Phase 7 — Frontend: billing workflow orchestration
 

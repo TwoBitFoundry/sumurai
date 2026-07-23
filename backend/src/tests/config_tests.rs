@@ -332,6 +332,11 @@ fn given_nginx_template_when_read_then_includes_provider_csp_allowlists() {
         assert!(template.contains("https://sandbox.plaid.com"));
         assert!(template.contains("https://beta-bridge.simplefin.org"));
         assert!(template.contains("https://bridge.simplefin.org"));
+        assert!(template.contains(
+            "script-src 'self' 'unsafe-inline' https://cdn.plaid.com https://cdn.paddle.com"
+        ));
+        assert!(template.contains("frame-src 'self' https://cdn.plaid.com https://*.paddle.com"));
+        assert!(template.contains("connect-src 'self' https://production.plaid.com https://sandbox.plaid.com https://beta-bridge.simplefin.org https://bridge.simplefin.org https://*.paddle.com"));
         assert!(template.contains("frame-src"));
         assert!(template.contains("connect-src"));
     }
