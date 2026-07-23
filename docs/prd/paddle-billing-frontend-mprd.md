@@ -418,10 +418,22 @@ and the billing docs reflect reality.
   are removed in Phase 13 when the UI actually exists.
 
 ### Acceptance criteria
-- [ ] `openapi_tests.rs` billing endpoints/schemas assertion (line ~75) extended
+- [x] `openapi_tests.rs` billing endpoints/schemas assertion (line ~75) extended
       with the new path, schema, and new billing-status fields; suite green.
-- [ ] `docs/OPENAPI.json` contains `/api/billing/subscription/cancel`.
-- [ ] `bun run backend:ci` green before frontend work consumes the contract.
+- [x] `docs/OPENAPI.json` contains `/api/billing/subscription/cancel`.
+- [x] `bun run backend:ci` green before frontend work consumes the contract.
+
+### TDD log
+
+- Red: extended the generated-contract boundary test with the cancellation
+  path and response schema plus all new billing-status fields; it failed on the
+  absent route.
+- Green/refactor: registered the endpoint and schema, regenerated the checked-in
+  OpenAPI artifact, and documented environment validation, checkout account
+  prerequisites, client-token scope, and cancellation API-key permissions.
+- Verification: focused OpenAPI test and artifact regeneration passed;
+  `bun run backend:ci` passed with 772 backend tests, 1 ignored, 4 CLI tests,
+  and 8 development-seed tests.
 
 ## Phase 5 — Frontend: transport contract, types, and service
 

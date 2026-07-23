@@ -27,8 +27,8 @@ Set these in the host `.env` referenced by `docker-compose.prod.yml`. `BILLING_M
 
 | Variable | Required in prod | Purpose |
 | -------- | ---------------- | ------- |
-| `PADDLE_ENVIRONMENT` | Yes | `production` or `sandbox` (compose sets `production`) |
-| `PADDLE_API_KEY` | Yes | Paddle Billing API key |
+| `PADDLE_ENVIRONMENT` | Yes | Exactly `production` or `sandbox` (compose sets `production`; other values fail startup validation) |
+| `PADDLE_API_KEY` | Yes | Paddle Billing API key with the permissions listed below |
 | `PADDLE_WEBHOOK_SECRET` | Yes | Secret for `Paddle-Signature` HMAC verification |
 | `PADDLE_MONTHLY_PRICE_ID` | Yes | $8/month paid subscription price ID |
 | `PADDLE_CLIENT_TOKEN` | Yes | Public client-side token used to initialize Paddle.js |
@@ -40,6 +40,17 @@ Set these in the host `.env` referenced by `docker-compose.prod.yml`. `BILLING_M
 `ENABLED_FINANCIAL_PROVIDERS=diy,plaid` is set only in production compose. Teller and SimpleFIN are omitted from the provider catalog and return `403 PROVIDER_DISABLED` on direct API calls even when credentials exist.
 
 Placeholder names and comments live in [`.env.example`](../.env.example). Do not commit real secrets.
+
+## Paddle account and checkout prerequisites
+
+Before enabling billing:
+
+1. Add the hosted Sumurai origin as an approved checkout domain in Paddle.
+2. Configure Paddle's default payment link for that approved domain.
+3. Create a client-side token for the matching sandbox or production environment and set it as `PADDLE_CLIENT_TOKEN`.
+4. Grant the server API key the permissions needed by the configured billing flows, including customer, address, transaction, and subscription access. In-app cancellation specifically requires `subscription.write`.
+
+Client-side tokens are public SDK credentials. The server returns the configured token and environment only to authenticated users through `GET /api/billing/status`; API keys and webhook secrets remain server-only.
 
 ## Cardless trials prerequisite
 
@@ -163,6 +174,7 @@ Authenticated billing routes (production mode):
 | POST | `/api/billing/trials/start` | Start open cardless trial (country + postal code, no card) |
 | POST | `/api/billing/payment-method` | Add payment method during cardless trial |
 | POST | `/api/billing/portal-session` | Temporary Paddle customer portal links (not cached) |
+| POST | `/api/billing/subscription/cancel` | Schedule cancellation at the next billing period and return `scheduled_cancel_at` |
 
 When billing is disabled, `GET /api/billing/status` returns `billing_enabled: false` and `access_status: unrestricted`. Mutation endpoints and the webhook return `404` with code `BILLING_DISABLED`.
 
@@ -184,9 +196,11 @@ Customer portal session URLs are generated on demand and are not stored by Sumur
 
 1. Provision TLS per [PRODUCTION_TLS.md](PRODUCTION_TLS.md).
 2. Set Paddle secrets in host `.env`.
-3. Confirm cardless trial price exists in Paddle.
-4. Set `BILLING_TRIALS_ENABLED` for early access (`true`) or live (`false`).
-5. Register the webhook URL and required event types.
-6. Start the stack: `DOMAIN=<domain> docker compose -f docker-compose.prod.yml up -d`
-7. Verify `GET /api/billing/status` returns `billing_enabled: true` when authenticated.
-8. Verify OSS/dev stacks still return `billing_enabled: false`.
+3. Approve the checkout domain and configure Paddle's default payment link.
+4. Confirm the API key has all required permissions, including `subscription.write`.
+5. Confirm the cardless trial price exists in Paddle when trials are enabled.
+6. Set `BILLING_TRIALS_ENABLED` for early access (`true`) or live (`false`).
+7. Register the webhook URL and required event types.
+8. Start the stack: `DOMAIN=<domain> docker compose -f docker-compose.prod.yml up -d`
+9. Verify `GET /api/billing/status` returns `billing_enabled: true`, the expected `paddle_environment`, and a non-null `paddle_client_token` when authenticated.
+10. Verify OSS/dev stacks still return `billing_enabled: false` with null Paddle SDK fields.
