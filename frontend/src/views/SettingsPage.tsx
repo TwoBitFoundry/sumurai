@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import { useTheme } from '@/context/ThemeContext';
 import { PasskeySecuritySection } from '@/features/settings/PasskeySecuritySection';
+import { PlanSection } from '@/features/settings/PlanSection';
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
 import { AuthService } from '@/services/authService';
 import { SettingsService } from '@/services/SettingsService';
@@ -105,6 +106,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
             <PasskeySecuritySection />
           </div>
         </GlassCard>
+
+        <PlanSection />
 
         <GlassCard variant="default" padding="lg" className={cn('space-y-4')}>
           <div className={cn(settingsSecurityLayout.sectionHeader)}>

@@ -12,6 +12,10 @@ jest.mock('@/features/settings/PasskeySecuritySection', () => ({
   PasskeySecuritySection: () => <div data-testid="passkey-security-section" />,
 }));
 
+jest.mock('@/features/settings/PlanSection', () => ({
+  PlanSection: () => <section data-testid="plan-section">Plan section</section>,
+}));
+
 describe('SettingsPage', () => {
   it('renders appearance inside account settings and updates theme preference', () => {
     const setPreference = jest.fn();
@@ -56,7 +60,7 @@ describe('SettingsPage', () => {
     expect(setPreference).toHaveBeenCalledWith('light');
   });
 
-  it('does not render paddle billing or subscription controls', () => {
+  it('renders the plan section between preferences and account deletion', () => {
     jest.mocked(useTheme).mockReturnValue({
       preference: 'system',
       mode: 'dark',
@@ -74,11 +78,15 @@ describe('SettingsPage', () => {
       </QueryClientProvider>
     );
 
-    expect(screen.queryByRole('heading', { name: 'Billing' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Upgrade' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Add payment method' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Manage billing' })).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Trial code')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /redeem trial/i })).not.toBeInTheDocument();
+    const planSection = screen.getByTestId('plan-section');
+    const passkeySection = screen.getByTestId('passkey-security-section');
+    const dangerHeading = screen.getByRole('heading', { name: 'Retire from service' });
+
+    expect(passkeySection.compareDocumentPosition(planSection)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(planSection.compareDocumentPosition(dangerHeading)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
   });
 });

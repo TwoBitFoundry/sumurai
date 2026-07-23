@@ -760,15 +760,30 @@ actions from a pure policy model before mutation logic is attached.
   interactions.
 
 ### Acceptance criteria
-- [ ] `planPolicy` table tests cover disabled demo/non-demo; enabled demo with
+- [x] `planPolicy` table tests cover disabled demo/non-demo; enabled demo with
       and without trials; trialing with and without payment method; active with
       and without scheduled cancel; past_due, paused, canceled, and expired.
-- [ ] Tests prove trialing/active status wins when demo-data mode is still true.
-- [ ] Date copy handles absent and invalid timestamps without displaying an
+- [x] Tests prove trialing/active status wins when demo-data mode is still true.
+- [x] Date copy handles absent and invalid timestamps without displaying an
       invalid date.
-- [ ] Plan section is absent only for billing-disabled non-demo users; a query
+- [x] Plan section is absent only for billing-disabled non-demo users; a query
       failure shows retry UI rather than silently hiding the section.
-- [ ] Storybook Vitest, focused Bun tests, design lint, and typecheck green.
+- [x] Storybook Vitest, focused Bun tests, design lint, and typecheck green.
+
+### Phase 11 implementation log
+
+- Added a pure plan policy for every runtime entitlement state, including
+  entitlement-over-demo precedence, safe date copy, cancel/payment-method
+  decisions, portal visibility, and recovery actions.
+- Added the Settings container/view split with explicit loading, retry, empty,
+  mutation-pending, and mutation-error presentation. The section uses the
+  existing Settings card, alert, text, and button patterns with no status pills,
+  new primitives, or new tokens.
+- Updated Settings page composition, screen slices, and user-journey fixtures.
+  Local `bun run dev` inspection confirmed the demo plan card sits cohesively
+  between preferences and account deletion in the existing design language.
+- Verification: 20 focused Bun tests, 27 affected Storybook browser tests,
+  typecheck, design guard, and all 1,402 frontend unit tests passed.
 
 ## Phase 12 — Frontend: Settings billing actions
 

@@ -1,6 +1,8 @@
 import { AlertTriangle } from 'lucide-react';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import { PasskeySecuritySection } from '@/features/settings/PasskeySecuritySection';
+import { PlanSectionView } from '@/features/settings/PlanSectionView';
+import { resolvePlanPolicy } from '@/features/settings/planPolicy';
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
 import {
   Alert,
@@ -18,6 +20,22 @@ import {
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { settingsConfirmationCodeTypography } from '@/views/SettingsPage';
+
+const settingsSlicePlanPolicy = resolvePlanPolicy({
+  billing_enabled: false,
+  trials_enabled: false,
+  paddle_client_token: null,
+  paddle_environment: null,
+  access_status: 'unrestricted',
+  can_use_own_data: true,
+  is_demo_mode_active: true,
+  trial_ends_at: null,
+  current_period_ends_at: null,
+  scheduled_cancel_at: null,
+  payment_method_required: false,
+  billing_portal_available: false,
+  enabled_financial_providers: ['diy'],
+});
 
 export type SettingsScreenScenario =
   | 'default'
@@ -86,6 +104,22 @@ export function SettingsScreenSlice(props: {
             <PasskeySecuritySection />
           </div>
         </GlassCard>
+
+        <PlanSectionView
+          policy={settingsSlicePlanPolicy}
+          isLoading={false}
+          queryError={null}
+          isEmpty={false}
+          mutationPending={false}
+          mutationError={null}
+          onRetry={() => {}}
+          onSwitchSelfHosted={() => {}}
+          onStartTrial={() => {}}
+          onUpgradePremium={() => {}}
+          onUpdatePaymentMethod={() => {}}
+          onCancelMembership={() => {}}
+          onManageBilling={() => {}}
+        />
 
         <GlassCard variant="default" padding="lg" className={cn('space-y-4')}>
           <div className={cn(settingsSecurityLayout.sectionHeader)}>
