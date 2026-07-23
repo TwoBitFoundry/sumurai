@@ -1,4 +1,6 @@
 export const NAVIGATE_TO_TRANSACTIONS_EVENT = 'sumurai:navigate-to-transactions';
+export const NAVIGATE_TO_SETTINGS_EVENT = 'sumurai:navigate-to-settings';
+export const PAID_ACCESS_REQUIRED_EVENT = 'sumurai:paid-access-required';
 
 export interface NavigateToTransactionsDetail {
   search?: string;
@@ -8,6 +10,14 @@ export interface NavigateToTransactionsDetail {
 
 export const dispatchNavigateToTransactions = (detail: NavigateToTransactionsDetail) => {
   window.dispatchEvent(new CustomEvent(NAVIGATE_TO_TRANSACTIONS_EVENT, { detail }));
+};
+
+export const dispatchNavigateToSettings = () => {
+  window.dispatchEvent(new CustomEvent(NAVIGATE_TO_SETTINGS_EVENT));
+};
+
+export const dispatchPaidAccessRequired = () => {
+  window.dispatchEvent(new CustomEvent(PAID_ACCESS_REQUIRED_EVENT));
 };
 
 export const FINANCIAL_STATE_CHANGED_EVENT = 'sumurai:financial-state-changed';

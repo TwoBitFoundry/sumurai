@@ -708,12 +708,22 @@ upgrade modal whose CTA navigates to Settings.
   `dispatchNavigateToSettings()`.
 
 ### Acceptance criteria
-- [ ] 402 from any authed call opens `UpgradeRequiredModal`; its CTA switches
+- [x] 402 from any authed call opens `UpgradeRequiredModal`; its CTA switches
       the tab to Settings.
-- [ ] Repeated 402s while the modal is open do not stack dialogs; closing and
+- [x] Repeated 402s while the modal is open do not stack dialogs; closing and
       reopening remains deterministic.
-- [ ] Modal keyboard/focus behavior is covered through its Storybook story and
+- [x] Modal keyboard/focus behavior is covered through its Storybook story and
       Storybook Vitest interaction.
+
+### Phase 10 implementation log
+
+- Added shared paid-access and Settings-navigation events, coded 402 dispatch
+  for JSON and blob requests, and the authenticated Settings-tab listener.
+- Added one app-owned upgrade dialog with deterministic dismissal and reopen
+  behavior. Its composition reuses the existing modal, glass card, alert, and
+  button language without introducing new visual elements or tokens.
+- Verification: 61 focused boundary tests, 3 focused Storybook browser tests,
+  typecheck, design guard, and all 1,384 frontend unit tests passed.
 
 ## Phase 11 — Frontend: Settings plan policy and view
 

@@ -7,7 +7,11 @@ import { useBillingStatus } from '@/features/billing/useBillingStatus';
 import { AuthenticationError } from '@/services/ApiClient';
 import { AuthService } from '@/services/authService';
 import type { BillingStatusResponse } from '@/types/api';
-import { FINANCIAL_STATE_CHANGED_EVENT } from '@/utils/events';
+import {
+  FINANCIAL_STATE_CHANGED_EVENT,
+  NAVIGATE_TO_SETTINGS_EVENT,
+  PAID_ACCESS_REQUIRED_EVENT,
+} from '@/utils/events';
 import * as queryInvalidation from '@/utils/queryInvalidation';
 
 jest.mock('@/Auth', () => ({
@@ -116,6 +120,28 @@ jest.mock('@/features/billing/PricingScreen', () => ({
       )}
     </div>
   ),
+}));
+
+jest.mock('@/features/billing/UpgradeRequiredModal', () => ({
+  UpgradeRequiredModal: ({
+    isOpen,
+    onClose,
+    onViewPlans,
+  }: {
+    isOpen: boolean;
+    onClose: () => void;
+    onViewPlans: () => void;
+  }) =>
+    isOpen ? (
+      <div role="dialog" aria-label="Upgrade required">
+        <button type="button" onClick={onClose}>
+          Dismiss upgrade
+        </button>
+        <button type="button" onClick={onViewPlans}>
+          View plans in Settings
+        </button>
+      </div>
+    ) : null,
 }));
 
 jest.mock('@/features/billing/useBillingStatus', () => ({
@@ -279,6 +305,70 @@ describe('App logout cache handling', () => {
     await waitFor(() => {
       expect(screen.getByTestId('logout-cache-state')).toHaveTextContent('miss');
     });
+  });
+});
+
+describe('App paid-access recovery', () => {
+  beforeEach(() => {
+    setBillingQuery();
+    const refreshTokenMock = jest.mocked(AuthService.refreshToken);
+    refreshTokenMock.mockReset();
+    refreshTokenMock.mockResolvedValue({
+      user_id: 'user-1',
+      expires_at: '2099-01-01T00:00:00.000Z',
+      onboarding_completed: true,
+      demo_mode_active: false,
+    });
+  });
+
+  it('opens one upgrade dialog for repeated paid-access events and can reopen after dismissal', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await screen.findByRole('button', { name: /logout/i });
+    act(() => {
+      window.dispatchEvent(new CustomEvent(PAID_ACCESS_REQUIRED_EVENT));
+      window.dispatchEvent(new CustomEvent(PAID_ACCESS_REQUIRED_EVENT));
+    });
+
+    expect(screen.getAllByRole('dialog', { name: /upgrade required/i })).toHaveLength(1);
+
+    await user.click(screen.getByRole('button', { name: /dismiss upgrade/i }));
+    expect(screen.queryByRole('dialog', { name: /upgrade required/i })).not.toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent(PAID_ACCESS_REQUIRED_EVENT));
+    });
+    expect(screen.getByRole('dialog', { name: /upgrade required/i })).toBeInTheDocument();
+  });
+
+  it('closes the upgrade dialog and requests Settings navigation from its primary action', async () => {
+    const user = userEvent.setup();
+    const navigationHandler = jest.fn();
+    window.addEventListener(NAVIGATE_TO_SETTINGS_EVENT, navigationHandler);
+    render(<App />);
+
+    await screen.findByRole('button', { name: /logout/i });
+    act(() => {
+      window.dispatchEvent(new CustomEvent(PAID_ACCESS_REQUIRED_EVENT));
+    });
+    await user.click(screen.getByRole('button', { name: /view plans in settings/i }));
+
+    expect(screen.queryByRole('dialog', { name: /upgrade required/i })).not.toBeInTheDocument();
+    expect(navigationHandler).toHaveBeenCalledTimes(1);
+    window.removeEventListener(NAVIGATE_TO_SETTINGS_EVENT, navigationHandler);
+  });
+
+  it('ignores paid-access events outside an authenticated session', async () => {
+    jest.mocked(AuthService.refreshToken).mockRejectedValueOnce(new AuthenticationError());
+    render(<App />);
+
+    await screen.findByTestId('logout-cache-state');
+    act(() => {
+      window.dispatchEvent(new CustomEvent(PAID_ACCESS_REQUIRED_EVENT));
+    });
+
+    expect(screen.queryByRole('dialog', { name: /upgrade required/i })).not.toBeInTheDocument();
   });
 });
 

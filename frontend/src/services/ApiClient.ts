@@ -2,6 +2,7 @@
  * Authenticated HTTP client for the backend API.
  */
 
+import { dispatchPaidAccessRequired } from '../utils/events';
 import { AuthService } from './authService';
 import type { IHttpClient } from './boundaries';
 import {
@@ -159,6 +160,14 @@ export class ApiClient {
       }
 
       if (
+        error instanceof PaymentRequiredError &&
+        error.code === 'PAID_ACCESS_REQUIRED' &&
+        typeof window !== 'undefined'
+      ) {
+        dispatchPaidAccessRequired();
+      }
+
+      if (
         error instanceof ApiError &&
         ApiClient.isRetryableStatus(error.status) &&
         attempt < ApiClient.retryConfig.maxRetries
@@ -233,6 +242,14 @@ export class ApiClient {
         typeof window !== 'undefined'
       ) {
         window.dispatchEvent(new CustomEvent('sumurai:enrollment-required'));
+      }
+
+      if (
+        error instanceof PaymentRequiredError &&
+        error.code === 'PAID_ACCESS_REQUIRED' &&
+        typeof window !== 'undefined'
+      ) {
+        dispatchPaidAccessRequired();
       }
 
       if (

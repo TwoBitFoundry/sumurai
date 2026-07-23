@@ -12,6 +12,7 @@ import {
   type PendingPasskeyRecoveryEnrollment,
 } from './features/auth/EnrollPasskeyScreen';
 import { PricingScreen } from './features/billing/PricingScreen';
+import { UpgradeRequiredModal } from './features/billing/UpgradeRequiredModal';
 import { useBillingStatus } from './features/billing/useBillingStatus';
 import { TransactionListLauncherProvider } from './features/transactions/components/TransactionListLauncherProvider';
 import { AccountFilterProvider } from './hooks/useAccountFilter';
@@ -24,7 +25,12 @@ import { BrowserStorageAdapter } from './services/boundaries';
 import { AppFooter, AppTitleBar, GlassCard, GradientShell } from './ui/primitives';
 import { ControlTooltipProvider } from './ui/primitives/ControlHoverLabel';
 import { authLayout, text as uiTextRecipes, font as uiTypographyRecipes } from './ui/recipes';
-import { FINANCIAL_STATE_CHANGED_EVENT, type FinancialStateChangedDetail } from './utils/events';
+import {
+  dispatchNavigateToSettings,
+  FINANCIAL_STATE_CHANGED_EVENT,
+  type FinancialStateChangedDetail,
+  PAID_ACCESS_REQUIRED_EVENT,
+} from './utils/events';
 import { resetFinancialQueriesForAppRefresh } from './utils/queryInvalidation';
 
 AuthService.configure({
@@ -84,6 +90,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [demoModeActive, setDemoModeActive] = useState(false);
   const [pendingDemoModeActive, setPendingDemoModeActive] = useState(false);
   const [pricingComplete, setPricingComplete] = useState(false);
+  const [showUpgradeRequired, setShowUpgradeRequired] = useState(false);
 
   const isOnline = useOnlineStatus();
   const billingStatus = useBillingStatus({ enabled: isAuthenticated });
@@ -114,6 +121,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     setSessionExpiresAt(null);
     setDemoModeActive(false);
     setPricingComplete(false);
+    setShowUpgradeRequired(false);
     AuthService.clearToken();
   }, []);
 
@@ -143,6 +151,16 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   }, []);
 
   useEffect(() => {
+    const handler = () => {
+      if (isAuthenticated) {
+        setShowUpgradeRequired(true);
+      }
+    };
+    window.addEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
+    return () => window.removeEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
     let active = true;
     const establishSession = async () => {
       try {
@@ -150,7 +168,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
         if (!active) {
           return;
         }
-      } catch (error) {
+      } catch {
         if (!active) {
           return;
         }
@@ -262,6 +280,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     setPendingExpiresAt(null);
     setPendingDemoModeActive(false);
     setPricingComplete(false);
+    setShowUpgradeRequired(false);
     setAuthScreen('login');
   }, []);
 
@@ -388,6 +407,14 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
         isOpen={showEnrollmentModal}
         onEnrollmentComplete={handleEnrollmentComplete}
         onLogout={handleLogout}
+      />
+      <UpgradeRequiredModal
+        isOpen={showUpgradeRequired}
+        onClose={() => setShowUpgradeRequired(false)}
+        onViewPlans={() => {
+          setShowUpgradeRequired(false);
+          dispatchNavigateToSettings();
+        }}
       />
     </SessionManager>
   );
