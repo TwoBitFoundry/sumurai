@@ -1,18 +1,47 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { type ReactNode, useEffect } from 'react';
 import { App, AppProviders } from '@/App';
+import { useBillingStatus } from '@/features/billing/useBillingStatus';
 import { AuthenticationError } from '@/services/ApiClient';
 import { AuthService } from '@/services/authService';
+import type { BillingStatusResponse } from '@/types/api';
 import { FINANCIAL_STATE_CHANGED_EVENT } from '@/utils/events';
 import * as queryInvalidation from '@/utils/queryInvalidation';
 
 jest.mock('@/Auth', () => ({
-  LoginScreen: () => {
+  LoginScreen: ({
+    onLoginSuccess,
+  }: {
+    onLoginSuccess: (response: {
+      user_id: string;
+      expires_at: string;
+      onboarding_completed: boolean;
+      demo_mode_active: boolean;
+    }) => void;
+  }) => {
     const queryClient = useQueryClient();
     const cacheState = queryClient.getQueryData(['logout-cache']) ? 'hit' : 'miss';
 
-    return <output data-testid="logout-cache-state">{cacheState}</output>;
+    return (
+      <>
+        <output data-testid="logout-cache-state">{cacheState}</output>
+        <button
+          type="button"
+          onClick={() =>
+            onLoginSuccess({
+              user_id: 'user-2',
+              expires_at: '2099-03-01T00:00:00.000Z',
+              onboarding_completed: false,
+              demo_mode_active: false,
+            })
+          }
+        >
+          Login next user
+        </button>
+      </>
+    );
   },
   RegisterScreen: () => null,
 }));
@@ -43,7 +72,54 @@ jest.mock('@/components/AuthenticatedApp', () => ({
 }));
 
 jest.mock('@/components/onboarding/OnboardingProviderPicker', () => ({
-  OnboardingProviderPicker: () => <div data-testid="onboarding-provider-picker" />,
+  OnboardingProviderPicker: ({ onLogout }: { onLogout: () => void }) => (
+    <div data-testid="onboarding-provider-picker">
+      <button type="button" onClick={onLogout}>
+        Provider logout
+      </button>
+    </div>
+  ),
+}));
+
+jest.mock('@/features/billing/PricingScreen', () => ({
+  PricingScreen: ({
+    billingStatus,
+    onDemoActivated,
+    onContinueToProviders,
+  }: {
+    billingStatus: BillingStatusResponse;
+    onDemoActivated: () => void;
+    onContinueToProviders: () => void;
+  }) => (
+    <div
+      data-testid="pricing-screen"
+      data-billing-enabled={billingStatus.billing_enabled ? 'true' : 'false'}
+    >
+      <button type="button" onClick={onDemoActivated}>
+        Activate demo
+      </button>
+      {!billingStatus.billing_enabled ? (
+        <button type="button" onClick={onContinueToProviders}>
+          Continue Self Hosted
+        </button>
+      ) : (
+        <>
+          <button type="button" onClick={onContinueToProviders}>
+            Complete Premium
+          </button>
+          {billingStatus.trials_enabled ? (
+            <button type="button" onClick={onContinueToProviders}>
+              Complete trial
+            </button>
+          ) : null}
+        </>
+      )}
+    </div>
+  ),
+}));
+
+jest.mock('@/features/billing/useBillingStatus', () => ({
+  useBillingStatus: jest.fn(),
 }));
 
 jest.mock('@/SessionManager', () => ({
@@ -93,8 +169,49 @@ jest.mock('@/services/authService', () => ({
       cleared_session: 'ok',
     }),
     clearToken: jest.fn(),
+    activateDemoModeOnboarding: jest.fn().mockResolvedValue({
+      message: 'ok',
+      onboarding_completed: true,
+      demo_mode_active: true,
+    }),
   },
 }));
+
+const disabledBillingStatus: BillingStatusResponse = {
+  billing_enabled: false,
+  trials_enabled: false,
+  paddle_client_token: null,
+  paddle_environment: null,
+  access_status: 'unrestricted',
+  can_use_own_data: true,
+  is_demo_mode_active: false,
+  trial_ends_at: null,
+  current_period_ends_at: null,
+  scheduled_cancel_at: null,
+  payment_method_required: false,
+  billing_portal_available: false,
+  enabled_financial_providers: ['diy', 'plaid'],
+};
+
+const enabledBillingStatus: BillingStatusResponse = {
+  ...disabledBillingStatus,
+  billing_enabled: true,
+  trials_enabled: true,
+  paddle_client_token: 'test_client_token',
+  paddle_environment: 'sandbox',
+  access_status: 'demo',
+  can_use_own_data: false,
+};
+
+const setBillingQuery = (
+  result: { data?: BillingStatusResponse; isPending: boolean; isError: boolean } = {
+    data: disabledBillingStatus,
+    isPending: false,
+    isError: false,
+  }
+) => {
+  jest.mocked(useBillingStatus).mockReturnValue(result as ReturnType<typeof useBillingStatus>);
+};
 
 function QueryClientProbe() {
   const queryClient = useQueryClient();
@@ -113,6 +230,10 @@ function QueryClientProbe() {
 }
 
 describe('AppProviders', () => {
+  beforeEach(() => {
+    setBillingQuery();
+  });
+
   it('provides a configured query client to descendants', () => {
     render(
       <AppProviders>
@@ -133,7 +254,10 @@ describe('AppProviders', () => {
 
 describe('App logout cache handling', () => {
   beforeEach(() => {
-    jest.mocked(AuthService.refreshToken).mockResolvedValue({
+    setBillingQuery();
+    const refreshTokenMock = jest.mocked(AuthService.refreshToken);
+    refreshTokenMock.mockReset();
+    refreshTokenMock.mockResolvedValue({
       user_id: 'user-1',
       expires_at: '2099-01-01T00:00:00.000Z',
       onboarding_completed: true,
@@ -159,18 +283,157 @@ describe('App logout cache handling', () => {
 });
 
 describe('App onboarding gate', () => {
-  it('renders the onboarding provider picker until onboarding is complete', async () => {
-    jest.mocked(AuthService.refreshToken).mockResolvedValue({
+  beforeEach(() => {
+    setBillingQuery();
+    const refreshTokenMock = jest.mocked(AuthService.refreshToken);
+    refreshTokenMock.mockReset();
+    refreshTokenMock.mockResolvedValue({
       user_id: 'user-1',
       expires_at: '2099-01-01T00:00:00.000Z',
       onboarding_completed: false,
-      demo_mode_active: true,
+      demo_mode_active: false,
+    });
+  });
+
+  it('keeps the existing loading shell ahead of pricing while billing is pending', async () => {
+    setBillingQuery({ data: undefined, isPending: true, isError: false });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(AuthService.refreshToken).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('pricing-screen')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('onboarding-provider-picker')).not.toBeInTheDocument();
+  });
+
+  it('renders only self-hosted pricing when billing is disabled', async () => {
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('pricing-screen')).toHaveAttribute('data-billing-enabled', 'false');
+    });
+    expect(screen.getByRole('button', { name: /continue self hosted/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /complete premium/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('onboarding-provider-picker')).not.toBeInTheDocument();
+  });
+
+  it('renders paid pricing when billing is enabled without own-data access', async () => {
+    setBillingQuery({ data: enabledBillingStatus, isPending: false, isError: false });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('pricing-screen')).toHaveAttribute('data-billing-enabled', 'true');
+    });
+    expect(screen.getByRole('button', { name: /complete premium/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /complete trial/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /continue self hosted/i })).not.toBeInTheDocument();
+  });
+
+  it('uses disabled pricing after a billing query error', async () => {
+    setBillingQuery({ data: disabledBillingStatus, isPending: false, isError: true });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /continue self hosted/i })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: /complete premium/i })).not.toBeInTheDocument();
+  });
+
+  it('resumes at providers when an enabled status already grants own-data access', async () => {
+    setBillingQuery({
+      data: { ...enabledBillingStatus, access_status: 'active', can_use_own_data: true },
+      isPending: false,
+      isError: false,
     });
 
     render(<App />);
 
     await waitFor(() => {
       expect(screen.getByTestId('onboarding-provider-picker')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('pricing-screen')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['Self Hosted', disabledBillingStatus, /continue self hosted/i],
+    ['Premium', enabledBillingStatus, /complete premium/i],
+    ['trial', enabledBillingStatus, /complete trial/i],
+  ])('continues from %s pricing to providers without a reload', async (_name, status, action) => {
+    setBillingQuery({ data: status, isPending: false, isError: false });
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: action }));
+
+    expect(screen.getByTestId('onboarding-provider-picker')).toBeInTheDocument();
+    expect(screen.queryByTestId('pricing-screen')).not.toBeInTheDocument();
+  });
+
+  it('completes demo onboarding locally without rendering providers', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /activate demo/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('demo-mode-active')).toHaveTextContent('true');
+    });
+    expect(screen.queryByTestId('pricing-screen')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('onboarding-provider-picker')).not.toBeInTheDocument();
+  });
+
+  it('resets pricing progress on logout and a new authenticated session', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /continue self hosted/i }));
+    await user.click(screen.getByRole('button', { name: /provider logout/i }));
+    await user.click(await screen.findByRole('button', { name: /login next user/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('pricing-screen')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('onboarding-provider-picker')).not.toBeInTheDocument();
+  });
+
+  it('resets pricing progress when a new authenticated session is applied', async () => {
+    const user = userEvent.setup();
+    const refreshTokenMock = jest.mocked(AuthService.refreshToken);
+    refreshTokenMock
+      .mockResolvedValueOnce({
+        user_id: 'user-1',
+        expires_at: '2099-01-01T00:00:00.000Z',
+        onboarding_completed: false,
+        demo_mode_active: false,
+      })
+      .mockResolvedValueOnce({
+        user_id: 'user-2',
+        expires_at: '2099-02-01T00:00:00.000Z',
+        onboarding_completed: false,
+        demo_mode_active: false,
+      });
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /continue self hosted/i }));
+    await act(async () => {
+      window.dispatchEvent(
+        new CustomEvent(FINANCIAL_STATE_CHANGED_EVENT, {
+          detail: { mode: 'app', refreshSession: true },
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(refreshTokenMock).toHaveBeenCalledTimes(2);
+      expect(screen.getByTestId('pricing-screen')).toBeInTheDocument();
     });
   });
 
@@ -277,6 +540,10 @@ describe('App onboarding gate', () => {
 });
 
 describe('App auth bootstrap', () => {
+  beforeEach(() => {
+    setBillingQuery();
+  });
+
   it('treats refresh 401 as unauthenticated without logging a validation warning', async () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     const refreshTokenMock = jest.mocked(AuthService.refreshToken);

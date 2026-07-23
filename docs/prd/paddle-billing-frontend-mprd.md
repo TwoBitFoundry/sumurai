@@ -663,13 +663,27 @@ continue to the provider picker.
   `heroAction` coverage.
 
 ### Acceptance criteria
-- [ ] `App.test.tsx` precedence coverage: pending status, enabled/disabled
+- [x] `App.test.tsx` precedence coverage: pending status, enabled/disabled
       pricing, status-error fallback, paid mid-flow, logout/new-session reset,
       demo → dashboard, and Self Hosted/Premium/trial → providers.
-- [ ] Demo mode calls `POST /auth/onboarding/demo` and never renders providers.
-- [ ] Provider picker never renders "Try demo mode"; its generic panel action
+- [x] Demo mode calls `POST /auth/onboarding/demo` and never renders providers.
+- [x] Provider picker never renders "Try demo mode"; its generic panel action
       still works.
-- [ ] Premium/trial activation reaches providers without a page reload.
+- [x] Premium/trial activation reaches providers without a page reload.
+
+### Implementation log
+
+- Red: expanded App precedence coverage across pending, fallback, paid,
+  completion, and session-reset paths; added the demo-onboarding transport
+  assertion and provider-picker regression coverage.
+- Green/refactor: gated onboarding through billing status and local pricing
+  completion, reset transient progress at every session boundary, and removed
+  demo activation from the provider picker while preserving its generic slot.
+- Verification: 49 focused boundary tests, typecheck, design guard, and all
+  1,375 frontend unit tests passed. Local `bun run dev` inspection confirmed
+  the disabled pricing screen transitions in place to providers, shares the
+  provider-picker layout language, exposes no duplicate demo action, and logs
+  no browser errors.
 
 ## Phase 10 — Frontend: global paid-access recovery
 
