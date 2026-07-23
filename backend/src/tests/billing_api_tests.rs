@@ -138,6 +138,7 @@ async fn given_existing_trial_entitlement_when_starting_then_returns_conflict_wi
                     trial_ends_at: None,
                     current_period_ends_at: None,
                     canceled_at: None,
+                    scheduled_cancel_at: None,
                     last_event_at: None,
                     payment_method_required: true,
                     created_at: Utc::now(),
@@ -478,11 +479,13 @@ fn sign_paddle_webhook(secret: &str, body: &[u8], timestamp: i64) -> String {
 
 #[tokio::test]
 async fn given_paddle_billing_when_get_status_then_returns_entitlement_projection() {
+    let scheduled_cancel_at = Utc::now();
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
         .expect_get_billing_entitlement()
-        .returning(|user_id| {
+        .returning(move |user_id| {
             let user_id = *user_id;
+            let scheduled_cancel_at = scheduled_cancel_at;
             Box::pin(async move {
                 Ok(Some(BillingEntitlement {
                     user_id,
@@ -494,6 +497,7 @@ async fn given_paddle_billing_when_get_status_then_returns_entitlement_projectio
                     trial_ends_at: None,
                     current_period_ends_at: None,
                     canceled_at: None,
+                    scheduled_cancel_at: Some(scheduled_cancel_at),
                     last_event_at: None,
                     payment_method_required: true,
                     created_at: chrono::Utc::now(),
@@ -573,6 +577,9 @@ async fn given_paddle_billing_when_get_status_then_returns_entitlement_projectio
     assert_eq!(value["billing_portal_available"], true);
     assert_eq!(value["paddle_client_token"], "test-client-token");
     assert_eq!(value["paddle_environment"], "sandbox");
+    let returned_scheduled_cancel_at: chrono::DateTime<Utc> =
+        serde_json::from_value(value["scheduled_cancel_at"].clone()).unwrap();
+    assert_eq!(returned_scheduled_cancel_at, scheduled_cancel_at);
     assert_eq!(
         value["enabled_financial_providers"],
         serde_json::json!(["diy", "plaid"])
@@ -650,6 +657,7 @@ fn active_entitlement(user_id: Uuid) -> BillingEntitlement {
         trial_ends_at: None,
         current_period_ends_at: None,
         canceled_at: None,
+        scheduled_cancel_at: None,
         last_event_at: None,
         payment_method_required: true,
         created_at: Utc::now(),

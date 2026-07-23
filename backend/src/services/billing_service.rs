@@ -475,6 +475,7 @@ impl BillingService {
             trial_ends_at: subscription.trial_ends_at,
             current_period_ends_at: subscription.current_period_ends_at,
             canceled_at: subscription.canceled_at,
+            scheduled_cancel_at: subscription.scheduled_cancel_at,
             last_event_at: Some(event_at),
             payment_method_required,
             created_at: existing.as_ref().map(|row| row.created_at).unwrap_or(now),
@@ -542,6 +543,7 @@ struct ParsedSubscriptionData {
     trial_ends_at: Option<DateTime<Utc>>,
     current_period_ends_at: Option<DateTime<Utc>>,
     canceled_at: Option<DateTime<Utc>>,
+    scheduled_cancel_at: Option<DateTime<Utc>>,
 }
 
 fn is_subscription_lifecycle_event(event_type: &str) -> bool {
@@ -632,6 +634,12 @@ fn parse_subscription_data(data: &serde_json::Value) -> Option<ParsedSubscriptio
                 .and_then(|period| period.get("ends_at")),
         ),
         canceled_at: parse_paddle_timestamp(subscription.get("canceled_at")),
+        scheduled_cancel_at: subscription
+            .get("scheduled_change")
+            .filter(|change| {
+                change.get("action").and_then(|action| action.as_str()) == Some("cancel")
+            })
+            .and_then(|change| parse_paddle_timestamp(change.get("effective_at"))),
     })
 }
 

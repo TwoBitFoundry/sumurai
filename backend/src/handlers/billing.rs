@@ -153,6 +153,7 @@ pub async fn get_authenticated_billing_status(
             is_demo_mode_active: user.demo_mode_active,
             trial_ends_at: None,
             current_period_ends_at: None,
+            scheduled_cancel_at: None,
             payment_method_required: false,
             billing_portal_available: false,
             enabled_financial_providers: state
@@ -198,6 +199,7 @@ pub async fn get_authenticated_billing_status(
         current_period_ends_at: entitlement
             .as_ref()
             .and_then(|row| row.current_period_ends_at),
+        scheduled_cancel_at: entitlement.as_ref().and_then(|row| row.scheduled_cancel_at),
         payment_method_required: decision.payment_method_required,
         billing_portal_available,
         enabled_financial_providers: state

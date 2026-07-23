@@ -315,16 +315,28 @@ webhooks and exposed in the billing status so the UI can show
 - Status handler: expose `scheduled_cancel_at`.
 
 ### Acceptance criteria
-- [ ] `billing_service_tests.rs`: webhook with
+- [x] `billing_service_tests.rs`: webhook with
       `scheduled_change{action:"cancel", effective_at}` persists
       `scheduled_cancel_at`; follow-up webhook with `scheduled_change: null`
       clears it.
-- [ ] Migration applies cleanly on a fresh DB (`billing_schema_tests.rs` /
+- [x] Migration applies cleanly on a fresh DB (`billing_schema_tests.rs` /
       schema assertions updated if present) and upgrades a database containing
       the existing billing table without a backfill or table rewrite.
-- [ ] Status response includes `scheduled_cancel_at` (null when absent).
-- [ ] Repository round-trip coverage proves the tenant-scoped read/write maps
+- [x] Status response includes `scheduled_cancel_at` (null when absent).
+- [x] Repository round-trip coverage proves the tenant-scoped read/write maps
       `scheduled_cancel_at` correctly.
+
+### TDD log
+
+- Red: added webhook set/clear, status serialization, tenant-scoped repository
+  round-trip, and additive migration source assertions.
+- Green/refactor: added the entity and nullable migration, projected Paddle
+  `scheduled_change`, persisted it through the repository, and exposed it in
+  authenticated billing status.
+- Verification: `cargo test -p sumurai-backend --locked` — 763 passed, 1
+  ignored. The running dev Compose database recorded the migration with a
+  nullable `timestamptz` and no default; SeaORM regeneration matched the entity
+  source exactly.
 
 ## Phase 3 — Backend: in-app cancel endpoint
 

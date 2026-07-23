@@ -87,6 +87,7 @@ fn entitlement(user_id: Uuid, status: &str) -> BillingEntitlement {
         trial_ends_at: None,
         current_period_ends_at: None,
         canceled_at: None,
+        scheduled_cancel_at: None,
         last_event_at: None,
         payment_method_required: false,
         created_at: Utc::now(),

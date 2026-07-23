@@ -333,6 +333,31 @@ fn subscription_activated_payload(user_id: Uuid, occurred_at: &str) -> Vec<u8> {
     .into_bytes()
 }
 
+fn subscription_updated_payload(
+    user_id: Uuid,
+    event_id: &str,
+    occurred_at: &str,
+    scheduled_change: &str,
+) -> Vec<u8> {
+    format!(
+        r#"{{
+            "event_id":"{event_id}",
+            "event_type":"subscription.updated",
+            "occurred_at":"{occurred_at}",
+            "data":{{
+                "id":"sub_123",
+                "status":"active",
+                "customer_id":"ctm_123",
+                "custom_data":{{"sumurai_user_id":"{user_id}"}},
+                "items":[{{"price":{{"id":"pri_monthly"}}}}],
+                "current_billing_period":{{"ends_at":"2026-08-22T00:00:00Z"}},
+                "scheduled_change":{scheduled_change}
+            }}
+        }}"#
+    )
+    .into_bytes()
+}
+
 #[tokio::test]
 async fn given_invalid_paddle_signature_when_processing_webhook_then_rejects_before_repository() {
     let config = Config::from_env_provider(&MockEnvironment::paddle()).unwrap();
@@ -447,6 +472,7 @@ async fn given_older_paddle_webhook_when_processing_then_skips_entitlement_downg
                     trial_ends_at: None,
                     current_period_ends_at: None,
                     canceled_at: None,
+                    scheduled_cancel_at: None,
                     last_event_at: Some(newer_event_at),
                     payment_method_required: false,
                     created_at: newer_event_at,
@@ -525,6 +551,93 @@ async fn given_subscription_activated_webhook_when_processing_then_updates_trial
                 && entitlement.payment_method_required
                 && entitlement.paddle_subscription_id.as_deref() == Some("sub_123")
         })
+        .returning(|_| Box::pin(async { Ok(()) }));
+    repository
+        .expect_mark_paddle_webhook_event_processed()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    let service = billing_service(config, Arc::new(repository), noop_paddle());
+
+    let result = service
+        .process_paddle_webhook(Some(&header), &body, 1_700_000_003)
+        .await;
+
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn given_cancel_scheduled_webhook_when_processing_then_persists_effective_timestamp() {
+    let config = Config::from_env_provider(&MockEnvironment::paddle()).unwrap();
+    let user_id = Uuid::new_v4();
+    let occurred_at = "2026-07-22T12:00:00Z";
+    let body = subscription_updated_payload(
+        user_id,
+        "evt_sub_cancel_scheduled",
+        occurred_at,
+        r#"{"action":"cancel","effective_at":"2026-08-22T00:00:00Z"}"#,
+    );
+    let header = sign_paddle_webhook("pdl_ntfset_test", &body, 1_700_000_000);
+    let expected = Utc.with_ymd_and_hms(2026, 8, 22, 0, 0, 0).unwrap();
+    let mut repository = MockDatabaseRepository::new();
+    repository
+        .expect_record_paddle_webhook_event_if_new()
+        .returning(|_| Box::pin(async { Ok(true) }));
+    repository
+        .expect_get_billing_entitlement()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    repository
+        .expect_upsert_billing_entitlement()
+        .withf(move |entitlement| entitlement.scheduled_cancel_at == Some(expected))
+        .returning(|_| Box::pin(async { Ok(()) }));
+    repository
+        .expect_mark_paddle_webhook_event_processed()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    let service = billing_service(config, Arc::new(repository), noop_paddle());
+
+    let result = service
+        .process_paddle_webhook(Some(&header), &body, 1_700_000_003)
+        .await;
+
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn given_scheduled_cancel_then_null_webhook_when_processing_then_clears_timestamp() {
+    let config = Config::from_env_provider(&MockEnvironment::paddle()).unwrap();
+    let user_id = Uuid::new_v4();
+    let occurred_at = "2026-07-23T12:00:00Z";
+    let body = subscription_updated_payload(user_id, "evt_sub_cancel_cleared", occurred_at, "null");
+    let header = sign_paddle_webhook("pdl_ntfset_test", &body, 1_700_000_000);
+    let previous_event_at = Utc.with_ymd_and_hms(2026, 7, 22, 12, 0, 0).unwrap();
+    let scheduled_cancel_at = Utc.with_ymd_and_hms(2026, 8, 22, 0, 0, 0).unwrap();
+    let mut repository = MockDatabaseRepository::new();
+    repository
+        .expect_record_paddle_webhook_event_if_new()
+        .returning(|_| Box::pin(async { Ok(true) }));
+    repository
+        .expect_get_billing_entitlement()
+        .return_once(move |_| {
+            Box::pin(async move {
+                Ok(Some(BillingEntitlement {
+                    user_id,
+                    access_status: "active".to_string(),
+                    source: "paddle".to_string(),
+                    paddle_subscription_id: Some("sub_123".to_string()),
+                    paddle_customer_id: Some("ctm_123".to_string()),
+                    paddle_price_id: Some("pri_monthly".to_string()),
+                    trial_ends_at: None,
+                    current_period_ends_at: Some(scheduled_cancel_at),
+                    canceled_at: None,
+                    scheduled_cancel_at: Some(scheduled_cancel_at),
+                    last_event_at: Some(previous_event_at),
+                    payment_method_required: false,
+                    created_at: previous_event_at,
+                    updated_at: previous_event_at,
+                }))
+            })
+        });
+    repository
+        .expect_upsert_billing_entitlement()
+        .withf(|entitlement| entitlement.scheduled_cancel_at.is_none())
         .returning(|_| Box::pin(async { Ok(()) }));
     repository
         .expect_mark_paddle_webhook_event_processed()

@@ -7,6 +7,7 @@ mod m20260605_000003_transaction_normalization_cutover;
 mod m20260613_000006_transaction_keyset_index;
 mod m20260622_000007_user_demo_mode_active;
 mod m20260706_000008_billing_entitlements;
+mod m20260722_000009_billing_scheduled_cancel_at;
 pub mod merchant_alias_seeds;
 
 pub struct Migrator;
@@ -22,6 +23,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260613_000006_transaction_keyset_index::Migration),
             Box::new(m20260622_000007_user_demo_mode_active::Migration),
             Box::new(m20260706_000008_billing_entitlements::Migration),
+            Box::new(m20260722_000009_billing_scheduled_cancel_at::Migration),
         ]
     }
 }
