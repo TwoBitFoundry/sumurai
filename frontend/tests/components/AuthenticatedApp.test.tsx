@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { AuthenticatedApp } from '@/components/AuthenticatedApp';
 import { useAnalyticsDateBounds } from '@/features/analytics/hooks/useAnalyticsDateBounds';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
-import { NAVIGATE_TO_SETTINGS_EVENT } from '@/utils/events';
+import { NAVIGATE_TO_ACCOUNTS_EVENT, NAVIGATE_TO_SETTINGS_EVENT } from '@/utils/events';
 
 const motionSectionProps: Record<
   string,
@@ -198,6 +198,17 @@ describe('AuthenticatedApp', () => {
 
     expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('settings');
     expect(screen.getByText('Settings')).toBeInTheDocument();
+  });
+
+  it('switches to Accounts when the navigation event is dispatched', () => {
+    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="settings" />);
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent(NAVIGATE_TO_ACCOUNTS_EVENT));
+    });
+
+    expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('accounts');
+    expect(screen.getByText('Accounts')).toBeInTheDocument();
   });
 
   it('animates the page body in the direction of tab travel', () => {

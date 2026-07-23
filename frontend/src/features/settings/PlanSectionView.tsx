@@ -1,3 +1,5 @@
+import { PricingTrialForm } from '@/features/billing/PricingTrialForm';
+import type { BillingTrialStartRequest } from '@/types/api';
 import { Alert, Button, GlassCard } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import {
@@ -14,7 +16,12 @@ export interface PlanSectionViewProps {
   isEmpty: boolean;
   mutationPending: boolean;
   mutationError: string | null;
+  mutationRetryLabel?: string;
+  trialFormOpen?: boolean;
   onRetry: () => void;
+  onRetryMutation?: () => void;
+  onStartTrialRequest?: (request: BillingTrialStartRequest) => Promise<void>;
+  onCancelTrialForm?: () => void;
   onSwitchSelfHosted: () => void;
   onStartTrial: () => void;
   onUpgradePremium: () => void;
@@ -30,7 +37,12 @@ export function PlanSectionView({
   isEmpty,
   mutationPending,
   mutationError,
+  mutationRetryLabel,
+  trialFormOpen = false,
   onRetry,
+  onRetryMutation,
+  onStartTrialRequest,
+  onCancelTrialForm,
   onSwitchSelfHosted,
   onStartTrial,
   onUpgradePremium,
@@ -115,11 +127,32 @@ export function PlanSectionView({
 
             {mutationError ? (
               <Alert role="alert" variant="error" title="Plan update failed">
-                {mutationError}
+                <div className={cn('flex', 'flex-col', 'items-start', 'gap-3')}>
+                  <p>{mutationError}</p>
+                  {mutationRetryLabel && onRetryMutation ? (
+                    <Button type="button" variant="secondary" size="sm" onClick={onRetryMutation}>
+                      {mutationRetryLabel}
+                    </Button>
+                  ) : null}
+                </div>
               </Alert>
             ) : null}
 
-            {policy.actions.length > 0 ? (
+            {trialFormOpen && onStartTrialRequest ? (
+              <div className={cn('space-y-3')}>
+                <PricingTrialForm disabled={mutationPending} onStartTrial={onStartTrialRequest} />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="md"
+                  className={cn('w-full')}
+                  disabled={mutationPending}
+                  onClick={onCancelTrialForm}
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : policy.actions.length > 0 ? (
               <div className={cn('flex', 'flex-col', 'gap-3', 'md:flex-row', 'md:flex-wrap')}>
                 {policy.actions.map((planAction) => (
                   <Button

@@ -1,11 +1,17 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useBillingStatus } from '@/features/billing/useBillingStatus';
+import { useBillingWorkflow } from '@/features/billing/useBillingWorkflow';
 import { PlanSection } from '@/features/settings/PlanSection';
 import type { BillingStatusResponse } from '@/types/api';
 
 jest.mock('@/features/billing/useBillingStatus', () => ({
   useBillingStatus: jest.fn(),
+}));
+
+jest.mock('@/features/billing/useBillingWorkflow', () => ({
+  useBillingWorkflow: jest.fn(),
 }));
 
 const disabledStatus: BillingStatusResponse = {
@@ -25,6 +31,29 @@ const disabledStatus: BillingStatusResponse = {
 };
 
 describe('PlanSection', () => {
+  beforeEach(() => {
+    jest.mocked(useBillingWorkflow).mockReturnValue({
+      status: 'idle',
+      error: undefined,
+      billingStatus: undefined,
+      startPremiumCheckout: jest.fn(),
+      startCardlessTrial: jest.fn(),
+      startTrialPaymentMethod: jest.fn(),
+      startPastDueRecovery: jest.fn(),
+      retry: jest.fn(),
+      cancel: jest.fn(),
+    });
+  });
+
+  const renderSection = () => {
+    const queryClient = new QueryClient();
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <PlanSection />
+      </QueryClientProvider>
+    );
+  };
+
   it('is absent for billing-disabled non-demo users', () => {
     jest.mocked(useBillingStatus).mockReturnValue({
       data: disabledStatus,
@@ -34,7 +63,7 @@ describe('PlanSection', () => {
       refetch: jest.fn(),
     } as any);
 
-    render(<PlanSection />);
+    renderSection();
 
     expect(screen.queryByRole('heading', { name: 'Plan' })).not.toBeInTheDocument();
   });
@@ -48,7 +77,13 @@ describe('PlanSection', () => {
       error: null,
       refetch,
     } as any);
-    const { rerender } = render(<PlanSection />);
+    const queryClient = new QueryClient();
+    const section = () => (
+      <QueryClientProvider client={queryClient}>
+        <PlanSection />
+      </QueryClientProvider>
+    );
+    const { rerender } = render(section());
     expect(screen.getByRole('heading', { name: 'Demo mode' })).toBeInTheDocument();
 
     jest.mocked(useBillingStatus).mockReturnValue({
@@ -58,7 +93,7 @@ describe('PlanSection', () => {
       error: null,
       refetch,
     } as any);
-    rerender(<PlanSection />);
+    rerender(section());
     expect(screen.getByText('Loading plan…')).toBeInTheDocument();
 
     jest.mocked(useBillingStatus).mockReturnValue({
@@ -68,7 +103,7 @@ describe('PlanSection', () => {
       error: null,
       refetch,
     } as any);
-    rerender(<PlanSection />);
+    rerender(section());
     expect(screen.getByText('No plan information is available.')).toBeInTheDocument();
 
     jest.mocked(useBillingStatus).mockReturnValue({
@@ -78,7 +113,7 @@ describe('PlanSection', () => {
       error: new Error('Billing could not be reached.'),
       refetch,
     } as any);
-    rerender(<PlanSection />);
+    rerender(section());
     expect(screen.getByRole('alert')).toHaveTextContent('Billing could not be reached.');
 
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }));

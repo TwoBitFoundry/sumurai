@@ -816,14 +816,32 @@ portal, and Accounts-navigation behavior with correct cache transitions.
   authoritative response arrives.
 
 ### Acceptance criteria
-- [ ] Switch to Self Hosted navigates to Accounts.
-- [ ] Demo trial/Premium and trial/past-due payment-method tests use the correct
+- [x] Switch to Self Hosted navigates to Accounts.
+- [x] Demo trial/Premium and trial/past-due payment-method tests use the correct
       completion targets.
-- [ ] Confirmed cancel calls the API once and immediately renders Membership
+- [x] Confirmed cancel calls the API once and immediately renders Membership
       ends; cancel failure preserves the prior view and exposes retryable error.
-- [ ] Portal success/failure and popup invocation are tested at the boundary.
-- [ ] Plan-section rendered interactions pass Storybook Vitest; focused Bun
+- [x] Portal success/failure and popup invocation are tested at the boundary.
+- [x] Plan-section rendered interactions pass Storybook Vitest; focused Bun
       tests, lint, and typecheck green.
+
+### Phase 12 implementation log
+
+- Added Accounts navigation through the existing application event pattern.
+  Local `bun run dev` inspection confirmed the Settings action lands on the
+  existing Accounts screen, leaving demo-data replacement with its established
+  warning flow.
+- Connected plan actions to the shared billing workflow targets for card-less
+  trials, Premium checkout, trial payment methods, and past-due recovery.
+  Current plan copy remains visible through errors and activation timeouts.
+- Added cancellation confirmation with existing modal, card, alert, and button
+  primitives. Successful cancellation updates the cached scheduled end
+  immediately before refetch; failures keep the active plan and allow retry.
+- Added successful-response-only portal opening with `noopener`, plus
+  paused/canceled/expired recovery through the resolved Premium action.
+- Verification: 31 focused Bun tests, 20 rendered Storybook browser tests,
+  exact-file Biome formatting/lint, typecheck, design guard, live navigation,
+  and all 1,419 frontend unit tests passed.
 
 ## Phase 13 — Verification + docs cleanup
 

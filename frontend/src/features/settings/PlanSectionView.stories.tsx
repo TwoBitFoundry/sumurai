@@ -55,6 +55,9 @@ const meta = {
     mutationPending: false,
     mutationError: null,
     onRetry: fn(),
+    onRetryMutation: fn(),
+    onStartTrialRequest: fn(async () => {}),
+    onCancelTrialForm: fn(),
     onSwitchSelfHosted: fn(),
     onStartTrial: fn(),
     onUpgradePremium: fn(),
@@ -107,6 +110,11 @@ export const TrialPaymentRequired: Story = {
       })
     ),
   },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Upgrade to Premium' }));
+    await expect(args.onUpgradePremium).toHaveBeenCalledTimes(1);
+  },
 };
 
 export const TrialPaymentReady: Story = {
@@ -129,6 +137,13 @@ export const Active: Story = {
       })
     ),
   },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Cancel membership' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Manage billing' }));
+    await expect(args.onCancelMembership).toHaveBeenCalledTimes(1);
+    await expect(args.onManageBilling).toHaveBeenCalledTimes(1);
+  },
 };
 
 export const ScheduledEnd: Story = {
@@ -150,6 +165,11 @@ export const PastDue: Story = {
         billing_portal_available: true,
       })
     ),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Update payment method' }));
+    await expect(args.onUpdatePaymentMethod).toHaveBeenCalledTimes(1);
   },
 };
 
@@ -205,6 +225,31 @@ export const MutationPending: Story = {
 
 export const MutationError: Story = {
   args: {
-    mutationError: 'The plan update failed.',
+    mutationError: 'Plan activation is taking longer than expected.',
+    mutationRetryLabel: 'Retry activation',
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Retry activation' }));
+    await expect(args.onRetryMutation).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const TrialForm: Story = {
+  args: {
+    policy: resolvePlanPolicy(enabledStatus('demo', { trials_enabled: true })),
+    trialFormOpen: true,
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.type(canvas.getByLabelText('Country code'), 'us');
+    await userEvent.type(canvas.getByLabelText('Postal code'), '78701');
+    await userEvent.click(canvas.getByRole('button', { name: 'Start free trial' }));
+    await expect(args.onStartTrialRequest).toHaveBeenCalledWith({
+      country_code: 'US',
+      postal_code: '78701',
+    });
+    await userEvent.click(canvas.getByRole('button', { name: 'Cancel' }));
+    await expect(args.onCancelTrialForm).toHaveBeenCalledTimes(1);
   },
 };
