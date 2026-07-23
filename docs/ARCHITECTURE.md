@@ -121,9 +121,11 @@ sequenceDiagram
 
 ### Production billing (Paddle)
 
-Production billing runs only when `BILLING_MODE=paddle` (`docker-compose.prod.yml`). `BillingService` is composed once on `AppState` with `DatabaseRepository` and `PaddleClient`. Open cardless trial starts are gated by `BILLING_TRIALS_ENABLED` (`POST /api/billing/trials/start`). In-app Paddle subscription / billing CTA UI is deferred; entitlement gates and billing APIs remain.
+Production billing runs only when `BILLING_MODE=paddle` (`docker-compose.prod.yml`). `BillingService` is composed once on `AppState` with `DatabaseRepository` and `PaddleClient`. Open cardless trial starts are gated by `BILLING_TRIALS_ENABLED` (`POST /api/billing/trials/start`). The frontend reads the runtime billing contract after authentication, renders the available pricing choices, initializes Paddle.js only for Paddle-enabled responses, and polls the shared billing-status query after checkout or trial creation until the webhook-projected entitlement reaches the workflow target.
 
 **Entitlement source of truth:** verified Paddle webhooks update `billing_entitlements`. Trial start and checkout responses return `pending` until webhook processing completes. Own-data write routes call `billing_service.check_own_data_access*` before mutating tenant data.
+
+**Frontend recovery and management:** a `402 PAID_ACCESS_REQUIRED` response dispatches a shared upgrade-required modal that routes the user to the Settings Plan section. That section resolves copy and actions from `GET /api/billing/status`: demo accounts can start a trial or Premium checkout, trialing accounts can add a payment method, past-due accounts can recover payment, and blocked accounts can restart Premium checkout. Portal links are requested on demand. Cancellation is confirmed in-app, scheduled at the next billing boundary, written optimistically to the billing-status cache, and reconciled by refetch and later Paddle webhooks.
 
 ```mermaid
 sequenceDiagram
@@ -515,6 +517,7 @@ Legacy Teller connections are display-only: the UI may still show them with a pr
 | POST | `/api/billing/trials/start` | JWT |
 | POST | `/api/billing/payment-method` | JWT |
 | POST | `/api/billing/portal-session` | JWT |
+| POST | `/api/billing/subscription/cancel` | JWT |
 | POST | `/api/billing/webhooks/paddle` | Paddle signature (no JWT) |
 
 When billing is disabled, mutations and the webhook return `404 BILLING_DISABLED`; status returns `billing_enabled: false`.

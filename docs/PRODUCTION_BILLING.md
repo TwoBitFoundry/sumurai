@@ -2,7 +2,7 @@
 
 Production-only Paddle billing for the hosted Sumurai deployment. Paid options apply **only** when the backend runs through `docker-compose.prod.yml` with `BILLING_MODE=paddle`.
 
-Development (`docker-compose.dev.yml`), the default OSS stack (`docker-compose.yml`), local Next.js dev, and test environments keep billing disabled. Those environments must not show billing cards, upgrade buttons, trial-code inputs, paid labels, payment-required locks, or payment-related empty states. In-app Paddle subscription UI is currently deferred; the backend billing APIs and entitlement gates remain.
+Development (`docker-compose.dev.yml`), the default OSS stack (`docker-compose.yml`), local Next.js dev, and test environments keep billing disabled. Those environments do not initialize Paddle.js or show Premium, trial, payment-method, portal, cancellation, paid-access lock, or upgrade UI. Registration offers Demo mode and Self Hosted; a demo user can later use the Settings Plan section to navigate to Accounts and replace sample data through the existing provider flow.
 
 See also [PRODUCTION_TLS.md](PRODUCTION_TLS.md) for certificate provisioning on the same stack.
 
@@ -20,6 +20,37 @@ In production billing mode:
 - New accounts stay in demo mode until the user connects own data with a current entitlement.
 - Paid or trialing entitlement unlocks own-data writes (Plaid link, DIY institution create, import, sync, and non-demo resource edits).
 - Expired, canceled, paused, or past-due entitlement blocks own-data writes but keeps tenant data available for read, export, disconnect, and account deletion.
+
+## Frontend billing flow
+
+After authentication, the frontend treats `GET /api/billing/status` as its
+runtime configuration and entitlement contract.
+
+- Registration continues to pricing. Billing-disabled responses offer Demo
+  mode and Self Hosted only. Paddle-enabled responses offer Demo mode, Premium,
+  and Free trial when `trials_enabled` is true.
+- Premium checkout opens through Paddle.js. Cardless trial creation collects
+  only country and postal code and calls the authenticated trial endpoint.
+- Checkout and trial responses do not grant access. The frontend polls billing
+  status until the webhook-projected target is reached, then continues to the
+  provider picker.
+- A protected own-data mutation that returns `402 PAID_ACCESS_REQUIRED` opens
+  the shared upgrade-required modal and can take the user to the Settings Plan
+  section without discarding the current screen.
+- Settings derives its plan copy and actions from billing status. Demo,
+  trialing, active, past-due, paused, canceled, and expired states each resolve
+  to the applicable trial, checkout, payment-method, portal, cancellation, or
+  recovery action.
+- Trial payment-method collection waits for
+  `payment_method_required=false`; an already-true `trialing` status is not
+  treated as completion. Past-due recovery waits for `active`.
+- In-app cancellation schedules the subscription end at the next billing
+  boundary. The returned `scheduled_cancel_at` is shown immediately and is
+  reconciled by status refetch and subsequent Paddle webhooks.
+
+Paddle.js is initialized only from the authenticated status response's public
+client token and environment. API keys and webhook secrets never enter the
+browser bundle.
 
 ## Paddle configuration
 
@@ -169,7 +200,7 @@ Authenticated billing routes (production mode):
 
 | Method | Path | Purpose |
 | ------ | ---- | ------- |
-| GET | `/api/billing/status` | Billing enabled flag, `trials_enabled`, access status, provider allowlist |
+| GET | `/api/billing/status` | Runtime Paddle configuration, access status, plan dates, payment-method need, portal availability, and provider allowlist |
 | POST | `/api/billing/checkout` | Create Paddle checkout for monthly paid plan |
 | POST | `/api/billing/trials/start` | Start open cardless trial (country + postal code, no card) |
 | POST | `/api/billing/payment-method` | Add payment method during cardless trial |
@@ -204,3 +235,5 @@ Customer portal session URLs are generated on demand and are not stored by Sumur
 8. Start the stack: `DOMAIN=<domain> docker compose -f docker-compose.prod.yml up -d`
 9. Verify `GET /api/billing/status` returns `billing_enabled: true`, the expected `paddle_environment`, and a non-null `paddle_client_token` when authenticated.
 10. Verify OSS/dev stacks still return `billing_enabled: false` with null Paddle SDK fields.
+11. Verify registration pricing, Paddle checkout, activation polling, trial start, Settings recovery, portal opening, and scheduled cancellation in the matching Paddle environment.
+12. Confirm the browser console reports no Content Security Policy violations while loading Paddle.js or opening its overlay.

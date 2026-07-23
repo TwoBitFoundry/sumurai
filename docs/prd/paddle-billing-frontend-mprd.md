@@ -890,11 +890,32 @@ billing-disabled and billing-enabled environments; docs reflect the shipped UI.
   "billing UI deferred" note and describe the new flow.
 
 ### Acceptance criteria
-- [ ] `bun run backend:ci && bun run frontend:ci` green.
+- [x] `bun run backend:ci && bun run frontend:ci` green.
 - [ ] Manual flows above verified and screenshotted in light and dark modes
       where visual.
 - [ ] No Paddle CSP violations and no credential-bearing files in the worktree.
-- [ ] Docs updated; no references left to "deferred" billing UI.
+- [x] Docs updated; no references left to "deferred" billing UI outside this
+      implementation plan's historical notes and release task.
+
+### Phase 13 implementation log
+
+- Full backend and frontend CI parity passed. Frontend parity covered lint,
+  typecheck, design guard, 1,419 Bun tests, production build, the complete
+  Storybook browser suite, static Storybook, and 139 runtime iframe smoke
+  checks. Backend parity covered formatting, workspace check, clippy with
+  warnings denied, the 772-test default backend run, CLI tests, and the
+  8-test dev-seed run.
+- Updated architecture and production billing documentation for runtime
+  configuration, pricing, activation polling, paid-access recovery, Settings
+  management, portal sessions, and scheduled cancellation.
+- Honored the requested local inspection path: `bun run dev` verified the
+  billing-disabled demo Plan card and Settings-to-Accounts navigation without
+  starting or rebuilding Docker.
+- Paddle-enabled sandbox checkout, light/dark screenshots, and live browser CSP
+  validation remain external release checks because frontend inspection was
+  limited to the requested local dev-server path. Repository environment files
+  were neither read nor modified. Both nginx templates' Paddle CSP directives
+  are covered by the green backend configuration tests.
 
 ---
 
