@@ -617,12 +617,23 @@ and billing workflow state through explicit props and mocked boundaries.
   Storybook Vitest project where browser rendering owns the behavior.
 
 ### Acceptance criteria
-- [ ] PricingScreen tests: disabled variant shows Demo mode + Self Hosted
+- [x] PricingScreen tests: disabled variant shows Demo mode + Self Hosted
       only; enabled variant shows Demo mode + Premium, plus Free trial only
       when `trials_enabled`.
-- [ ] Trial validation, loading/disabled controls, retry, callback outcomes,
+- [x] Trial validation, loading/disabled controls, retry, callback outcomes,
       and error announcements are covered at the rendered component boundary.
-- [ ] Storybook Vitest, focused Bun tests, design lint, and typecheck green.
+- [x] Storybook Vitest, focused Bun tests, design lint, and typecheck green.
+
+### Implementation log
+
+- Red: added focused country/postal policy tests and six browser-rendered
+  pricing stories covering environment variants, validation, disabled waiting
+  controls, timeout retry, successful exits, workflow errors, and demo failure.
+- Green/refactor: added the pricing workflow container and an injectable
+  rendered view, normalized trial addresses, and composed the existing
+  provider-picker hero, card header, inset detail rows, primitives, and recipes.
+- Verification: 23 focused billing tests, all 242 Storybook tests, design
+  guard, lint, and typecheck passed.
 
 ## Phase 9 — Frontend: onboarding routing and provider-picker cleanup
 
