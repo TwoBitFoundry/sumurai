@@ -39,6 +39,10 @@ impl MockEnvironment {
             "pri_monthly".to_string(),
         );
         vars.insert(
+            "PADDLE_CLIENT_TOKEN".to_string(),
+            "test-client-token".to_string(),
+        );
+        vars.insert(
             "PADDLE_CARDLESS_TRIAL_PRICE_ID".to_string(),
             "pri_trial".to_string(),
         );

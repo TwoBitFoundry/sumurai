@@ -132,13 +132,25 @@ pub async fn get_authenticated_billing_status(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<BillingStatusResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user = state
+        .db_repository
+        .get_user_by_id(&auth_context.user_id)
+        .await
+        .map_err(|error| {
+            tracing::error!("Failed to load user for billing status: {}", error);
+            api_internal_server_error("Failed to load billing status")
+        })?
+        .ok_or_else(|| api_internal_server_error("Failed to load billing status"))?;
+
     if !state.config.is_billing_enabled() {
         return Ok(Json(BillingStatusResponse {
             billing_enabled: false,
             trials_enabled: false,
+            paddle_client_token: None,
+            paddle_environment: None,
             access_status: "unrestricted".to_string(),
             can_use_own_data: true,
-            is_demo_mode_active: false,
+            is_demo_mode_active: user.demo_mode_active,
             trial_ends_at: None,
             current_period_ends_at: None,
             payment_method_required: false,
@@ -150,16 +162,6 @@ pub async fn get_authenticated_billing_status(
                 .to_vec(),
         }));
     }
-
-    let user = state
-        .db_repository
-        .get_user_by_id(&auth_context.user_id)
-        .await
-        .map_err(|error| {
-            tracing::error!("Failed to load user for billing status: {}", error);
-            api_internal_server_error("Failed to load billing status")
-        })?
-        .ok_or_else(|| api_internal_server_error("Failed to load billing status"))?;
 
     let entitlement = state
         .db_repository
@@ -179,10 +181,16 @@ pub async fn get_authenticated_billing_status(
         .as_ref()
         .and_then(|row| row.paddle_customer_id.as_ref())
         .is_some();
+    let paddle_config = state
+        .config
+        .paddle_billing()
+        .ok_or_else(|| api_internal_server_error("Failed to load billing status"))?;
 
     Ok(Json(BillingStatusResponse {
         billing_enabled: true,
         trials_enabled: state.config.is_trials_enabled(),
+        paddle_client_token: Some(paddle_config.client_token.clone()),
+        paddle_environment: Some(paddle_config.environment.clone()),
         access_status: access_status.as_str().to_string(),
         can_use_own_data: decision.can_use_own_data,
         is_demo_mode_active: user.demo_mode_active,

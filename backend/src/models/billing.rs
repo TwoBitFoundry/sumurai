@@ -47,6 +47,8 @@ pub struct PaddleWebhookEvent {
 pub struct BillingStatusResponse {
     pub billing_enabled: bool,
     pub trials_enabled: bool,
+    pub paddle_client_token: Option<String>,
+    pub paddle_environment: Option<String>,
     pub access_status: String,
     pub can_use_own_data: bool,
     pub is_demo_mode_active: bool,

@@ -17,11 +17,17 @@ use crate::test_fixtures::{noop_categorizer, TestFixtures};
 
 #[tokio::test]
 async fn given_billing_disabled_when_get_status_then_returns_unrestricted_disabled_status() {
-    let mock_db = MockDatabaseRepository::new();
+    let (mut user, token) = TestFixtures::create_authenticated_user_with_token();
+    user.demo_mode_active = true;
+    let expected_user = user.clone();
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_user_by_id()
+        .withf(move |user_id| *user_id == expected_user.id)
+        .return_once(move |_| Box::pin(async move { Ok(Some(user)) }));
     let app = TestFixtures::create_test_app_with_db(mock_db)
         .await
         .unwrap();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
 
     let request = Request::builder()
         .method("GET")
@@ -38,6 +44,9 @@ async fn given_billing_disabled_when_get_status_then_returns_unrestricted_disabl
     assert_eq!(value["trials_enabled"], false);
     assert_eq!(value["access_status"], "unrestricted");
     assert_eq!(value["can_use_own_data"], true);
+    assert_eq!(value["is_demo_mode_active"], true);
+    assert_eq!(value["paddle_client_token"], Value::Null);
+    assert_eq!(value["paddle_environment"], Value::Null);
     assert_eq!(value["billing_portal_available"], false);
 }
 
@@ -562,6 +571,8 @@ async fn given_paddle_billing_when_get_status_then_returns_entitlement_projectio
     assert_eq!(value["can_use_own_data"], true);
     assert_eq!(value["payment_method_required"], true);
     assert_eq!(value["billing_portal_available"], true);
+    assert_eq!(value["paddle_client_token"], "test-client-token");
+    assert_eq!(value["paddle_environment"], "sandbox");
     assert_eq!(
         value["enabled_financial_providers"],
         serde_json::json!(["diy", "plaid"])
