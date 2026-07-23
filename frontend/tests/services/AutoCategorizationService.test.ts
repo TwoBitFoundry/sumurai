@@ -60,7 +60,7 @@ describe('AutoCategorizationService', () => {
   });
 
   it('returns active job state when start responds with conflict', async () => {
-    postSpy.mockRejectedValue(new ConflictError('Active job exists', runningJob));
+    postSpy.mockRejectedValue(new ConflictError('Active job exists', 'CONFLICT', runningJob));
 
     const result = await AutoCategorizationService.start();
 

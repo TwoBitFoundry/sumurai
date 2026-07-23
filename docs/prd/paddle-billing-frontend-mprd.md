@@ -471,14 +471,24 @@ all billing API calls go through a mockable service boundary.
   shared disabled fallback factory used only after a real query error.
 
 ### Acceptance criteria
-- [ ] `frontend/tests/**` `FetchHttpClient` test: 402 →
+- [x] `frontend/tests/**` `FetchHttpClient` test: 402 →
       `PaymentRequiredError` preserving `PAID_ACCESS_REQUIRED`.
-- [ ] `FetchHttpClient` test: 409 preserves `TRIAL_ALREADY_USED` and its body.
-- [ ] `BillingService` test: endpoint paths/verbs (mirror
+- [x] `FetchHttpClient` test: 409 preserves `TRIAL_ALREADY_USED` and its body.
+- [x] `BillingService` test: endpoint paths/verbs (mirror
       `SettingsService.test.ts`).
-- [ ] Billing-status tests cover enabled, disabled, and query-error fallback
+- [x] Billing-status tests cover enabled, disabled, and query-error fallback
       shapes without converting a pending query into the fallback.
-- [ ] Focused service/transport tests, lint, and typecheck green.
+- [x] Focused service/transport tests, lint, and typecheck green.
+
+### TDD log
+
+- Red: added transport mapping, six-endpoint service, and query-state boundary
+  tests; they failed on the absent typed errors, service, and status hook.
+- Green/refactor: introduced discriminated billing contracts, preserved coded
+  402/409 response bodies, centralized billing API calls, and added a cached
+  status query whose disabled fallback is applied only after failure.
+- Verification: 22 focused tests passed; frontend lint and typecheck passed;
+  the complete frontend unit suite passed with 1,347 tests.
 
 ## Phase 6 — Frontend: Paddle runtime boundary and CSP
 

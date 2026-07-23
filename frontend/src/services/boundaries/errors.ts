@@ -45,8 +45,19 @@ export class ServerError extends ApiError {
 export class ConflictError extends ApiError {
   readonly body?: unknown;
 
-  constructor(message = 'Resource conflict', body?: unknown) {
-    super(409, message, 'CONFLICT');
+  constructor(message = 'Resource conflict', code = 'CONFLICT', body?: unknown) {
+    super(409, message, code);
+    this.name = 'ConflictError';
+    this.body = body;
+  }
+}
+
+export class PaymentRequiredError extends ApiError {
+  readonly body?: unknown;
+
+  constructor(message = 'Payment required', code = 'PAYMENT_REQUIRED', body?: unknown) {
+    super(402, message, code);
+    this.name = 'PaymentRequiredError';
     this.body = body;
   }
 }
