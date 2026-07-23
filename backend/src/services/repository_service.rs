@@ -460,6 +460,11 @@ pub trait DatabaseRepository: Send + Sync {
     async fn get_billing_profile(&self, user_id: &Uuid) -> Result<Option<BillingProfile>>;
     async fn upsert_billing_entitlement(&self, entitlement: &BillingEntitlement) -> Result<()>;
     async fn get_billing_entitlement(&self, user_id: &Uuid) -> Result<Option<BillingEntitlement>>;
+    async fn set_billing_entitlement_scheduled_cancel(
+        &self,
+        user_id: Uuid,
+        scheduled_cancel_at: Option<chrono::DateTime<chrono::Utc>>,
+    ) -> Result<()>;
     async fn record_paddle_webhook_event(&self, event: &PaddleWebhookEvent) -> Result<()>;
     async fn record_paddle_webhook_event_if_new(&self, event: &PaddleWebhookEvent) -> Result<bool>;
     async fn get_paddle_webhook_event(&self, event_id: &str) -> Result<Option<PaddleWebhookEvent>>;
@@ -4017,6 +4022,31 @@ impl DatabaseRepository for PostgresRepository {
             created_at: Self::from_db_time(row.created_at),
             updated_at: Self::from_db_time(row.updated_at),
         }))
+    }
+
+    async fn set_billing_entitlement_scheduled_cancel(
+        &self,
+        user_id: Uuid,
+        scheduled_cancel_at: Option<chrono::DateTime<chrono::Utc>>,
+    ) -> Result<()> {
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                billing_entitlements::Entity::update_many()
+                    .col_expr(
+                        billing_entitlements::Column::ScheduledCancelAt,
+                        Expr::value(Self::opt_to_db_time(scheduled_cancel_at)),
+                    )
+                    .col_expr(
+                        billing_entitlements::Column::UpdatedAt,
+                        Expr::value(Self::to_db_time(chrono::Utc::now())),
+                    )
+                    .filter(billing_entitlements::Column::UserId.eq(user_id))
+                    .exec(txn)
+                    .await?;
+                Ok(())
+            })
+        })
+        .await
     }
 
     async fn record_paddle_webhook_event(&self, event: &PaddleWebhookEvent) -> Result<()> {

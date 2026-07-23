@@ -8,8 +8,8 @@ use uuid::Uuid;
 
 use crate::models::billing::{BillingEntitlement, PaddleWebhookEvent};
 use crate::providers::paddle_provider::{
-    CreateCardlessTrialResponse, CreateCheckoutResponse, CreatePaymentMethodTransactionResponse,
-    CreatePortalSessionResponse, MockPaddleHttpClient,
+    CancelSubscriptionResponse, CreateCardlessTrialResponse, CreateCheckoutResponse,
+    CreatePaymentMethodTransactionResponse, CreatePortalSessionResponse, MockPaddleHttpClient,
 };
 use crate::services::cache_service::MockCacheService;
 use crate::services::repository_service::MockDatabaseRepository;
@@ -356,6 +356,141 @@ async fn given_paddle_customer_when_portal_session_requested_then_returns_tempor
         "https://portal.paddle.test/overview?token=temporary"
     );
     assert_eq!(value["subscription_urls"].as_array().unwrap().len(), 2);
+}
+
+#[tokio::test]
+async fn given_active_subscription_when_cancel_requested_then_returns_and_persists_schedule() {
+    let scheduled_cancel_at = Utc::now();
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_billing_entitlement()
+        .returning(|user_id| {
+            let user_id = *user_id;
+            Box::pin(async move { Ok(Some(active_entitlement(user_id))) })
+        });
+    mock_db
+        .expect_set_billing_entitlement_scheduled_cancel()
+        .withf(move |_, scheduled_at| *scheduled_at == Some(scheduled_cancel_at))
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_db.expect_upsert_billing_entitlement().never();
+    let mut paddle = MockPaddleHttpClient::new();
+    paddle
+        .expect_cancel_subscription()
+        .return_once(move |request| {
+            assert_eq!(request.subscription_id, "sub_123");
+            Box::pin(async move {
+                Ok(CancelSubscriptionResponse {
+                    status: "active".to_string(),
+                    scheduled_cancel_at: Some(scheduled_cancel_at),
+                    canceled_at: None,
+                })
+            })
+        });
+    let app = create_paddle_billing_app(mock_db, paddle).await;
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/billing/subscription/cancel")
+        .header("Cookie", format!("auth_token={token}"))
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let value: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(value["status"], "scheduled");
+    let returned_scheduled_at: chrono::DateTime<Utc> =
+        serde_json::from_value(value["scheduled_cancel_at"].clone()).unwrap();
+    assert_eq!(returned_scheduled_at, scheduled_cancel_at);
+}
+
+#[tokio::test]
+async fn given_billing_disabled_when_cancel_requested_then_returns_not_found() {
+    let mock_db = MockDatabaseRepository::new();
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/billing/subscription/cancel")
+        .header("Cookie", format!("auth_token={token}"))
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let value: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(value["code"], "BILLING_DISABLED");
+}
+
+#[tokio::test]
+async fn given_entitlement_without_subscription_when_cancel_requested_then_returns_conflict() {
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_billing_entitlement()
+        .returning(|user_id| {
+            let mut entitlement = active_entitlement(*user_id);
+            entitlement.paddle_subscription_id = None;
+            Box::pin(async move { Ok(Some(entitlement)) })
+        });
+    mock_db
+        .expect_set_billing_entitlement_scheduled_cancel()
+        .never();
+    let mut paddle = MockPaddleHttpClient::new();
+    paddle.expect_cancel_subscription().never();
+    let app = create_paddle_billing_app(mock_db, paddle).await;
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/billing/subscription/cancel")
+        .header("Cookie", format!("auth_token={token}"))
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::CONFLICT);
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let value: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(value["code"], "BILLING_ENTITLEMENT_UNAVAILABLE");
+}
+
+#[tokio::test]
+async fn given_paddle_failure_when_cancel_requested_then_returns_bad_gateway() {
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_billing_entitlement()
+        .returning(|user_id| {
+            let user_id = *user_id;
+            Box::pin(async move { Ok(Some(active_entitlement(user_id))) })
+        });
+    mock_db
+        .expect_set_billing_entitlement_scheduled_cancel()
+        .never();
+    let mut paddle = MockPaddleHttpClient::new();
+    paddle
+        .expect_cancel_subscription()
+        .returning(|_| Box::pin(async { Err(anyhow::anyhow!("Paddle unavailable")) }));
+    let app = create_paddle_billing_app(mock_db, paddle).await;
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/billing/subscription/cancel")
+        .header("Cookie", format!("auth_token={token}"))
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let value: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(value["code"], "PADDLE_REQUEST_FAILED");
 }
 
 #[tokio::test]

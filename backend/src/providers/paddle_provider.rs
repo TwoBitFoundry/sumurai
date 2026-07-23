@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
@@ -58,6 +59,18 @@ pub struct CreatePortalSessionResponse {
     pub subscription_urls: Vec<String>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CancelSubscriptionRequest {
+    pub subscription_id: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CancelSubscriptionResponse {
+    pub status: String,
+    pub scheduled_cancel_at: Option<DateTime<Utc>>,
+    pub canceled_at: Option<DateTime<Utc>>,
+}
+
 #[async_trait]
 #[cfg_attr(test, mockall::automock)]
 pub trait PaddleHttpClient: Send + Sync {
@@ -80,6 +93,11 @@ pub trait PaddleHttpClient: Send + Sync {
         &self,
         request: CreatePortalSessionRequest,
     ) -> Result<CreatePortalSessionResponse>;
+
+    async fn cancel_subscription(
+        &self,
+        request: CancelSubscriptionRequest,
+    ) -> Result<CancelSubscriptionResponse>;
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -112,6 +130,13 @@ impl PaddleHttpClient for NoOpPaddleClient {
         &self,
         _request: CreatePortalSessionRequest,
     ) -> Result<CreatePortalSessionResponse> {
+        Err(anyhow!("Paddle billing is disabled"))
+    }
+
+    async fn cancel_subscription(
+        &self,
+        _request: CancelSubscriptionRequest,
+    ) -> Result<CancelSubscriptionResponse> {
         Err(anyhow!("Paddle billing is disabled"))
     }
 }
@@ -312,6 +337,27 @@ impl PaddleHttpClient for PaddleClient {
                 .collect(),
         })
     }
+
+    async fn cancel_subscription(
+        &self,
+        request: CancelSubscriptionRequest,
+    ) -> Result<CancelSubscriptionResponse> {
+        let response: PaddleSubscriptionResponse = self
+            .post(
+                &format!("/subscriptions/{}/cancel", request.subscription_id),
+                json!({ "effective_from": "next_billing_period" }),
+            )
+            .await?;
+        let data = response.data;
+        Ok(CancelSubscriptionResponse {
+            status: data.status,
+            scheduled_cancel_at: data
+                .scheduled_change
+                .filter(|change| change.action == "cancel")
+                .map(|change| change.effective_at),
+            canceled_at: data.canceled_at,
+        })
+    }
 }
 
 #[derive(Deserialize)]
@@ -348,6 +394,24 @@ struct PaddleId {
 #[derive(Deserialize)]
 struct PaddlePortalSessionResponse {
     data: PaddlePortalSession,
+}
+
+#[derive(Deserialize)]
+struct PaddleSubscriptionResponse {
+    data: PaddleSubscription,
+}
+
+#[derive(Deserialize)]
+struct PaddleSubscription {
+    status: String,
+    scheduled_change: Option<PaddleScheduledChange>,
+    canceled_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Deserialize)]
+struct PaddleScheduledChange {
+    action: String,
+    effective_at: DateTime<Utc>,
 }
 
 #[derive(Deserialize)]

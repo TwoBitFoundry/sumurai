@@ -378,16 +378,27 @@ cancel-at-period-end for the caller's subscription and optimistically records
   `billing_authenticated_routes()` (30-43).
 
 ### Acceptance criteria
-- [ ] `billing_api_tests.rs`: cancel happy path (mock entitlement +
+- [x] `billing_api_tests.rs`: cancel happy path (mock entitlement +
       `MockPaddleHttpClient::expect_cancel_subscription`, assert 200 +
       `scheduled_cancel_at` persisted); disabled → 404; no subscription → 409;
       Paddle failure → 502.
-- [ ] `billing_service_tests.rs`: optimistic cancel does NOT bump
+- [x] `billing_service_tests.rs`: optimistic cancel does NOT bump
       `last_event_at` (webhook ordering intact); an already-scheduled cancel is
       idempotent; malformed Paddle success data is rejected.
-- [ ] `paddle_provider_tests.rs`: wiremock-style test
+- [x] `paddle_provider_tests.rs`: wiremock-style test
       (`PaddleClient::new_for_test`) asserting request path/body
       `effective_from=next_billing_period` and response parse.
+
+### TDD log
+
+- Red: added provider-wire, service, repository SQL-shape, and authenticated
+  API boundary tests for successful, idempotent, disabled, unavailable, and
+  provider-failure outcomes.
+- Green/refactor: implemented Paddle cancel-at-period-end transport, a narrow
+  tenant-scoped schedule update that leaves webhook ordering untouched, and
+  the authenticated cancellation endpoint.
+- Verification: `cargo test -p sumurai-backend --locked` — 772 passed, 1
+  ignored.
 
 ## Phase 4 — Backend: contract publication
 

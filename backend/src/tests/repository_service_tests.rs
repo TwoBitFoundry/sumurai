@@ -183,6 +183,41 @@ async fn given_billing_entitlement_when_upserting_then_statement_is_tenant_scope
 }
 
 #[tokio::test]
+async fn given_scheduled_cancel_when_setting_then_updates_only_schedule_and_updated_timestamp() {
+    let user_id = Uuid::new_v4();
+    let scheduled_cancel_at = Utc::now();
+    let key = parse_encryption_key_hex(
+        "0101010101010101010101010101010101010101010101010101010101010101",
+    )
+    .expect("test encryption key must be valid hex");
+    let db = MockDatabase::new(DbBackend::Postgres)
+        .append_exec_results([
+            MockExecResult {
+                rows_affected: 0,
+                ..Default::default()
+            },
+            MockExecResult {
+                rows_affected: 1,
+                ..Default::default()
+            },
+        ])
+        .into_connection();
+    let repo = PostgresRepository::from_mock(db, key);
+
+    repo.set_billing_entitlement_scheduled_cancel(user_id, Some(scheduled_cancel_at))
+        .await
+        .unwrap();
+
+    let log = repo.into_mock_transaction_log();
+    let statements = log[0].statements();
+    assert_eq!(statements[1], tenant_set_config_statement(user_id));
+    let update_sql = format!("{:?}", &statements[2]);
+    assert!(update_sql.contains("scheduled_cancel_at"));
+    assert!(update_sql.contains("updated_at"));
+    assert!(!update_sql.contains("last_event_at"));
+}
+
+#[tokio::test]
 async fn given_billing_profile_when_upserting_then_statement_is_tenant_scoped() {
     let user_id = Uuid::new_v4();
     let key = parse_encryption_key_hex(

@@ -83,3 +83,9 @@ pub struct BillingPortalSessionResponse {
     pub overview_url: String,
     pub subscription_urls: Vec<String>,
 }
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct BillingCancelResponse {
+    pub status: String,
+    pub scheduled_cancel_at: DateTime<Utc>,
+}

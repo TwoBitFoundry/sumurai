@@ -13,8 +13,8 @@ use crate::models::api_error::ApiErrorResponse;
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, User};
 use crate::models::billing::{
-    BillingCheckoutResponse, BillingPortalSessionResponse, BillingStatusResponse,
-    TrialStartRequest, TrialStartResponse,
+    BillingCancelResponse, BillingCheckoutResponse, BillingPortalSessionResponse,
+    BillingStatusResponse, TrialStartRequest, TrialStartResponse,
 };
 use crate::services::billing_service::{
     BillingService, BillingServiceError, BillingWebhookError, TrialStartInput,
@@ -39,6 +39,10 @@ pub fn billing_authenticated_routes() -> Router<AppState> {
         .route(
             "/api/billing/portal-session",
             post(create_billing_portal_session),
+        )
+        .route(
+            "/api/billing/subscription/cancel",
+            post(cancel_billing_subscription),
         )
 }
 
@@ -369,6 +373,38 @@ pub async fn create_billing_portal_session(
     Ok(Json(BillingPortalSessionResponse {
         overview_url: portal.overview_url,
         subscription_urls: portal.subscription_urls,
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/billing/subscription/cancel",
+    responses(
+        (status = 200, description = "Subscription cancellation scheduled", body = BillingCancelResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Billing disabled", body = ApiErrorResponse),
+        (status = 409, description = "Entitlement unavailable", body = ApiErrorResponse),
+        (status = 502, description = "Paddle request failed", body = ApiErrorResponse)
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Billing"
+)]
+pub async fn cancel_billing_subscription(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<BillingCancelResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    if !state.config.is_billing_enabled() {
+        return Err(billing_disabled_response());
+    }
+    let user = load_billing_user(&state, &auth_context.user_id).await?;
+    let canceled = state
+        .billing_service
+        .cancel_subscription_at_period_end(&user)
+        .await
+        .map_err(billing_service_error_response)?;
+    Ok(Json(BillingCancelResponse {
+        status: "scheduled".to_string(),
+        scheduled_cancel_at: canceled.scheduled_cancel_at,
     }))
 }
 

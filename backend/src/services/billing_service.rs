@@ -8,9 +8,10 @@ use crate::models::{
     billing::{BillingEntitlement, BillingProfile, PaddleWebhookEvent},
 };
 use crate::providers::paddle_provider::{
-    CreateCardlessTrialRequest, CreateCheckoutRequest, CreateCheckoutResponse,
-    CreatePaymentMethodTransactionRequest, CreatePaymentMethodTransactionResponse,
-    CreatePortalSessionRequest, CreatePortalSessionResponse, PaddleHttpClient,
+    CancelSubscriptionRequest, CreateCardlessTrialRequest, CreateCheckoutRequest,
+    CreateCheckoutResponse, CreatePaymentMethodTransactionRequest,
+    CreatePaymentMethodTransactionResponse, CreatePortalSessionRequest,
+    CreatePortalSessionResponse, PaddleHttpClient,
 };
 use crate::services::repository_service::DatabaseRepository;
 use chrono::{DateTime, Utc};
@@ -55,6 +56,11 @@ pub struct EntitlementDecision {
 pub struct TrialStartInput<'a> {
     pub country_code: &'a str,
     pub postal_code: &'a str,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CancelSubscriptionOutcome {
+    pub scheduled_cancel_at: DateTime<Utc>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -359,6 +365,44 @@ impl BillingService {
             })
             .await
             .map_err(|_| BillingServiceError::PaddleRequestFailed)
+    }
+
+    pub async fn cancel_subscription_at_period_end(
+        &self,
+        user: &User,
+    ) -> Result<CancelSubscriptionOutcome, BillingServiceError> {
+        if !self.config.is_billing_enabled() {
+            return Err(BillingServiceError::BillingDisabled);
+        }
+        let entitlement = self
+            .repository
+            .get_billing_entitlement(&user.id)
+            .await
+            .map_err(|_| BillingServiceError::RepositoryRequestFailed)?
+            .ok_or(BillingServiceError::EntitlementUnavailable)?;
+        let subscription_id = entitlement
+            .paddle_subscription_id
+            .ok_or(BillingServiceError::EntitlementUnavailable)?;
+        if let Some(scheduled_cancel_at) = entitlement.scheduled_cancel_at {
+            return Ok(CancelSubscriptionOutcome {
+                scheduled_cancel_at,
+            });
+        }
+        let canceled = self
+            .paddle_client
+            .cancel_subscription(CancelSubscriptionRequest { subscription_id })
+            .await
+            .map_err(|_| BillingServiceError::PaddleRequestFailed)?;
+        let scheduled_cancel_at = canceled
+            .scheduled_cancel_at
+            .ok_or(BillingServiceError::PaddleRequestFailed)?;
+        self.repository
+            .set_billing_entitlement_scheduled_cancel(user.id, Some(scheduled_cancel_at))
+            .await
+            .map_err(|_| BillingServiceError::RepositoryRequestFailed)?;
+        Ok(CancelSubscriptionOutcome {
+            scheduled_cancel_at,
+        })
     }
 
     pub async fn process_paddle_webhook(

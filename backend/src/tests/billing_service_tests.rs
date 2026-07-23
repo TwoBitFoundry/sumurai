@@ -1,11 +1,14 @@
 use crate::config::{BillingMode, Config, EnvironmentProvider};
-use crate::models::billing::{BillingEntitlement, PaddleWebhookEvent};
+use crate::models::{
+    auth::User,
+    billing::{BillingEntitlement, PaddleWebhookEvent},
+};
 use crate::providers::paddle_provider::{
-    CreateCheckoutRequest, MockPaddleHttpClient, NoOpPaddleClient,
+    CancelSubscriptionResponse, CreateCheckoutRequest, MockPaddleHttpClient, NoOpPaddleClient,
 };
 use crate::services::billing_service::{
-    verify_paddle_webhook_signature, BillingService, BillingWebhookError, EntitlementAccessStatus,
-    EntitlementDecision, OwnDataAccessCheck, PaddleWebhookSignatureError,
+    verify_paddle_webhook_signature, BillingService, BillingServiceError, BillingWebhookError,
+    EntitlementAccessStatus, EntitlementDecision, OwnDataAccessCheck, PaddleWebhookSignatureError,
 };
 use crate::services::repository_service::MockDatabaseRepository;
 use chrono::{TimeZone, Utc};
@@ -77,6 +80,42 @@ fn billing_service(
     paddle: Arc<dyn crate::providers::PaddleHttpClient>,
 ) -> BillingService {
     BillingService::new(config, repository, paddle)
+}
+
+fn billing_user(user_id: Uuid) -> User {
+    User {
+        id: user_id,
+        email: "billing-user@example.com".to_string(),
+        password_hash: None,
+        provider: String::new(),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+        onboarding_completed: true,
+        demo_mode_active: false,
+    }
+}
+
+fn active_billing_entitlement(
+    user_id: Uuid,
+    scheduled_cancel_at: Option<chrono::DateTime<Utc>>,
+    last_event_at: chrono::DateTime<Utc>,
+) -> BillingEntitlement {
+    BillingEntitlement {
+        user_id,
+        access_status: "active".to_string(),
+        source: "paddle".to_string(),
+        paddle_subscription_id: Some("sub_123".to_string()),
+        paddle_customer_id: Some("ctm_123".to_string()),
+        paddle_price_id: Some("pri_monthly".to_string()),
+        trial_ends_at: None,
+        current_period_ends_at: Some(last_event_at),
+        canceled_at: None,
+        scheduled_cancel_at,
+        last_event_at: Some(last_event_at),
+        payment_method_required: false,
+        created_at: last_event_at,
+        updated_at: last_event_at,
+    }
 }
 
 #[test]
@@ -649,4 +688,129 @@ async fn given_scheduled_cancel_then_null_webhook_when_processing_then_clears_ti
         .await;
 
     assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn given_active_subscription_when_canceling_then_persists_schedule_without_entitlement_upsert(
+) {
+    let config = Config::from_env_provider(&MockEnvironment::paddle()).unwrap();
+    let user_id = Uuid::new_v4();
+    let user = billing_user(user_id);
+    let last_event_at = Utc.with_ymd_and_hms(2026, 7, 22, 12, 0, 0).unwrap();
+    let scheduled_cancel_at = Utc.with_ymd_and_hms(2026, 8, 22, 0, 0, 0).unwrap();
+    let mut repository = MockDatabaseRepository::new();
+    repository
+        .expect_get_billing_entitlement()
+        .withf(move |requested_user_id| *requested_user_id == user_id)
+        .return_once(move |_| {
+            Box::pin(async move {
+                Ok(Some(active_billing_entitlement(
+                    user_id,
+                    None,
+                    last_event_at,
+                )))
+            })
+        });
+    repository
+        .expect_set_billing_entitlement_scheduled_cancel()
+        .withf(move |requested_user_id, scheduled_at| {
+            *requested_user_id == user_id && *scheduled_at == Some(scheduled_cancel_at)
+        })
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    repository.expect_upsert_billing_entitlement().never();
+    let mut paddle = MockPaddleHttpClient::new();
+    paddle
+        .expect_cancel_subscription()
+        .return_once(move |request| {
+            assert_eq!(request.subscription_id, "sub_123");
+            Box::pin(async move {
+                Ok(CancelSubscriptionResponse {
+                    status: "active".to_string(),
+                    scheduled_cancel_at: Some(scheduled_cancel_at),
+                    canceled_at: None,
+                })
+            })
+        });
+    let service = billing_service(config, Arc::new(repository), Arc::new(paddle));
+
+    let outcome = service
+        .cancel_subscription_at_period_end(&user)
+        .await
+        .unwrap();
+
+    assert_eq!(outcome.scheduled_cancel_at, scheduled_cancel_at);
+}
+
+#[tokio::test]
+async fn given_existing_scheduled_cancel_when_canceling_then_returns_without_paddle_call() {
+    let config = Config::from_env_provider(&MockEnvironment::paddle()).unwrap();
+    let user_id = Uuid::new_v4();
+    let user = billing_user(user_id);
+    let last_event_at = Utc.with_ymd_and_hms(2026, 7, 22, 12, 0, 0).unwrap();
+    let scheduled_cancel_at = Utc.with_ymd_and_hms(2026, 8, 22, 0, 0, 0).unwrap();
+    let mut repository = MockDatabaseRepository::new();
+    repository
+        .expect_get_billing_entitlement()
+        .return_once(move |_| {
+            Box::pin(async move {
+                Ok(Some(active_billing_entitlement(
+                    user_id,
+                    Some(scheduled_cancel_at),
+                    last_event_at,
+                )))
+            })
+        });
+    repository
+        .expect_set_billing_entitlement_scheduled_cancel()
+        .never();
+    repository.expect_upsert_billing_entitlement().never();
+    let mut paddle = MockPaddleHttpClient::new();
+    paddle.expect_cancel_subscription().never();
+    let service = billing_service(config, Arc::new(repository), Arc::new(paddle));
+
+    let outcome = service
+        .cancel_subscription_at_period_end(&user)
+        .await
+        .unwrap();
+
+    assert_eq!(outcome.scheduled_cancel_at, scheduled_cancel_at);
+}
+
+#[tokio::test]
+async fn given_paddle_cancel_without_schedule_when_canceling_then_rejects_malformed_success() {
+    let config = Config::from_env_provider(&MockEnvironment::paddle()).unwrap();
+    let user_id = Uuid::new_v4();
+    let user = billing_user(user_id);
+    let last_event_at = Utc.with_ymd_and_hms(2026, 7, 22, 12, 0, 0).unwrap();
+    let mut repository = MockDatabaseRepository::new();
+    repository
+        .expect_get_billing_entitlement()
+        .return_once(move |_| {
+            Box::pin(async move {
+                Ok(Some(active_billing_entitlement(
+                    user_id,
+                    None,
+                    last_event_at,
+                )))
+            })
+        });
+    repository
+        .expect_set_billing_entitlement_scheduled_cancel()
+        .never();
+    repository.expect_upsert_billing_entitlement().never();
+    let mut paddle = MockPaddleHttpClient::new();
+    paddle.expect_cancel_subscription().return_once(|_| {
+        Box::pin(async {
+            Ok(CancelSubscriptionResponse {
+                status: "active".to_string(),
+                scheduled_cancel_at: None,
+                canceled_at: None,
+            })
+        })
+    });
+    let service = billing_service(config, Arc::new(repository), Arc::new(paddle));
+
+    let result = service.cancel_subscription_at_period_end(&user).await;
+
+    assert_eq!(result, Err(BillingServiceError::PaddleRequestFailed));
 }
