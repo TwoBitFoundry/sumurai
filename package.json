@@ -6,6 +6,7 @@
     "node": ">=24.10.0",
     "bun": ">=1.3.14"
   },
+  "workspaces": ["frontend"],
   "scripts": {
     "prepare": "husky",
     "rust:fmt": "cargo fmt -p sumurai-backend -p entity -p sumurai-cli --check",
