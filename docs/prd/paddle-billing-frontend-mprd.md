@@ -568,13 +568,24 @@ cancellable state machine without coupling timers to UI components.
   completion does not interrupt activation polling.
 
 ### Acceptance criteria
-- [ ] Deterministic fake-timer tests cover every completion target, timeout and
+- [x] Deterministic fake-timer tests cover every completion target, timeout and
       retry, abandoned close, close-after-complete, and error mapping.
-- [ ] A trialing user adding a payment method does not activate immediately
+- [x] A trialing user adding a payment method does not activate immediately
       merely because the starting status is already `trialing`.
-- [ ] Unmount/logout during polling leaves no timer and performs no later cache
+- [x] Unmount/logout during polling leaves no timer and performs no later cache
       write or callback.
-- [ ] Focused hook tests, lint, and typecheck green.
+- [x] Focused hook tests, lint, and typecheck green.
+
+### TDD log
+
+- Red: added deterministic controller and hook tests for all completion
+  targets, terminal ordering, timeout/retry, error kinds, supersession,
+  cancellation, cache writes, and unmount cleanup.
+- Green/refactor: separated the workflow controller from its React adapter,
+  added exact target predicates and 2-second bounded polling, and connected
+  successful status reads to the shared query key.
+- Verification: 20 focused billing tests, frontend lint/typecheck, and the
+  complete 1,362-test frontend unit suite passed.
 
 ## Phase 8 — Frontend: PricingScreen
 
