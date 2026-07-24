@@ -16,10 +16,15 @@ import { appLayout } from '@/ui/recipes';
 
 interface OnboardingProviderPickerProps {
   onComplete: () => void;
+  onBack?: () => void;
   onLogout?: () => void;
 }
 
-export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingProviderPickerProps) {
+export function OnboardingProviderPicker({
+  onComplete,
+  onBack,
+  onLogout,
+}: OnboardingProviderPickerProps) {
   const scrolled = useScrollDetection();
   const isOnline = useOnlineStatus();
   const providerCatalog = useProviderCatalog();
@@ -150,6 +155,7 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
               providerReadyState={providerReadyState}
               connectingProvider={connectingProvider}
               onSelectProvider={handleSelectProvider}
+              onBack={onBack}
             />
           </div>
         </main>

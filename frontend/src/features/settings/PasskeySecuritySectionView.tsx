@@ -69,93 +69,97 @@ export function PasskeySecuritySectionView({
 
   return (
     <>
-      <section className={cn(settingsSecurityLayout.section)}>
-        <div className={cn(settingsSecurityLayout.sectionHeader)}>
-          <div className={cn(settingsSecurityLayout.sectionIntro)}>
-            <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-              Protect your dominion
-            </h2>
-            <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
-              Manage passkeys used to sign in. You must keep at least one passkey active.
-            </p>
+      <GlassCard variant="default" padding="lg" className={cn('space-y-4')}>
+        <section className={cn('space-y-4')}>
+          <div className={cn(settingsSecurityLayout.sectionHeader)}>
+            <div className={cn(settingsSecurityLayout.sectionIntro)}>
+              <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+                Protect your dominion
+              </h2>
+              <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
+                Manage passkeys used to sign in. You must keep at least one passkey active.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="primary"
+              size="lg"
+              className={cn(settingsSecurityLayout.addTrigger)}
+              disabled={isBusy}
+              onClick={onOpenAddModal}
+            >
+              Add passkey
+            </Button>
           </div>
-          <Button
-            type="button"
-            variant="primary"
-            size="lg"
-            className={cn(settingsSecurityLayout.addTrigger)}
-            disabled={isBusy}
-            onClick={onOpenAddModal}
-          >
-            Add passkey
-          </Button>
-        </div>
 
-        {bannerError ? (
-          <Alert variant="error" title="Passkey error">
-            {bannerError}
-          </Alert>
-        ) : null}
+          {bannerError ? (
+            <Alert variant="error" title="Passkey error">
+              {bannerError}
+            </Alert>
+          ) : null}
 
-        {showInitialLoading ? (
-          <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>Loading passkeys…</p>
-        ) : null}
+          {showInitialLoading ? (
+            <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+              Loading passkeys…
+            </p>
+          ) : null}
 
-        {!showInitialLoading && passkeys.length === 0 ? (
-          <Alert
-            variant="warning"
-            title="No passkey enrolled"
-            icon={<Key className={cn('h-5', 'w-5')} aria-hidden />}
-          >
-            Add a passkey to secure your account.
-          </Alert>
-        ) : null}
+          {!showInitialLoading && passkeys.length === 0 ? (
+            <Alert
+              variant="warning"
+              title="No passkey enrolled"
+              icon={<Key className={cn('h-5', 'w-5')} aria-hidden />}
+            >
+              Add a passkey to secure your account.
+            </Alert>
+          ) : null}
 
-        {passkeys.length > 0 ? (
-          <ul key={listKey} className={cn(settingsSecurityLayout.list)}>
-            {passkeys.map((passkey) => {
-              const removeDisabled = !removeAllowed || isBusy;
-              return (
-                <li key={passkey.id}>
-                  <GlassCard
-                    variant="default"
-                    padding="md"
-                    rounded="lg"
-                    className={cn(settingsSecurityLayout.passkeyRow)}
-                  >
-                    <div className={cn(settingsSecurityLayout.passkeyMeta)}>
-                      <p className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>
-                        {passkey.name}
-                      </p>
-                      <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                        Added {formatPasskeyTimestamp(passkey.created_at)}
-                        {' · '}
-                        Last used {formatPasskeyTimestamp(passkey.last_used_at ?? null)}
-                      </p>
-                    </div>
-                    <span
-                      className={cn(settingsSecurityLayout.passkeyRemoveWrap)}
-                      title={!removeAllowed ? LAST_PASSKEY_REMOVE_TOOLTIP : undefined}
+          {passkeys.length > 0 ? (
+            <ul key={listKey} className={cn(settingsSecurityLayout.list)}>
+              {passkeys.map((passkey) => {
+                const removeDisabled = !removeAllowed || isBusy;
+                return (
+                  <li key={passkey.id}>
+                    <GlassCard
+                      variant="default"
+                      padding="md"
+                      rounded="lg"
+                      className={cn(settingsSecurityLayout.passkeyRow)}
                     >
-                      <IconButton
-                        type="button"
-                        variant="danger"
-                        size="md"
-                        className={cn(disabledClasses)}
-                        aria-label={`Remove passkey ${passkey.name}`}
-                        disabled={removeDisabled}
-                        onClick={() => onRequestRemove(passkey)}
+                      <div className={cn(settingsSecurityLayout.passkeyMeta)}>
+                        <p className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>
+                          {passkey.name}
+                        </p>
+                        <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+                          Added {formatPasskeyTimestamp(passkey.created_at)}
+                          {' · '}
+                          Last used {formatPasskeyTimestamp(passkey.last_used_at ?? null)}
+                        </p>
+                      </div>
+                      <span
+                        className={cn(settingsSecurityLayout.passkeyRemoveWrap)}
+                        title={!removeAllowed ? LAST_PASSKEY_REMOVE_TOOLTIP : undefined}
                       >
-                        <Trash2 aria-hidden />
-                      </IconButton>
-                    </span>
-                  </GlassCard>
-                </li>
-              );
-            })}
-          </ul>
-        ) : null}
-      </section>
+                        <IconButton
+                          type="button"
+                          variant="danger"
+                          size="md"
+                          className={cn(disabledClasses)}
+                          aria-label={`Remove passkey ${passkey.name}`}
+                          disabled={removeDisabled}
+                          onClick={() => onRequestRemove(passkey)}
+                        >
+                          <Trash2 aria-hidden />
+                        </IconButton>
+                      </span>
+                    </GlassCard>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+        </section>
+      </GlassCard>
 
       <Modal
         isOpen={isAddModalOpen}

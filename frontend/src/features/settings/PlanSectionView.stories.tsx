@@ -75,7 +75,7 @@ export const DisabledDemo: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('heading', { name: 'Demo mode' })).toBeVisible();
-    await userEvent.click(canvas.getByRole('button', { name: 'Switch to Self Hosted' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Upgrade' }));
     await expect(args.onSwitchSelfHosted).toHaveBeenCalledTimes(1);
     await expect(canvas.queryByTestId('plan-status-pill')).not.toBeInTheDocument();
   },

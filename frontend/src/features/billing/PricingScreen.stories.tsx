@@ -37,6 +37,11 @@ const enabledTrialStatus: BillingStatusResponse = {
   trials_enabled: true,
 };
 
+const demoReturnStatus: BillingStatusResponse = {
+  ...disabledStatus,
+  is_demo_mode_active: true,
+};
+
 function TrialHarness(props: PricingScreenViewProps) {
   const [workflowState, setWorkflowState] = useState<BillingWorkflowState>({ status: 'idle' });
 
@@ -81,10 +86,27 @@ export const Disabled: Story = {
     await expect(canvas.queryByRole('heading', { name: /premium/i })).not.toBeInTheDocument();
     await expect(canvas.queryByRole('heading', { name: /free trial/i })).not.toBeInTheDocument();
 
-    await userEvent.click(canvas.getByRole('button', { name: /continue self hosted/i }));
+    await userEvent.click(canvas.getByRole('button', { name: /^continue$/i }));
     await expect(args.onContinueToProviders).toHaveBeenCalledTimes(1);
 
     await userEvent.click(canvas.getByRole('button', { name: /try demo mode/i }));
+    await waitFor(() => {
+      expect(args.onActivateDemo).toHaveBeenCalledTimes(1);
+      expect(args.onDemoActivated).toHaveBeenCalledTimes(1);
+    });
+  },
+};
+
+export const DemoReturn: Story = {
+  args: {
+    billingStatus: demoReturnStatus,
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: /return to demo mode/i })).toBeVisible();
+    await expect(canvas.queryByRole('button', { name: /try demo mode/i })).not.toBeInTheDocument();
+
+    await userEvent.click(canvas.getByRole('button', { name: /return to demo mode/i }));
     await waitFor(() => {
       expect(args.onActivateDemo).toHaveBeenCalledTimes(1);
       expect(args.onDemoActivated).toHaveBeenCalledTimes(1);

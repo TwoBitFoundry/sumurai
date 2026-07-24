@@ -1,6 +1,6 @@
 'use client';
 
-import { Cloud, Crown, Database, Loader2, Rocket, Server, Sparkles } from 'lucide-react';
+import { Crown, FlaskConical, Loader2, Rocket, Server } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useScrollDetection } from '@/hooks/useScrollDetection';
@@ -10,12 +10,7 @@ import { AuthService } from '@/services/authService';
 import type { BillingStatusResponse, BillingTrialStartRequest } from '@/types/api';
 import { Alert, AppTitleBar, Button, GradientShell } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
-import {
-  appLayout,
-  control,
-  text as uiTextRecipes,
-  font as uiTypographyRecipes,
-} from '@/ui/recipes';
+import { appLayout, control } from '@/ui/recipes';
 import type { BillingWorkflowState } from './billingWorkflow';
 import { PricingPlanCard } from './PricingPlanCard';
 import { PricingTrialForm } from './PricingTrialForm';
@@ -36,6 +31,8 @@ export interface PricingScreenViewProps extends PricingScreenProps {
   onRetry: () => Promise<void>;
 }
 
+const pricingPlanCtaButton = cn('w-auto', 'min-w-40');
+
 const workflowErrorCopy = {
   trial_already_used: 'This account has already used its free trial.',
   rate_limited: 'Too many attempts. Please wait and try again.',
@@ -44,9 +41,34 @@ const workflowErrorCopy = {
   request: 'Billing could not complete the request. Please try again.',
 } as const;
 
-function PricingHero() {
-  const title = 'Choose your Sumurai experience';
-  const subtitle = 'Start with sample data, connect your own infrastructure, or unlock Premium.';
+function getPricingHeroSubtitle(billingStatus: BillingStatusResponse): string {
+  const options = ['Start with sample data'];
+
+  if (!billingStatus.billing_enabled) {
+    options.push('connect your own infrastructure');
+  } else {
+    if (billingStatus.trials_enabled) {
+      options.push('start a free trial');
+    }
+    options.push('upgrade to Premium');
+  }
+
+  if (options.length === 1) {
+    return `${options[0]}.`;
+  }
+
+  if (options.length === 2) {
+    return `${options[0]} or ${options[1]}.`;
+  }
+
+  const last = options.at(-1);
+  const initial = options.slice(0, -1).join(', ');
+  return `${initial}, or ${last}.`;
+}
+
+function PricingHero({ billingStatus }: { billingStatus: BillingStatusResponse }) {
+  const title = 'Choose your Sumurai path';
+  const subtitle = getPricingHeroSubtitle(billingStatus);
 
   return (
     <section className={cn(...pageLayoutRecipes.shell)}>
@@ -131,7 +153,7 @@ export function PricingScreenView({
               'gap-6'
             )}
           >
-            <PricingHero />
+            <PricingHero billingStatus={billingStatus} />
 
             {workflowState.status === 'waiting_activation' ? (
               <Alert
@@ -194,25 +216,25 @@ export function PricingScreenView({
                 meta="Explore at no cost"
                 title="Demo mode"
                 detail="See Sumurai in action with safe sample data. No financial account required."
-                icon={Sparkles}
+                icon={FlaskConical}
                 features={[
-                  'Explore every core workflow',
-                  'Resettable sample data',
-                  'Start instantly',
+                  'Play around with demo data',
+                  'Explore how all the features work first',
+                  'Upgrade to connect real accounts',
                 ]}
               >
                 <Button
                   type="button"
                   variant="secondary"
                   size="md"
-                  className={cn('w-full')}
+                  className={pricingPlanCtaButton}
                   disabled={actionsDisabled}
                   onClick={() => void activateDemo()}
                 >
                   {demoActivating ? (
                     <Loader2 aria-hidden className={cn(control.glyph.sm, 'animate-spin')} />
                   ) : null}
-                  Try demo mode
+                  {billingStatus.is_demo_mode_active ? 'Return to demo mode' : 'Try demo mode'}
                 </Button>
               </PricingPlanCard>
 
@@ -223,20 +245,20 @@ export function PricingScreenView({
                   detail="Free, with your own data on your own infrastructure."
                   icon={Server}
                   features={[
-                    'Connect supported providers',
-                    'Keep control of your deployment',
-                    'No subscription required',
+                    'Choose your own financial providers with BYOK options',
+                    'Fully control your deployment and data destiny',
+                    'Always free core Sumurai experience',
                   ]}
                 >
                   <Button
                     type="button"
                     variant="primary"
                     size="md"
-                    className={cn('w-full')}
+                    className={pricingPlanCtaButton}
                     disabled={actionsDisabled}
                     onClick={onContinueToProviders}
                   >
-                    Continue Self Hosted
+                    Continue
                   </Button>
                 </PricingPlanCard>
               ) : null}
@@ -260,7 +282,7 @@ export function PricingScreenView({
                       type="button"
                       variant="secondary"
                       size="md"
-                      className={cn('w-full')}
+                      className={pricingPlanCtaButton}
                       disabled={actionsDisabled}
                       onClick={() => setTrialFormOpen(true)}
                     >
@@ -286,7 +308,7 @@ export function PricingScreenView({
                     type="button"
                     variant="primary"
                     size="md"
-                    className={cn('w-full')}
+                    className={pricingPlanCtaButton}
                     disabled={actionsDisabled}
                     onClick={() => void onStartCheckout()}
                   >
@@ -297,28 +319,6 @@ export function PricingScreenView({
                   </Button>
                 </PricingPlanCard>
               ) : null}
-            </div>
-
-            <div
-              className={cn(
-                'flex',
-                'items-center',
-                'justify-center',
-                'gap-2',
-                uiTypographyRecipes.caption,
-                uiTextRecipes.subtle
-              )}
-            >
-              {billingStatus.billing_enabled ? (
-                <Cloud aria-hidden className={cn(control.glyph.sm)} />
-              ) : (
-                <Database aria-hidden className={cn(control.glyph.sm)} />
-              )}
-              <span>
-                {billingStatus.billing_enabled
-                  ? 'Managed billing with secure checkout'
-                  : 'Your deployment, your financial data'}
-              </span>
             </div>
           </div>
         </main>

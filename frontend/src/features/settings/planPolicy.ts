@@ -22,19 +22,24 @@ export interface PlanAlert {
 
 export interface PlanPolicy {
   planLabel: string | null;
+  introCopy: string;
   statusCopy: string;
   detail: string;
+  highlights: string[];
   paymentMethodRequired: boolean;
   canCancel: boolean;
   alert: PlanAlert | null;
   actions: PlanAction[];
 }
 
+const subscriptionIntroCopy = 'Manage your Sumurai subscription and plan access.';
+const selfHostedIntroCopy = 'Choose your Sumurai plan.';
+
 const action = {
   switchSelfHosted: {
     id: 'switch_self_hosted',
-    label: 'Switch to Self Hosted',
-    variant: 'secondary',
+    label: 'Upgrade',
+    variant: 'primary',
   },
   startTrial: {
     id: 'start_trial',
@@ -102,8 +107,14 @@ function resolveEnabledPolicy(status: BillingEnabledStatusResponse): PlanPolicy 
   if (status.access_status === 'demo') {
     return {
       planLabel: 'Demo mode',
-      statusCopy: 'Sample financial data is active.',
-      detail: 'Choose a plan when you are ready to use your own financial data.',
+      introCopy: 'Explore sample data, then subscribe when you are ready for live accounts.',
+      statusCopy: 'Ready to connect live accounts?',
+      detail: 'Start a trial or upgrade to leave sample data behind.',
+      highlights: [
+        'Connect your own financial accounts',
+        'Replace sample balances and transactions',
+        'Use Premium planning workflows',
+      ],
       paymentMethodRequired,
       canCancel,
       alert: null,
@@ -118,10 +129,12 @@ function resolveEnabledPolicy(status: BillingEnabledStatusResponse): PlanPolicy 
     const trialEnd = formatPlanDate(status.trial_ends_at);
     return {
       planLabel: 'Free trial',
+      introCopy: subscriptionIntroCopy,
       statusCopy: trialEnd ? `Trial ends ${trialEnd}` : 'Trial end date unavailable',
       detail: paymentMethodRequired
         ? 'Add a payment method to keep Premium access after your trial.'
         : 'Premium begins automatically when your trial ends.',
+      highlights: [],
       paymentMethodRequired,
       canCancel,
       alert: null,
@@ -134,6 +147,7 @@ function resolveEnabledPolicy(status: BillingEnabledStatusResponse): PlanPolicy 
     const renewal = formatPlanDate(status.current_period_ends_at);
     return {
       planLabel: 'Premium',
+      introCopy: subscriptionIntroCopy,
       statusCopy:
         status.scheduled_cancel_at !== null
           ? scheduledEnd
@@ -145,7 +159,8 @@ function resolveEnabledPolicy(status: BillingEnabledStatusResponse): PlanPolicy 
       detail:
         status.scheduled_cancel_at !== null
           ? 'Premium access remains available through the end of your membership.'
-          : 'Premium access is active.',
+          : 'Your live accounts and Premium workflows stay available.',
+      highlights: [],
       paymentMethodRequired,
       canCancel,
       alert: null,
@@ -156,8 +171,10 @@ function resolveEnabledPolicy(status: BillingEnabledStatusResponse): PlanPolicy 
   if (status.access_status === 'past_due') {
     return {
       planLabel: 'Premium',
+      introCopy: subscriptionIntroCopy,
       statusCopy: 'Payment needs attention',
       detail: 'Update your payment method to restore Premium access.',
+      highlights: [],
       paymentMethodRequired,
       canCancel,
       alert: {
@@ -172,8 +189,10 @@ function resolveEnabledPolicy(status: BillingEnabledStatusResponse): PlanPolicy 
   if (status.access_status === 'paused') {
     return {
       planLabel: 'Premium',
+      introCopy: subscriptionIntroCopy,
       statusCopy: 'Premium paused',
       detail: 'Resume Premium to use your own financial data again.',
+      highlights: [],
       paymentMethodRequired,
       canCancel,
       alert: null,
@@ -184,8 +203,10 @@ function resolveEnabledPolicy(status: BillingEnabledStatusResponse): PlanPolicy 
   if (status.access_status === 'canceled') {
     return {
       planLabel: 'Premium',
+      introCopy: subscriptionIntroCopy,
       statusCopy: 'Premium canceled',
       detail: 'Start Premium again to use your own financial data.',
+      highlights: [],
       paymentMethodRequired,
       canCancel,
       alert: null,
@@ -196,8 +217,10 @@ function resolveEnabledPolicy(status: BillingEnabledStatusResponse): PlanPolicy 
   if (status.access_status === 'expired') {
     return {
       planLabel: 'Premium',
+      introCopy: subscriptionIntroCopy,
       statusCopy: 'Premium expired',
       detail: 'Renew Premium to use your own financial data again.',
+      highlights: [],
       paymentMethodRequired,
       canCancel,
       alert: null,
@@ -207,8 +230,10 @@ function resolveEnabledPolicy(status: BillingEnabledStatusResponse): PlanPolicy 
 
   return {
     planLabel: null,
+    introCopy: subscriptionIntroCopy,
     statusCopy: 'No plan information is available.',
     detail: 'Refresh your plan status or try again later.',
+    highlights: [],
     paymentMethodRequired,
     canCancel,
     alert: null,
@@ -223,8 +248,14 @@ export function resolvePlanPolicy(status: BillingStatusResponse): PlanPolicy | n
     }
     return {
       planLabel: 'Demo mode',
-      statusCopy: 'Sample financial data is active.',
-      detail: 'Connect your own financial data when you are ready.',
+      introCopy: selfHostedIntroCopy,
+      statusCopy: 'Ready to go live on your deployment?',
+      detail: 'Upgrade to replace sample data with your own accounts.',
+      highlights: [
+        'Connect DIY, SimpleFIN, or Plaid',
+        'Bring in real balances and transactions',
+        'Keep full control of your self-hosted data',
+      ],
       paymentMethodRequired: false,
       canCancel: false,
       alert: null,

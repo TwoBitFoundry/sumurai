@@ -5,8 +5,14 @@ import type { PlanPolicy } from '@/features/settings/planPolicy';
 
 const demoPolicy: PlanPolicy = {
   planLabel: 'Demo mode',
-  statusCopy: 'Sample financial data is active.',
-  detail: 'Choose how you want to continue with Sumurai.',
+  introCopy: 'Explore sample data, then subscribe when you are ready for live accounts.',
+  statusCopy: 'Ready to connect live accounts?',
+  detail: 'Start a trial or upgrade to leave sample data behind.',
+  highlights: [
+    'Connect your own financial accounts',
+    'Replace sample balances and transactions',
+    'Use Premium planning workflows',
+  ],
   paymentMethodRequired: false,
   canCancel: false,
   alert: null,
@@ -49,9 +55,10 @@ describe('PlanSectionView', () => {
     const user = userEvent.setup();
     renderView();
 
-    expect(screen.getByRole('heading', { name: 'Plan' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Choose your Path' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Demo mode' })).toBeInTheDocument();
-    expect(screen.getByText('Sample financial data is active.')).toBeInTheDocument();
+    expect(screen.getByText('Ready to connect live accounts?')).toBeInTheDocument();
+    expect(screen.getByText('Connect your own financial accounts')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Start free trial' }));
     await user.click(screen.getByRole('button', { name: 'Upgrade to Premium' }));
@@ -120,7 +127,7 @@ describe('PlanSectionView', () => {
           message: 'Update your payment method to restore Premium access.',
         },
         actions: [
-          { id: 'switch_self_hosted', label: 'Switch to Self Hosted', variant: 'secondary' },
+          { id: 'switch_self_hosted', label: 'Upgrade', variant: 'primary' },
           { id: 'update_payment_method', label: 'Update payment method', variant: 'primary' },
           { id: 'cancel_membership', label: 'Cancel membership', variant: 'danger' },
           { id: 'manage_billing', label: 'Manage billing', variant: 'secondary' },
@@ -129,7 +136,7 @@ describe('PlanSectionView', () => {
     });
 
     expect(screen.getByRole('alert')).toHaveTextContent('Payment past due');
-    expect(screen.getByRole('button', { name: 'Switch to Self Hosted' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Upgrade' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Update payment method' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel membership' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Manage billing' })).toBeInTheDocument();

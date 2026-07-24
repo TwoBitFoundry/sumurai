@@ -4,7 +4,7 @@ import { BILLING_STATUS_QUERY_KEY, useBillingStatus } from '@/features/billing/u
 import { useBillingWorkflow } from '@/features/billing/useBillingWorkflow';
 import { BillingService } from '@/services/BillingService';
 import type { BillingStatusResponse, BillingTrialStartRequest } from '@/types/api';
-import { dispatchNavigateToAccounts } from '@/utils/events';
+import { dispatchOpenPricing } from '@/utils/events';
 import { CancelMembershipModal } from './CancelMembershipModal';
 import { PlanSectionView } from './PlanSectionView';
 import { resolvePlanPolicy } from './planPolicy';
@@ -142,7 +142,7 @@ export function PlanSection() {
         onRetryMutation={workflow.status === 'timeout' ? () => void workflow.retry() : undefined}
         onStartTrialRequest={startTrial}
         onCancelTrialForm={() => setTrialFormOpen(false)}
-        onSwitchSelfHosted={dispatchNavigateToAccounts}
+        onSwitchSelfHosted={dispatchOpenPricing}
         onStartTrial={() => {
           setMutationError(null);
           setTrialFormOpen(true);

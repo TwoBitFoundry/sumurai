@@ -40,18 +40,18 @@ describe('SettingsPage', () => {
     const pageContainer = container.firstElementChild as HTMLElement;
     const pageTitle = screen.getByRole('heading', { level: 1, name: 'Inspect the armory' });
     const appearanceLabel = screen.getByText('Brandish your colors');
-    const accountSettingsCard = pageTitle.closest('[class*="space-y-5"]');
+    const preferencesCard = appearanceLabel.closest('[class*="space-y-5"]');
     const themeSelector = screen.getByRole('radiogroup', { name: 'Theme' });
 
     expect(pageContainer).toHaveClass('w-full');
     expect(pageContainer).toHaveClass('max-w-3xl');
     expect(screen.queryByRole('button', { name: 'Back to Dashboard' })).not.toBeInTheDocument();
     expect(appearanceLabel).toBeInTheDocument();
-    expect(accountSettingsCard).toContainElement(pageTitle);
+    expect(preferencesCard).not.toContainElement(pageTitle);
     expect(pageTitle.compareDocumentPosition(appearanceLabel)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
-    expect(accountSettingsCard).toContainElement(themeSelector);
+    expect(preferencesCard).toContainElement(themeSelector);
     expect(themeSelector).toHaveClass('grid');
     expect(themeSelector).toHaveClass('w-full');
     expect(screen.queryByRole('heading', { name: 'Change Password' })).not.toBeInTheDocument();
@@ -82,10 +82,10 @@ describe('SettingsPage', () => {
     const passkeySection = screen.getByTestId('passkey-security-section');
     const dangerHeading = screen.getByRole('heading', { name: 'Retire from service' });
 
-    expect(passkeySection.compareDocumentPosition(planSection)).toBe(
+    expect(planSection.compareDocumentPosition(passkeySection)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
-    expect(planSection.compareDocumentPosition(dangerHeading)).toBe(
+    expect(passkeySection.compareDocumentPosition(dangerHeading)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
   });

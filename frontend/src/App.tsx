@@ -29,6 +29,7 @@ import {
   dispatchNavigateToSettings,
   FINANCIAL_STATE_CHANGED_EVENT,
   type FinancialStateChangedDetail,
+  OPEN_PRICING_EVENT,
   PAID_ACCESS_REQUIRED_EVENT,
 } from './utils/events';
 import { resetFinancialQueriesForAppRefresh } from './utils/queryInvalidation';
@@ -115,13 +116,21 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     []
   );
 
-  const resetUnauthenticatedSession = useCallback(() => {
+  const resetUnauthenticatedSession = useCallback((screen: 'login' | 'register' = 'login') => {
     setIsAuthenticated(false);
+    setNeedsPasskeyEnrollment(false);
+    setPendingRecoveryEnrollment(null);
+    setEnrollmentLockedEmail(null);
+    setShowEnrollmentModal(false);
     setShowOnboarding(false);
     setSessionExpiresAt(null);
     setDemoModeActive(false);
+    setPendingOnboarding(false);
+    setPendingExpiresAt(null);
+    setPendingDemoModeActive(false);
     setPricingComplete(false);
     setShowUpgradeRequired(false);
+    setAuthScreen(screen);
     AuthService.clearToken();
   }, []);
 
@@ -159,6 +168,18 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     window.addEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
     return () => window.removeEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    const handler = () => {
+      if (!isAuthenticated || !demoModeActive) {
+        return;
+      }
+      setPricingComplete(false);
+      setShowOnboarding(true);
+    };
+    window.addEventListener(OPEN_PRICING_EVENT, handler);
+    return () => window.removeEventListener(OPEN_PRICING_EVENT, handler);
+  }, [demoModeActive, isAuthenticated]);
 
   useEffect(() => {
     let active = true;
@@ -268,21 +289,29 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
       queryClient.clear();
     }
 
-    setIsAuthenticated(false);
-    setNeedsPasskeyEnrollment(false);
-    setPendingRecoveryEnrollment(null);
-    setEnrollmentLockedEmail(null);
-    setShowEnrollmentModal(false);
-    setShowOnboarding(false);
-    setSessionExpiresAt(null);
-    setDemoModeActive(false);
-    setPendingOnboarding(false);
-    setPendingExpiresAt(null);
-    setPendingDemoModeActive(false);
-    setPricingComplete(false);
-    setShowUpgradeRequired(false);
-    setAuthScreen('login');
-  }, []);
+    resetUnauthenticatedSession('login');
+  }, [resetUnauthenticatedSession]);
+
+  const handleOnboardingBack = useCallback(async () => {
+    try {
+      await AuthService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      queryClient.clear();
+    }
+
+    resetUnauthenticatedSession(authScreen);
+  }, [authScreen, resetUnauthenticatedSession]);
+
+  const handleProviderPickerBack = useCallback(() => {
+    if (pricingComplete) {
+      setPricingComplete(false);
+      return;
+    }
+
+    void handleOnboardingBack();
+  }, [handleOnboardingBack, pricingComplete]);
 
   const handleOnboardingComplete = useCallback(() => {
     setShowOnboarding(false);
@@ -382,7 +411,11 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     }
 
     return (
-      <OnboardingProviderPicker onComplete={handleOnboardingComplete} onLogout={handleLogout} />
+      <OnboardingProviderPicker
+        onComplete={handleOnboardingComplete}
+        onBack={handleProviderPickerBack}
+        onLogout={handleLogout}
+      />
     );
   }
 

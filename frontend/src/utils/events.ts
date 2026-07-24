@@ -1,6 +1,7 @@
 export const NAVIGATE_TO_TRANSACTIONS_EVENT = 'sumurai:navigate-to-transactions';
 export const NAVIGATE_TO_ACCOUNTS_EVENT = 'sumurai:navigate-to-accounts';
 export const NAVIGATE_TO_SETTINGS_EVENT = 'sumurai:navigate-to-settings';
+export const OPEN_PRICING_EVENT = 'sumurai:open-pricing';
 export const PAID_ACCESS_REQUIRED_EVENT = 'sumurai:paid-access-required';
 
 export interface NavigateToTransactionsDetail {
@@ -19,6 +20,10 @@ export const dispatchNavigateToSettings = () => {
 
 export const dispatchNavigateToAccounts = () => {
   window.dispatchEvent(new CustomEvent(NAVIGATE_TO_ACCOUNTS_EVENT));
+};
+
+export const dispatchOpenPricing = () => {
+  window.dispatchEvent(new CustomEvent(OPEN_PRICING_EVENT));
 };
 
 export const dispatchPaidAccessRequired = () => {

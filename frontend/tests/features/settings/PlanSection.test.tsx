@@ -65,7 +65,7 @@ describe('PlanSection', () => {
 
     renderSection();
 
-    expect(screen.queryByRole('heading', { name: 'Plan' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Choose your Path' })).not.toBeInTheDocument();
   });
 
   it('renders disabled demo, loading, empty, and query-error states with retry', async () => {

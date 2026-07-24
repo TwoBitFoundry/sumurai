@@ -7,7 +7,7 @@ import { useBillingWorkflow } from '@/features/billing/useBillingWorkflow';
 import { PlanSection } from '@/features/settings/PlanSection';
 import { BillingService } from '@/services/BillingService';
 import type { BillingEnabledStatusResponse, BillingStatusResponse } from '@/types/api';
-import { NAVIGATE_TO_ACCOUNTS_EVENT } from '@/utils/events';
+import { OPEN_PRICING_EVENT } from '@/utils/events';
 
 jest.mock('@/features/billing/useBillingWorkflow', () => ({
   useBillingWorkflow: jest.fn(),
@@ -87,16 +87,16 @@ describe('PlanSection actions', () => {
     jest.mocked(useBillingWorkflow).mockReturnValue(workflow);
   });
 
-  it('navigates a disabled demo user to Accounts for Self Hosted', async () => {
+  it('opens pricing for a disabled demo user', async () => {
     const user = userEvent.setup();
     const handler = jest.fn();
-    window.addEventListener(NAVIGATE_TO_ACCOUNTS_EVENT, handler);
+    window.addEventListener(OPEN_PRICING_EVENT, handler);
     renderPlan(disabledDemo);
 
-    await user.click(screen.getByRole('button', { name: 'Switch to Self Hosted' }));
+    await user.click(screen.getByRole('button', { name: 'Upgrade' }));
 
     expect(handler).toHaveBeenCalledTimes(1);
-    window.removeEventListener(NAVIGATE_TO_ACCOUNTS_EVENT, handler);
+    window.removeEventListener(OPEN_PRICING_EVENT, handler);
   });
 
   it('starts a card-less trial with the shared address form', async () => {

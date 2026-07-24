@@ -90,15 +90,17 @@ export function PricingTrialForm({ disabled, onStartTrial }: PricingTrialFormPro
         ) : null}
       </div>
 
-      <Button
-        type="submit"
-        variant="primary"
-        size="md"
-        className={cn('w-full')}
-        disabled={disabled}
-      >
-        Start free trial
-      </Button>
+      <div className={cn('flex', 'w-full', 'justify-center')}>
+        <Button
+          type="submit"
+          variant="primary"
+          size="md"
+          className={cn('w-auto', 'min-w-40')}
+          disabled={disabled}
+        >
+          Start free trial
+        </Button>
+      </div>
     </form>
   );
 }

@@ -1009,6 +1009,63 @@ export const settingsSecurityLayout = {
   modalAction: ['w-full', 'md:flex-1'],
 } as const;
 
+export const settingsPlanLayout = {
+  stage: [
+    'grid',
+    'grid-cols-1',
+    'gap-5',
+    'md:grid-cols-[minmax(12rem,0.85fr)_minmax(0,1.35fr)]',
+    'md:items-stretch',
+  ],
+  nestedShell: [
+    `${radius.standard} border transition-all duration-300 text-left`,
+    ...border.subtle,
+    ...surface.solidCard,
+  ],
+  markPanel: [
+    `${radius.standard} border transition-all duration-300`,
+    ...border.subtle,
+    ...surface.solidCard,
+    'flex',
+    'min-h-44',
+    'flex-col',
+    'items-center',
+    'justify-center',
+    'gap-4',
+    'p-5',
+    'text-center',
+    'md:min-h-full',
+    'md:p-6',
+  ],
+  markWell: [
+    'inline-flex',
+    'h-16',
+    'w-16',
+    'shrink-0',
+    'items-center',
+    'justify-center',
+    'rounded-full',
+    ...border.subtle,
+    ...surface.insetWell,
+    ...status.info.icon,
+  ],
+  markGlyph: ['h-8', 'w-8'],
+  copyPanel: ['flex', 'min-w-0', 'flex-col', 'justify-center', 'gap-5'],
+  statusBlock: ['space-y-2'],
+  headerActions: [
+    'flex',
+    'w-full',
+    'shrink-0',
+    'flex-col',
+    'gap-3',
+    'md:w-auto',
+    'md:flex-row',
+    'md:flex-wrap',
+    'md:justify-end',
+  ],
+  headerAction: ['w-full', 'md:w-auto'],
+} as const;
+
 export const appLayout = {
   contentShell: ['mx-auto', 'w-full', 'max-w-[var(--spacing-content-max)]'],
   contentGutter: ['px-4', 'md:px-6', 'lg:px-8'],

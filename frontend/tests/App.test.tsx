@@ -10,6 +10,7 @@ import type { BillingStatusResponse } from '@/types/api';
 import {
   FINANCIAL_STATE_CHANGED_EVENT,
   NAVIGATE_TO_SETTINGS_EVENT,
+  OPEN_PRICING_EVENT,
   PAID_ACCESS_REQUIRED_EVENT,
 } from '@/utils/events';
 import * as queryInvalidation from '@/utils/queryInvalidation';
@@ -104,7 +105,7 @@ jest.mock('@/features/billing/PricingScreen', () => ({
       </button>
       {!billingStatus.billing_enabled ? (
         <button type="button" onClick={onContinueToProviders}>
-          Continue Self Hosted
+          Continue
         </button>
       ) : (
         <>
@@ -404,7 +405,7 @@ describe('App onboarding gate', () => {
     await waitFor(() => {
       expect(screen.getByTestId('pricing-screen')).toHaveAttribute('data-billing-enabled', 'false');
     });
-    expect(screen.getByRole('button', { name: /continue self hosted/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /complete premium/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId('onboarding-provider-picker')).not.toBeInTheDocument();
   });
@@ -419,7 +420,7 @@ describe('App onboarding gate', () => {
     });
     expect(screen.getByRole('button', { name: /complete premium/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /complete trial/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /continue self hosted/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /continue/i })).not.toBeInTheDocument();
   });
 
   it('uses disabled pricing after a billing query error', async () => {
@@ -428,7 +429,7 @@ describe('App onboarding gate', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /continue self hosted/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument();
     });
     expect(screen.queryByRole('button', { name: /complete premium/i })).not.toBeInTheDocument();
   });
@@ -449,7 +450,7 @@ describe('App onboarding gate', () => {
   });
 
   it.each([
-    ['Self Hosted', disabledBillingStatus, /continue self hosted/i],
+    ['Self Hosted', disabledBillingStatus, /continue/i],
     ['Premium', enabledBillingStatus, /complete premium/i],
     ['trial', enabledBillingStatus, /complete trial/i],
   ])('continues from %s pricing to providers without a reload', async (_name, status, action) => {
@@ -483,7 +484,7 @@ describe('App onboarding gate', () => {
 
     render(<App />);
 
-    await user.click(await screen.findByRole('button', { name: /continue self hosted/i }));
+    await user.click(await screen.findByRole('button', { name: /continue/i }));
     await user.click(screen.getByRole('button', { name: /provider logout/i }));
     await user.click(await screen.findByRole('button', { name: /login next user/i }));
 
@@ -512,7 +513,7 @@ describe('App onboarding gate', () => {
 
     render(<App />);
 
-    await user.click(await screen.findByRole('button', { name: /continue self hosted/i }));
+    await user.click(await screen.findByRole('button', { name: /continue/i }));
     await act(async () => {
       window.dispatchEvent(
         new CustomEvent(FINANCIAL_STATE_CHANGED_EVENT, {
@@ -540,6 +541,48 @@ describe('App onboarding gate', () => {
     await waitFor(() => {
       expect(screen.getByTestId('demo-mode-active')).toHaveTextContent('true');
     });
+  });
+
+  it('reopens pricing for a demo user and continues to the provider picker', async () => {
+    const user = userEvent.setup();
+    jest.mocked(AuthService.refreshToken).mockResolvedValue({
+      user_id: 'user-1',
+      expires_at: '2099-01-01T00:00:00.000Z',
+      onboarding_completed: true,
+      demo_mode_active: true,
+    });
+
+    render(<App />);
+
+    await screen.findByTestId('demo-mode-active');
+    act(() => {
+      window.dispatchEvent(new CustomEvent(OPEN_PRICING_EVENT));
+    });
+
+    expect(screen.getByTestId('pricing-screen')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /continue/i }));
+
+    expect(screen.getByTestId('onboarding-provider-picker')).toBeInTheDocument();
+    expect(screen.queryByTestId('pricing-screen')).not.toBeInTheDocument();
+  });
+
+  it('ignores pricing entry events for a non-demo user', async () => {
+    jest.mocked(AuthService.refreshToken).mockResolvedValue({
+      user_id: 'user-1',
+      expires_at: '2099-01-01T00:00:00.000Z',
+      onboarding_completed: true,
+      demo_mode_active: false,
+    });
+
+    render(<App />);
+
+    await screen.findByTestId('demo-mode-active');
+    act(() => {
+      window.dispatchEvent(new CustomEvent(OPEN_PRICING_EVENT));
+    });
+
+    expect(screen.queryByTestId('pricing-screen')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('onboarding-provider-picker')).not.toBeInTheDocument();
   });
 
   it('refreshes app session state when a provider-connected event is dispatched', async () => {

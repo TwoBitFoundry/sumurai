@@ -8,6 +8,7 @@ import {
   providerNestedCard,
   providerSelectionCard,
   border as uiBorderRecipes,
+  radius as uiRadiusRecipes,
   status as uiStatusRecipes,
   surface as uiSurfaceRecipes,
   text as uiTextRecipes,
@@ -64,6 +65,7 @@ export function PricingPlanCard({
               'items-center',
               'justify-center',
               'self-center',
+              'rounded-full',
               ...uiBorderRecipes.subtle,
               ...uiSurfaceRecipes.insetWell,
               ...uiStatusRecipes.info.icon
@@ -105,7 +107,13 @@ export function PricingPlanCard({
                 'grid-cols-[1.5rem_minmax(0,1fr)]',
                 'items-center',
                 'gap-x-2',
-                ...providerNestedCard.shell,
+                uiRadiusRecipes.standard,
+                'border',
+                'text-left',
+                'transition-all',
+                'duration-300',
+                ...uiBorderRecipes.subtle,
+                ...uiSurfaceRecipes.solidCard,
                 'p-2.5',
                 'md:p-3'
               )}
@@ -123,7 +131,9 @@ export function PricingPlanCard({
           ))}
         </div>
 
-        <div className={cn('mt-auto', 'flex', 'flex-col', 'gap-3')}>{children}</div>
+        <div className={cn('mt-auto', 'flex', 'w-full', 'flex-col', 'items-center', 'gap-3')}>
+          {children}
+        </div>
       </div>
     </GlassCard>
   );

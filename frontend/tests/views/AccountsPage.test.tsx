@@ -566,6 +566,22 @@ describe('AccountsPage', () => {
     expect(plaidButton.querySelector('svg.lucide-link')).toBeTruthy();
   });
 
+  it('opens pricing from the demo-mode Upgrade to Connect button', async () => {
+    const user = userEvent.setup();
+    const handler = jest.fn();
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
+    window.addEventListener(events.OPEN_PRICING_EVENT, handler);
+
+    renderAccountsPage({ demoModeActive: true });
+
+    expect(screen.queryByRole('button', { name: /^link account$/i })).not.toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: /^upgrade to connect$/i })[0]);
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    window.removeEventListener(events.OPEN_PRICING_EVENT, handler);
+  });
+
   it('renders Teller current balances on the accounts page', async () => {
     const user = userEvent.setup();
     jest.mocked(useOnlineStatus).mockReturnValue(true);
@@ -831,30 +847,6 @@ describe('AccountsPage', () => {
     expect(modal).toBeInTheDocument();
     expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
     expect(within(modal).getByText('new institution')).toBeVisible();
-  });
-
-  it('shows a demo exit warning before creating a new institution from the provider picker', async () => {
-    const user = userEvent.setup();
-
-    jest.mocked(useOnlineStatus).mockReturnValue(true);
-    jest.mocked(useProviderCatalog).mockReturnValue(
-      makeProviderCatalogMock({
-        available_providers: ['plaid', 'teller', 'diy'],
-        user_provider: null,
-      })
-    );
-
-    renderAccountsPage({ demoModeActive: true });
-
-    await user.click(screen.getByRole('button', { name: /^link account$/i }));
-    await user.click(screen.getAllByRole('button', { name: 'Connect' })[0]);
-
-    expect(screen.getByTestId('demo-exit-warning-modal')).toBeInTheDocument();
-    expect(screen.queryByTestId('diy-institution-modal')).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
-
-    expect(screen.getByTestId('diy-institution-modal')).toBeInTheDocument();
   });
 
   it('opens the DIY institution modal from a DIY bank row add-account action without a demo exit warning', async () => {
@@ -1368,45 +1360,6 @@ describe('AccountsPage', () => {
 
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       expect(screen.getAllByRole('button', { name: /^connect$/i })).toHaveLength(1);
-    });
-
-    it('shows all providers in demo mode even when an aggregator is active', async () => {
-      const user = userEvent.setup();
-
-      jest.mocked(useOnlineStatus).mockReturnValue(true);
-      jest.mocked(useProviderCatalog).mockReturnValue(
-        makeProviderCatalogMock({
-          available_providers: ['teller', 'simplefin', 'plaid', 'diy'],
-          user_provider: 'teller',
-        })
-      );
-      jest.mocked(useAccountFilter).mockReturnValue(
-        makeTellerAccountFilter({
-          accountsByBank: {
-            'Demo Bank': [
-              {
-                id: 'acc_1',
-                name: 'Checking',
-                account_type: 'depository',
-                balance_ledger: 100,
-                balance_available: 100,
-                mask: '1234',
-                provider: 'teller',
-                institution_name: 'Demo Bank',
-                connection_id: 'conn_1',
-                transaction_count: 0,
-              },
-            ],
-          },
-        })
-      );
-
-      renderAccountsPage({ demoModeActive: true });
-
-      await user.click(screen.getByRole('button', { name: /^link account$/i }));
-
-      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
-      expect(screen.getAllByRole('button', { name: /^connect$/i })).toHaveLength(3);
     });
 
     it('does not offer Teller in the accounts provider picker', async () => {

@@ -50,16 +50,33 @@ describe('planPolicy', () => {
     expect(resolvePlanPolicy(disabledStatus)).toBeNull();
     expect(resolvePlanPolicy({ ...disabledStatus, is_demo_mode_active: true })).toMatchObject({
       planLabel: 'Demo mode',
-      actions: [{ id: 'switch_self_hosted', label: 'Switch to Self Hosted' }],
+      introCopy: 'Choose your Sumurai plan.',
+      statusCopy: 'Ready to go live on your deployment?',
+      detail: 'Upgrade to replace sample data with your own accounts.',
+      highlights: [
+        'Connect DIY, SimpleFIN, or Plaid',
+        'Bring in real balances and transactions',
+        'Keep full control of your self-hosted data',
+      ],
+      actions: [{ id: 'switch_self_hosted', label: 'Upgrade' }],
     });
   });
 
   it('resolves enabled demo upgrade choices from trial availability', () => {
+    expect(resolvePlanPolicy(enabledStatus('demo'))).toMatchObject({
+      introCopy: 'Explore sample data, then subscribe when you are ready for live accounts.',
+    });
     expect(actionIds(enabledStatus('demo'))).toEqual(['upgrade_premium']);
     expect(actionIds(enabledStatus('demo', { trials_enabled: true }))).toEqual([
       'start_trial',
       'upgrade_premium',
     ]);
+  });
+
+  it('uses subscription intro copy for paid plan states', () => {
+    expect(resolvePlanPolicy(enabledStatus('active'))).toMatchObject({
+      introCopy: 'Manage your Sumurai subscription and plan access.',
+    });
   });
 
   it('resolves trial management with and without a required payment method', () => {

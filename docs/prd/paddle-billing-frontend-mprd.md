@@ -859,9 +859,10 @@ billing-disabled and billing-enabled environments; docs reflect the shipped UI.
     pricing page shows **Demo mode + Self Hosted only** (no Premium/trial);
     Self Hosted → provider picker (with **no** "Try demo mode" button);
     Demo mode → dashboard directly; as a demo user, Settings shows the Plan
-    section with **Switch to Self Hosted** → Accounts tab → connecting a
-    provider runs the demo-exit warning flow; as a non-demo user, Settings has
-    no Plan section; no upgrade modals anywhere.
+    section with **Upgrade** → pricing → Self Hosted → provider picker; Accounts
+    shows **Upgrade to Connect** and enters that same pricing/provider flow; as
+    a non-demo user, Settings has no Plan section and Accounts retains **Link
+    Account**; no upgrade modals anywhere.
   - **Billing-enabled run**: the user supplies sandbox credentials as shell
     variables. Use a temporary Compose override outside the worktree that only
     references those variable names, and invoke it explicitly with both
@@ -917,6 +918,57 @@ billing-disabled and billing-enabled environments; docs reflect the shipped UI.
   were neither read nor modified. Both nginx templates' Paddle CSP directives
   are covered by the green backend configuration tests.
 
+## Phase 14 — Demo upgrade journey entry points
+
+**Goal**: Every demo-mode upgrade entry point resumes the established pricing
+and onboarding provider journey without introducing a parallel picker or new
+visual language.
+
+### Tasks
+- Add one application event for reopening pricing from an authenticated demo
+  session and keep the root App as the owner of pricing/provider progression.
+- Route the Settings **Upgrade** action through that event.
+- Rename the Accounts **Link Account** action to **Upgrade to Connect** only
+  while demo mode is active and route it through the same event.
+- Label the pricing demo action **Return to demo mode** when the current session
+  is already using demo data; retain **Try demo mode** for first-time entry.
+- Preserve the existing **Link Account** label and direct Accounts provider
+  picker outside demo mode.
+- Reuse the existing buttons, layouts, pricing screen, and onboarding provider
+  picker without new primitives, tokens, or pills. Use the established nested
+  card surface for pricing feature rows.
+
+### Acceptance criteria
+- [x] Settings **Upgrade** dispatches the shared pricing entry event.
+- [x] Demo Accounts renders **Upgrade to Connect** and dispatches the same
+      event without opening its local provider picker.
+- [x] The root App renders pricing, continues to the existing onboarding
+      provider picker, and ignores the event outside demo mode.
+- [x] Non-demo Accounts retains **Link Account** and its existing picker flow.
+- [x] Pricing distinguishes **Return to demo mode** from first-time **Try demo
+      mode**, and plan feature rows use the shared nested card surface.
+- [x] Focused tests, typecheck, design guard, and local dev-server inspection
+      green.
+
+### Phase 14 implementation log
+
+- Added one demo-only pricing entry event owned by the root App. Both Settings
+  and Accounts now enter the existing pricing/provider progression without
+  duplicating onboarding state or provider-picker UI.
+- Accounts retains the established connect button and icon. Demo mode changes
+  only its copy to **Upgrade to Connect** and its destination; non-demo behavior
+  remains unchanged.
+- The pricing demo action now distinguishes returning demo sessions from
+  first-time entry, and pricing feature rows use the existing nested card
+  surface role instead of the slate data-row role.
+- TDD red run proved the missing event, old Settings destination, and old
+  Accounts label, return copy, and nested-surface contract. Green verification
+  covered 75 focused unit tests, 7 focused Storybook browser tests, all 1,423
+  frontend unit tests, typecheck, design guard, and exact-file Biome checks.
+- Local dev-server inspection verified Settings → pricing → provider picker and
+  Accounts → pricing in the active demo session. It also verified the return
+  label and resolved nested background with no browser runtime errors.
+
 ---
 
 ## Sequencing / next actions
@@ -926,7 +978,8 @@ contract; Phase 6 establishes the browser SDK boundary; Phase 7 builds reusable
 workflow orchestration. Phase 8 can then land the pricing UI, followed by its
 App integration in Phase 9. Phase 10 establishes global paid-access recovery.
 Phases 11–12 build Settings policy first and mutations second. Phase 13 is the
-release gate.
+release gate. Phase 14 applies the demo-entry follow-up across the shipped
+journey.
 
 Implement in order unless working in parallel on non-overlapping files. Hand
 off one work package at a time with boundary-focused tests in

@@ -38,7 +38,11 @@ import { SimpleFinService } from '../services/SimpleFinService';
 import { TellerService } from '../services/TellerService';
 import type { FinancialProvider } from '../types/api';
 import type { ProviderCatalogue } from '../types/providerCatalog';
-import { dispatchFinancialAccountsRefresh, dispatchFinancialAppRefresh } from '../utils/events';
+import {
+  dispatchFinancialAccountsRefresh,
+  dispatchFinancialAppRefresh,
+  dispatchOpenPricing,
+} from '../utils/events';
 import { formatUserFacingApiError } from '../utils/formatUserFacingApiError';
 import { getProviderCardConfig, resolvePickerVisibleProviders } from '../utils/providerCards';
 import {
@@ -234,7 +238,7 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
   const primaryProvider = activeAggregator ?? 'diy';
   const primaryProviderCard = getProviderCardConfig(primaryProvider);
   const providerLabel = primaryProviderCard.title;
-  const connectAccountLabel = 'Link Account';
+  const connectAccountLabel = demoModeActive ? 'Upgrade to Connect' : 'Link Account';
 
   const existingInstitutionNames = useMemo(() => banks.map((bank) => bank.name), [banks]);
 
@@ -500,8 +504,12 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
   }, [exportError, exportToast, isExporting, onError, pushAccountsToast]);
 
   const handlePrimaryConnect = useCallback(() => {
+    if (demoModeActive) {
+      dispatchOpenPricing();
+      return;
+    }
     setIsProviderPickerOpen(true);
-  }, []);
+  }, [demoModeActive]);
 
   useEffect(() => {
     if (
