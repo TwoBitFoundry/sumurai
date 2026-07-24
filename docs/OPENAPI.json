@@ -1743,6 +1743,64 @@
         ]
       }
     },
+    "/api/billing/subscription/cancel": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "operationId": "cancel_billing_subscription",
+        "responses": {
+          "200": {
+            "description": "Subscription cancellation scheduled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingCancelResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Billing disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Entitlement unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Paddle request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
     "/api/billing/trials/start": {
       "post": {
         "tags": [
@@ -4209,6 +4267,22 @@
           "ratio": "1.40"
         }
       },
+      "BillingCancelResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "scheduled_cancel_at"
+        ],
+        "properties": {
+          "scheduled_cancel_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
       "BillingCheckoutResponse": {
         "type": "object",
         "required": [
@@ -4283,8 +4357,27 @@
           "is_demo_mode_active": {
             "type": "boolean"
           },
+          "paddle_client_token": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paddle_environment": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "payment_method_required": {
             "type": "boolean"
+          },
+          "scheduled_cancel_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           },
           "trial_ends_at": {
             "type": [

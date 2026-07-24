@@ -1,7 +1,9 @@
 import {
   AuthenticationError,
+  ConflictError,
   FetchHttpClient,
   ForbiddenError,
+  PaymentRequiredError,
   ServerError,
   ValidationError,
 } from '@/services/boundaries';
@@ -127,5 +129,65 @@ describe('FetchHttpClient', () => {
     await expect(client.postFormData('/test', new FormData())).rejects.toBeInstanceOf(
       AuthenticationError
     );
+  });
+
+  it('preserves the backend code and body for payment-required responses', async () => {
+    const body = {
+      error: 'PAYMENT_REQUIRED',
+      message: 'Paid access is required',
+      code: 'PAID_ACCESS_REQUIRED',
+    };
+    globalThis.fetch = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify(body), {
+        status: 402,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    ) as typeof fetch;
+
+    const client = new FetchHttpClient('http://example.com/api');
+    let caught: unknown;
+
+    try {
+      await client.post('/providers/select', { provider: 'plaid' });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(PaymentRequiredError);
+    const paymentError = caught as PaymentRequiredError;
+    expect(paymentError.name).toBe('PaymentRequiredError');
+    expect(paymentError.status).toBe(402);
+    expect(paymentError.code).toBe('PAID_ACCESS_REQUIRED');
+    expect(paymentError.body).toEqual(body);
+  });
+
+  it('preserves the backend code and body for conflict responses', async () => {
+    const body = {
+      error: 'CONFLICT',
+      message: 'Trial already used',
+      code: 'TRIAL_ALREADY_USED',
+    };
+    globalThis.fetch = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify(body), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    ) as typeof fetch;
+
+    const client = new FetchHttpClient('http://example.com/api');
+    let caught: unknown;
+
+    try {
+      await client.post('/billing/trials/start', {});
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(ConflictError);
+    const conflictError = caught as ConflictError;
+    expect(conflictError.name).toBe('ConflictError');
+    expect(conflictError.status).toBe(409);
+    expect(conflictError.code).toBe('TRIAL_ALREADY_USED');
+    expect(conflictError.body).toEqual(body);
   });
 });

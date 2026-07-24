@@ -28,7 +28,11 @@ import { text as uiTextRecipes } from '../ui/recipes';
 import type { CustomDateRangeBounds, DateRangeKey as DateRange } from '../utils/dateRanges';
 import { clampCustomDateRangeBounds, DEFAULT_DASHBOARD_DATE_RANGE } from '../utils/dateRanges';
 import type { NavigateToTransactionsDetail } from '../utils/events';
-import { NAVIGATE_TO_TRANSACTIONS_EVENT } from '../utils/events';
+import {
+  NAVIGATE_TO_ACCOUNTS_EVENT,
+  NAVIGATE_TO_SETTINGS_EVENT,
+  NAVIGATE_TO_TRANSACTIONS_EVENT,
+} from '../utils/events';
 import {
   getSessionDashboardCustomDateRange,
   getSessionDashboardDateRange,
@@ -144,6 +148,30 @@ export function AuthenticatedApp({
     window.addEventListener(NAVIGATE_TO_TRANSACTIONS_EVENT, handler);
     return () => window.removeEventListener(NAVIGATE_TO_TRANSACTIONS_EVENT, handler);
   }, [transactionFilters, setSelectedAccountIds]);
+
+  useEffect(() => {
+    const handler = () => {
+      const currentIndex = TAB_INDEX.get(tabRef.current) ?? 0;
+      const nextIndex = TAB_INDEX.get('settings') ?? 4;
+      setTabTransitionDirection(nextIndex === currentIndex ? 0 : nextIndex > currentIndex ? 1 : -1);
+      setTab('settings');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+    window.addEventListener(NAVIGATE_TO_SETTINGS_EVENT, handler);
+    return () => window.removeEventListener(NAVIGATE_TO_SETTINGS_EVENT, handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      const currentIndex = TAB_INDEX.get(tabRef.current) ?? 0;
+      const nextIndex = TAB_INDEX.get('accounts') ?? 3;
+      setTabTransitionDirection(nextIndex === currentIndex ? 0 : nextIndex > currentIndex ? 1 : -1);
+      setTab('accounts');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+    window.addEventListener(NAVIGATE_TO_ACCOUNTS_EVENT, handler);
+    return () => window.removeEventListener(NAVIGATE_TO_ACCOUNTS_EVENT, handler);
+  }, []);
 
   useEffect(() => {
     if (!analyticsDateBounds.bounds || !customDateRange) {

@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { HeroSubtitleInfo } from '@/layouts/HeroSubtitleInfo';
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
@@ -24,6 +24,7 @@ interface ProviderSelectionPanelProps {
   providerReadyState?: Partial<Record<FinancialProvider, boolean>>;
   connectingProvider?: FinancialProvider | null;
   onSelectProvider: (provider: FinancialProvider) => void | Promise<void>;
+  onBack?: () => void;
   onClose?: () => void;
   heroAction?: ReactNode;
   visibleProviders?: FinancialProvider[];
@@ -51,9 +52,11 @@ const panelClasses = cn(
 );
 
 function ProviderSelectionHero({
+  onBack,
   onClose,
   heroAction,
 }: {
+  onBack?: () => void;
   onClose?: () => void;
   heroAction?: ReactNode;
 }) {
@@ -89,13 +92,31 @@ function ProviderSelectionHero({
           )}
         >
           <div className={cn('min-w-0', 'max-w-2xl', 'space-y-3')}>
-            <div className="space-y-2">
-              <div className={cn(...pageLayoutRecipes.titleInlineHost)}>
-                <h1 className={cn(pageLayoutRecipes.titleInlineHeading)}>{providerPickerTitle}</h1>{' '}
-                <HeroSubtitleInfo
-                  pageTitle={providerPickerTitle}
-                  subtitle={providerPickerSubtitle}
-                />
+            <div className={cn('space-y-2')}>
+              <div className={cn('flex', 'items-start', 'gap-3')}>
+                {onBack ? (
+                  <IconButton
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Back"
+                    title="Back"
+                    onClick={onBack}
+                  >
+                    <ArrowLeft aria-hidden />
+                  </IconButton>
+                ) : null}
+                <div className={cn('min-w-0', 'flex-1', 'space-y-2')}>
+                  <div className={cn(...pageLayoutRecipes.titleInlineHost)}>
+                    <h1 className={cn(pageLayoutRecipes.titleInlineHeading)}>
+                      {providerPickerTitle}
+                    </h1>{' '}
+                    <HeroSubtitleInfo
+                      pageTitle={providerPickerTitle}
+                      subtitle={providerPickerSubtitle}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -115,6 +136,7 @@ export const ProviderSelectionPanel = ({
   providerReadyState,
   connectingProvider,
   onSelectProvider,
+  onBack,
   onClose,
   heroAction,
   visibleProviders,
@@ -173,7 +195,7 @@ export const ProviderSelectionPanel = ({
       className={cn('flex', 'flex-col', 'gap-6', 'md:gap-8')}
       data-testid="provider-selection-panel"
     >
-      <ProviderSelectionHero onClose={onClose} heroAction={heroAction} />
+      <ProviderSelectionHero onBack={onBack} onClose={onClose} heroAction={heroAction} />
 
       <div className={cn('w-full', 'min-w-0', 'max-w-full')}>
         <div
@@ -182,7 +204,7 @@ export const ProviderSelectionPanel = ({
             'grid-cols-1',
             'gap-6',
             'md:grid-cols-2',
-            'lg:grid-cols-4',
+            'lg:grid-cols-3',
             'md:gap-4'
           )}
         >

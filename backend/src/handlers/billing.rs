@@ -13,8 +13,8 @@ use crate::models::api_error::ApiErrorResponse;
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, User};
 use crate::models::billing::{
-    BillingCheckoutResponse, BillingPortalSessionResponse, BillingStatusResponse,
-    TrialStartRequest, TrialStartResponse,
+    BillingCancelResponse, BillingCheckoutResponse, BillingPortalSessionResponse,
+    BillingStatusResponse, TrialStartRequest, TrialStartResponse,
 };
 use crate::services::billing_service::{
     BillingService, BillingServiceError, BillingWebhookError, TrialStartInput,
@@ -39,6 +39,10 @@ pub fn billing_authenticated_routes() -> Router<AppState> {
         .route(
             "/api/billing/portal-session",
             post(create_billing_portal_session),
+        )
+        .route(
+            "/api/billing/subscription/cancel",
+            post(cancel_billing_subscription),
         )
 }
 
@@ -132,25 +136,6 @@ pub async fn get_authenticated_billing_status(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<BillingStatusResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    if !state.config.is_billing_enabled() {
-        return Ok(Json(BillingStatusResponse {
-            billing_enabled: false,
-            trials_enabled: false,
-            access_status: "unrestricted".to_string(),
-            can_use_own_data: true,
-            is_demo_mode_active: false,
-            trial_ends_at: None,
-            current_period_ends_at: None,
-            payment_method_required: false,
-            billing_portal_available: false,
-            enabled_financial_providers: state
-                .config
-                .enabled_financial_providers()
-                .unwrap_or(&[])
-                .to_vec(),
-        }));
-    }
-
     let user = state
         .db_repository
         .get_user_by_id(&auth_context.user_id)
@@ -160,6 +145,28 @@ pub async fn get_authenticated_billing_status(
             api_internal_server_error("Failed to load billing status")
         })?
         .ok_or_else(|| api_internal_server_error("Failed to load billing status"))?;
+
+    if !state.config.is_billing_enabled() {
+        return Ok(Json(BillingStatusResponse {
+            billing_enabled: false,
+            trials_enabled: false,
+            paddle_client_token: None,
+            paddle_environment: None,
+            access_status: "unrestricted".to_string(),
+            can_use_own_data: true,
+            is_demo_mode_active: user.demo_mode_active,
+            trial_ends_at: None,
+            current_period_ends_at: None,
+            scheduled_cancel_at: None,
+            payment_method_required: false,
+            billing_portal_available: false,
+            enabled_financial_providers: state
+                .config
+                .enabled_financial_providers()
+                .unwrap_or(&[])
+                .to_vec(),
+        }));
+    }
 
     let entitlement = state
         .db_repository
@@ -179,10 +186,16 @@ pub async fn get_authenticated_billing_status(
         .as_ref()
         .and_then(|row| row.paddle_customer_id.as_ref())
         .is_some();
+    let paddle_config = state
+        .config
+        .paddle_billing()
+        .ok_or_else(|| api_internal_server_error("Failed to load billing status"))?;
 
     Ok(Json(BillingStatusResponse {
         billing_enabled: true,
         trials_enabled: state.config.is_trials_enabled(),
+        paddle_client_token: Some(paddle_config.client_token.clone()),
+        paddle_environment: Some(paddle_config.environment.clone()),
         access_status: access_status.as_str().to_string(),
         can_use_own_data: decision.can_use_own_data,
         is_demo_mode_active: user.demo_mode_active,
@@ -190,6 +203,7 @@ pub async fn get_authenticated_billing_status(
         current_period_ends_at: entitlement
             .as_ref()
             .and_then(|row| row.current_period_ends_at),
+        scheduled_cancel_at: entitlement.as_ref().and_then(|row| row.scheduled_cancel_at),
         payment_method_required: decision.payment_method_required,
         billing_portal_available,
         enabled_financial_providers: state
@@ -359,6 +373,38 @@ pub async fn create_billing_portal_session(
     Ok(Json(BillingPortalSessionResponse {
         overview_url: portal.overview_url,
         subscription_urls: portal.subscription_urls,
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/billing/subscription/cancel",
+    responses(
+        (status = 200, description = "Subscription cancellation scheduled", body = BillingCancelResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Billing disabled", body = ApiErrorResponse),
+        (status = 409, description = "Entitlement unavailable", body = ApiErrorResponse),
+        (status = 502, description = "Paddle request failed", body = ApiErrorResponse)
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Billing"
+)]
+pub async fn cancel_billing_subscription(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<BillingCancelResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    if !state.config.is_billing_enabled() {
+        return Err(billing_disabled_response());
+    }
+    let user = load_billing_user(&state, &auth_context.user_id).await?;
+    let canceled = state
+        .billing_service
+        .cancel_subscription_at_period_end(&user)
+        .await
+        .map_err(billing_service_error_response)?;
+    Ok(Json(BillingCancelResponse {
+        status: "scheduled".to_string(),
+        scheduled_cancel_at: canceled.scheduled_cancel_at,
     }))
 }
 

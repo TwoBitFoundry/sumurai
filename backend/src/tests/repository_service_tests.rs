@@ -107,6 +107,85 @@ fn create_test_transaction(
 #[tokio::test]
 async fn given_billing_entitlement_when_upserting_then_statement_is_tenant_scoped() {
     let user_id = Uuid::new_v4();
+    let scheduled_cancel_at = Utc::now();
+    let key = parse_encryption_key_hex(
+        "0101010101010101010101010101010101010101010101010101010101010101",
+    )
+    .expect("test encryption key must be valid hex");
+    let db = MockDatabase::new(DbBackend::Postgres)
+        .append_exec_results([
+            MockExecResult {
+                rows_affected: 0,
+                ..Default::default()
+            },
+            MockExecResult {
+                rows_affected: 1,
+                ..Default::default()
+            },
+            MockExecResult {
+                rows_affected: 0,
+                ..Default::default()
+            },
+        ])
+        .append_query_results([vec![entity::billing_entitlements::Model {
+            user_id,
+            access_status: "active".to_string(),
+            source: "paddle".to_string(),
+            paddle_subscription_id: Some("sub_123".to_string()),
+            paddle_customer_id: Some("ctm_123".to_string()),
+            paddle_price_id: Some("pri_123".to_string()),
+            trial_ends_at: None,
+            current_period_ends_at: Some(scheduled_cancel_at.into()),
+            canceled_at: None,
+            scheduled_cancel_at: Some(scheduled_cancel_at.into()),
+            last_event_at: Some(scheduled_cancel_at.into()),
+            payment_method_required: false,
+            created_at: scheduled_cancel_at.into(),
+            updated_at: scheduled_cancel_at.into(),
+        }]])
+        .into_connection();
+    let repo = PostgresRepository::from_mock(db, key);
+    let entitlement = BillingEntitlement {
+        user_id,
+        access_status: "active".to_string(),
+        source: "paddle".to_string(),
+        paddle_subscription_id: Some("sub_123".to_string()),
+        paddle_customer_id: Some("ctm_123".to_string()),
+        paddle_price_id: Some("pri_123".to_string()),
+        trial_ends_at: None,
+        current_period_ends_at: Some(Utc::now()),
+        canceled_at: None,
+        scheduled_cancel_at: Some(scheduled_cancel_at),
+        last_event_at: Some(Utc::now()),
+        payment_method_required: false,
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+    };
+
+    repo.upsert_billing_entitlement(&entitlement).await.unwrap();
+    let loaded = repo
+        .get_billing_entitlement(&user_id)
+        .await
+        .unwrap()
+        .expect("stored billing entitlement should load");
+
+    let log = repo.into_mock_transaction_log();
+    let write_statements = log[0].statements();
+    let read_statements = log[1].statements();
+    assert_eq!(write_statements[1], tenant_set_config_statement(user_id));
+    assert_eq!(read_statements[1], tenant_set_config_statement(user_id));
+    let insert_sql = format!("{:?}", &write_statements[2]);
+    assert!(insert_sql.contains("billing_entitlements"));
+    assert!(insert_sql.contains("paddle_subscription_id"));
+    assert!(insert_sql.contains("scheduled_cancel_at"));
+    assert!(insert_sql.contains("ON CONFLICT"));
+    assert_eq!(loaded.scheduled_cancel_at, Some(scheduled_cancel_at));
+}
+
+#[tokio::test]
+async fn given_scheduled_cancel_when_setting_then_updates_only_schedule_and_updated_timestamp() {
+    let user_id = Uuid::new_v4();
+    let scheduled_cancel_at = Utc::now();
     let key = parse_encryption_key_hex(
         "0101010101010101010101010101010101010101010101010101010101010101",
     )
@@ -124,31 +203,18 @@ async fn given_billing_entitlement_when_upserting_then_statement_is_tenant_scope
         ])
         .into_connection();
     let repo = PostgresRepository::from_mock(db, key);
-    let entitlement = BillingEntitlement {
-        user_id,
-        access_status: "active".to_string(),
-        source: "paddle".to_string(),
-        paddle_subscription_id: Some("sub_123".to_string()),
-        paddle_customer_id: Some("ctm_123".to_string()),
-        paddle_price_id: Some("pri_123".to_string()),
-        trial_ends_at: None,
-        current_period_ends_at: Some(Utc::now()),
-        canceled_at: None,
-        last_event_at: Some(Utc::now()),
-        payment_method_required: false,
-        created_at: Utc::now(),
-        updated_at: Utc::now(),
-    };
 
-    repo.upsert_billing_entitlement(&entitlement).await.unwrap();
+    repo.set_billing_entitlement_scheduled_cancel(user_id, Some(scheduled_cancel_at))
+        .await
+        .unwrap();
 
     let log = repo.into_mock_transaction_log();
-    let stmts = log[0].statements();
-    assert_eq!(stmts[1], tenant_set_config_statement(user_id));
-    let insert_sql = format!("{:?}", &stmts[2]);
-    assert!(insert_sql.contains("billing_entitlements"));
-    assert!(insert_sql.contains("paddle_subscription_id"));
-    assert!(insert_sql.contains("ON CONFLICT"));
+    let statements = log[0].statements();
+    assert_eq!(statements[1], tenant_set_config_statement(user_id));
+    let update_sql = format!("{:?}", &statements[2]);
+    assert!(update_sql.contains("scheduled_cancel_at"));
+    assert!(update_sql.contains("updated_at"));
+    assert!(!update_sql.contains("last_event_at"));
 }
 
 #[tokio::test]

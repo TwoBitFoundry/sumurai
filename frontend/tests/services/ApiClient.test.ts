@@ -8,10 +8,12 @@ import {
   ForbiddenError,
   NetworkError,
   NotFoundError,
+  PaymentRequiredError,
   ServerError,
   ValidationError,
 } from '@/services/ApiClient';
 import { AuthService } from '@/services/authService';
+import { PAID_ACCESS_REQUIRED_EVENT } from '@/utils/events';
 import { setupTestBoundaries } from '../setup/setupTestBoundaries';
 
 expect.extend({
@@ -296,6 +298,47 @@ describe('ApiClient with Injected IHttpClient', () => {
       expect(dispatched[0].type).toBe('sumurai:enrollment-required');
 
       window.removeEventListener('sumurai:enrollment-required', handler);
+    });
+
+    it('dispatches paid-access-required for the coded payment-required response', async () => {
+      const handler = jest.fn();
+      window.addEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
+      mockHttp.get.mockRejectedValueOnce(
+        new PaymentRequiredError('Paid access is required', 'PAID_ACCESS_REQUIRED')
+      );
+
+      await expect(ApiClient.get('/transactions')).rejects.toBeInstanceOf(PaymentRequiredError);
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      window.removeEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
+    });
+
+    it('does not dispatch paid-access-required for other payment-required codes', async () => {
+      const handler = jest.fn();
+      window.addEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
+      mockHttp.get.mockRejectedValueOnce(
+        new PaymentRequiredError('Payment required', 'PAYMENT_REQUIRED')
+      );
+
+      await expect(ApiClient.get('/billing/checkout')).rejects.toBeInstanceOf(PaymentRequiredError);
+
+      expect(handler).not.toHaveBeenCalled();
+      window.removeEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
+    });
+
+    it('dispatches paid-access-required for coded blob responses', async () => {
+      const handler = jest.fn();
+      window.addEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
+      mockHttp.getBlob.mockRejectedValueOnce(
+        new PaymentRequiredError('Paid access is required', 'PAID_ACCESS_REQUIRED')
+      );
+
+      await expect(ApiClient.getBlob('/transactions/export')).rejects.toBeInstanceOf(
+        PaymentRequiredError
+      );
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      window.removeEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
     });
 
     it('should throw NetworkError for network failures', async () => {

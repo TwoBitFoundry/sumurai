@@ -24,6 +24,23 @@ type Story = StoryObj<SettingsJourneyStoryArgs>;
 
 const successHandlers = [
   route('GET', '/auth/passkey', () => jsonResponse([])),
+  route('GET', '/billing/status', () =>
+    jsonResponse({
+      billing_enabled: false,
+      trials_enabled: false,
+      paddle_client_token: null,
+      paddle_environment: null,
+      access_status: 'unrestricted',
+      can_use_own_data: true,
+      is_demo_mode_active: false,
+      trial_ends_at: null,
+      current_period_ends_at: null,
+      scheduled_cancel_at: null,
+      payment_method_required: false,
+      billing_portal_available: false,
+      enabled_financial_providers: ['diy'],
+    })
+  ),
   route('DELETE', '/auth/account', () =>
     jsonResponse({
       message: 'Account deleted',
@@ -39,6 +56,23 @@ const successHandlers = [
 
 const deleteFailureHandlers = [
   route('GET', '/auth/passkey', () => jsonResponse([])),
+  route('GET', '/billing/status', () =>
+    jsonResponse({
+      billing_enabled: false,
+      trials_enabled: false,
+      paddle_client_token: null,
+      paddle_environment: null,
+      access_status: 'unrestricted',
+      can_use_own_data: true,
+      is_demo_mode_active: false,
+      trial_ends_at: null,
+      current_period_ends_at: null,
+      scheduled_cancel_at: null,
+      payment_method_required: false,
+      billing_portal_available: false,
+      enabled_financial_providers: ['diy'],
+    })
+  ),
   route('DELETE', '/auth/account', () =>
     jsonResponse({ message: 'Account deletion failed. Try again.' }, { status: 500 })
   ),

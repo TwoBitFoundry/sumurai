@@ -200,6 +200,7 @@ impl TestFixtures {
         test_env.set("PADDLE_API_KEY", "test-api-key");
         test_env.set("PADDLE_WEBHOOK_SECRET", "pdl_ntfset_test");
         test_env.set("PADDLE_MONTHLY_PRICE_ID", "pri_monthly");
+        test_env.set("PADDLE_CLIENT_TOKEN", "test-client-token");
         test_env.set("PADDLE_CARDLESS_TRIAL_PRICE_ID", "pri_trial");
         test_env.set(
             "BILLING_TRIALS_ENABLED",

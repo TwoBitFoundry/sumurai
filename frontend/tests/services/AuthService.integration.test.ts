@@ -187,4 +187,24 @@ describe('AuthService with Injected Boundaries', () => {
       expect(result).toEqual(response);
     });
   });
+
+  describe('activateDemoModeOnboarding', () => {
+    it('should use injected http client for demo onboarding', async () => {
+      const response = {
+        message: 'Demo mode activated',
+        onboarding_completed: true,
+        demo_mode_active: true,
+      };
+      mockHttpClient.post.mockResolvedValueOnce(response);
+
+      const result = await AuthService.activateDemoModeOnboarding();
+
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        '/auth/onboarding/demo',
+        undefined,
+        expect.any(Object)
+      );
+      expect(result).toEqual(response);
+    });
+  });
 });

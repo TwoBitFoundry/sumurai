@@ -460,6 +460,11 @@ pub trait DatabaseRepository: Send + Sync {
     async fn get_billing_profile(&self, user_id: &Uuid) -> Result<Option<BillingProfile>>;
     async fn upsert_billing_entitlement(&self, entitlement: &BillingEntitlement) -> Result<()>;
     async fn get_billing_entitlement(&self, user_id: &Uuid) -> Result<Option<BillingEntitlement>>;
+    async fn set_billing_entitlement_scheduled_cancel(
+        &self,
+        user_id: Uuid,
+        scheduled_cancel_at: Option<chrono::DateTime<chrono::Utc>>,
+    ) -> Result<()>;
     async fn record_paddle_webhook_event(&self, event: &PaddleWebhookEvent) -> Result<()>;
     async fn record_paddle_webhook_event_if_new(&self, event: &PaddleWebhookEvent) -> Result<bool>;
     async fn get_paddle_webhook_event(&self, event_id: &str) -> Result<Option<PaddleWebhookEvent>>;
@@ -3957,6 +3962,7 @@ impl DatabaseRepository for PostgresRepository {
                         entitlement.current_period_ends_at,
                     )),
                     canceled_at: Set(Self::opt_to_db_time(entitlement.canceled_at)),
+                    scheduled_cancel_at: Set(Self::opt_to_db_time(entitlement.scheduled_cancel_at)),
                     last_event_at: Set(Self::opt_to_db_time(entitlement.last_event_at)),
                     payment_method_required: Set(entitlement.payment_method_required),
                     created_at: Set(Self::to_db_time(entitlement.created_at)),
@@ -3973,6 +3979,7 @@ impl DatabaseRepository for PostgresRepository {
                             billing_entitlements::Column::TrialEndsAt,
                             billing_entitlements::Column::CurrentPeriodEndsAt,
                             billing_entitlements::Column::CanceledAt,
+                            billing_entitlements::Column::ScheduledCancelAt,
                             billing_entitlements::Column::LastEventAt,
                             billing_entitlements::Column::PaymentMethodRequired,
                             billing_entitlements::Column::UpdatedAt,
@@ -4009,11 +4016,37 @@ impl DatabaseRepository for PostgresRepository {
             trial_ends_at: Self::opt_from_db_time(row.trial_ends_at),
             current_period_ends_at: Self::opt_from_db_time(row.current_period_ends_at),
             canceled_at: Self::opt_from_db_time(row.canceled_at),
+            scheduled_cancel_at: Self::opt_from_db_time(row.scheduled_cancel_at),
             last_event_at: Self::opt_from_db_time(row.last_event_at),
             payment_method_required: row.payment_method_required,
             created_at: Self::from_db_time(row.created_at),
             updated_at: Self::from_db_time(row.updated_at),
         }))
+    }
+
+    async fn set_billing_entitlement_scheduled_cancel(
+        &self,
+        user_id: Uuid,
+        scheduled_cancel_at: Option<chrono::DateTime<chrono::Utc>>,
+    ) -> Result<()> {
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                billing_entitlements::Entity::update_many()
+                    .col_expr(
+                        billing_entitlements::Column::ScheduledCancelAt,
+                        Expr::value(Self::opt_to_db_time(scheduled_cancel_at)),
+                    )
+                    .col_expr(
+                        billing_entitlements::Column::UpdatedAt,
+                        Expr::value(Self::to_db_time(chrono::Utc::now())),
+                    )
+                    .filter(billing_entitlements::Column::UserId.eq(user_id))
+                    .exec(txn)
+                    .await?;
+                Ok(())
+            })
+        })
+        .await
     }
 
     async fn record_paddle_webhook_event(&self, event: &PaddleWebhookEvent) -> Result<()> {

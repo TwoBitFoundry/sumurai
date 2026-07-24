@@ -126,11 +126,6 @@ jest.mock('@/services/authService', () => ({
       onboarding_completed: true,
       demo_mode_active: false,
     }),
-    activateDemoModeOnboarding: jest.fn().mockResolvedValue({
-      message: 'ok',
-      onboarding_completed: true,
-      demo_mode_active: true,
-    }),
   },
 }));
 
@@ -139,7 +134,6 @@ describe('OnboardingProviderPicker', () => {
     chooseProviderMock.mockClear();
     plaidInitiateConnectionMock.mockClear();
     jest.mocked(AuthService.completeOnboarding).mockClear();
-    jest.mocked(AuthService.activateDemoModeOnboarding).mockClear();
   });
 
   it('auto-completes onboarding when a provider connection succeeds', async () => {
@@ -163,24 +157,14 @@ describe('OnboardingProviderPicker', () => {
     });
   });
 
-  it('skips onboarding without selecting a provider', async () => {
-    const user = userEvent.setup();
-    const onComplete = jest.fn();
-
+  it('does not expose demo mode after pricing', () => {
     render(
       <ThemeTestProvider>
-        <OnboardingProviderPicker onComplete={onComplete} />
+        <OnboardingProviderPicker onComplete={jest.fn()} />
       </ThemeTestProvider>
     );
 
-    await user.click(screen.getByRole('button', { name: /try demo mode/i }));
-
-    expect(chooseProviderMock).not.toHaveBeenCalled();
-    expect(AuthService.activateDemoModeOnboarding).toHaveBeenCalledTimes(1);
-
-    await waitFor(() => {
-      expect(onComplete).toHaveBeenCalledTimes(1);
-    });
+    expect(screen.queryByRole('button', { name: /try demo mode/i })).not.toBeInTheDocument();
   });
 
   it('dismisses the connect modal without leaving a selected state', async () => {
