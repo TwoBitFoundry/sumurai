@@ -28,10 +28,12 @@ jest.mock('@/Auth', () => ({
   }) => {
     const queryClient = useQueryClient();
     const cacheState = queryClient.getQueryData(['logout-cache']) ? 'hit' : 'miss';
+    const billingCacheState = queryClient.getQueryData(['billing', 'status']) ? 'hit' : 'miss';
 
     return (
       <>
         <output data-testid="logout-cache-state">{cacheState}</output>
+        <output data-testid="billing-cache-state">{billingCacheState}</output>
         <button
           type="button"
           onClick={() =>
@@ -60,6 +62,10 @@ jest.mock('@/components/AuthenticatedApp', () => ({
     demoModeActive: boolean;
   }) => {
     const queryClient = useQueryClient();
+    const cachedBillingStatus = queryClient.getQueryData<BillingStatusResponse>([
+      'billing',
+      'status',
+    ]);
 
     useEffect(() => {
       queryClient.setQueryData(['logout-cache'], { value: true });
@@ -68,6 +74,21 @@ jest.mock('@/components/AuthenticatedApp', () => ({
     return (
       <>
         <output data-testid="demo-mode-active">{demoModeActive ? 'true' : 'false'}</output>
+        <output data-testid="billing-demo-mode-active">
+          {cachedBillingStatus?.is_demo_mode_active ? 'true' : 'false'}
+        </output>
+        <button
+          type="button"
+          onClick={() =>
+            queryClient.setQueryData(['billing', 'status'], {
+              billing_enabled: true,
+              can_use_own_data: true,
+              is_demo_mode_active: false,
+            })
+          }
+        >
+          Seed billing cache
+        </button>
         <button type="button" onClick={onLogout}>
           Logout
         </button>
@@ -95,32 +116,40 @@ jest.mock('@/features/billing/PricingScreen', () => ({
     billingStatus: BillingStatusResponse;
     onDemoActivated: () => void;
     onContinueToProviders: () => void;
-  }) => (
-    <div
-      data-testid="pricing-screen"
-      data-billing-enabled={billingStatus.billing_enabled ? 'true' : 'false'}
-    >
-      <button type="button" onClick={onDemoActivated}>
-        Activate demo
-      </button>
-      {!billingStatus.billing_enabled ? (
-        <button type="button" onClick={onContinueToProviders}>
-          Continue
+  }) => {
+    const queryClient = useQueryClient();
+
+    useEffect(() => {
+      queryClient.setQueryData(['billing', 'status'], billingStatus);
+    }, [billingStatus, queryClient]);
+
+    return (
+      <div
+        data-testid="pricing-screen"
+        data-billing-enabled={billingStatus.billing_enabled ? 'true' : 'false'}
+      >
+        <button type="button" onClick={onDemoActivated}>
+          Activate demo
         </button>
-      ) : (
-        <>
+        {!billingStatus.billing_enabled ? (
           <button type="button" onClick={onContinueToProviders}>
-            Complete Premium
+            Continue
           </button>
-          {billingStatus.trials_enabled ? (
+        ) : (
+          <>
             <button type="button" onClick={onContinueToProviders}>
-              Complete trial
+              Complete Premium
             </button>
-          ) : null}
-        </>
-      )}
-    </div>
-  ),
+            {billingStatus.trials_enabled ? (
+              <button type="button" onClick={onContinueToProviders}>
+                Complete trial
+              </button>
+            ) : null}
+          </>
+        )}
+      </div>
+    );
+  },
 }));
 
 jest.mock('@/features/billing/UpgradeRequiredModal', () => ({
@@ -307,6 +336,40 @@ describe('App logout cache handling', () => {
       expect(screen.getByTestId('logout-cache-state')).toHaveTextContent('miss');
     });
   });
+
+  it('removes billing status when an authenticated refresh loses the session', async () => {
+    const user = userEvent.setup();
+    const refreshTokenMock = jest.mocked(AuthService.refreshToken);
+    const resetFinancialQueriesForAppRefresh = jest
+      .spyOn(queryInvalidation, 'resetFinancialQueriesForAppRefresh')
+      .mockResolvedValue(undefined);
+    refreshTokenMock
+      .mockResolvedValueOnce({
+        user_id: 'user-1',
+        expires_at: '2099-01-01T00:00:00.000Z',
+        onboarding_completed: true,
+        demo_mode_active: false,
+      })
+      .mockRejectedValueOnce(new AuthenticationError());
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /seed billing cache/i }));
+    await act(async () => {
+      window.dispatchEvent(
+        new CustomEvent(FINANCIAL_STATE_CHANGED_EVENT, {
+          detail: { mode: 'app', refreshSession: true },
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(refreshTokenMock).toHaveBeenCalledTimes(2);
+      expect(screen.getByTestId('billing-cache-state')).toHaveTextContent('miss');
+    });
+
+    resetFinancialQueriesForAppRefresh.mockRestore();
+  });
 });
 
 describe('App paid-access recovery', () => {
@@ -474,6 +537,7 @@ describe('App onboarding gate', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('demo-mode-active')).toHaveTextContent('true');
+      expect(screen.getByTestId('billing-demo-mode-active')).toHaveTextContent('true');
     });
     expect(screen.queryByTestId('pricing-screen')).not.toBeInTheDocument();
     expect(screen.queryByTestId('onboarding-provider-picker')).not.toBeInTheDocument();

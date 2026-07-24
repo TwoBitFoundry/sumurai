@@ -13,7 +13,7 @@ import {
 } from './features/auth/EnrollPasskeyScreen';
 import { PricingScreen } from './features/billing/PricingScreen';
 import { UpgradeRequiredModal } from './features/billing/UpgradeRequiredModal';
-import { useBillingStatus } from './features/billing/useBillingStatus';
+import { BILLING_STATUS_QUERY_KEY, useBillingStatus } from './features/billing/useBillingStatus';
 import { TransactionListLauncherProvider } from './features/transactions/components/TransactionListLauncherProvider';
 import { AccountFilterProvider } from './hooks/useAccountFilter';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
@@ -22,6 +22,7 @@ import { SessionManager } from './SessionManager';
 import { AuthenticationError } from './services/ApiClient';
 import { AuthService } from './services/authService';
 import { BrowserStorageAdapter } from './services/boundaries';
+import type { BillingStatusResponse } from './types/api';
 import { AppFooter, AppTitleBar, GlassCard, GradientShell } from './ui/primitives';
 import { ControlTooltipProvider } from './ui/primitives/ControlHoverLabel';
 import { authLayout, text as uiTextRecipes, font as uiTypographyRecipes } from './ui/recipes';
@@ -117,6 +118,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   );
 
   const resetUnauthenticatedSession = useCallback((screen: 'login' | 'register' = 'login') => {
+    queryClient.removeQueries({ queryKey: BILLING_STATUS_QUERY_KEY, exact: true });
     setIsAuthenticated(false);
     setNeedsPasskeyEnrollment(false);
     setPendingRecoveryEnrollment(null);
@@ -320,6 +322,13 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   }, []);
 
   const handleDemoActivated = useCallback(() => {
+    queryClient.setQueryData<BillingStatusResponse>(
+      BILLING_STATUS_QUERY_KEY,
+      (currentBillingStatus) =>
+        currentBillingStatus
+          ? { ...currentBillingStatus, is_demo_mode_active: true }
+          : currentBillingStatus
+    );
     setDemoModeActive(true);
     handleOnboardingComplete();
   }, [handleOnboardingComplete]);
