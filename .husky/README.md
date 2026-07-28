@@ -4,17 +4,16 @@ This directory contains Git hooks managed by Husky.
 
 ## Pre-commit Hook
 
-The pre-commit hook automatically runs on staged files before each commit:
+The pre-commit hook automatically runs the repository precommit checks before each commit:
 
-1. **ESLint** - Checks Tailwind utility count (max 5) and code quality
-2. **TypeScript** - Type checks staged `.ts` and `.tsx` files
-3. **Auto-fix** - Attempts to fix ESLint violations automatically
+1. **Frontend** - Runs Biome, TypeScript, the design guard, unit tests, and the production build
+2. **Backend** - Runs formatting, type checks, Clippy, and tests
 
 ## Configuration
 
 - **Hook location**: `.husky/pre-commit`
-- **Lint-staged config**: `frontend/package.json` → `lint-staged` field
-- **ESLint config**: `frontend/eslint.config.js`
+- **Root command**: `package.json` → `precommit`
+- **Frontend command**: `frontend/package.json` → `precommit`
 
 ## Bypassing Hooks
 
@@ -50,12 +49,11 @@ If not set:
 git config core.hooksPath .husky
 ```
 
-### lint-staged errors
+### Pre-commit errors
 
-Run manually to debug:
+Run the same command manually from the repository root:
 ```bash
-cd frontend
-npx lint-staged
+bun run precommit
 ```
 
 ### Permission errors
@@ -68,26 +66,22 @@ chmod +x .husky/_/husky.sh
 
 ## What Gets Checked
 
-**Staged `.ts` and `.tsx` files only.** The hooks only run on files you're committing, not the entire codebase.
+The hook checks the frontend and backend workspaces, not only staged files.
 
-### ESLint Checks
+### Frontend Checks
 
-- Tailwind `className` with >5 utilities (custom rule)
-- Unused variables
-- Explicit `any` types
-- Code formatting
+- Biome formatting and linting
+- TypeScript type checking
+- Design-system guardrails
+- Unit tests
+- Production build
 
-### TypeScript Checks
+### Backend Checks
 
-- Type errors
-- Missing imports
-- Invalid prop types
-
-## Performance
-
-Hooks typically run in **2-5 seconds** for typical commits (1-10 files).
-
-For large commits (20+ files), expect 5-10 seconds.
+- Rust formatting
+- Workspace type checking
+- Clippy
+- Backend and CLI tests
 
 ## Related Documentation
 

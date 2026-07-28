@@ -33,7 +33,7 @@ The backend Docker build performs the same fetch automatically, but local `cargo
 
 This project treats **GitHub Actions as the merge gate**. The default Git hook trades some parity for contributor time.
 
-**`bun run precommit` (Husky):** frontend **Biome check**, `typecheck`, **design guard**, and **`bun test`**, then **`bun run backend:ci`**. It does **not** run `bun install` in `frontend/`, Storybook static build, Vitest browser tests, or Playwright iframe smoke. Typecheck already includes `*.stories.tsx` under `src/` with the app.
+**`bun run precommit` (Husky):** frontend **Biome check**, `typecheck`, **design guard**, and **`bun test`**, then **`bun run backend:ci`**. It does **not** run `bun install`, Storybook static build, Vitest browser tests, or Playwright iframe smoke. Typecheck already includes `*.stories.tsx` under `src/` with the app.
 
 For **full parity** with `.github/workflows/ci.yml` frontend steps before you push (for example Storybook/Vite/Playwright paths), run **`bun run backend:ci && bun run frontend:ci`** manually.
 
@@ -81,26 +81,23 @@ Demo credentials (dev compose): `me@test.com` / `Test1234!`
 
 ## Frontend Development
 
-`frontend/package.json` is the canonical frontend command surface. From the repo root, use the thin wrappers:
+The root `package.json` exposes the contributor command surface and routes frontend commands through the `frontend` workspace. Install from the repo root using the single root `bun.lock` and the hoisted linker configured in `bunfig.toml`:
 
 ```bash
+bun install
+```
+
+Run frontend commands from the repository root:
+
+```bash
+bun run frontend:dev
 bun run frontend:build
 bun run frontend:test
 bun run frontend:typecheck
 bun run frontend:lint
 ```
 
-Or directly in `frontend/`:
-
-```bash
-cd frontend
-bun install
-bun run dev
-bun run build
-bun run test
-```
-
-- `bun run dev` starts the Next.js dev server on `http://localhost:3001`.
+- `bun run frontend:dev` starts the Next.js dev server on `http://localhost:3001`.
 - `http://localhost:3001` proxies `/api` and `/health` to the backend for local end-to-end flows.
 - `http://localhost:8080` remains the Nginx-backed integrated stack.
 - Supported local host platforms are macOS, Linux, and Windows through Docker Compose.
@@ -115,7 +112,7 @@ bun run storybook:build
 bun run frontend:storybook-test
 ```
 
-The root Storybook commands delegate to `frontend/` (same as `cd frontend && bun run …`). `storybook` serves `http://localhost:6006`. `storybook:build` writes `frontend/storybook-static` (used by CI Storybook iframe smoke tests). `frontend:storybook-test` runs the Storybook Vitest project from the repo root. Storybook MCP needs Storybook running first; see `AGENTS.md`.
+The root Storybook commands route through the `frontend` workspace. `storybook` serves `http://localhost:6006`. `storybook:build` writes `frontend/storybook-static` (used by CI Storybook iframe smoke tests). `frontend:storybook-test` runs the Storybook Vitest project from the repo root. Storybook MCP needs Storybook running first; see `AGENTS.md`.
 
 ## Backend Validation
 

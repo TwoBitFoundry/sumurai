@@ -1,5 +1,4 @@
 #!/usr/bin/env sh
 set -e
 
-bun --cwd=frontend run precommit
-bun run backend:ci
+bun run precommit
