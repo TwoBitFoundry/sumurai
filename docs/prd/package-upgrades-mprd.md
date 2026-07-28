@@ -264,9 +264,17 @@ Context7 confirms the core libraries exist (`/websites/typescriptlang`, `/vercel
 
 ### Acceptance Criteria
 
-- [ ] `Cargo.lock` shows minor/patch targets; `sea-orm` still `1.1.x`
-- [ ] `bun run backend:ci` passes
-- [ ] No SeaORM 2.0 or sqlx 0.9 forced upgrade in the lockfile
+- [x] `Cargo.lock` shows minor/patch targets; `sea-orm` still `1.1.x`
+- [x] `bun run backend:ci` passes
+- [x] No SeaORM 2.0 or sqlx 0.9 forced upgrade in the lockfile
+
+### Notes
+
+- Locked: tokio 1.53.1, redis 1.4.1, reqwest 0.13.4, hyper 1.11.0, uuid 1.24.0, rust_decimal 1.42.1, prost 0.14.4, mockall 0.15.0, serde 1.0.229, serde_json 1.0.151; sea-orm/sqlx unchanged at 1.1.20 / 0.8.6.
+
+### Verification log
+
+- `bun run backend:ci` — pass
 
 ---
 

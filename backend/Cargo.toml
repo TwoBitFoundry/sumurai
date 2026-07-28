@@ -5,12 +5,12 @@ edition = "2021"
 
 [dependencies]
 axum = { version = "0.8.9", features = ["multipart"] }
-tokio = { version = "1.52", features = ["full"] }
+tokio = { version = "1.53", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-uuid = { version = "1.23", features = ["v4", "serde"] }
+uuid = { version = "1.24", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
-rust_decimal = { version = "1.41", features = ["serde"] }
+rust_decimal = { version = "1.42", features = ["serde"] }
 tower = { version = "0.5.3", features = ["util"] }
 tower-http = { version = "0.6.9", features = ["cors", "trace"] }
 tracing = "0.1"
@@ -22,7 +22,7 @@ entity = { path = "entity" }
 migration = { path = "migration" }
 # Package-specific dependencies not in workspace
 rust_decimal_macros = "1.40"
-hyper = "1.9"
+hyper = "1.11"
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
 async-trait = "0.1"
 aes-gcm = "0.10"
@@ -30,7 +30,7 @@ base64 = "0.22"
 cookie = "0.18"
 hex = "0.4"
 rand = "0.10"
-redis = { version = "1.2.1", features = ["tokio-comp", "connection-manager"] }
+redis = { version = "1.4", features = ["tokio-comp", "connection-manager"] }
 jsonwebtoken = { version = "10.3", features = ["rust_crypto"] }
 argon2 = "0.5"
 sha2 = "0.11"
@@ -65,5 +65,5 @@ default = []
 dev-seed = []
 
 [dev-dependencies]
-mockall = "0.14"
+mockall = "0.15"
 webauthn-authenticator-rs = { version = "0.5.5", features = ["softpasskey"] }
