@@ -199,11 +199,24 @@ Context7 confirms the core libraries exist (`/websites/typescriptlang`, `/vercel
 
 ### Acceptance Criteria
 
-- [ ] Lockfile reflects major targets above; `@google/design.md` still `0.1.1`
-- [ ] Plaid connect flow typechecks and existing Bun tests for provider/auth paths pass
-- [ ] No broken lucide icon imports in app/Storybook builds
-- [ ] OTEL browser instrumentation still initializes without runtime import errors in unit/setup tests
-- [ ] `bun --cwd=frontend run typecheck` and `bun --cwd=frontend run test` pass
+- [x] Lockfile reflects major targets above; `@google/design.md` still `0.1.1`
+- [x] Plaid connect flow typechecks and existing Bun tests for provider/auth paths pass
+- [x] No broken lucide icon imports in app/Storybook builds
+- [x] OTEL browser instrumentation still initializes without runtime import errors in unit/setup tests
+- [x] `bun --cwd=frontend run typecheck` and `bun --cwd=frontend run test` pass
+
+### Notes
+
+- No app code changes required: existing lucide icons, custom Plaid SDK wrapper types, and OTEL `resourceFromAttributes` / ATTR_* usage stayed compatible.
+- `@google/design.md` remains exact `0.1.1`.
+
+### Verification log
+
+- `bun --cwd=frontend run typecheck` — pass
+- `bun --cwd=frontend run test` — 1424 pass
+- `bun --cwd=frontend run design:guard` — pass
+- `bun --cwd=frontend run build` — pass
+- `bun --cwd=frontend run lint` — pass
 
 ---
 
