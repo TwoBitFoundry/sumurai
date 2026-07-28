@@ -37,7 +37,7 @@ RUN bun run design:generate
 RUN --mount=type=cache,target=/app/frontend/.next/cache bun run build
 
 # ---------- Runtime stage ----------
-FROM nginx:1.25-alpine
+FROM nginx:1.29-alpine
 COPY --from=builder /app/frontend/out /usr/share/nginx/html
 RUN printf 'server { listen 8080; server_name _; root /usr/share/nginx/html; index index.html; location = /manifest.webmanifest { default_type application/manifest+json; try_files $uri =404; } location /api/ { proxy_pass http://backend:3000/api/; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $scheme; client_max_body_size 10m; } location /health { proxy_pass http://backend:3000/health; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $scheme; } location / { try_files $uri $uri/ /index.html; } }' > /etc/nginx/conf.d/default.conf
 EXPOSE 8080

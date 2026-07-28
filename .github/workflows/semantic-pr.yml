@@ -14,7 +14,7 @@ concurrency:
 jobs:
   validate:
     name: Validate PR title
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: "${{ github.event.pull_request.draft == false && !contains(join(github.event.pull_request.labels.*.name, ','), 'autorelease: pending') }}"
     steps:
       - uses: amannn/action-semantic-pull-request@0723387faaf9b38adef4775cd42cfd5155ed6017

@@ -103,8 +103,8 @@ Snapshot date for version targets: **2026-07-27**.
 - Bun builder → `oven/bun:1.3.14-alpine`
 - Backend build → `rust:1.97.1-slim-trixie`
 - Seq prod `2025.2` → `**2026.1**`
-- Postgres `15-alpine` → `**17-alpine**` (major; update `postgresql-client-15` in backend Dockerfile)
-- Redis `7-alpine` → `**8-alpine**` (major)
+- Postgres `15-alpine` → **stay `15-alpine`** (major deferred; avoids forcing volume wipe / dump-restore)
+- Redis `7-alpine` → `**8-alpine**` (major; cache-only, safe to recreate)
 - Pin floating `certbot` / `ngrok` `:latest` when applying infra
 - `semantic-pr.yml` runner `ubuntu-latest` → `ubuntu-24.04`
 - Root: `@semantic-release/git` `^10` → `^11.0.1`; `conventional-changelog-conventionalcommits` `^9` → `^10.2.1`; semantic-release patch bumps
@@ -117,7 +117,7 @@ Snapshot date for version targets: **2026-07-27**.
 - Frontend majors (`lucide-react` 1.x, `react-plaid-link` 5, OTEL web, jest-dom 7) can change APIs/icons/imports—isolate from the TS7+patch batch.
 - `@google/design.md` pre-1.0 + wrapper remap can silently change `css-tailwind` export semantics.
 - Backend OTEL / `axum-tracing-opentelemetry` 0.38 and `tower-http` 0.7 may need coordinated code edits.
-- Postgres 15→17 and Redis 7→8 are data-plane majors; require compose smoke and migration compatibility checks.
+- Redis 7→8 is cache-only for Sumurai; safe to bump. Postgres stays on 15 in this PR (17 deferred to avoid forced volume migration).
 - Rust 1.97 default mangling / louder linker messages may surface new warnings in CI.
 
 ## Out of scope
@@ -134,7 +134,7 @@ Context7 confirms the core libraries exist (`/websites/typescriptlang`, `/vercel
 
 - **npm:** all MPRD frontend/root target versions resolve (including `typescript@7.0.2`, `next@16.2.12`, `lucide-react@1.27.0`, `react-plaid-link@5.0.0`, OTEL `0.221` / `2.10`, `@google/design.md@0.1.1` and `0.4.0`).
 - **crates.io:** all listed backend targets resolve (including `jsonwebtoken@11.0.0`, `tower-http@0.7.0`, OTEL `0.32` / `axum-tracing-opentelemetry@0.38.0`, `sea-orm@1.1.20`; `sea-orm@2.0.0` exists but remains out of scope).
-- **Docker Hub:** `nginx:1.29-alpine`, `postgres:17-alpine`, `redis:8-alpine`, `rust:1.97.1-slim-trixie`, `oven/bun:1.3.14-alpine`, `datalust/seq:2026.1` all exist.
+- **Docker Hub:** `nginx:1.29-alpine`, `postgres:15-alpine`, `redis:8-alpine`, `rust:1.97.1-slim-trixie`, `oven/bun:1.3.14-alpine`, `datalust/seq:2026.1` all exist.
 
 ## Next actions
 
@@ -316,7 +316,7 @@ Context7 confirms the core libraries exist (`/websites/typescriptlang`, `/vercel
 
 - Frontend runtime nginx → `nginx:1.29-alpine`; all compose proxy nginx → `nginx:1.29-alpine`
 - Seq (prod) → `datalust/seq:2026.1`
-- Postgres → `postgres:17-alpine`; backend Dockerfile `postgresql-client` major aligned to 17
+- Keep Postgres at `postgres:15-alpine` / `postgresql-client-15` (no major in this PR)
 - Redis → `redis:8-alpine`
 - Pin `certbot` / `ngrok` away from floating `:latest` where practical
 - Align `semantic-pr.yml` to `ubuntu-24.04`
@@ -325,10 +325,23 @@ Context7 confirms the core libraries exist (`/websites/typescriptlang`, `/vercel
 
 ### Acceptance Criteria
 
-- [ ] Compose and Dockerfiles use the target image tags above; nginx versions no longer drift (1.25 vs 1.27)
-- [ ] Dev/prod compose stack comes up; app reachable at `http://localhost:8080`
-- [ ] Backend image build still succeeds with updated postgres client / rust base
-- [ ] Root release tooling installs cleanly with updated lockfile
+- [x] Compose and Dockerfiles use the target image tags above; nginx versions no longer drift (1.25 vs 1.27)
+- [x] Dev/prod compose stack comes up; app reachable at `http://localhost:8080`
+- [x] Backend image build still succeeds with updated postgres client / rust base
+- [x] Root release tooling installs cleanly with updated lockfile
+
+### Notes
+
+- Pins: `nginx:1.29-alpine`, `postgres:15-alpine`, `redis:8-alpine`, `datalust/seq:2026.1`, `certbot/certbot:v4.2.0`, `ngrok/ngrok:3.29.0-alpine`; backend runtime `postgresql-client-15`.
+- Postgres 17 deferred so existing volumes keep working without dump/restore.
+- Left `cargo-chef` `0.1.77` and `ONNXRUNTIME_VERSION=1.24.4` (still latest chef; ONNX matches `ort` `api-24`).
+- Root: `@semantic-release/git` 11.0.1, `conventional-changelog-conventionalcommits` 10.2.1, `semantic-release` 25.0.8, `@semantic-release/github` 12.0.9.
+
+### Verification log
+
+- `docker compose -f docker-compose.dev.yml up -d --build` — healthy; postgres:15, redis:8, nginx:1.29
+- `http://localhost:8080` → 301 to HTTPS; `https://localhost:8443/` → 200
+- Root `bun install` + import check for release tooling — pass
 
 ---
 
