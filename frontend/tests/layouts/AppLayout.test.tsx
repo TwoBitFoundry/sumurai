@@ -9,9 +9,9 @@ function renderAppLayout(ui: React.ReactElement) {
 }
 
 jest.mock('@/ui/primitives/AppTitleBar', () => {
-  const actual = jest.requireActual<typeof import('@/ui/primitives/AppTitleBar')>(
+  const actual = jest.requireActual(
     '@/ui/primitives/AppTitleBar'
-  );
+  ) as typeof import('@/ui/primitives/AppTitleBar');
   return {
     AppTitleBar: () => <header data-testid="app-title-bar" />,
     TABS: actual.TABS,

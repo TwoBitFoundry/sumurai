@@ -157,7 +157,7 @@ describe('planPolicy', () => {
     );
 
     expect(policy?.statusCopy).toBe(statusCopy);
-    expect(policy?.actions.map((action) => action.id)).toEqual(actions);
+    expect(policy?.actions.map((action) => action.id)).toEqual([...actions]);
     if (accessStatus === 'past_due') {
       expect(policy?.alert).toMatchObject({ variant: 'error', title: 'Payment past due' });
     }

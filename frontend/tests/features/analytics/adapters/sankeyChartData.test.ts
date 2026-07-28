@@ -2,25 +2,37 @@ import { describe, expect, it } from 'bun:test';
 import {
   resolveSankeyLayoutMetrics,
   resolveSankeyTooltipMetadata,
+  type SankeyChartNode,
   sankeyResponseToChartData,
 } from '@/features/analytics/adapters/chartData';
 import type { SankeyResponse } from '@/types/api';
 import { sankeyChartSizing } from '@/ui/recipes';
 
+const makeSankeyNode = (
+  node: Pick<SankeyChartNode, 'id' | 'label' | 'kind' | 'name'>
+): SankeyChartNode => ({
+  ...node,
+  value: 100,
+  percentOfExpenses: null,
+  percentContext: null,
+});
+
 describe('resolveSankeyLayoutMetrics', () => {
   it('scales chart height and node padding with category count', () => {
     const compact = resolveSankeyLayoutMetrics([
-      { id: 'income', label: 'Income', kind: 'Income', name: 'Income' },
-      { id: 'expenses', label: 'Expenses', kind: 'Expenses', name: 'Expenses' },
-      { id: 'food', label: 'Food', kind: 'Category', name: 'Food' },
+      makeSankeyNode({ id: 'income', label: 'Income', kind: 'Income', name: 'Income' }),
+      makeSankeyNode({ id: 'expenses', label: 'Expenses', kind: 'Expenses', name: 'Expenses' }),
+      makeSankeyNode({ id: 'food', label: 'Food', kind: 'Category', name: 'Food' }),
     ]);
     const expanded = resolveSankeyLayoutMetrics(
-      Array.from({ length: 9 }, (_, index) => ({
-        id: `category_${index}`,
-        label: `Category ${index}`,
-        kind: 'Category' as const,
-        name: `Category ${index}`,
-      }))
+      Array.from({ length: 9 }, (_, index) =>
+        makeSankeyNode({
+          id: `category_${index}`,
+          label: `Category ${index}`,
+          kind: 'Category',
+          name: `Category ${index}`,
+        })
+      )
     );
 
     const defaultMinHeight = sankeyChartSizing.baseMinHeightPx * sankeyChartSizing.defaultScale;
@@ -34,12 +46,14 @@ describe('resolveSankeyLayoutMetrics', () => {
   });
 
   it('uses the measured container height when provided', () => {
-    const nodes = Array.from({ length: 4 }, (_, index) => ({
-      id: `category_${index}`,
-      label: `Category ${index}`,
-      kind: 'Category' as const,
-      name: `Category ${index}`,
-    }));
+    const nodes = Array.from({ length: 4 }, (_, index) =>
+      makeSankeyNode({
+        id: `category_${index}`,
+        label: `Category ${index}`,
+        kind: 'Category',
+        name: `Category ${index}`,
+      })
+    );
     const metrics = resolveSankeyLayoutMetrics(nodes, 640);
 
     expect(metrics.height).toBe(640);

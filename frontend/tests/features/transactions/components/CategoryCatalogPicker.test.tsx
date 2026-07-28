@@ -68,16 +68,17 @@ describe('CategoryCatalogPicker', () => {
       isDesktop: true,
       breakpoint: 'desktop',
     } as ReturnType<typeof useViewportBreakpoint>);
-    useDeleteCustomCategoryMock.useDeleteCustomCategory.mockReturnValue({
+    jest.mocked(useDeleteCustomCategoryMock.useDeleteCustomCategory).mockReturnValue({
       deleteCustomCategory: jest.fn(),
       deleteCustomCategoryAsync: jest.fn(),
       isPending: false,
       error: null,
     });
-    useCategoriesMock.useCategories.mockReturnValue({
+    jest.mocked(useCategoriesMock.useCategories).mockReturnValue({
       system: ['FOOD_AND_DRINK', 'ENTERTAINMENT'],
       custom: [{ id: 'c1', display_name: 'Coffee', lookup_key: 'coffee' }],
       all: ['Coffee', 'ENTERTAINMENT', 'FOOD_AND_DRINK'],
+      filterCategories: ['Coffee', 'ENTERTAINMENT', 'FOOD_AND_DRINK'],
       accentIndexByName: new Map([
         ['Coffee', 0],
         ['ENTERTAINMENT', 1],
@@ -91,7 +92,7 @@ describe('CategoryCatalogPicker', () => {
       display_name: 'Weekend Brunch',
       lookup_key: 'weekend brunch',
     });
-    useCreateCustomCategoryMock.useCreateCustomCategory.mockReturnValue({
+    jest.mocked(useCreateCustomCategoryMock.useCreateCustomCategory).mockReturnValue({
       createCustomCategory: jest.fn(),
       createCustomCategoryAsync,
       isPending: false,

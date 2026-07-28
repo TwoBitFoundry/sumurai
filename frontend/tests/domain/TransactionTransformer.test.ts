@@ -80,10 +80,10 @@ describe('TransactionTransformer', () => {
         amount: 100,
         account_name: 'Checking',
         account_type: 'depository',
-        location: { city: 'San Francisco', state: 'CA' },
+        location: { city: 'San Francisco', region: 'CA' },
       };
       const result = TransactionTransformer.backendToFrontend(backendTxn);
-      expect(result.location).toEqual({ city: 'San Francisco', state: 'CA' });
+      expect(result.location).toEqual({ city: 'San Francisco', region: 'CA' });
     });
 
     it('should not promote legacy merchant fallback fields into the canonical display name', () => {

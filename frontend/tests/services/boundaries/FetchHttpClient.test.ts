@@ -26,7 +26,7 @@ describe('FetchHttpClient', () => {
         headers: { 'Content-Type': 'application/json' },
       })
     );
-    globalThis.fetch = fetchMock as typeof fetch;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     const client = new FetchHttpClient('http://example.com/api');
     const formData = new FormData();
@@ -55,7 +55,7 @@ describe('FetchHttpClient', () => {
         },
       })
     );
-    globalThis.fetch = fetchMock as typeof fetch;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     const client = new FetchHttpClient('http://example.com/api');
     const result = await client.getBlob('/export?format=csv');
@@ -79,7 +79,7 @@ describe('FetchHttpClient', () => {
         headers: { 'Content-Type': 'application/json' },
       })
     );
-    globalThis.fetch = fetchMock as typeof fetch;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     const client = new FetchHttpClient('http://example.com/api');
 
@@ -118,7 +118,7 @@ describe('FetchHttpClient', () => {
       .mockResolvedValueOnce(responses[0])
       .mockResolvedValueOnce(responses[1])
       .mockResolvedValueOnce(responses[2]);
-    globalThis.fetch = fetchMock as typeof fetch;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     const client = new FetchHttpClient('http://example.com/api');
 
@@ -142,7 +142,7 @@ describe('FetchHttpClient', () => {
         status: 402,
         headers: { 'Content-Type': 'application/json' },
       })
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     const client = new FetchHttpClient('http://example.com/api');
     let caught: unknown;
@@ -172,7 +172,7 @@ describe('FetchHttpClient', () => {
         status: 409,
         headers: { 'Content-Type': 'application/json' },
       })
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     const client = new FetchHttpClient('http://example.com/api');
     let caught: unknown;

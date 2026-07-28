@@ -1,7 +1,7 @@
 import type { Paddle, PaddleEventData } from '@paddle/paddle-js';
 import { createPaddleClient } from '@/features/billing/paddleClient';
 
-const checkoutEvent = (name: PaddleEventData['name'], transactionId: string): PaddleEventData =>
+const checkoutEvent = (name: string, transactionId: string): PaddleEventData =>
   ({ name, data: { transaction_id: transactionId } }) as PaddleEventData;
 
 const createHarness = () => {

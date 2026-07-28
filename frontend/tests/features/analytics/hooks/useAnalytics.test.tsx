@@ -485,11 +485,11 @@ describe('useAnalytics', () => {
       .mockReturnValueOnce(totalsDeferred.promise as any);
     jest
       .mocked(AnalyticsService.getCategorySpendingByDateRange)
-      .mockResolvedValueOnce([{ name: 'Food', value: 300 }] as any)
+      .mockResolvedValueOnce([{ category: 'Food', amount: 300, percentage: 60 }] as any)
       .mockReturnValueOnce(categoriesDeferred.promise as any);
     jest
       .mocked(AnalyticsService.getTopMerchantsByDateRange)
-      .mockResolvedValueOnce([{ name: 'Cafe', amount: 120 }] as any)
+      .mockResolvedValueOnce([{ name: 'Cafe', amount: 120, percentage: 24 }] as any)
       .mockReturnValueOnce(merchantsDeferred.promise as any);
     jest
       .mocked(AnalyticsService.getMonthlyTotals)
@@ -511,7 +511,7 @@ describe('useAnalytics', () => {
     });
 
     expect(result.current.spendingTotal).toBe(500);
-    expect(result.current.categories).toEqual([{ name: 'Food', value: 300 }]);
+    expect(result.current.categories).toEqual([{ category: 'Food', amount: 300, percentage: 60 }]);
 
     await act(async () => {
       accountFilterHook!.setSelectedAccountIds(['account1']);
@@ -523,12 +523,12 @@ describe('useAnalytics', () => {
 
     expect(result.current.loading).toBe(false);
     expect(result.current.spendingTotal).toBe(500);
-    expect(result.current.categories).toEqual([{ name: 'Food', value: 300 }]);
-    expect(result.current.topMerchants).toEqual([{ name: 'Cafe', amount: 120 }]);
+    expect(result.current.categories).toEqual([{ category: 'Food', amount: 300, percentage: 60 }]);
+    expect(result.current.topMerchants).toEqual([{ name: 'Cafe', amount: 120, percentage: 24 }]);
 
     totalsDeferred.resolve(275);
-    categoriesDeferred.resolve([{ name: 'Travel', value: 275 }] as any);
-    merchantsDeferred.resolve([{ name: 'Airline', amount: 275 }] as any);
+    categoriesDeferred.resolve([{ category: 'Travel', amount: 275, percentage: 100 }] as any);
+    merchantsDeferred.resolve([{ name: 'Airline', amount: 275, percentage: 100 }] as any);
     monthlyDeferred.resolve([{ month: '2026-05', income: 0, expenses: 275 }] as any);
 
     await waitFor(() => {
@@ -536,6 +536,8 @@ describe('useAnalytics', () => {
     });
 
     expect(result.current.spendingTotal).toBe(275);
-    expect(result.current.categories).toEqual([{ name: 'Travel', value: 275 }]);
+    expect(result.current.categories).toEqual([
+      { category: 'Travel', amount: 275, percentage: 100 },
+    ]);
   });
 });

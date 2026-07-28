@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type React from 'react';
 
 jest.mock('@/features/transactions/hooks/useTransactionListLauncher', () => ({
   useTransactionListLauncher: () => ({
@@ -10,6 +11,7 @@ jest.mock('@/features/transactions/hooks/useTransactionListLauncher', () => ({
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeProviderCatalogMock } from '@tests/utils/providerCatalogMocks';
+import type { AccountFilterContextType } from '@/context/AccountFilterContext';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { useExport } from '@/hooks/useExport';
 import {
@@ -23,6 +25,7 @@ import { ApiError, NotFoundError } from '@/services/ApiClient';
 import { DiyService } from '@/services/DiyService';
 import { PlaidService } from '@/services/PlaidService';
 import { TellerService } from '@/services/TellerService';
+import { buildMockAccountFilterContext } from '@/storybook/mockAccountFilter';
 import type { ProviderCatalogue } from '@/types/providerCatalog';
 import * as events from '@/utils/events';
 import { isProviderConnectable } from '@/utils/providerCapabilities';
@@ -109,7 +112,7 @@ jest.mock('@/features/plaid/components/ProviderSelectionPanel', () => ({
     visibleProviders,
   }: {
     availableProviders: Array<'plaid' | 'teller' | 'simplefin' | 'diy'>;
-    footerContent?: unknown;
+    footerContent?: React.ReactNode;
     onClose?: () => void;
     onSelectProvider: (provider: 'plaid' | 'teller' | 'simplefin' | 'diy') => void;
     visibleProviders?: Array<'plaid' | 'teller' | 'simplefin' | 'diy'>;
@@ -246,11 +249,8 @@ jest.mock('@/features/import/components/ImportModal', () => ({
     ) : null,
 }));
 
-function makeTellerAccountFilter(overrides = {}) {
-  return {
-    selectedAccountIds: ['acc_1'],
-    allAccountIds: ['acc_1'],
-    isAllAccountsSelected: true,
+function makeTellerAccountFilter(overrides: Partial<AccountFilterContextType> = {}) {
+  return buildMockAccountFilterContext({
     accountsByBank: {
       'Demo Bank': [
         {
@@ -259,21 +259,25 @@ function makeTellerAccountFilter(overrides = {}) {
           account_type: 'depository',
           balance_ledger: 100,
           balance_available: 100,
+          balance_current: 100,
           mask: '1234',
           provider: 'teller',
           institution_name: 'Demo Bank',
           connection_id: 'conn_1',
+          provider_account_id: 'provider-acc_1',
           transaction_count: 0,
         },
       ],
     },
-    loading: false,
+    selectedAccountIds: ['acc_1'],
+    allAccountIds: ['acc_1'],
+    isAllAccountsSelected: true,
     setSelectedAccountIds: jest.fn(),
     toggleBank: jest.fn(),
     toggleAccount: jest.fn(),
     removeAccountsByIds: jest.fn(),
     ...overrides,
-  };
+  });
 }
 
 async function expandInstitutionAccounts(user: ReturnType<typeof userEvent.setup>) {
@@ -434,10 +438,12 @@ describe('AccountsPage', () => {
             account_type: 'depository',
             balance_ledger: 100,
             balance_available: 100,
+            balance_current: 100,
             mask: '1234',
             provider: 'teller',
             institution_name: 'Demo Bank',
             connection_id: 'conn_1',
+            provider_account_id: 'provider-acc',
             transaction_count: 0,
           },
         ],
@@ -508,10 +514,12 @@ describe('AccountsPage', () => {
             account_type: 'depository',
             balance_ledger: 100,
             balance_available: 100,
+            balance_current: 100,
             mask: '1234',
             provider: 'plaid',
             institution_name: 'Demo Bank',
             connection_id: 'conn_plaid',
+            provider_account_id: 'provider-acc',
             transaction_count: 55,
           },
         ],
@@ -549,10 +557,12 @@ describe('AccountsPage', () => {
               account_type: 'depository',
               balance_ledger: 100,
               balance_available: 100,
+              balance_current: 100,
               mask: '1234',
               provider: 'plaid',
               institution_name: 'Demo Bank',
               connection_id: 'conn_plaid',
+              provider_account_id: 'provider-acc',
               transaction_count: 0,
             },
           ],
@@ -608,6 +618,7 @@ describe('AccountsPage', () => {
             provider: 'teller',
             institution_name: 'Demo Bank',
             connection_id: 'conn_teller',
+            provider_account_id: 'provider-acc',
             transaction_count: 7,
           },
         ],
@@ -680,10 +691,12 @@ describe('AccountsPage', () => {
               account_type: 'depository',
               balance_ledger: 100,
               balance_available: 100,
+              balance_current: 100,
               mask: '1234',
               provider: 'teller',
               institution_name: 'Demo Bank',
               connection_id: 'conn_1',
+              provider_account_id: 'provider-acc',
               transaction_count: 0,
             },
           ],
@@ -742,10 +755,12 @@ describe('AccountsPage', () => {
               account_type: 'depository',
               balance_ledger: 100,
               balance_available: 100,
+              balance_current: 100,
               mask: '1234',
               provider: 'diy',
               institution_name: 'My Cash',
               connection_id: 'conn_diy_1',
+              provider_account_id: 'provider-acc',
               transaction_count: 0,
             },
           ],
@@ -786,10 +801,12 @@ describe('AccountsPage', () => {
             account_type: 'depository',
             balance_ledger: 100,
             balance_available: 100,
+            balance_current: 100,
             mask: '1234',
             provider: 'simplefin',
             institution_name: 'SimpleFIN Bank',
             connection_id: 'conn_1',
+            provider_account_id: 'provider-acc',
             transaction_count: 0,
           },
         ],
@@ -869,10 +886,12 @@ describe('AccountsPage', () => {
               account_type: 'depository',
               balance_ledger: 100,
               balance_available: 100,
+              balance_current: 100,
               mask: '1234',
               provider: 'diy',
               institution_name: 'DIY Bank',
               connection_id: 'conn_diy_1',
+              provider_account_id: 'provider-acc',
               transaction_count: 0,
             },
           ],
@@ -911,10 +930,12 @@ describe('AccountsPage', () => {
             account_type: 'depository',
             balance_ledger: 100,
             balance_available: 100,
+            balance_current: 100,
             mask: '1234',
             provider: 'simplefin',
             institution_name: 'SimpleFIN Bank',
             connection_id: 'conn_1',
+            provider_account_id: 'provider-acc',
             transaction_count: 0,
           },
         ],
@@ -952,10 +973,12 @@ describe('AccountsPage', () => {
               account_type: 'depository',
               balance_ledger: 100,
               balance_available: 100,
+              balance_current: 100,
               mask: '1234',
               provider: 'plaid',
               institution_name: 'Demo Bank',
               connection_id: 'conn_plaid',
+              provider_account_id: 'provider-acc',
               transaction_count: 0,
             },
           ],
@@ -1018,10 +1041,12 @@ describe('AccountsPage', () => {
               account_type: 'depository',
               balance_ledger: 100,
               balance_available: 100,
+              balance_current: 100,
               mask: '1234',
               provider: 'plaid',
               institution_name: 'Demo Bank',
               connection_id: 'conn_plaid',
+              provider_account_id: 'provider-acc',
               transaction_count: 0,
             },
           ],
@@ -1062,10 +1087,12 @@ describe('AccountsPage', () => {
               account_type: 'depository',
               balance_ledger: 100,
               balance_available: 100,
+              balance_current: 100,
               mask: '1234',
               provider: 'plaid',
               institution_name: 'Demo Bank',
               connection_id: 'conn_plaid',
+              provider_account_id: 'provider-acc',
               transaction_count: 0,
             },
           ],
@@ -1118,10 +1145,12 @@ describe('AccountsPage', () => {
               account_type: 'depository',
               balance_ledger: 100,
               balance_available: 100,
+              balance_current: 100,
               mask: '1234',
               provider: 'plaid',
               institution_name: 'Demo Bank',
               connection_id: 'conn_plaid',
+              provider_account_id: 'provider-acc',
               transaction_count: 0,
             },
           ],
@@ -1152,10 +1181,12 @@ describe('AccountsPage', () => {
               account_type: 'depository',
               balance_ledger: 100,
               balance_available: 100,
+              balance_current: 100,
               mask: '1234',
               provider: 'plaid',
               institution_name: 'Demo Bank',
               connection_id: 'conn_plaid',
+              provider_account_id: 'provider-acc',
               transaction_count: 0,
             },
           ],
@@ -1210,7 +1241,7 @@ describe('AccountsPage', () => {
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       const connectButtons = screen.getAllByRole('button', { name: /^connect$/i });
       expect(connectButtons).toHaveLength(3);
-      expect(connectButtons.every((button) => button.disabled === false)).toBe(true);
+      expect(connectButtons.every((button) => !(button as HTMLButtonElement).disabled)).toBe(true);
     });
 
     it('keeps the provider picker open if the simplefin modal is closed before selection completes', async () => {
@@ -1246,13 +1277,11 @@ describe('AccountsPage', () => {
           user_provider: 'plaid',
         })
       );
-      jest.mocked(useFinancialConnection).mockImplementation(({ provider }) =>
-        makeFinancialConnectionMock({
-          isReady: true,
-          connectionInProgress: false,
-          provider,
-        })
-      );
+      jest
+        .mocked(useFinancialConnection)
+        .mockImplementation(({ provider }) =>
+          makeFinancialConnectionMock({ isReady: true, connectionInProgress: false })
+        );
       jest.mocked(useAccountFilter).mockReturnValue({
         selectedAccountIds: [],
         allAccountIds: [],
@@ -1296,10 +1325,12 @@ describe('AccountsPage', () => {
               account_type: 'depository',
               balance_ledger: 100,
               balance_available: 100,
+              balance_current: 100,
               mask: '1234',
               provider: 'teller',
               institution_name: 'Demo Bank',
               connection_id: 'conn_1',
+              provider_account_id: 'provider-acc',
               transaction_count: 0,
             },
           ],
@@ -1341,10 +1372,12 @@ describe('AccountsPage', () => {
                 account_type: 'depository',
                 balance_ledger: 100,
                 balance_available: 100,
+                balance_current: 100,
                 mask: '1234',
                 provider: 'teller',
                 institution_name: 'Demo Bank',
                 connection_id: 'conn_1',
+                provider_account_id: 'provider-acc',
                 transaction_count: 0,
               },
             ],
@@ -1513,10 +1546,12 @@ describe('AccountsPage', () => {
                 account_type: 'depository',
                 balance_ledger: 100,
                 balance_available: 100,
+                balance_current: 100,
                 mask: '1234',
                 provider: 'diy',
                 institution_name: 'DIY Bank',
                 connection_id: 'conn_diy_1',
+                provider_account_id: 'provider-acc',
                 transaction_count: 0,
               },
             ],
@@ -1527,10 +1562,12 @@ describe('AccountsPage', () => {
                 account_type: 'depository',
                 balance_ledger: 200,
                 balance_available: 200,
+                balance_current: 200,
                 mask: '5678',
                 provider: 'plaid',
                 institution_name: 'Plaid Bank',
                 connection_id: 'conn_plaid_1',
+                provider_account_id: 'provider-acc',
                 transaction_count: 0,
               },
             ],
@@ -1629,7 +1666,7 @@ describe('AccountsPage', () => {
               });
             }
 
-            return makeFinancialConnectionMock({ provider });
+            return makeFinancialConnectionMock();
           }
         );
 
@@ -1679,10 +1716,12 @@ describe('AccountsPage', () => {
                 account_type: 'depository',
                 balance_ledger: 100,
                 balance_available: 100,
+                balance_current: 100,
                 mask: '1234',
                 provider: 'diy',
                 institution_name: 'DIY Bank',
                 connection_id: 'conn_diy_1',
+                provider_account_id: 'provider-acc',
                 transaction_count: 0,
               },
             ],
@@ -1727,10 +1766,12 @@ describe('AccountsPage', () => {
             account_type: 'depository',
             balance_ledger: 100,
             balance_available: 100,
+            balance_current: 100,
             mask: '1234',
             provider: 'plaid',
             institution_name: 'Demo Bank',
             connection_id: 'conn_plaid',
+            provider_account_id: 'provider-acc',
             transaction_count: 55,
           },
         ],

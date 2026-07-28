@@ -31,8 +31,9 @@ jest.mock('@/utils/queryInvalidation', () => ({
   refreshFinancialDataAfterProviderChange: jest.fn().mockResolvedValue(undefined),
 }));
 
-const simpleFinServiceMock = jest.requireMock('@/services/SimpleFinService')
-  .SimpleFinService as Record<string, jest.Mock>;
+const simpleFinServiceMock = (
+  jest.requireMock('@/services/SimpleFinService') as typeof import('@/services/SimpleFinService')
+).SimpleFinService as unknown as Record<string, jest.Mock>;
 
 describe('useSimpleFinFlow', () => {
   beforeEach(() => {

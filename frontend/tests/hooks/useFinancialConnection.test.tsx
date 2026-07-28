@@ -94,14 +94,14 @@ describe('useFinancialConnection', () => {
     resetPlaidScriptStateForTests();
     postSpy = jest.spyOn(ApiClient, 'post');
     getSpy = jest.spyOn(ApiClient, 'get');
-    getSpy.mockImplementation((url, _params) => {
+    getSpy.mockImplementation(((url: string, _params?: unknown) => {
       if (url === '/providers/info') {
         return Promise.resolve({
           available_providers: ['plaid', 'simplefin'],
         } as any);
       }
       return Promise.resolve({});
-    });
+    }) as typeof ApiClient.get);
     plaidOpen.mockReset();
     plaidDestroy.mockReset();
 

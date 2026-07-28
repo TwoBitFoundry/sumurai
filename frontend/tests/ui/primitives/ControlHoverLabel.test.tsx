@@ -57,7 +57,7 @@ describe('ControlHoverLabel', () => {
     await user.hover(button);
 
     await waitFor(() => {
-      expect(screen.getAllByText('Categories').length).toBeGreaterThan(1);
+      expect(screen.getByRole('tooltip', { name: 'Categories' })).toBeInTheDocument();
     });
   });
 

@@ -1,4 +1,4 @@
-FROM rust:1.95-slim-trixie AS chef
+FROM rust:1.97.1-slim-trixie AS chef
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential pkg-config libssl-dev ca-certificates curl postgresql-client && rm -rf /var/lib/apt/lists/*
 RUN cargo install cargo-chef --version 0.1.77 --locked

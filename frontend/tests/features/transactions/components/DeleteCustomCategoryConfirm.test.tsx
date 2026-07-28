@@ -60,7 +60,7 @@ describe('DeleteCustomCategoryConfirm', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    useDeleteCustomCategoryMock.useDeleteCustomCategory.mockReturnValue({
+    jest.mocked(useDeleteCustomCategoryMock.useDeleteCustomCategory).mockReturnValue({
       deleteCustomCategory: jest.fn(),
       deleteCustomCategoryAsync,
       isPending: false,
@@ -147,7 +147,7 @@ describe('DeleteCustomCategoryConfirm', () => {
   });
 
   it('shows the pending state inline', () => {
-    useDeleteCustomCategoryMock.useDeleteCustomCategory.mockReturnValue({
+    jest.mocked(useDeleteCustomCategoryMock.useDeleteCustomCategory).mockReturnValue({
       deleteCustomCategory: jest.fn(),
       deleteCustomCategoryAsync,
       isPending: true,
@@ -161,7 +161,7 @@ describe('DeleteCustomCategoryConfirm', () => {
   });
 
   it('shows the error inline when the delete fails', () => {
-    useDeleteCustomCategoryMock.useDeleteCustomCategory.mockReturnValue({
+    jest.mocked(useDeleteCustomCategoryMock.useDeleteCustomCategory).mockReturnValue({
       deleteCustomCategory: jest.fn(),
       deleteCustomCategoryAsync,
       isPending: false,

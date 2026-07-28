@@ -1,14 +1,22 @@
 import { render, screen } from '@testing-library/react';
 import { BalancesBankTooltip } from '@/features/analytics/components/BalancesBankTooltip';
 
+const tooltipProps = {
+  coordinate: { x: 0, y: 0 },
+  accessibilityLayer: false,
+  activeIndex: '0',
+};
+
 describe('BalancesBankTooltip', () => {
   it('renders institution balances when active', () => {
     render(
       <BalancesBankTooltip
         active
         label="Chase"
+        {...tooltipProps}
         payload={[
           {
+            graphicalItemId: 'item-1',
             payload: {
               bank: 'Chase',
               cash: 123642.1,
@@ -31,8 +39,10 @@ describe('BalancesBankTooltip', () => {
       <BalancesBankTooltip
         active={false}
         label="Chase"
+        {...tooltipProps}
         payload={[
           {
+            graphicalItemId: 'item-1',
             payload: {
               bank: 'Chase',
               cash: 1,

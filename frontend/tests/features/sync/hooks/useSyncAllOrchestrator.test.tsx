@@ -223,7 +223,6 @@ describe('useSyncAllOrchestrator', () => {
           ],
           primaryProvider: 'simplefin',
           isOnline: true,
-          queryClient,
           onError: jest.fn(),
         }),
       { wrapper }

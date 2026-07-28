@@ -228,6 +228,7 @@ describe('PlaidService', () => {
             transaction_count: 25,
             account_count: 2,
             sync_in_progress: false,
+            provider: 'plaid',
           },
         ],
       };

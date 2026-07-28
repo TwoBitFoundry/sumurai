@@ -69,6 +69,7 @@ describe('BankCard', () => {
           name: 'Test Bank',
           short: 'TB',
           status: 'connected',
+          provider: 'plaid',
           accounts: [],
         }}
         onSync={jest.fn()}
@@ -162,7 +163,7 @@ describe('BankCard', () => {
     await user.hover(providerGlyph!);
 
     await waitFor(() => {
-      expect(screen.getAllByText('Self-managed').length).toBeGreaterThan(1);
+      expect(screen.getByRole('tooltip', { name: 'Self-managed' })).toBeInTheDocument();
     });
   });
 
@@ -178,6 +179,7 @@ describe('BankCard', () => {
           short: 'CH',
           status: 'connected',
           connectionId: 'conn-1',
+          provider: 'plaid',
           accounts: [],
         }}
         onSync={jest.fn()}
@@ -203,6 +205,7 @@ describe('BankCard', () => {
           name: 'Chase',
           short: 'CH',
           status: 'connected',
+          provider: 'plaid',
           accounts: [{ id: 'acc-1', name: 'Checking', mask: '1234', type: 'cash' }],
         }}
         onSync={jest.fn()}
@@ -235,6 +238,7 @@ describe('BankCard', () => {
           name: 'Chase',
           short: 'CH',
           status: 'connected',
+          provider: 'plaid',
           accounts: [
             {
               id: 'acc-1',
@@ -271,6 +275,7 @@ describe('BankCard', () => {
           name: 'Chase',
           short: 'CH',
           status: 'connected',
+          provider: 'plaid',
           accounts: [],
         }}
         onSync={jest.fn()}
@@ -296,6 +301,7 @@ describe('BankCard', () => {
           name: 'Chase',
           short: 'CH',
           status: 'connected',
+          provider: 'plaid',
           accounts: [],
         }}
         onSync={jest.fn()}
@@ -318,6 +324,7 @@ describe('BankCard', () => {
           name: longName,
           short: 'FN',
           status: 'connected',
+          provider: 'plaid',
           accounts: [],
         }}
         onSync={jest.fn()}
@@ -339,6 +346,7 @@ describe('BankCard', () => {
           name: 'Chase',
           short: 'CH',
           status: 'needs_reauth',
+          provider: 'plaid',
           accounts: [],
         }}
         onSync={jest.fn()}
@@ -364,6 +372,7 @@ describe('BankCard', () => {
           short: 'CH',
           status: 'connected',
           connectionId: 'conn-1',
+          provider: 'plaid',
           accounts: [
             {
               id: 'acc-1',
@@ -422,6 +431,7 @@ describe('BankCard', () => {
           name: 'Chase',
           short: 'CH',
           status: 'connected',
+          provider: 'plaid',
           accounts: [
             {
               id: 'acc-1',
@@ -456,6 +466,7 @@ describe('BankCard', () => {
           name: 'Chase',
           short: 'CH',
           status: 'connected',
+          provider: 'plaid',
           accounts: [
             {
               id: 'acc-1',
@@ -487,6 +498,7 @@ describe('BankCard', () => {
           name: 'Chase',
           short: 'CH',
           status: 'connected',
+          provider: 'plaid',
           accounts: [
             {
               id: 'acc-1',
@@ -529,6 +541,7 @@ describe('BankCard', () => {
           name: 'Chase',
           short: 'CH',
           status: 'connected',
+          provider: 'plaid',
           accounts: [
             {
               id: 'acc-1',
