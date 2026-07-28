@@ -292,10 +292,19 @@ Context7 confirms the core libraries exist (`/websites/typescriptlang`, `/vercel
 
 ### Acceptance Criteria
 
-- [ ] Manifests/lockfile reflect Phase 5 majors; sea-orm still 1.1.x
-- [ ] Auth/JWT, encryption, HTTP middleware, and tracing paths compile
-- [ ] `bun run backend:ci` passes
-- [ ] Existing auth/provider/cache-focused backend tests still pass
+- [x] Manifests/lockfile reflect Phase 5 majors; sea-orm still 1.1.x
+- [x] Auth/JWT, encryption, HTTP middleware, and tracing paths compile
+- [x] `bun run backend:ci` passes
+- [x] Existing auth/provider/cache-focused backend tests still pass
+
+### Notes
+
+- Only code change: `ConsoleSpanExporter::shutdown` now takes `&self` (OTEL SDK 0.32).
+- jwt 11 / aes-gcm 0.11 / tower-http 0.7 / axum-tracing-opentelemetry 0.38 needed no API call-site edits.
+
+### Verification log
+
+- `bun run backend:ci` — pass
 
 ---
 

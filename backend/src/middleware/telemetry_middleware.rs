@@ -112,7 +112,7 @@ impl SpanExporter for ConsoleSpanExporter {
         futures::future::ready(Ok(()))
     }
 
-    fn shutdown(&mut self) -> std::result::Result<(), OTelSdkError> {
+    fn shutdown(&self) -> std::result::Result<(), OTelSdkError> {
         Ok(())
     }
 }
