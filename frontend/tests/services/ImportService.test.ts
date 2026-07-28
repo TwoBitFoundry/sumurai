@@ -14,7 +14,7 @@ describe('ImportService', () => {
     const file = new File(['test'], 'test.qfx', { type: 'text/plain' });
     const response = {
       valid: true,
-      format: 'Ofx',
+      format: 'Ofx' as const,
       transaction_count: 1,
       truncated_count: 0,
       date_range: null,

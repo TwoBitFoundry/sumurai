@@ -1,6 +1,9 @@
 import { AlertTriangle } from 'lucide-react';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import { PasskeySecuritySection } from '@/features/settings/PasskeySecuritySection';
+import { PlanSectionView } from '@/features/settings/PlanSectionView';
+import { resolvePlanPolicy } from '@/features/settings/planPolicy';
+import { HeroSubtitleInfo } from '@/layouts/HeroSubtitleInfo';
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
 import {
   Alert,
@@ -18,6 +21,22 @@ import {
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { settingsConfirmationCodeTypography } from '@/views/SettingsPage';
+
+const settingsSlicePlanPolicy = resolvePlanPolicy({
+  billing_enabled: false,
+  trials_enabled: false,
+  paddle_client_token: null,
+  paddle_environment: null,
+  access_status: 'unrestricted',
+  can_use_own_data: true,
+  is_demo_mode_active: true,
+  trial_ends_at: null,
+  current_period_ends_at: null,
+  scheduled_cancel_at: null,
+  payment_method_required: false,
+  billing_portal_available: false,
+  enabled_financial_providers: ['diy'],
+});
 
 export type SettingsScreenScenario =
   | 'default'
@@ -54,17 +73,20 @@ export function SettingsScreenSlice(props: {
     <div className={cn(...pageLayoutRecipes.settingsShell)} data-testid="settings-screen-slice">
       <div className={cn('flex', 'flex-col', 'gap-6')}>
         <GlassCard variant="default" padding="lg">
-          <div className={cn('space-y-5')}>
-            <div className={cn('space-y-2')}>
-              <h1 className={pageLayoutRecipes.title}>Inspect the armory</h1>
-              <p className={pageLayoutRecipes.subtitle}>
-                Manage your security, profile, and account preferences.
-              </p>
-            </div>
+          <div className={cn(...pageLayoutRecipes.titleInlineHost)}>
+            <h1 className={cn(pageLayoutRecipes.titleInlineHeading)}>Inspect the armory</h1>{' '}
+            <HeroSubtitleInfo
+              pageTitle="Inspect the armory"
+              subtitle="Manage your Sumurai account preferences, plan, and security."
+            />
+          </div>
+        </GlassCard>
 
+        <GlassCard variant="default" padding="lg">
+          <div className={cn('space-y-5')}>
             <section className={cn('space-y-3')}>
               <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-                Designated as
+                Designation
               </h2>
               <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
                 commander@sumurai.app
@@ -82,10 +104,26 @@ export function SettingsScreenSlice(props: {
               </div>
               <ThemeModeSelector value="dark" onChange={() => {}} />
             </section>
-
-            <PasskeySecuritySection />
           </div>
         </GlassCard>
+
+        <PlanSectionView
+          policy={settingsSlicePlanPolicy}
+          isLoading={false}
+          queryError={null}
+          isEmpty={false}
+          mutationPending={false}
+          mutationError={null}
+          onRetry={() => {}}
+          onSwitchSelfHosted={() => {}}
+          onStartTrial={() => {}}
+          onUpgradePremium={() => {}}
+          onUpdatePaymentMethod={() => {}}
+          onCancelMembership={() => {}}
+          onManageBilling={() => {}}
+        />
+
+        <PasskeySecuritySection />
 
         <GlassCard variant="default" padding="lg" className={cn('space-y-4')}>
           <div className={cn(settingsSecurityLayout.sectionHeader)}>

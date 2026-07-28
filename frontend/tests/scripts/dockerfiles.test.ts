@@ -25,7 +25,7 @@ describe('bun migration dockerfiles', () => {
     const contents = readDockerfile(frontendDockerfile);
 
     expect(contents.startsWith('# syntax=docker/dockerfile:1.7\n')).toBe(true);
-    expect(contents).toContain('FROM oven/bun:1-alpine AS builder');
+    expect(contents).toContain('FROM oven/bun:1.3.14-alpine AS builder');
     expect(contents).toContain('COPY frontend/package.json frontend/bun.lock ./');
     expect(contents).toContain('RUN --mount=type=cache,target=/root/.bun/install/cache bun ci');
     expect(contents).toContain('COPY DESIGN.md /app/DESIGN.md');

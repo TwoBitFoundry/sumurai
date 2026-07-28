@@ -52,6 +52,7 @@ pub struct PaddleBillingConfig {
     pub api_key: String,
     pub webhook_secret: String,
     pub monthly_price_id: String,
+    pub client_token: String,
     pub cardless_trial_price_id: Option<String>,
     pub trials_enabled: bool,
 }
@@ -199,13 +200,24 @@ fn parse_paddle_billing_config(
     };
 
     Ok(Some(PaddleBillingConfig {
-        environment: parse_required_trimmed(env, "PADDLE_ENVIRONMENT")?,
+        environment: parse_paddle_environment(env)?,
         api_key: parse_required_trimmed(env, "PADDLE_API_KEY")?,
         webhook_secret: parse_required_trimmed(env, "PADDLE_WEBHOOK_SECRET")?,
         monthly_price_id: parse_required_trimmed(env, "PADDLE_MONTHLY_PRICE_ID")?,
+        client_token: parse_required_trimmed(env, "PADDLE_CLIENT_TOKEN")?,
         cardless_trial_price_id,
         trials_enabled,
     }))
+}
+
+fn parse_paddle_environment(env: &dyn EnvironmentProvider) -> Result<String> {
+    let environment = parse_required_trimmed(env, "PADDLE_ENVIRONMENT")?;
+    match environment.as_str() {
+        "sandbox" | "production" => Ok(environment),
+        _ => Err(anyhow!(
+            "PADDLE_ENVIRONMENT must be either sandbox or production"
+        )),
+    }
 }
 
 fn parse_bool_flag(env: &dyn EnvironmentProvider, key: &str, default: bool) -> Result<bool> {

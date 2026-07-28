@@ -64,6 +64,8 @@ function mockTransactions() {
     isFetchingNextPage: false,
     fetchNextPage: jest.fn(),
     isInitialLoading: false,
+    error: null,
+    limit: 40,
     filterKey: 'default',
   });
 }
@@ -167,6 +169,8 @@ describe('VirtualizedTransactionList', () => {
       isFetchingNextPage: false,
       fetchNextPage: jest.fn(),
       isInitialLoading: false,
+      error: null,
+      limit: 40,
       filterKey: 'cleared',
     });
 

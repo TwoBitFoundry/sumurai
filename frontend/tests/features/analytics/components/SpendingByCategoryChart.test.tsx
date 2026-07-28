@@ -59,7 +59,7 @@ describe('SpendingByCategoryChart', () => {
     const setHoveredCategory = mock(() => {});
     const { container } = render(
       <SpendingByCategoryChart
-        data={[{ name: 'Food', value: 10, color: '#123456' }]}
+        data={[{ name: 'Food', value: 10, color: '#123456', categoryKey: 'food' }]}
         total={10}
         hoveredCategory={null}
         setHoveredCategory={setHoveredCategory}

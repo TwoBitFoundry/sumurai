@@ -81,6 +81,10 @@ describe('shared shell text surfaces', () => {
           isPickerOpen={false}
           addButtonRef={{ current: null }}
           onAddBudget={jest.fn()}
+          isEditing={false}
+          canEdit
+          onStartEdit={jest.fn()}
+          onSaveEdit={jest.fn()}
         />
         <NetWorthOverTimeWidget />
       </ThemeProvider>

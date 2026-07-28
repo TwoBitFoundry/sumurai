@@ -8,6 +8,7 @@ import {
   ConflictError,
   ForbiddenError,
   NotFoundError,
+  PaymentRequiredError,
   RateLimitError,
   ServerError,
   ValidationError,
@@ -135,12 +136,14 @@ export class FetchHttpClient implements IHttpClient {
         return new ValidationError(errorMessage, errorData, errorCode ?? 'VALIDATION_ERROR');
       case 401:
         return new AuthenticationError(errorMessage);
+      case 402:
+        return new PaymentRequiredError(errorMessage, errorCode ?? 'PAYMENT_REQUIRED', errorData);
       case 403:
         return new ForbiddenError(errorMessage, errorCode ?? 'FORBIDDEN');
       case 404:
         return new NotFoundError(errorMessage, errorCode ?? 'NOT_FOUND');
       case 409:
-        return new ConflictError(errorMessage, errorData);
+        return new ConflictError(errorMessage, errorCode ?? 'CONFLICT', errorData);
       case 429:
         return new RateLimitError(errorMessage, this.parseRetryAfterSeconds(response));
       case 500:

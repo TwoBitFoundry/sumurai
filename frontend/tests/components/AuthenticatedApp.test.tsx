@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AuthenticatedApp } from '@/components/AuthenticatedApp';
 import { useAnalyticsDateBounds } from '@/features/analytics/hooks/useAnalyticsDateBounds';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
+import { NAVIGATE_TO_ACCOUNTS_EVENT, NAVIGATE_TO_SETTINGS_EVENT } from '@/utils/events';
 
 const motionSectionProps: Record<
   string,
@@ -150,21 +151,30 @@ describe('AuthenticatedApp', () => {
   });
 
   it('renders the date range control in the bottom bar for the dashboard tab', () => {
-    render(<AuthenticatedApp onLogout={jest.fn()} isOnline />);
+    render(<AuthenticatedApp onLogout={jest.fn()} isOnline demoModeActive={false} />);
 
     expect(screen.getByTestId('bottom-bar')).toHaveTextContent('Last mo');
     expect(screen.getByText('last-month')).toBeInTheDocument();
   });
 
   it('renders the budget month control in the bottom bar for the budgets tab', () => {
-    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="budgets" />);
+    render(
+      <AuthenticatedApp onLogout={jest.fn()} isOnline demoModeActive={false} initialTab="budgets" />
+    );
 
     expect(screen.getByTestId('budget-month-pill-slider')).toBeInTheDocument();
     expect(screen.getByText('Budgets')).toBeInTheDocument();
   });
 
   it('renders transaction search and category filters in the bottom bar for the transactions tab', () => {
-    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="transactions" />);
+    render(
+      <AuthenticatedApp
+        onLogout={jest.fn()}
+        isOnline
+        demoModeActive={false}
+        initialTab="transactions"
+      />
+    );
 
     expect(screen.getByTestId('transactions-search-bar')).toBeInTheDocument();
     expect(screen.getByTestId('transactions-filters')).toBeInTheDocument();
@@ -173,7 +183,14 @@ describe('AuthenticatedApp', () => {
   });
 
   it('handleTabChange updates currentTab on AppLayout in both directions', () => {
-    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
+    render(
+      <AuthenticatedApp
+        onLogout={jest.fn()}
+        isOnline
+        demoModeActive={false}
+        initialTab="dashboard"
+      />
+    );
 
     const { onTabChange } = appLayoutMock.mock.calls[0][0];
 
@@ -188,8 +205,51 @@ describe('AuthenticatedApp', () => {
     expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('dashboard');
   });
 
+  it('switches to Settings when the navigation event is dispatched', () => {
+    render(
+      <AuthenticatedApp
+        onLogout={jest.fn()}
+        isOnline
+        demoModeActive={false}
+        initialTab="dashboard"
+      />
+    );
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent(NAVIGATE_TO_SETTINGS_EVENT));
+    });
+
+    expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('settings');
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+  });
+
+  it('switches to Accounts when the navigation event is dispatched', () => {
+    render(
+      <AuthenticatedApp
+        onLogout={jest.fn()}
+        isOnline
+        demoModeActive={false}
+        initialTab="settings"
+      />
+    );
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent(NAVIGATE_TO_ACCOUNTS_EVENT));
+    });
+
+    expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('accounts');
+    expect(screen.getByText('Accounts')).toBeInTheDocument();
+  });
+
   it('animates the page body in the direction of tab travel', () => {
-    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
+    render(
+      <AuthenticatedApp
+        onLogout={jest.fn()}
+        isOnline
+        demoModeActive={false}
+        initialTab="dashboard"
+      />
+    );
 
     expect(motionSectionProps['tab-transition-panel']).toMatchObject({
       custom: 0,
@@ -226,7 +286,14 @@ describe('AuthenticatedApp', () => {
   it('falls back to the default preset when session stores custom without bounds', () => {
     window.sessionStorage.setItem('sumurai.ui.dashboardDateRange', 'custom');
 
-    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
+    render(
+      <AuthenticatedApp
+        onLogout={jest.fn()}
+        isOnline
+        demoModeActive={false}
+        initialTab="dashboard"
+      />
+    );
 
     expect(screen.getByText('last-month')).toBeInTheDocument();
     expect(screen.getByTestId('dashboard-custom-date-range')).toHaveTextContent('none');
@@ -248,7 +315,14 @@ describe('AuthenticatedApp', () => {
       cacheKey: 'all',
     } as any);
 
-    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
+    render(
+      <AuthenticatedApp
+        onLogout={jest.fn()}
+        isOnline
+        demoModeActive={false}
+        initialTab="dashboard"
+      />
+    );
 
     await waitFor(() => {
       expect(screen.getByTestId('dashboard-custom-date-range')).toHaveTextContent(

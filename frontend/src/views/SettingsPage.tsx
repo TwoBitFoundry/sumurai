@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import { useTheme } from '@/context/ThemeContext';
 import { PasskeySecuritySection } from '@/features/settings/PasskeySecuritySection';
+import { PlanSection } from '@/features/settings/PlanSection';
+import { HeroSubtitleInfo } from '@/layouts/HeroSubtitleInfo';
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
 import { AuthService } from '@/services/authService';
 import { SettingsService } from '@/services/SettingsService';
@@ -73,18 +75,21 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     <div className={cn(...pageLayoutRecipes.settingsShell)}>
       <div className={cn('flex', 'flex-col', 'gap-6')}>
         <GlassCard variant="default" padding="lg">
-          <div className={cn('space-y-5')}>
-            <div className={cn('space-y-2')}>
-              <h1 className={pageLayoutRecipes.title}>Inspect the armory</h1>
-              <p className={pageLayoutRecipes.subtitle}>
-                Manage your security, profile, and account preferences.
-              </p>
-            </div>
+          <div className={cn(...pageLayoutRecipes.titleInlineHost)}>
+            <h1 className={cn(pageLayoutRecipes.titleInlineHeading)}>Inspect the armory</h1>{' '}
+            <HeroSubtitleInfo
+              pageTitle="Inspect the armory"
+              subtitle="Manage your Sumurai account preferences, plan, and security."
+            />
+          </div>
+        </GlassCard>
 
+        <GlassCard variant="default" padding="lg">
+          <div className={cn('space-y-5')}>
             {userEmail && (
               <section className={cn('space-y-3')}>
                 <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-                  Designated as
+                  Designation
                 </h2>
                 <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>{userEmail}</p>
               </section>
@@ -101,10 +106,12 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
               </div>
               <ThemeModeSelector value={preference} onChange={setPreference} />
             </section>
-
-            <PasskeySecuritySection />
           </div>
         </GlassCard>
+
+        <PlanSection />
+
+        <PasskeySecuritySection />
 
         <GlassCard variant="default" padding="lg" className={cn('space-y-4')}>
           <div className={cn(settingsSecurityLayout.sectionHeader)}>

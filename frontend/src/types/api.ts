@@ -421,6 +421,70 @@ export interface OnboardingResponse {
   demo_mode_active: boolean;
 }
 
+export type BillingAccessStatus =
+  | 'unrestricted'
+  | 'demo'
+  | 'trialing'
+  | 'active'
+  | 'past_due'
+  | 'paused'
+  | 'canceled'
+  | 'expired';
+
+export type PaddleEnvironment = 'sandbox' | 'production';
+
+interface BillingStatusBase {
+  access_status: BillingAccessStatus;
+  can_use_own_data: boolean;
+  is_demo_mode_active: boolean;
+  trial_ends_at: string | null;
+  current_period_ends_at: string | null;
+  scheduled_cancel_at: string | null;
+  payment_method_required: boolean;
+  billing_portal_available: boolean;
+  enabled_financial_providers: FinancialProvider[];
+}
+
+export interface BillingEnabledStatusResponse extends BillingStatusBase {
+  billing_enabled: true;
+  trials_enabled: boolean;
+  paddle_client_token: string;
+  paddle_environment: PaddleEnvironment;
+}
+
+export interface BillingDisabledStatusResponse extends BillingStatusBase {
+  billing_enabled: false;
+  trials_enabled: false;
+  paddle_client_token: null;
+  paddle_environment: null;
+}
+
+export type BillingStatusResponse = BillingEnabledStatusResponse | BillingDisabledStatusResponse;
+
+export interface BillingCheckoutResponse {
+  checkout_url: string;
+  transaction_id: string;
+}
+
+export interface BillingTrialStartRequest {
+  country_code: string;
+  postal_code: string;
+}
+
+export interface BillingTrialStartResponse {
+  status: 'pending';
+}
+
+export interface BillingCancelResponse {
+  status: 'scheduled';
+  scheduled_cancel_at: string;
+}
+
+export interface BillingPortalSessionResponse {
+  overview_url: string;
+  subscription_urls: string[];
+}
+
 export interface PasskeyItem {
   id: string;
   name: string;

@@ -24,6 +24,7 @@ pub struct BillingEntitlement {
     pub trial_ends_at: Option<DateTime<Utc>>,
     pub current_period_ends_at: Option<DateTime<Utc>>,
     pub canceled_at: Option<DateTime<Utc>>,
+    pub scheduled_cancel_at: Option<DateTime<Utc>>,
     pub last_event_at: Option<DateTime<Utc>>,
     pub payment_method_required: bool,
     pub created_at: DateTime<Utc>,
@@ -47,11 +48,14 @@ pub struct PaddleWebhookEvent {
 pub struct BillingStatusResponse {
     pub billing_enabled: bool,
     pub trials_enabled: bool,
+    pub paddle_client_token: Option<String>,
+    pub paddle_environment: Option<String>,
     pub access_status: String,
     pub can_use_own_data: bool,
     pub is_demo_mode_active: bool,
     pub trial_ends_at: Option<DateTime<Utc>>,
     pub current_period_ends_at: Option<DateTime<Utc>>,
+    pub scheduled_cancel_at: Option<DateTime<Utc>>,
     pub payment_method_required: bool,
     pub billing_portal_available: bool,
     pub enabled_financial_providers: Vec<String>,
@@ -78,4 +82,10 @@ pub struct TrialStartResponse {
 pub struct BillingPortalSessionResponse {
     pub overview_url: String,
     pub subscription_urls: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct BillingCancelResponse {
+    pub status: String,
+    pub scheduled_cancel_at: DateTime<Utc>,
 }

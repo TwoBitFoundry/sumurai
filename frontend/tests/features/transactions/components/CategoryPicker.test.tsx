@@ -37,13 +37,14 @@ describe('CategoryPicker', () => {
     const anchor = document.createElement('button');
     anchorRef.current = anchor;
     jest.clearAllMocks();
-    useCategoriesMock.useCategories.mockReturnValue({
+    jest.mocked(useCategoriesMock.useCategories).mockReturnValue({
       system: ['FOOD_AND_DRINK', 'ENTERTAINMENT'],
       custom: [
         { id: 'c1', display_name: 'Coffee', lookup_key: 'coffee' },
         { id: 'c2', display_name: 'Groceries', lookup_key: 'groceries' },
       ],
       all: ['Coffee', 'ENTERTAINMENT', 'FOOD_AND_DRINK', 'Groceries'],
+      filterCategories: ['Coffee', 'ENTERTAINMENT', 'FOOD_AND_DRINK', 'Groceries'],
       accentIndexByName: new Map([
         ['Coffee', 0],
         ['ENTERTAINMENT', 1],
@@ -53,7 +54,7 @@ describe('CategoryPicker', () => {
       isLoading: false,
       error: null,
     });
-    useCreateCustomCategoryMock.useCreateCustomCategory.mockReturnValue({
+    jest.mocked(useCreateCustomCategoryMock.useCreateCustomCategory).mockReturnValue({
       createCustomCategory: jest.fn(),
       createCustomCategoryAsync: jest.fn().mockResolvedValue({
         id: 'c3',
@@ -396,7 +397,7 @@ describe('CategoryPicker', () => {
       lookup_key: 'weekend brunch',
     });
 
-    useCreateCustomCategoryMock.useCreateCustomCategory.mockReturnValue({
+    jest.mocked(useCreateCustomCategoryMock.useCreateCustomCategory).mockReturnValue({
       createCustomCategory: jest.fn(),
       createCustomCategoryAsync,
       isPending: false,

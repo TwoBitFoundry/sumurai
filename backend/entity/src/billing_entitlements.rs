@@ -27,6 +27,7 @@ pub struct Model {
     pub payment_method_required: bool,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
+    pub scheduled_cancel_at: Option<DateTimeWithTimeZone>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
@@ -44,6 +45,7 @@ pub enum Column {
     PaymentMethodRequired,
     CreatedAt,
     UpdatedAt,
+    ScheduledCancelAt,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DerivePrimaryKey)]
@@ -80,6 +82,7 @@ impl ColumnTrait for Column {
             Self::PaymentMethodRequired => ColumnType::Boolean.def(),
             Self::CreatedAt => ColumnType::TimestampWithTimeZone.def(),
             Self::UpdatedAt => ColumnType::TimestampWithTimeZone.def(),
+            Self::ScheduledCancelAt => ColumnType::TimestampWithTimeZone.def().null(),
         }
     }
 }

@@ -81,6 +81,7 @@ fn given_billing_when_generating_openapi_then_documents_endpoints_and_schemas() 
         "/api/billing/trials/start",
         "/api/billing/payment-method",
         "/api/billing/portal-session",
+        "/api/billing/subscription/cancel",
         "/api/billing/webhooks/paddle",
     ] {
         assert!(
@@ -109,9 +110,27 @@ fn given_billing_when_generating_openapi_then_documents_endpoints_and_schemas() 
             ["type"],
         serde_json::json!("boolean")
     );
+    for field in [
+        "paddle_client_token",
+        "paddle_environment",
+        "scheduled_cancel_at",
+    ] {
+        assert!(
+            spec["components"]["schemas"]["BillingStatusResponse"]["properties"]
+                .get(field)
+                .is_some(),
+            "missing billing status field {field}"
+        );
+    }
+    assert_eq!(
+        spec["paths"]["/api/billing/subscription/cancel"]["post"]["responses"]["200"]["content"]
+            ["application/json"]["schema"]["$ref"],
+        serde_json::json!("#/components/schemas/BillingCancelResponse")
+    );
 
     for schema in [
         "BillingCheckoutResponse",
+        "BillingCancelResponse",
         "BillingPortalSessionResponse",
         "TrialStartRequest",
         "TrialStartResponse",
@@ -131,6 +150,7 @@ fn given_billing_when_generating_openapi_then_documents_endpoints_and_schemas() 
         "/api/billing/checkout",
         "/api/billing/payment-method",
         "/api/billing/portal-session",
+        "/api/billing/subscription/cancel",
         "/api/billing/trials/start",
         "/api/billing/webhooks/paddle",
     ] {

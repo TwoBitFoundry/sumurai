@@ -56,17 +56,21 @@ fn seed_demo_user_enabled() -> bool {
         .unwrap_or(false)
 }
 
-fn demo_seed_hash(user_id: Uuid, key: &str, salt: &str) -> u64 {
+/// Non-cryptographic mixer for stable demo entity UUIDs (not a password/key/salt).
+fn demo_seed_hash(user_id: Uuid, key: &str, lane: u64) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    salt.hash(&mut hasher);
+    lane.hash(&mut hasher);
     user_id.hash(&mut hasher);
     key.hash(&mut hasher);
     hasher.finish()
 }
 
 pub fn demo_entity_id(user_id: Uuid, key: &str) -> Uuid {
-    let high = demo_seed_hash(user_id, key, "sumurai-demo-seed-high");
-    let low = demo_seed_hash(user_id, key, "sumurai-demo-seed-low");
+    // Lane constants distinguish the high/low u64 halves; DefaultHasher is not used for security.
+    const HIGH_LANE: u64 = 1;
+    const LOW_LANE: u64 = 2;
+    let high = demo_seed_hash(user_id, key, HIGH_LANE);
+    let low = demo_seed_hash(user_id, key, LOW_LANE);
     Uuid::from_fields(
         (high >> 32) as u32,
         (high >> 16) as u16,

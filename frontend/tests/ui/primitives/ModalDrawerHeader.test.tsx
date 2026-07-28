@@ -40,7 +40,7 @@ describe('ModalDrawerHeader', () => {
     await user.hover(closeButton);
 
     await waitFor(() => {
-      expect(screen.getAllByText('Close').length).toBeGreaterThan(1);
+      expect(screen.getByRole('tooltip', { name: 'Close' })).toBeInTheDocument();
     });
   });
 

@@ -38,6 +38,7 @@ describe('BudgetList', () => {
         drafts={{}}
         onDraftChange={jest.fn()}
         onDelete={jest.fn()}
+        period={{ startDate: '2025-01-01', endDate: '2025-01-31' }}
       />
     );
 
@@ -80,6 +81,7 @@ describe('BudgetList', () => {
         drafts={{}}
         onDraftChange={jest.fn()}
         onDelete={jest.fn()}
+        period={{ startDate: '2025-01-01', endDate: '2025-01-31' }}
       />
     );
 
@@ -107,6 +109,7 @@ describe('BudgetList', () => {
         drafts={{}}
         onDraftChange={jest.fn()}
         onDelete={jest.fn()}
+        period={{ startDate: '2025-01-01', endDate: '2025-01-31' }}
       />
     );
 
@@ -135,6 +138,7 @@ describe('BudgetList', () => {
         drafts={{}}
         onDraftChange={jest.fn()}
         onDelete={jest.fn()}
+        period={{ startDate: '2025-01-01', endDate: '2025-01-31' }}
       />
     );
 

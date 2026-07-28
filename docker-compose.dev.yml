@@ -72,7 +72,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     command: redis-server --appendonly yes
     volumes:
       - redis_data_dev:/data
@@ -92,7 +92,7 @@ services:
       retries: 5
 
   nginx:
-    image: nginx:1.27-alpine
+    image: nginx:1.29-alpine
     depends_on:
       frontend:
         condition: service_healthy
@@ -118,7 +118,7 @@ services:
       retries: 3
 
   certbot:
-    image: certbot/certbot:latest
+    image: certbot/certbot:v4.2.0
     profiles: [ "certbot" ]
     volumes:
       - certbot-etc:/etc/letsencrypt
@@ -126,7 +126,7 @@ services:
     entrypoint: [ "sh", "-c", "sleep infinity" ]
 
   ngrok:
-    image: ngrok/ngrok:latest
+    image: ngrok/ngrok:3.29.0-alpine
     profiles:
       - ngrok
     depends_on:

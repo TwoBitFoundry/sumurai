@@ -108,13 +108,15 @@ jest.mock('@/utils/queryInvalidation', () => ({
   invalidateStaleCacheQueries: jest.fn().mockResolvedValue(undefined),
 }));
 
-const plaidServiceMock = jest.requireMock('@/services/PlaidService').PlaidService as Record<
-  string,
-  jest.Mock
->;
-const apiClientMock = jest.requireMock('@/services/ApiClient').ApiClient as { post: jest.Mock };
-const invalidateStaleCacheQueriesMock = jest.requireMock('@/utils/queryInvalidation')
-  .invalidateStaleCacheQueries as jest.Mock;
+const plaidServiceMock = (
+  jest.requireMock('@/services/PlaidService') as typeof import('@/services/PlaidService')
+).PlaidService as unknown as Record<string, jest.Mock>;
+const apiClientMock = (
+  jest.requireMock('@/services/ApiClient') as typeof import('@/services/ApiClient')
+).ApiClient as unknown as { post: jest.Mock };
+const invalidateStaleCacheQueriesMock = (
+  jest.requireMock('@/utils/queryInvalidation') as typeof import('@/utils/queryInvalidation')
+).invalidateStaleCacheQueries as jest.Mock;
 
 describe('usePlaidLinkFlow', () => {
   beforeEach(() => {
@@ -324,7 +326,7 @@ describe('usePlaidLinkFlow', () => {
     delete window.Plaid;
     apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-1' });
     const appendChildSpy = jest.spyOn(document.head, 'appendChild').mockImplementation((node) => {
-      const script = node as HTMLScriptElement;
+      const script = node as unknown as HTMLScriptElement;
       queueMicrotask(() => {
         script.dispatchEvent(new Event('error'));
       });

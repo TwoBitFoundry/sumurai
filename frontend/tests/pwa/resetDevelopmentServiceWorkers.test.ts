@@ -24,7 +24,7 @@ describe('resetDevelopmentServiceWorkers', () => {
       getRegistrations: jest
         .fn()
         .mockResolvedValue([
-          { unregister: jest.fn().mockResolvedValue(true) } as ServiceWorkerRegistration,
+          { unregister: jest.fn().mockResolvedValue(true) } as unknown as ServiceWorkerRegistration,
         ]),
       hasController: true,
       reload,
@@ -44,7 +44,7 @@ describe('resetDevelopmentServiceWorkers', () => {
       getRegistrations: jest
         .fn()
         .mockResolvedValue([
-          { unregister: jest.fn().mockResolvedValue(true) } as ServiceWorkerRegistration,
+          { unregister: jest.fn().mockResolvedValue(true) } as unknown as ServiceWorkerRegistration,
         ]),
       hasController: true,
       reload,
@@ -63,7 +63,7 @@ describe('resetDevelopmentServiceWorkers', () => {
       getRegistrations: jest
         .fn()
         .mockResolvedValue([
-          { unregister: jest.fn().mockResolvedValue(true) } as ServiceWorkerRegistration,
+          { unregister: jest.fn().mockResolvedValue(true) } as unknown as ServiceWorkerRegistration,
         ]),
       hasController: false,
       reload: jest.fn(),

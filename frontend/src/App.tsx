@@ -11,6 +11,9 @@ import {
   EnrollPasskeyScreen,
   type PendingPasskeyRecoveryEnrollment,
 } from './features/auth/EnrollPasskeyScreen';
+import { PricingScreen } from './features/billing/PricingScreen';
+import { UpgradeRequiredModal } from './features/billing/UpgradeRequiredModal';
+import { BILLING_STATUS_QUERY_KEY, useBillingStatus } from './features/billing/useBillingStatus';
 import { TransactionListLauncherProvider } from './features/transactions/components/TransactionListLauncherProvider';
 import { AccountFilterProvider } from './hooks/useAccountFilter';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
@@ -19,10 +22,17 @@ import { SessionManager } from './SessionManager';
 import { AuthenticationError } from './services/ApiClient';
 import { AuthService } from './services/authService';
 import { BrowserStorageAdapter } from './services/boundaries';
+import type { BillingStatusResponse } from './types/api';
 import { AppFooter, AppTitleBar, GlassCard, GradientShell } from './ui/primitives';
 import { ControlTooltipProvider } from './ui/primitives/ControlHoverLabel';
 import { authLayout, text as uiTextRecipes, font as uiTypographyRecipes } from './ui/recipes';
-import { FINANCIAL_STATE_CHANGED_EVENT, type FinancialStateChangedDetail } from './utils/events';
+import {
+  dispatchNavigateToSettings,
+  FINANCIAL_STATE_CHANGED_EVENT,
+  type FinancialStateChangedDetail,
+  OPEN_PRICING_EVENT,
+  PAID_ACCESS_REQUIRED_EVENT,
+} from './utils/events';
 import { resetFinancialQueriesForAppRefresh } from './utils/queryInvalidation';
 
 AuthService.configure({
@@ -46,6 +56,24 @@ interface AppContentProps {
   initialAuthScreen?: 'login' | 'register';
 }
 
+function AppLoadingShell() {
+  return (
+    <GradientShell>
+      <div className={cn('flex', 'min-h-dvh', 'items-center', 'justify-center', 'px-4')}>
+        <GlassCard
+          variant="accent"
+          rounded="lg"
+          padding="md"
+          withInnerEffects={false}
+          className={cn('text-center', uiTypographyRecipes.body, uiTextRecipes.body)}
+        >
+          Loading...
+        </GlassCard>
+      </div>
+    </GradientShell>
+  );
+}
+
 function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [needsPasskeyEnrollment, setNeedsPasskeyEnrollment] = useState(false);
@@ -63,8 +91,11 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [sessionExpiresAt, setSessionExpiresAt] = useState<string | null>(null);
   const [demoModeActive, setDemoModeActive] = useState(false);
   const [pendingDemoModeActive, setPendingDemoModeActive] = useState(false);
+  const [pricingComplete, setPricingComplete] = useState(false);
+  const [showUpgradeRequired, setShowUpgradeRequired] = useState(false);
 
   const isOnline = useOnlineStatus();
+  const billingStatus = useBillingStatus({ enabled: isAuthenticated });
 
   const applyAuthenticatedSession = useCallback(
     (authResponse: {
@@ -78,6 +109,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
       setShowOnboarding(!authResponse.onboarding_completed);
       setSessionExpiresAt(authResponse.expires_at);
       setDemoModeActive(authResponse.demo_mode_active);
+      setPricingComplete(false);
       if (authResponse.email) {
         queryClient.setQueryData(['user', 'email'], authResponse.email);
       }
@@ -85,11 +117,22 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     []
   );
 
-  const resetUnauthenticatedSession = useCallback(() => {
+  const resetUnauthenticatedSession = useCallback((screen: 'login' | 'register' = 'login') => {
+    queryClient.removeQueries({ queryKey: BILLING_STATUS_QUERY_KEY, exact: true });
     setIsAuthenticated(false);
+    setNeedsPasskeyEnrollment(false);
+    setPendingRecoveryEnrollment(null);
+    setEnrollmentLockedEmail(null);
+    setShowEnrollmentModal(false);
     setShowOnboarding(false);
     setSessionExpiresAt(null);
     setDemoModeActive(false);
+    setPendingOnboarding(false);
+    setPendingExpiresAt(null);
+    setPendingDemoModeActive(false);
+    setPricingComplete(false);
+    setShowUpgradeRequired(false);
+    setAuthScreen(screen);
     AuthService.clearToken();
   }, []);
 
@@ -119,6 +162,28 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   }, []);
 
   useEffect(() => {
+    const handler = () => {
+      if (isAuthenticated) {
+        setShowUpgradeRequired(true);
+      }
+    };
+    window.addEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
+    return () => window.removeEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    const handler = () => {
+      if (!isAuthenticated || !demoModeActive) {
+        return;
+      }
+      setPricingComplete(false);
+      setShowOnboarding(true);
+    };
+    window.addEventListener(OPEN_PRICING_EVENT, handler);
+    return () => window.removeEventListener(OPEN_PRICING_EVENT, handler);
+  }, [demoModeActive, isAuthenticated]);
+
+  useEffect(() => {
     let active = true;
     const establishSession = async () => {
       try {
@@ -126,7 +191,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
         if (!active) {
           return;
         }
-      } catch (error) {
+      } catch {
         if (!active) {
           return;
         }
@@ -188,6 +253,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
       setPendingRecoveryEnrollment(null);
       setEnrollmentLockedEmail(null);
       setIsAuthenticated(true);
+      setPricingComplete(false);
       if (authResponse) {
         setShowOnboarding(!authResponse.onboarding_completed);
         setSessionExpiresAt(authResponse.expires_at);
@@ -225,25 +291,47 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
       queryClient.clear();
     }
 
-    setIsAuthenticated(false);
-    setNeedsPasskeyEnrollment(false);
-    setPendingRecoveryEnrollment(null);
-    setEnrollmentLockedEmail(null);
-    setShowEnrollmentModal(false);
-    setShowOnboarding(false);
-    setSessionExpiresAt(null);
-    setDemoModeActive(false);
-    setPendingOnboarding(false);
-    setPendingExpiresAt(null);
-    setPendingDemoModeActive(false);
-    setAuthScreen('login');
-  }, []);
+    resetUnauthenticatedSession('login');
+  }, [resetUnauthenticatedSession]);
+
+  const handleOnboardingBack = useCallback(async () => {
+    try {
+      await AuthService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      queryClient.clear();
+    }
+
+    resetUnauthenticatedSession(authScreen);
+  }, [authScreen, resetUnauthenticatedSession]);
+
+  const handleProviderPickerBack = useCallback(() => {
+    if (pricingComplete) {
+      setPricingComplete(false);
+      return;
+    }
+
+    void handleOnboardingBack();
+  }, [handleOnboardingBack, pricingComplete]);
 
   const handleOnboardingComplete = useCallback(() => {
     setShowOnboarding(false);
     setRemountTab('dashboard');
     setMainAppKey((prev) => prev + 1);
   }, []);
+
+  const handleDemoActivated = useCallback(() => {
+    queryClient.setQueryData<BillingStatusResponse>(
+      BILLING_STATUS_QUERY_KEY,
+      (currentBillingStatus) =>
+        currentBillingStatus
+          ? { ...currentBillingStatus, is_demo_mode_active: true }
+          : currentBillingStatus
+    );
+    setDemoModeActive(true);
+    handleOnboardingComplete();
+  }, [handleOnboardingComplete]);
 
   useEffect(() => {
     const handler = (event: Event) => {
@@ -274,21 +362,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   }, [refreshAuthenticatedSession]);
 
   if (isLoading) {
-    return (
-      <GradientShell>
-        <div className={cn('flex', 'min-h-dvh', 'items-center', 'justify-center', 'px-4')}>
-          <GlassCard
-            variant="accent"
-            rounded="lg"
-            padding="md"
-            withInnerEffects={false}
-            className={cn('text-center', uiTypographyRecipes.body, uiTextRecipes.body)}
-          >
-            Loading...
-          </GlassCard>
-        </div>
-      </GradientShell>
-    );
+    return <AppLoadingShell />;
   }
 
   if (!isAuthenticated) {
@@ -327,8 +401,30 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   }
 
   if (showOnboarding) {
+    if (!billingStatus.data) {
+      return <AppLoadingShell />;
+    }
+
+    if (
+      !pricingComplete &&
+      !(billingStatus.data.billing_enabled && billingStatus.data.can_use_own_data)
+    ) {
+      return (
+        <PricingScreen
+          billingStatus={billingStatus.data}
+          onDemoActivated={handleDemoActivated}
+          onContinueToProviders={() => setPricingComplete(true)}
+          onLogout={handleLogout}
+        />
+      );
+    }
+
     return (
-      <OnboardingProviderPicker onComplete={handleOnboardingComplete} onLogout={handleLogout} />
+      <OnboardingProviderPicker
+        onComplete={handleOnboardingComplete}
+        onBack={handleProviderPickerBack}
+        onLogout={handleLogout}
+      />
     );
   }
 
@@ -353,6 +449,14 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
         isOpen={showEnrollmentModal}
         onEnrollmentComplete={handleEnrollmentComplete}
         onLogout={handleLogout}
+      />
+      <UpgradeRequiredModal
+        isOpen={showUpgradeRequired}
+        onClose={() => setShowUpgradeRequired(false)}
+        onViewPlans={() => {
+          setShowUpgradeRequired(false);
+          dispatchNavigateToSettings();
+        }}
       />
     </SessionManager>
   );

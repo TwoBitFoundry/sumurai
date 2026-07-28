@@ -5,6 +5,7 @@ import type { IStorageAdapter } from '@/services/boundaries/IStorageAdapter';
 
 class MockHttpClient implements IHttpClient {
   get = jest.fn();
+  getBlob = jest.fn();
   post = jest.fn();
   postFormData = jest.fn();
   put = jest.fn();
@@ -174,6 +175,7 @@ describe('AuthService with Injected Boundaries', () => {
       const response = {
         message: 'Onboarding completed successfully',
         onboarding_completed: true,
+        demo_mode_active: false,
       };
       mockHttpClient.put.mockResolvedValueOnce(response);
 
@@ -181,6 +183,26 @@ describe('AuthService with Injected Boundaries', () => {
 
       expect(mockHttpClient.put).toHaveBeenCalledWith(
         '/auth/onboarding/complete',
+        undefined,
+        expect.any(Object)
+      );
+      expect(result).toEqual(response);
+    });
+  });
+
+  describe('activateDemoModeOnboarding', () => {
+    it('should use injected http client for demo onboarding', async () => {
+      const response = {
+        message: 'Demo mode activated',
+        onboarding_completed: true,
+        demo_mode_active: true,
+      };
+      mockHttpClient.post.mockResolvedValueOnce(response);
+
+      const result = await AuthService.activateDemoModeOnboarding();
+
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        '/auth/onboarding/demo',
         undefined,
         expect.any(Object)
       );

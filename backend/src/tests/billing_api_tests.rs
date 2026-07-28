@@ -8,8 +8,8 @@ use uuid::Uuid;
 
 use crate::models::billing::{BillingEntitlement, PaddleWebhookEvent};
 use crate::providers::paddle_provider::{
-    CreateCardlessTrialResponse, CreateCheckoutResponse, CreatePaymentMethodTransactionResponse,
-    CreatePortalSessionResponse, MockPaddleHttpClient,
+    CancelSubscriptionResponse, CreateCardlessTrialResponse, CreateCheckoutResponse,
+    CreatePaymentMethodTransactionResponse, CreatePortalSessionResponse, MockPaddleHttpClient,
 };
 use crate::services::cache_service::MockCacheService;
 use crate::services::repository_service::MockDatabaseRepository;
@@ -17,11 +17,17 @@ use crate::test_fixtures::{noop_categorizer, TestFixtures};
 
 #[tokio::test]
 async fn given_billing_disabled_when_get_status_then_returns_unrestricted_disabled_status() {
-    let mock_db = MockDatabaseRepository::new();
+    let (mut user, token) = TestFixtures::create_authenticated_user_with_token();
+    user.demo_mode_active = true;
+    let expected_user = user.clone();
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_user_by_id()
+        .withf(move |user_id| *user_id == expected_user.id)
+        .return_once(move |_| Box::pin(async move { Ok(Some(user)) }));
     let app = TestFixtures::create_test_app_with_db(mock_db)
         .await
         .unwrap();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
 
     let request = Request::builder()
         .method("GET")
@@ -38,6 +44,9 @@ async fn given_billing_disabled_when_get_status_then_returns_unrestricted_disabl
     assert_eq!(value["trials_enabled"], false);
     assert_eq!(value["access_status"], "unrestricted");
     assert_eq!(value["can_use_own_data"], true);
+    assert_eq!(value["is_demo_mode_active"], true);
+    assert_eq!(value["paddle_client_token"], Value::Null);
+    assert_eq!(value["paddle_environment"], Value::Null);
     assert_eq!(value["billing_portal_available"], false);
 }
 
@@ -129,6 +138,7 @@ async fn given_existing_trial_entitlement_when_starting_then_returns_conflict_wi
                     trial_ends_at: None,
                     current_period_ends_at: None,
                     canceled_at: None,
+                    scheduled_cancel_at: None,
                     last_event_at: None,
                     payment_method_required: true,
                     created_at: Utc::now(),
@@ -349,6 +359,141 @@ async fn given_paddle_customer_when_portal_session_requested_then_returns_tempor
 }
 
 #[tokio::test]
+async fn given_active_subscription_when_cancel_requested_then_returns_and_persists_schedule() {
+    let scheduled_cancel_at = Utc::now();
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_billing_entitlement()
+        .returning(|user_id| {
+            let user_id = *user_id;
+            Box::pin(async move { Ok(Some(active_entitlement(user_id))) })
+        });
+    mock_db
+        .expect_set_billing_entitlement_scheduled_cancel()
+        .withf(move |_, scheduled_at| *scheduled_at == Some(scheduled_cancel_at))
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_db.expect_upsert_billing_entitlement().never();
+    let mut paddle = MockPaddleHttpClient::new();
+    paddle
+        .expect_cancel_subscription()
+        .return_once(move |request| {
+            assert_eq!(request.subscription_id, "sub_123");
+            Box::pin(async move {
+                Ok(CancelSubscriptionResponse {
+                    status: "active".to_string(),
+                    scheduled_cancel_at: Some(scheduled_cancel_at),
+                    canceled_at: None,
+                })
+            })
+        });
+    let app = create_paddle_billing_app(mock_db, paddle).await;
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/billing/subscription/cancel")
+        .header("Cookie", format!("auth_token={token}"))
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let value: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(value["status"], "scheduled");
+    let returned_scheduled_at: chrono::DateTime<Utc> =
+        serde_json::from_value(value["scheduled_cancel_at"].clone()).unwrap();
+    assert_eq!(returned_scheduled_at, scheduled_cancel_at);
+}
+
+#[tokio::test]
+async fn given_billing_disabled_when_cancel_requested_then_returns_not_found() {
+    let mock_db = MockDatabaseRepository::new();
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/billing/subscription/cancel")
+        .header("Cookie", format!("auth_token={token}"))
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let value: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(value["code"], "BILLING_DISABLED");
+}
+
+#[tokio::test]
+async fn given_entitlement_without_subscription_when_cancel_requested_then_returns_conflict() {
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_billing_entitlement()
+        .returning(|user_id| {
+            let mut entitlement = active_entitlement(*user_id);
+            entitlement.paddle_subscription_id = None;
+            Box::pin(async move { Ok(Some(entitlement)) })
+        });
+    mock_db
+        .expect_set_billing_entitlement_scheduled_cancel()
+        .never();
+    let mut paddle = MockPaddleHttpClient::new();
+    paddle.expect_cancel_subscription().never();
+    let app = create_paddle_billing_app(mock_db, paddle).await;
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/billing/subscription/cancel")
+        .header("Cookie", format!("auth_token={token}"))
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::CONFLICT);
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let value: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(value["code"], "BILLING_ENTITLEMENT_UNAVAILABLE");
+}
+
+#[tokio::test]
+async fn given_paddle_failure_when_cancel_requested_then_returns_bad_gateway() {
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_billing_entitlement()
+        .returning(|user_id| {
+            let user_id = *user_id;
+            Box::pin(async move { Ok(Some(active_entitlement(user_id))) })
+        });
+    mock_db
+        .expect_set_billing_entitlement_scheduled_cancel()
+        .never();
+    let mut paddle = MockPaddleHttpClient::new();
+    paddle
+        .expect_cancel_subscription()
+        .returning(|_| Box::pin(async { Err(anyhow::anyhow!("Paddle unavailable")) }));
+    let app = create_paddle_billing_app(mock_db, paddle).await;
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/billing/subscription/cancel")
+        .header("Cookie", format!("auth_token={token}"))
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let value: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(value["code"], "PADDLE_REQUEST_FAILED");
+}
+
+#[tokio::test]
 async fn given_billing_disabled_when_mutation_endpoint_called_then_returns_billing_disabled() {
     let mock_db = MockDatabaseRepository::new();
     let app = TestFixtures::create_test_app_with_db(mock_db)
@@ -469,11 +614,13 @@ fn sign_paddle_webhook(secret: &str, body: &[u8], timestamp: i64) -> String {
 
 #[tokio::test]
 async fn given_paddle_billing_when_get_status_then_returns_entitlement_projection() {
+    let scheduled_cancel_at = Utc::now();
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
         .expect_get_billing_entitlement()
-        .returning(|user_id| {
+        .returning(move |user_id| {
             let user_id = *user_id;
+            let scheduled_cancel_at = scheduled_cancel_at;
             Box::pin(async move {
                 Ok(Some(BillingEntitlement {
                     user_id,
@@ -485,6 +632,7 @@ async fn given_paddle_billing_when_get_status_then_returns_entitlement_projectio
                     trial_ends_at: None,
                     current_period_ends_at: None,
                     canceled_at: None,
+                    scheduled_cancel_at: Some(scheduled_cancel_at),
                     last_event_at: None,
                     payment_method_required: true,
                     created_at: chrono::Utc::now(),
@@ -562,6 +710,11 @@ async fn given_paddle_billing_when_get_status_then_returns_entitlement_projectio
     assert_eq!(value["can_use_own_data"], true);
     assert_eq!(value["payment_method_required"], true);
     assert_eq!(value["billing_portal_available"], true);
+    assert_eq!(value["paddle_client_token"], "test-client-token");
+    assert_eq!(value["paddle_environment"], "sandbox");
+    let returned_scheduled_cancel_at: chrono::DateTime<Utc> =
+        serde_json::from_value(value["scheduled_cancel_at"].clone()).unwrap();
+    assert_eq!(returned_scheduled_cancel_at, scheduled_cancel_at);
     assert_eq!(
         value["enabled_financial_providers"],
         serde_json::json!(["diy", "plaid"])
@@ -639,6 +792,7 @@ fn active_entitlement(user_id: Uuid) -> BillingEntitlement {
         trial_ends_at: None,
         current_period_ends_at: None,
         canceled_at: None,
+        scheduled_cancel_at: None,
         last_event_at: None,
         payment_method_required: true,
         created_at: Utc::now(),

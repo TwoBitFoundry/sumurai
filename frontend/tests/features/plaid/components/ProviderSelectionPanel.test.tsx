@@ -180,6 +180,19 @@ describe('ProviderSelectionPanel', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('renders a back control in the hero when onBack is provided', async () => {
+    const user = userEvent.setup();
+    const onBack = jest.fn();
+
+    renderPanel({ onBack });
+
+    const backButton = screen.getByRole('button', { name: 'Back' });
+    expect(backButton).toBeVisible();
+
+    await user.click(backButton);
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
   it('renders hero actions in the top-right hero slot', () => {
     renderPanel({
       heroAction: <button type="button">Skip for now</button>,
@@ -235,7 +248,7 @@ describe('ProviderSelectionPanel', () => {
     await user.hover(privacyInfoButton);
 
     await waitFor(() => {
-      expect(screen.getAllByText('Privacy details').length).toBeGreaterThan(1);
+      expect(screen.getByRole('tooltip', { name: 'Privacy details' })).toBeInTheDocument();
     });
   });
 

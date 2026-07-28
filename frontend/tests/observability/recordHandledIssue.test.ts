@@ -13,7 +13,7 @@ const startSpan = jest.fn(() => ({
 }));
 
 jest.mock('@opentelemetry/api', () => {
-  const actual = jest.requireActual('@opentelemetry/api');
+  const actual = jest.requireActual('@opentelemetry/api') as typeof import('@opentelemetry/api');
   return {
     ...actual,
     trace: {

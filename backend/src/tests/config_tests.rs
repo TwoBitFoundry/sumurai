@@ -95,6 +95,7 @@ fn given_paddle_billing_with_required_settings_when_from_env_provider_then_billi
     env.set("PADDLE_API_KEY", "test-api-key");
     env.set("PADDLE_WEBHOOK_SECRET", "test-webhook-secret");
     env.set("PADDLE_MONTHLY_PRICE_ID", "pri_monthly");
+    env.set("PADDLE_CLIENT_TOKEN", "test-client-token");
     env.set("PADDLE_CARDLESS_TRIAL_PRICE_ID", "pri_trial");
     env.set("BILLING_TRIALS_ENABLED", "true");
 
@@ -108,8 +109,67 @@ fn given_paddle_billing_with_required_settings_when_from_env_provider_then_billi
     assert_eq!(paddle.api_key, "test-api-key");
     assert_eq!(paddle.webhook_secret, "test-webhook-secret");
     assert_eq!(paddle.monthly_price_id, "pri_monthly");
+    assert_eq!(paddle.client_token, "test-client-token");
     assert_eq!(paddle.cardless_trial_price_id.as_deref(), Some("pri_trial"));
     assert!(paddle.trials_enabled);
+}
+
+#[test]
+fn given_paddle_billing_without_client_token_when_from_env_provider_then_returns_error() {
+    let mut env = MockEnvironment::new();
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
+    env.set("BILLING_MODE", "paddle");
+    env.set("PADDLE_ENVIRONMENT", "sandbox");
+    env.set("PADDLE_API_KEY", "test-api-key");
+    env.set("PADDLE_WEBHOOK_SECRET", "test-webhook-secret");
+    env.set("PADDLE_MONTHLY_PRICE_ID", "pri_monthly");
+
+    let result = Config::from_env_provider(&env);
+
+    assert!(result
+        .err()
+        .expect("missing client token should fail")
+        .to_string()
+        .contains("PADDLE_CLIENT_TOKEN"));
+}
+
+#[test]
+fn given_unsupported_paddle_environment_when_from_env_provider_then_returns_error() {
+    let mut env = MockEnvironment::new();
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
+    env.set("BILLING_MODE", "paddle");
+    env.set("PADDLE_ENVIRONMENT", "staging");
+    env.set("PADDLE_API_KEY", "test-api-key");
+    env.set("PADDLE_WEBHOOK_SECRET", "test-webhook-secret");
+    env.set("PADDLE_MONTHLY_PRICE_ID", "pri_monthly");
+    env.set("PADDLE_CLIENT_TOKEN", "test-client-token");
+
+    let result = Config::from_env_provider(&env);
+
+    assert!(result
+        .err()
+        .expect("unsupported Paddle environment should fail")
+        .to_string()
+        .contains("PADDLE_ENVIRONMENT must be either sandbox or production"));
+}
+
+#[test]
+fn given_production_paddle_environment_when_from_env_provider_then_preserves_environment() {
+    let mut env = MockEnvironment::new();
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "https://sumurai.example.com");
+    env.set("BILLING_MODE", "paddle");
+    env.set("PADDLE_ENVIRONMENT", "production");
+    env.set("PADDLE_API_KEY", "test-api-key");
+    env.set("PADDLE_WEBHOOK_SECRET", "test-webhook-secret");
+    env.set("PADDLE_MONTHLY_PRICE_ID", "pri_monthly");
+    env.set("PADDLE_CLIENT_TOKEN", "test-client-token");
+
+    let config = Config::from_env_provider(&env).unwrap();
+
+    assert_eq!(config.paddle_billing().unwrap().environment, "production");
 }
 
 #[test]
@@ -122,6 +182,7 @@ fn given_paddle_billing_without_trials_flag_when_from_env_provider_then_trials_d
     env.set("PADDLE_API_KEY", "test-api-key");
     env.set("PADDLE_WEBHOOK_SECRET", "test-webhook-secret");
     env.set("PADDLE_MONTHLY_PRICE_ID", "pri_monthly");
+    env.set("PADDLE_CLIENT_TOKEN", "test-client-token");
 
     let config = Config::from_env_provider(&env).unwrap();
     let paddle = config.paddle_billing().unwrap();
@@ -141,6 +202,7 @@ fn given_paddle_trials_enabled_without_cardless_price_when_from_env_provider_the
     env.set("PADDLE_API_KEY", "test-api-key");
     env.set("PADDLE_WEBHOOK_SECRET", "test-webhook-secret");
     env.set("PADDLE_MONTHLY_PRICE_ID", "pri_monthly");
+    env.set("PADDLE_CLIENT_TOKEN", "test-client-token");
     env.set("BILLING_TRIALS_ENABLED", "true");
 
     let result = Config::from_env_provider(&env);
@@ -185,6 +247,7 @@ fn given_compose_files_when_read_then_only_production_enables_paddle_billing() {
     let development = include_str!("../../../docker-compose.dev.yml");
 
     assert!(production.contains("BILLING_MODE: paddle"));
+    assert!(production.contains("PADDLE_CLIENT_TOKEN"));
     assert!(production.contains("ENABLED_FINANCIAL_PROVIDERS: diy,plaid"));
     assert!(!default_compose.contains("BILLING_MODE"));
     assert!(!development.contains("BILLING_MODE"));
@@ -269,6 +332,11 @@ fn given_nginx_template_when_read_then_includes_provider_csp_allowlists() {
         assert!(template.contains("https://sandbox.plaid.com"));
         assert!(template.contains("https://beta-bridge.simplefin.org"));
         assert!(template.contains("https://bridge.simplefin.org"));
+        assert!(template.contains(
+            "script-src 'self' 'unsafe-inline' https://cdn.plaid.com https://cdn.paddle.com"
+        ));
+        assert!(template.contains("frame-src 'self' https://cdn.plaid.com https://*.paddle.com"));
+        assert!(template.contains("connect-src 'self' https://production.plaid.com https://sandbox.plaid.com https://beta-bridge.simplefin.org https://bridge.simplefin.org https://*.paddle.com"));
         assert!(template.contains("frame-src"));
         assert!(template.contains("connect-src"));
     }

@@ -10,22 +10,26 @@ import { useProviderCatalog } from '@/hooks/useProviderCatalog';
 import { useScrollDetection } from '@/hooks/useScrollDetection';
 import { AuthService } from '@/services/authService';
 import type { FinancialProvider } from '@/types/api';
-import { AppTitleBar, Button, GradientShell } from '@/ui/primitives';
+import { AppTitleBar, GradientShell } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import { appLayout } from '@/ui/recipes';
 
 interface OnboardingProviderPickerProps {
   onComplete: () => void;
+  onBack?: () => void;
   onLogout?: () => void;
 }
 
-export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingProviderPickerProps) {
+export function OnboardingProviderPicker({
+  onComplete,
+  onBack,
+  onLogout,
+}: OnboardingProviderPickerProps) {
   const scrolled = useScrollDetection();
   const isOnline = useOnlineStatus();
   const providerCatalog = useProviderCatalog();
   const [connectingProvider, setConnectingProvider] = useState<FinancialProvider | null>(null);
   const [isDiyModalOpen, setIsDiyModalOpen] = useState(false);
-  const [isCompleting, setIsCompleting] = useState(false);
   const plaidConnectionFlow = useFinancialConnection({
     provider: 'plaid',
     isOnline,
@@ -58,23 +62,8 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
   );
 
   const completeAndExit = useCallback(async () => {
-    setIsCompleting(true);
-    try {
-      await AuthService.completeOnboarding();
-      onComplete();
-    } finally {
-      setIsCompleting(false);
-    }
-  }, [onComplete]);
-
-  const activateDemoAndExit = useCallback(async () => {
-    setIsCompleting(true);
-    try {
-      await AuthService.activateDemoModeOnboarding();
-      onComplete();
-    } finally {
-      setIsCompleting(false);
-    }
+    await AuthService.completeOnboarding();
+    onComplete();
   }, [onComplete]);
 
   const handleConnectComplete = useCallback(
@@ -166,17 +155,7 @@ export function OnboardingProviderPicker({ onComplete, onLogout }: OnboardingPro
               providerReadyState={providerReadyState}
               connectingProvider={connectingProvider}
               onSelectProvider={handleSelectProvider}
-              heroAction={
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="md"
-                  onClick={() => void activateDemoAndExit()}
-                  disabled={isCompleting}
-                >
-                  Try demo mode
-                </Button>
-              }
+              onBack={onBack}
             />
           </div>
         </main>

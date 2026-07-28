@@ -4,6 +4,12 @@ import {
   ChartTooltipShell,
 } from '@/features/analytics/components/ChartGlassTooltip';
 
+const tooltipProps = {
+  coordinate: { x: 0, y: 0 },
+  accessibilityLayer: false,
+  activeIndex: '0',
+};
+
 describe('ChartGlassTooltip', () => {
   it('renders the tooltip shell with glass design token classes', () => {
     render(
@@ -24,7 +30,8 @@ describe('ChartGlassTooltip', () => {
       <ChartGlassTooltip
         active
         label="May 2026"
-        payload={[{ name: 'Net', value: 1200, dataKey: 'net' }]}
+        {...tooltipProps}
+        payload={[{ graphicalItemId: 'item-1', name: 'Net', value: 1200, dataKey: 'net' }]}
         formatter={(value) => `$${value}`}
       />
     );
@@ -39,11 +46,12 @@ describe('ChartGlassTooltip', () => {
       <ChartGlassTooltip
         active
         label="May 2026"
+        {...tooltipProps}
         payload={[
-          { name: 'Income', value: 1200, dataKey: 'income' },
-          { name: '', value: 1200, dataKey: 'income' },
-          { name: 'Expenses', value: -400, dataKey: 'plottedExpenses' },
-          { value: -400, dataKey: 'plottedExpenses' },
+          { graphicalItemId: 'item-1', name: 'Income', value: 1200, dataKey: 'income' },
+          { graphicalItemId: 'item-2', name: '', value: 1200, dataKey: 'income' },
+          { graphicalItemId: 'item-3', name: 'Expenses', value: -400, dataKey: 'plottedExpenses' },
+          { graphicalItemId: 'item-4', value: -400, dataKey: 'plottedExpenses' },
         ]}
       />
     );

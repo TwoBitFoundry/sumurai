@@ -36,6 +36,7 @@ services:
       PADDLE_API_KEY: ${PADDLE_API_KEY:?PADDLE_API_KEY is required}
       PADDLE_WEBHOOK_SECRET: ${PADDLE_WEBHOOK_SECRET:?PADDLE_WEBHOOK_SECRET is required}
       PADDLE_MONTHLY_PRICE_ID: ${PADDLE_MONTHLY_PRICE_ID:?PADDLE_MONTHLY_PRICE_ID is required}
+      PADDLE_CLIENT_TOKEN: ${PADDLE_CLIENT_TOKEN:?PADDLE_CLIENT_TOKEN is required}
       PADDLE_CARDLESS_TRIAL_PRICE_ID: ${PADDLE_CARDLESS_TRIAL_PRICE_ID:-}
       BILLING_TRIALS_ENABLED: ${BILLING_TRIALS_ENABLED:-false}
 
@@ -68,7 +69,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
@@ -88,7 +89,7 @@ services:
       retries: 5
 
   seq:
-    image: datalust/seq:2025.2
+    image: datalust/seq:2026.1
     pull_policy: if_not_present
     environment:
       ACCEPT_EULA: "Y"
@@ -98,7 +99,7 @@ services:
       - seq_data:/data
 
   nginx:
-    image: nginx:1.27-alpine
+    image: nginx:1.29-alpine
     depends_on:
       frontend:
         condition: service_healthy
@@ -127,7 +128,7 @@ services:
       retries: 3
 
   certbot:
-    image: certbot/certbot:latest
+    image: certbot/certbot:v4.2.0
     pull_policy: always
     profiles: [ "certbot" ]
     volumes:
