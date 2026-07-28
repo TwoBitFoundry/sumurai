@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -16,7 +17,28 @@ const args =
 const stdio = quiet ? 'pipe' : 'inherit';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
-const localCliPath = join(scriptDir, '..', 'node_modules', '@google', 'design.md', 'dist', 'index.js');
+
+function resolveLocalCliPath() {
+  try {
+    const require = createRequire(import.meta.url);
+    const packageJsonPath = require.resolve('@google/design.md/package.json');
+    const candidate = join(dirname(packageJsonPath), 'dist', 'index.js');
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  } catch {}
+
+  const nestedPath = join(
+    scriptDir,
+    '..',
+    'node_modules',
+    '@google',
+    'design.md',
+    'dist',
+    'index.js'
+  );
+  return existsSync(nestedPath) ? nestedPath : null;
+}
 
 function exitFromResult(result) {
   if (quiet && result.status !== 0) {
@@ -26,7 +48,9 @@ function exitFromResult(result) {
   process.exit(result.status ?? 1);
 }
 
-if (existsSync(localCliPath)) {
+const localCliPath = resolveLocalCliPath();
+
+if (localCliPath) {
   const nodeResult = spawnSync(process.execPath, [localCliPath, ...args], { stdio });
   exitFromResult(nodeResult);
 }
