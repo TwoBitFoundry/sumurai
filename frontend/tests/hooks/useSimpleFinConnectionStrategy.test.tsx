@@ -13,8 +13,9 @@ jest.mock('@/services/SimpleFinService', () => ({
   },
 }));
 
-const simpleFinServiceMock = jest.requireMock('@/services/SimpleFinService')
-  .SimpleFinService as Record<string, jest.Mock>;
+const simpleFinServiceMock = (
+  jest.requireMock('@/services/SimpleFinService') as typeof import('@/services/SimpleFinService')
+).SimpleFinService as unknown as Record<string, jest.Mock>;
 
 describe('useSimpleFinConnectionStrategy', () => {
   beforeEach(() => {
@@ -48,6 +49,7 @@ describe('useSimpleFinConnectionStrategy', () => {
         isOnline: true,
         sdkNonce: 0,
         setSdkNonce: jest.fn(),
+        setReady: jest.fn(),
         sdkFailedRef: { current: false },
         state: initialFinancialConnectionState,
         dispatch,
@@ -94,6 +96,7 @@ describe('useSimpleFinConnectionStrategy', () => {
         isOnline: true,
         sdkNonce: 0,
         setSdkNonce: jest.fn(),
+        setReady: jest.fn(),
         sdkFailedRef: { current: false },
         state: initialFinancialConnectionState,
         dispatch,
@@ -133,6 +136,7 @@ describe('useSimpleFinConnectionStrategy', () => {
         isOnline: true,
         sdkNonce: 0,
         setSdkNonce: jest.fn(),
+        setReady: jest.fn(),
         sdkFailedRef: { current: false },
         state: initialFinancialConnectionState,
         dispatch,
@@ -160,6 +164,7 @@ describe('useSimpleFinConnectionStrategy', () => {
         isOnline: true,
         sdkNonce: 0,
         setSdkNonce: jest.fn(),
+        setReady: jest.fn(),
         sdkFailedRef: { current: false },
         state: initialFinancialConnectionState,
         dispatch: jest.fn(),
@@ -185,6 +190,7 @@ describe('useSimpleFinConnectionStrategy', () => {
         isOnline: true,
         sdkNonce: 0,
         setSdkNonce: jest.fn(),
+        setReady: jest.fn(),
         sdkFailedRef: { current: false },
         state: initialFinancialConnectionState,
         dispatch: jest.fn(),
@@ -221,6 +227,7 @@ describe('useSimpleFinConnectionStrategy', () => {
         isOnline: true,
         sdkNonce: 0,
         setSdkNonce: jest.fn(),
+        setReady: jest.fn(),
         sdkFailedRef: { current: false },
         state: initialFinancialConnectionState,
         dispatch: jest.fn(),
@@ -253,6 +260,7 @@ describe('useSimpleFinConnectionStrategy', () => {
         isOnline: true,
         sdkNonce: 0,
         setSdkNonce: jest.fn(),
+        setReady: jest.fn(),
         sdkFailedRef: { current: false },
         state: initialFinancialConnectionState,
         dispatch,
@@ -304,6 +312,7 @@ describe('useSimpleFinConnectionStrategy', () => {
         isOnline: true,
         sdkNonce: 0,
         setSdkNonce: jest.fn(),
+        setReady: jest.fn(),
         sdkFailedRef: { current: false },
         state: initialFinancialConnectionState,
         dispatch,

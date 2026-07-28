@@ -19,8 +19,11 @@ jest.mock('@/services/AutoCategorizationService', () => ({
   },
 }));
 
-const autoCategorizationServiceMock = jest.requireMock('@/services/AutoCategorizationService')
-  .AutoCategorizationService as {
+const autoCategorizationServiceMock = (
+  jest.requireMock(
+    '@/services/AutoCategorizationService'
+  ) as typeof import('@/services/AutoCategorizationService')
+).AutoCategorizationService as unknown as {
   getStatus: jest.Mock;
   start: jest.Mock;
   cancel: jest.Mock;

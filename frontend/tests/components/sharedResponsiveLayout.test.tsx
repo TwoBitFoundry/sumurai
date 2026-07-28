@@ -137,6 +137,7 @@ describe('shared responsive layout surfaces', () => {
           name: 'Chase',
           short: 'C',
           status: 'connected',
+          provider: 'plaid',
           lastSync: null,
           connectionId: 'conn-1',
           accounts: [],
@@ -221,6 +222,7 @@ describe('shared responsive layout surfaces', () => {
         drafts={{ 'budget-1': '100' }}
         onDraftChange={jest.fn()}
         onDelete={jest.fn()}
+        period={{ startDate: '2025-01-01', endDate: '2025-01-31' }}
       />
     );
 

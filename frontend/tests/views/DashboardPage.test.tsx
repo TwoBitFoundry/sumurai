@@ -7,7 +7,7 @@ import { SpendingByCategoryChart } from '@/features/analytics/components/Spendin
 import { useAnalytics } from '@/features/analytics/hooks/useAnalytics';
 import { useCashFlow } from '@/features/analytics/hooks/useCashFlow';
 import { useNetWorthSeries } from '@/features/analytics/hooks/useNetWorthSeries';
-import { useBudgets } from '@/features/budgets/hooks/useBudgets';
+import { type UseBudgetsResult, useBudgets } from '@/features/budgets/hooks/useBudgets';
 import { getThemeColors, heroAccents } from '@/ui/tokens';
 import DashboardPage from '@/views/DashboardPage';
 
@@ -95,14 +95,19 @@ describe('DashboardPage', () => {
 
     jest.mocked(useBudgets).mockReturnValue({
       isLoading: false,
-      transactionsLoading: false,
+      summaryLoading: false,
       error: null,
       validationError: null,
       budgets: [
         { id: '1', category: 'Food', amount: 500 },
         { id: '2', category: 'Entertainment', amount: 300 },
       ] as any,
+      fixedExpenses: [],
+      filteredFixedExpenses: [],
+      insightsFixedExpenses: [],
+      filterKey: 'default',
       computedBudgets: [] as any,
+      income: 0,
       load: jest.fn(),
       add: jest.fn(),
       update: jest.fn(),
@@ -118,7 +123,7 @@ describe('DashboardPage', () => {
       goToPreviousMonth: jest.fn(),
       goToNextMonth: jest.fn(),
       goToCurrentMonth: jest.fn(),
-    });
+    } as UseBudgetsResult);
 
     jest.mocked(useNetWorthSeries).mockReturnValue({
       loading: false,

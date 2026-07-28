@@ -49,7 +49,7 @@ describe('ThemeProvider', () => {
     expect(document.documentElement.style.colorScheme).toBe('dark');
 
     act(() => {
-      mediaQueryList.matches = false;
+      Object.defineProperty(mediaQueryList, 'matches', { value: false, configurable: true });
       listeners.forEach((listener) => {
         listener({ matches: false } as MediaQueryListEvent);
       });

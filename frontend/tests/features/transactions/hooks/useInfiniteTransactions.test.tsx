@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import type React from 'react';
 import { useInfiniteTransactions } from '@/features/transactions/hooks/useInfiniteTransactions';
 import { TransactionService } from '@/services/TransactionService';
+import type { CursorTransactionsResponse } from '@/types/api';
 
 jest.mock('@/services/TransactionService', () => ({
   TransactionService: {
@@ -37,10 +38,16 @@ const makeTransaction = (id: string) => ({
   display_name: 'Test',
   effective_category: 'FOOD',
   effective_merchant: 'test',
+  name: 'Test',
+  category: { primary: 'FOOD' },
 });
 
-const makePage = (ids: string[], nextCursor: string | null, hasMore: boolean) => ({
-  transactions: ids.map(makeTransaction),
+const makePage = (
+  ids: string[],
+  nextCursor: string | null,
+  hasMore: boolean
+): CursorTransactionsResponse => ({
+  transactions: ids.map(makeTransaction) as CursorTransactionsResponse['transactions'],
   next_cursor: nextCursor,
   prev_cursor: ids.length > 0 ? `cursor:${ids[0]}` : null,
   has_more: hasMore,

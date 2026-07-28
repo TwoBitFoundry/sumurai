@@ -275,7 +275,7 @@ DATABASE_URL=postgres://… ./target/release/sumurai reset-passkeys user@example
 
 ## Repository Layout
 
-- `frontend/` - Next.js 16, React 19, TypeScript 6, Tailwind 4, Biome 2, Recharts 3
+- `frontend/` - Next.js 16, React 19, TypeScript 7, Tailwind 4, Biome 2, Recharts 3
 - `backend/` - Rust 1.95, Axum, SeaORM, Redis, PostgreSQL, provider integrations, OpenTelemetry
 - `cli/` - operator CLI (`sumurai reset-passkeys`, …)
 - `docs/` - architecture, screenshots, compliance, and reference documents

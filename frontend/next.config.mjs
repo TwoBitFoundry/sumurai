@@ -4,6 +4,7 @@ const nextConfig = {
   reactStrictMode: true,
   experimental: {
     turbopackFileSystemCacheForBuild: true,
+    useTypeScriptCli: true,
   },
   ...(process.env.NODE_ENV === 'production' ? { output: 'export' } : {}),
   ...(process.env.NODE_ENV === 'development' ? { skipTrailingSlashRedirect: true } : {}),

@@ -28,7 +28,7 @@ describe('BillingService', () => {
       payment_method_required: false,
       billing_portal_available: false,
       enabled_financial_providers: ['diy'],
-    } as const;
+    } as unknown as import('@/types/api').BillingEnabledStatusResponse;
     jest.mocked(ApiClient.get).mockResolvedValueOnce(response);
 
     await expect(BillingService.getStatus()).resolves.toEqual(response);

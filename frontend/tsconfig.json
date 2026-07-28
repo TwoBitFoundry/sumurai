@@ -18,7 +18,7 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "strict": false,
-    "types": ["node"],
+    "types": ["node", "bun-types"],
     "incremental": true,
     "plugins": [
       {
@@ -29,10 +29,12 @@
   "include": [
     "next-env.d.ts",
     "src/env.d.ts",
+    "src/types/css-variables.d.ts",
+    "tests/jest.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "storybook-static"]
 }

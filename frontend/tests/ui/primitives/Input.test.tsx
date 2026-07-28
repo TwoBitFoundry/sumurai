@@ -40,15 +40,14 @@ describe('Input', () => {
     expect(input.className).toContain('focus-visible:ring-inset');
   });
 
-  it.each([
-    'default',
-    'invalid',
-    'glass',
-    'floatingChrome',
-    'floatingChromeInvalid',
-  ] as const)('renders the %s variant without elevation drop shadow', (variant) => {
-    render(<Input aria-label="Field" variant={variant} />);
+  it.each(['default', 'invalid', 'glass', 'floatingChrome', 'floatingChromeInvalid'] as const)(
+    'renders the %s variant without elevation drop shadow',
+    (variant) => {
+      render(<Input aria-label="Field" variant={variant} />);
 
-    expect(screen.getByRole('textbox', { name: 'Field' }).className).not.toContain('drop-shadow-');
-  });
+      expect(screen.getByRole('textbox', { name: 'Field' }).className).not.toContain(
+        'drop-shadow-'
+      );
+    }
+  );
 });

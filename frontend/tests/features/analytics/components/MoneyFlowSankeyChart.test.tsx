@@ -548,13 +548,13 @@ describe('MoneyFlowSankeyChart', () => {
     const categoryColor = categoryTheme.ringHex;
     const categoryLabelColor = getCategoryLabelHex(categoryTheme, 'dark');
     mockUseTheme.mockReturnValue({
-      preference: 'dark',
-      mode: 'dark',
+      preference: 'dark' as const,
+      mode: 'dark' as const,
       setPreference: mock(() => {}),
       setMode: mock(() => {}),
       toggle: mock(() => {}),
       colors: darkColors,
-    });
+    } as any);
 
     render(
       <MoneyFlowSankeyChart

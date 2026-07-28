@@ -297,7 +297,9 @@ describe('useBillingWorkflow', () => {
     await act(async () => {
       await result.current.startCardlessTrial({ country_code: 'US', postal_code: '78701' });
     });
-    expect(queryClient.getQueryData(BILLING_STATUS_QUERY_KEY)).toEqual(billingStatus('past_due'));
+    expect(
+      queryClient.getQueryData(BILLING_STATUS_QUERY_KEY) as ReturnType<typeof billingStatus>
+    ).toEqual(billingStatus('past_due'));
     unmount();
 
     act(() => {
@@ -306,7 +308,9 @@ describe('useBillingWorkflow', () => {
     await flushAsync();
 
     expect(gateway.getStatus).toHaveBeenCalledTimes(1);
-    expect(queryClient.getQueryData(BILLING_STATUS_QUERY_KEY)).toEqual(billingStatus('past_due'));
+    expect(
+      queryClient.getQueryData(BILLING_STATUS_QUERY_KEY) as ReturnType<typeof billingStatus>
+    ).toEqual(billingStatus('past_due'));
     jest.useRealTimers();
   });
 });

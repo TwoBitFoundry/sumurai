@@ -248,7 +248,7 @@ describe('ProviderSelectionPanel', () => {
     await user.hover(privacyInfoButton);
 
     await waitFor(() => {
-      expect(screen.getAllByText('Privacy details').length).toBeGreaterThan(1);
+      expect(screen.getByRole('tooltip', { name: 'Privacy details' })).toBeInTheDocument();
     });
   });
 

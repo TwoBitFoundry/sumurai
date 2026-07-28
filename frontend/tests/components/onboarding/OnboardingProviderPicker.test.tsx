@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { OnboardingProviderPicker } from '@/components/onboarding/OnboardingProviderPicker';
 import { AuthService } from '@/services/authService';
+import type { FinancialProvider } from '@/types/api';
 import { ThemeTestProvider } from '../../utils/ThemeTestProvider';
 
 const chooseProviderMock = jest.fn(

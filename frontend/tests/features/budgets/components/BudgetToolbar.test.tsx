@@ -15,6 +15,10 @@ describe('BudgetToolbar', () => {
           isPickerOpen={false}
           addButtonRef={addButtonRef}
           onAddBudget={jest.fn()}
+          isEditing={false}
+          canEdit
+          onStartEdit={jest.fn()}
+          onSaveEdit={jest.fn()}
         />
       </ControlTooltipProvider>
     );

@@ -75,7 +75,9 @@ describe('useBillingStatus', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual(enabledStatus);
-    expect(queryClient.getQueryData(BILLING_STATUS_QUERY_KEY)).toEqual(enabledStatus);
+    expect(queryClient.getQueryData(BILLING_STATUS_QUERY_KEY) as typeof enabledStatus).toEqual(
+      enabledStatus
+    );
   });
 
   it('returns a server-provided disabled billing response unchanged', async () => {
