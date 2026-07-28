@@ -33,16 +33,17 @@ describe('bun migration ci workflows', () => {
     expect(contents).toContain('oven-sh/setup-bun@v2');
     expect(contents).toContain('bun-version: 1.3.14');
     expect(contents).toContain('run: bun ci');
-    expect(contents).toContain('run: bun run lint');
-    expect(contents).toContain('run: bun run typecheck');
-    expect(contents).toContain('run: bun run design:guard');
-    expect(contents).toContain('run: bun run test:ci');
-    expect(contents).toContain('run: bun run build');
+    expect(contents).toContain('run: bun run frontend:lint');
+    expect(contents).toContain('run: bun run frontend:typecheck');
+    expect(contents).toContain('run: bun run frontend:design');
+    expect(contents).toContain('run: bun run frontend:test:ci');
+    expect(contents).toContain('run: bun run frontend:build');
     expect(contents).toContain('run: bunx playwright install-deps chromium');
-    expect(contents).toContain('run: bunx playwright install chromium');
-    expect(contents).toContain('run: bun run test:storybook');
+    expect(contents).toContain('run: bun run frontend:playwright-install');
+    expect(contents).toContain('run: bun run frontend:storybook-test');
     expect(contents).toContain('run: bun run storybook:build');
-    expect(contents).toContain('run: bun run test:storybook-runtime:run');
+    expect(contents).toContain('run: bun run frontend:storybook-runtime:run');
+    expect(contents).not.toContain('working-directory: frontend');
   });
 
   it('ci.yml backend job uses workspace root paths and rust-cache', () => {

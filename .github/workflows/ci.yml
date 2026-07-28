@@ -40,7 +40,9 @@ jobs:
             frontend:
               - 'frontend/src/**'
               - 'frontend/package.json'
-              - 'frontend/bun.lock'
+              - 'package.json'
+              - 'bun.lock'
+              - 'bunfig.toml'
               - 'frontend/tsconfig**'
               - 'frontend/next.config**'
               - 'frontend/tailwind**'
@@ -89,9 +91,6 @@ jobs:
     runs-on: ubuntu-24.04
     needs: changes
     if: github.event_name != 'pull_request' || needs.changes.outputs.frontend == 'true'
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -105,16 +104,16 @@ jobs:
         run: bun ci
 
       - name: Biome check (format + lint)
-        run: bun run lint
+        run: bun run frontend:lint
 
       - name: Type check
-        run: bun run typecheck
+        run: bun run frontend:typecheck
 
       - name: Design guard
-        run: bun run design:guard
+        run: bun run frontend:design
 
       - name: Unit tests
-        run: bun run test:ci
+        run: bun run frontend:test:ci
 
   frontend-build:
     name: Frontend (build + storybook)
@@ -123,9 +122,6 @@ jobs:
     if: github.event_name != 'pull_request' || needs.changes.outputs.frontend == 'true'
     env:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/frontend/.playwright-browsers
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -142,13 +138,13 @@ jobs:
         uses: actions/cache@v5
         with:
           path: frontend/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('frontend/bun.lock') }}-${{ hashFiles('frontend/src/**/*.ts', 'frontend/src/**/*.tsx') }}
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('bun.lock') }}-${{ hashFiles('frontend/src/**/*.ts', 'frontend/src/**/*.tsx') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('frontend/bun.lock') }}-
+            ${{ runner.os }}-nextjs-${{ hashFiles('bun.lock') }}-
             ${{ runner.os }}-nextjs-
 
       - name: Production build
-        run: bun run build
+        run: bun run frontend:build
 
       - name: Resolve Playwright version
         id: pw
@@ -166,13 +162,13 @@ jobs:
         run: bunx playwright install-deps chromium
 
       - name: Install Playwright Chromium
-        run: bunx playwright install chromium
+        run: bun run frontend:playwright-install
 
       - name: Storybook Vitest
-        run: bun run test:storybook
+        run: bun run frontend:storybook-test
 
       - name: Storybook static build
         run: bun run storybook:build
 
       - name: Storybook iframe smoke
-        run: bun run test:storybook-runtime:run
+        run: bun run frontend:storybook-runtime:run

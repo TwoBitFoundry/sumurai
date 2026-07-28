@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 # ---------- Build stage ----------
 FROM oven/bun:1.3.14-alpine AS builder
-WORKDIR /app/frontend
+WORKDIR /app
 
 ARG NEXT_PUBLIC_OTEL_ENABLED=true
 ARG NEXT_PUBLIC_OTEL_SERVICE_NAME=sumurai-frontend
@@ -18,11 +18,13 @@ ENV NEXT_PUBLIC_OTEL_BLOCK_SENSITIVE_ENDPOINTS=${NEXT_PUBLIC_OTEL_BLOCK_SENSITIV
 ENV NEXT_PUBLIC_PASSWORD_AUTH=${NEXT_PUBLIC_PASSWORD_AUTH}
 ENV NEXT_DISABLE_REACT_COMPILER=true
 
-# Copy dependency manifests first to leverage Docker layer caching
-COPY frontend/package.json frontend/bun.lock ./
+# Copy workspace manifests first to leverage Docker layer caching
+COPY package.json bun.lock bunfig.toml ./
+COPY frontend/package.json ./frontend/
 RUN --mount=type=cache,target=/root/.bun/install/cache bun ci
 
 # Copy configuration and source files for the build
+WORKDIR /app/frontend
 COPY frontend/tsconfig.json .
 COPY frontend/next.config.mjs .
 COPY frontend/tailwind.config.js .
