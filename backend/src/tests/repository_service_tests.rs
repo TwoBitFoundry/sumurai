@@ -174,7 +174,7 @@ async fn given_billing_entitlement_when_upserting_then_statement_is_tenant_scope
     let read_statements = log[1].statements();
     assert_eq!(write_statements[1], tenant_set_config_statement(user_id));
     assert_eq!(read_statements[1], tenant_set_config_statement(user_id));
-    let insert_sql = format!("{:?}", &write_statements[2]);
+    let insert_sql = format!("{:?}", write_statements[2]);
     assert!(insert_sql.contains("billing_entitlements"));
     assert!(insert_sql.contains("paddle_subscription_id"));
     assert!(insert_sql.contains("scheduled_cancel_at"));
@@ -211,7 +211,7 @@ async fn given_scheduled_cancel_when_setting_then_updates_only_schedule_and_upda
     let log = repo.into_mock_transaction_log();
     let statements = log[0].statements();
     assert_eq!(statements[1], tenant_set_config_statement(user_id));
-    let update_sql = format!("{:?}", &statements[2]);
+    let update_sql = format!("{:?}", statements[2]);
     assert!(update_sql.contains("scheduled_cancel_at"));
     assert!(update_sql.contains("updated_at"));
     assert!(!update_sql.contains("last_event_at"));
@@ -252,7 +252,7 @@ async fn given_billing_profile_when_upserting_then_statement_is_tenant_scoped() 
     let log = repo.into_mock_transaction_log();
     let stmts = log[0].statements();
     assert_eq!(stmts[1], tenant_set_config_statement(user_id));
-    let insert_sql = format!("{:?}", &stmts[2]);
+    let insert_sql = format!("{:?}", stmts[2]);
     assert!(insert_sql.contains("billing_profiles"));
     assert!(insert_sql.contains("paddle_customer_id"));
     assert!(insert_sql.contains("ON CONFLICT"));
@@ -286,7 +286,7 @@ async fn given_paddle_webhook_event_when_recording_then_event_id_is_idempotency_
     repo.record_paddle_webhook_event(&event).await.unwrap();
 
     let log = repo.into_mock_transaction_log();
-    let insert_sql = format!("{:?}", &log[0]);
+    let insert_sql = format!("{:?}", log[0]);
     assert!(insert_sql.contains("paddle_webhook_events"));
     assert!(insert_sql.contains("event_id"));
     assert!(insert_sql.contains("processing_status"));
@@ -517,7 +517,7 @@ async fn given_transaction_with_app_supplied_normalized_fields_when_upserting_th
 
     let log = repo.into_mock_transaction_log();
     let stmts = log[0].statements();
-    let insert_sql = format!("{:?}", &stmts[2]);
+    let insert_sql = format!("{:?}", stmts[2]);
 
     assert!(insert_sql.contains("normalized_merchant"));
     assert!(insert_sql.contains("normalization_source"));

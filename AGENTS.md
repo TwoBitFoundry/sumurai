@@ -2,7 +2,7 @@
 
 ## Project Structure
 - `frontend/` - Next.js 16 + React 19 + TypeScript UI with Tailwind, Biome, Bun test, Recharts, and OpenTelemetry browser instrumentation.
-- `backend/` - Rust 1.95 Axum API with SeaORM, Redis, Postgres, JWT auth, provider integrations, and OpenTelemetry tracing (`OTEL_TRACES_EXPORTER`: none, console, or OTLP).
+- `backend/` - Rust 1.97.1 Axum API with SeaORM, Redis, Postgres, JWT auth, provider integrations, and OpenTelemetry tracing (`OTEL_TRACES_EXPORTER`: none, console, or OTLP).
 - `docs/` - architecture docs, screenshots, threat model, compliance docs, and reference diagrams.
 - `nginx/` - local reverse proxy and TLS entrypoint files used by Docker Compose.
 - `docker-compose.yml` - OSS-style deployment: prebuilt GHCR images, nginx (slim template, no Seq), frontend, backend, Postgres, Redis, optional certbot profile.

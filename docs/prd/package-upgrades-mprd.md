@@ -235,10 +235,20 @@ Context7 confirms the core libraries exist (`/websites/typescriptlang`, `/vercel
 
 ### Acceptance Criteria
 
-- [ ] `rustc --version` via toolchain file resolves to 1.97.1
-- [ ] `cargo check --workspace --locked --all-targets` and `cargo clippy --workspace --locked` succeed
-- [ ] `cargo test --workspace --locked` (or `bun run backend:ci`) passes
-- [ ] Dockerfile and CI pins match 1.97.1; Bun Docker tag is `1.3.14-alpine`
+- [x] `rustc --version` via toolchain file resolves to 1.97.1
+- [x] `cargo check --workspace --locked --all-targets` and `cargo clippy --workspace --locked` succeed
+- [x] `cargo test --workspace --locked` (or `bun run backend:ci`) passes
+- [x] Dockerfile and CI pins match 1.97.1; Bun Docker tag is `1.3.14-alpine`
+
+### Notes
+
+- Fixed new Clippy `useless_borrows_in_formatting` in `repository_service_tests.rs` under Rust 1.97.
+- CodeQL workflow still has no explicit Rust toolchain pin (follow-up CI hygiene).
+
+### Verification log
+
+- `rustc --version` — 1.97.1
+- `bun run backend:ci` — pass
 
 ---
 
