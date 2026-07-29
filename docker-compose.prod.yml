@@ -28,7 +28,8 @@ services:
       MIGRATION_ARTIFACTS_DIR: /var/lib/sumurai/migration
 
       AUTH_COOKIE_SAME_SITE: Strict
-      APP_ORIGIN: ${APP_ORIGIN:?APP_ORIGIN is required}
+      APP_ORIGIN: https://${DOMAIN:?DOMAIN is required for production}
+      CORS_ALLOWED_ORIGINS: https://${DOMAIN:?DOMAIN is required for production}
       BILLING_MODE: paddle
       ENABLED_FINANCIAL_PROVIDERS: diy,plaid
 
@@ -117,6 +118,7 @@ services:
       - "${HTTPS_PORT:-443}:443"
     volumes:
       - ./nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+      - ./nginx/cloudflare-real-ip.conf:/etc/nginx/cloudflare-real-ip.conf:ro
       - ./nginx/entrypoint.sh:/etc/nginx/entrypoint.sh:ro
       - ./nginx/healthcheck.sh:/etc/nginx/healthcheck.sh:ro
       - certbot-etc:/etc/letsencrypt
