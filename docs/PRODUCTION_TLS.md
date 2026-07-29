@@ -1,30 +1,36 @@
 # Production TLS
 
-Production deployments must provision a publicly trusted nginx server certificate before Sumurai is exposed to users. Local development may use the generated 30-day self-signed certificate, but production startup now fails when nginx would serve missing, self-signed, or soon-expiring certificate material.
+Production deployments must provision a publicly trusted nginx server certificate before Sumurai is exposed to users. Local development may use the generated 30-day self-signed certificate, but production startup fails when nginx would serve missing, self-signed, or soon-expiring certificate material.
 
 This guide covers nginx server TLS only.
 
 ## Required Inputs
 
-- `DOMAIN`: public DNS name for the Sumurai deployment.
-- DNS `A` or `AAAA` record pointing `DOMAIN` to the deployment host.
+- `DOMAIN=sumurai.app`.
+- `APP_ORIGIN=https://sumurai.app`.
+- `SUMURAI_IMAGE_TAG=latest`.
+- `HTTP_PORT=80`.
+- `HTTPS_PORT=443`.
+- DNS `A` record for the apex pointing to the deployment host and a `www` CNAME pointing to the apex, both set to DNS only during issuance.
 - Inbound ports `80` and `443` reachable from the public internet for ACME HTTP-01 validation and HTTPS traffic.
 - `docker-compose.prod.yml`: production compose stack (production settings, public host ports `80` and `443`).
 - Persistent Docker volumes `certbot-etc` and `certbot-var`.
-- An operator-owned renewal schedule.
+- The existing server-side secret injection mechanism.
+- A twice-daily systemd renewal timer.
 
 ## Initial Issuance
 
-Start from a host where DNS and firewall rules already route `DOMAIN` to the deployment host.
+Start from the production host after the apex and `www` records resolve directly to its IPv4 address.
 
 ```bash
-DOMAIN=app.example.com HTTP_PORT=80 docker compose --profile certbot run --rm --publish 80:80 --entrypoint certbot certbot certonly --standalone --email ops@example.com --agree-tos --no-eff-email -d app.example.com
+DOMAIN=sumurai.app APP_ORIGIN=https://sumurai.app SUMURAI_IMAGE_TAG=latest HTTP_PORT=80 HTTPS_PORT=443 docker compose -f docker-compose.prod.yml --profile certbot run --rm --publish 80:80 --entrypoint certbot certbot certonly --standalone --email <ACME_EMAIL> --agree-tos --no-eff-email -d sumurai.app -d www.sumurai.app
 ```
 
-After issuance, start nginx:
+Pull the rolling application images and start the production stack:
 
 ```bash
-DOMAIN=app.example.com docker compose -f docker-compose.prod.yml up -d nginx
+DOMAIN=sumurai.app APP_ORIGIN=https://sumurai.app SUMURAI_IMAGE_TAG=latest HTTP_PORT=80 HTTPS_PORT=443 docker compose -f docker-compose.prod.yml pull frontend backend
+DOMAIN=sumurai.app APP_ORIGIN=https://sumurai.app SUMURAI_IMAGE_TAG=latest HTTP_PORT=80 HTTPS_PORT=443 docker compose -f docker-compose.prod.yml up -d
 ```
 
 If production certificate material is missing, nginx exits non-zero before serving traffic.
@@ -33,14 +39,29 @@ If production certificate material is missing, nginx exits non-zero before servi
 
 Certbot is optional only as a compose profile mechanism. Certificate renewal is required production operations work.
 
-With nginx running, use the ACME webroot served from `/.well-known/acme-challenge/`:
+With nginx running, use the ACME webroot served from `/.well-known/acme-challenge/`, then gracefully reload nginx:
 
 ```bash
-DOMAIN=app.example.com docker compose --profile certbot run --rm --entrypoint certbot certbot renew --webroot --webroot-path /var/www/certbot
-DOMAIN=app.example.com docker compose -f docker-compose.prod.yml restart nginx
+DOMAIN=sumurai.app APP_ORIGIN=https://sumurai.app SUMURAI_IMAGE_TAG=latest HTTP_PORT=80 HTTPS_PORT=443 docker compose -f docker-compose.prod.yml --profile certbot run --rm --entrypoint certbot certbot renew --webroot --webroot-path /var/www/certbot
+DOMAIN=sumurai.app APP_ORIGIN=https://sumurai.app SUMURAI_IMAGE_TAG=latest HTTP_PORT=80 HTTPS_PORT=443 docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
 ```
 
-Use the host scheduler appropriate for the deployment environment. The schedule must keep the `certbot-etc` and `certbot-var` volumes intact between runs.
+Install a systemd oneshot service that runs both renewal commands from the Sumurai deployment directory through the existing server-side secret injection mechanism. Pair it with a timer using `OnCalendar=*-*-* 00,12:00:00`, `RandomizedDelaySec=1h`, and `Persistent=true`. Enable it with:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now sumurai-certbot-renew.timer
+sudo systemctl start sumurai-certbot-renew.service
+sudo systemctl status sumurai-certbot-renew.timer --no-pager
+```
+
+Verify the renewal path before relying on the timer:
+
+```bash
+DOMAIN=sumurai.app APP_ORIGIN=https://sumurai.app SUMURAI_IMAGE_TAG=latest HTTP_PORT=80 HTTPS_PORT=443 docker compose -f docker-compose.prod.yml --profile certbot run --rm --entrypoint certbot certbot renew --dry-run --webroot --webroot-path /var/www/certbot
+```
+
+The schedule must preserve the `certbot-etc` and `certbot-var` volumes.
 
 If nginx is stopped for recovery and renewal cannot use webroot, use certbot standalone while nginx is stopped and port 80 is free.
 
@@ -49,25 +70,25 @@ If nginx is stopped for recovery and renewal cannot use webroot, use certbot sta
 Verify the deployed chain:
 
 ```bash
-openssl s_client -connect app.example.com:443 -servername app.example.com -showcerts </dev/null
+openssl s_client -connect sumurai.app:443 -servername sumurai.app -showcerts </dev/null
 ```
 
 Verify the active certificate expiry:
 
 ```bash
-openssl s_client -connect app.example.com:443 -servername app.example.com </dev/null 2>/dev/null | openssl x509 -noout -issuer -subject -enddate
+openssl s_client -connect sumurai.app:443 -servername sumurai.app </dev/null 2>/dev/null | openssl x509 -noout -issuer -subject -ext subjectAltName -enddate
 ```
 
 Verify local container health:
 
 ```bash
-DOMAIN=app.example.com docker compose -f docker-compose.prod.yml ps nginx
+DOMAIN=sumurai.app APP_ORIGIN=https://sumurai.app SUMURAI_IMAGE_TAG=latest HTTP_PORT=80 HTTPS_PORT=443 docker compose -f docker-compose.prod.yml ps
 ```
 
 Verify compose renders the production port mapping:
 
 ```bash
-DOMAIN=app.example.com docker compose -f docker-compose.prod.yml config
+DOMAIN=sumurai.app APP_ORIGIN=https://sumurai.app SUMURAI_IMAGE_TAG=latest HTTP_PORT=80 HTTPS_PORT=443 docker compose -f docker-compose.prod.yml config --quiet
 ```
 
 ## Failure Behavior
