@@ -152,6 +152,22 @@ jest.mock('@/features/billing/PricingScreen', () => ({
   },
 }));
 
+jest.mock('@/features/billing/EndedTrialAccessScreen', () => ({
+  EndedTrialAccessScreen: ({
+    billingStatus,
+    onLogout,
+  }: {
+    billingStatus: BillingStatusResponse;
+    onLogout: () => void;
+  }) => (
+    <div data-testid="ended-trial-access" data-access-status={billingStatus.access_status}>
+      <button type="button" onClick={onLogout}>
+        Restricted logout
+      </button>
+    </div>
+  ),
+}));
+
 jest.mock('@/features/billing/UpgradeRequiredModal', () => ({
   UpgradeRequiredModal: ({
     isOpen,
@@ -509,6 +525,50 @@ describe('App onboarding gate', () => {
     expect(screen.queryByRole('button', { name: /continue/i })).not.toBeInTheDocument();
   });
 
+  it('restricts an authenticated user after their trial entitlement ends', async () => {
+    setBillingQuery({
+      data: {
+        ...enabledBillingStatus,
+        access_status: 'canceled',
+        trial_ends_at: '2026-08-15T00:00:00.000Z',
+      },
+      isPending: false,
+      isError: false,
+    });
+    jest.mocked(AuthService.refreshToken).mockResolvedValue({
+      user_id: 'user-1',
+      expires_at: '2099-01-01T00:00:00.000Z',
+      onboarding_completed: true,
+      demo_mode_active: false,
+    });
+
+    render(<App />);
+
+    expect(await screen.findByTestId('ended-trial-access')).toHaveAttribute(
+      'data-access-status',
+      'canceled'
+    );
+    expect(screen.queryByTestId('pricing-screen')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('demo-mode-active')).not.toBeInTheDocument();
+  });
+
+  it('does not classify a canceled paid subscription without trial history as an ended trial', async () => {
+    setBillingQuery({
+      data: {
+        ...enabledBillingStatus,
+        access_status: 'canceled',
+        trial_ends_at: null,
+      },
+      isPending: false,
+      isError: false,
+    });
+
+    render(<App />);
+
+    expect(await screen.findByTestId('pricing-screen')).toBeInTheDocument();
+    expect(screen.queryByTestId('ended-trial-access')).not.toBeInTheDocument();
+  });
+
   it('uses disabled pricing after a billing query error', async () => {
     setBillingQuery({ data: disabledBillingStatus, isPending: false, isError: true });
 
@@ -653,7 +713,17 @@ describe('App onboarding gate', () => {
     expect(screen.queryByTestId('pricing-screen')).not.toBeInTheDocument();
   });
 
-  it('ignores pricing entry events for a non-demo user', async () => {
+  it('opens explicitly requested pricing for an authenticated trial user', async () => {
+    setBillingQuery({
+      data: {
+        ...enabledBillingStatus,
+        access_status: 'trialing',
+        can_use_own_data: true,
+        is_demo_mode_active: false,
+      },
+      isPending: false,
+      isError: false,
+    });
     jest.mocked(AuthService.refreshToken).mockResolvedValue({
       user_id: 'user-1',
       expires_at: '2099-01-01T00:00:00.000Z',
@@ -668,7 +738,7 @@ describe('App onboarding gate', () => {
       window.dispatchEvent(new CustomEvent(OPEN_PRICING_EVENT));
     });
 
-    expect(screen.queryByTestId('pricing-screen')).not.toBeInTheDocument();
+    expect(screen.getByTestId('pricing-screen')).toBeInTheDocument();
     expect(screen.queryByTestId('onboarding-provider-picker')).not.toBeInTheDocument();
   });
 

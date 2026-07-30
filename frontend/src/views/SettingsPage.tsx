@@ -3,29 +3,20 @@ import { AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import { useTheme } from '@/context/ThemeContext';
+import { DeleteAccountModal } from '@/features/settings/DeleteAccountModal';
 import { PasskeySecuritySection } from '@/features/settings/PasskeySecuritySection';
 import { PlanSection } from '@/features/settings/PlanSection';
 import { HeroSubtitleInfo } from '@/layouts/HeroSubtitleInfo';
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
 import { AuthService } from '@/services/authService';
 import { SettingsService } from '@/services/SettingsService';
-import {
-  Alert,
-  Button,
-  FormLabel,
-  GlassCard,
-  Input,
-  Modal,
-  ModalDrawerHeader,
-} from '@/ui/primitives';
+import { Alert, Button, GlassCard } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import {
   settingsSecurityLayout,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-
-export const settingsConfirmationCodeTypography = 'font-mono font-bold';
 
 interface SettingsPageProps {
   onLogout?: () => void;
@@ -65,10 +56,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       }
       setIsDeleting(false);
     }
-  };
-
-  const getConfirmInputVariant = () => {
-    return confirmText && confirmText !== 'DELETE' ? 'invalid' : 'default';
   };
 
   return (
@@ -144,75 +131,15 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         </GlassCard>
       </div>
 
-      <Modal
+      <DeleteAccountModal
         isOpen={showDeleteModal}
+        isDeleting={isDeleting}
+        error={deleteError}
+        confirmText={confirmText}
+        onConfirmTextChange={setConfirmText}
+        onConfirm={() => void handleDeleteAccount()}
         onClose={closeDeleteModal}
-        labelledBy="delete-account-modal-title"
-        size="md"
-        preventCloseOnBackdrop={isDeleting}
-      >
-        <GlassCard variant="auth" padding="lg">
-          <ModalDrawerHeader
-            onClose={closeDeleteModal}
-            closeLabel="Close delete account dialog"
-            closeDisabled={isDeleting}
-          >
-            <h2
-              id="delete-account-modal-title"
-              className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}
-            >
-              Delete Account?
-            </h2>
-          </ModalDrawerHeader>
-
-          <Alert
-            variant="error"
-            title="All to be severed:"
-            icon={<AlertTriangle className={cn('h-5', 'w-5')} />}
-            className={cn('mb-6', 'mt-4')}
-          >
-            <ul className={cn('space-y-1', uiTypographyRecipes.caption)}>
-              <li>• All bank connections</li>
-              <li>• All transactions and bank information</li>
-              <li>• All budgets and settings</li>
-              <li>• Your user account and login credentials</li>
-            </ul>
-          </Alert>
-
-          {deleteError && (
-            <Alert variant="error" title="Deletion failed" className={cn('mb-4')}>
-              {deleteError}
-            </Alert>
-          )}
-
-          <div className={cn('mb-6', 'flex', 'flex-col', 'gap-3')}>
-            <FormLabel htmlFor="confirm-delete">
-              Type <span className={cn(settingsConfirmationCodeTypography)}>DELETE</span> to confirm
-            </FormLabel>
-            <Input
-              id="confirm-delete"
-              value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              placeholder="DELETE"
-              disabled={isDeleting}
-              variant={getConfirmInputVariant()}
-              data-variant={getConfirmInputVariant()}
-            />
-          </div>
-
-          <div className={cn('flex', 'justify-center')}>
-            <Button
-              type="button"
-              variant="danger"
-              size="md"
-              onClick={handleDeleteAccount}
-              disabled={confirmText !== 'DELETE' || isDeleting}
-            >
-              {isDeleting ? 'Deleting...' : 'Delete forever'}
-            </Button>
-          </div>
-        </GlassCard>
-      </Modal>
+      />
     </div>
   );
 }

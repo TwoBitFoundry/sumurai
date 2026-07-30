@@ -119,12 +119,28 @@ describe('PlanSection actions', () => {
     const user = userEvent.setup();
     const handler = jest.fn();
     window.addEventListener(OPEN_PRICING_EVENT, handler);
-    renderPlan(enabledStatus('demo'));
+    renderPlan(enabledStatus('demo', { is_demo_mode_active: true }));
 
     await user.click(screen.getByRole('button', { name: 'Upgrade to Premium' }));
 
     expect(handler).toHaveBeenCalledTimes(1);
     expect(workflow.startPremiumCheckout).not.toHaveBeenCalled();
+    window.removeEventListener(OPEN_PRICING_EVENT, handler);
+  });
+
+  it('uses Premium checkout when demo access is not an active demo session', async () => {
+    const user = userEvent.setup();
+    const handler = jest.fn();
+    window.addEventListener(OPEN_PRICING_EVENT, handler);
+    renderPlan(enabledStatus('demo', { is_demo_mode_active: false }));
+
+    await user.click(screen.getByRole('button', { name: 'Upgrade to Premium' }));
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(workflow.startPremiumCheckout).toHaveBeenCalledWith({
+      token: 'test_client_token',
+      environment: 'sandbox',
+    });
     window.removeEventListener(OPEN_PRICING_EVENT, handler);
   });
 
@@ -144,8 +160,10 @@ describe('PlanSection actions', () => {
     });
   });
 
-  it('uses the trial payment-method target and preserves the trial plan while it runs', async () => {
+  it('opens the plan picker from an active beta trial', async () => {
     const user = userEvent.setup();
+    const handler = jest.fn();
+    window.addEventListener(OPEN_PRICING_EVENT, handler);
     renderPlan(
       enabledStatus('trialing', {
         payment_method_required: true,
@@ -155,11 +173,10 @@ describe('PlanSection actions', () => {
 
     await user.click(screen.getByRole('button', { name: 'Upgrade to Premium' }));
 
-    expect(workflow.startTrialPaymentMethod).toHaveBeenCalledWith({
-      token: 'test_client_token',
-      environment: 'sandbox',
-    });
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(workflow.startTrialPaymentMethod).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', { name: 'Free trial' })).toBeInTheDocument();
+    window.removeEventListener(OPEN_PRICING_EVENT, handler);
   });
 
   it('uses the past-due recovery target', async () => {

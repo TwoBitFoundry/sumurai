@@ -69,7 +69,10 @@ export function PlanSection() {
   };
 
   const upgradePremium = async () => {
-    if (billingStatus.data?.access_status === 'demo') {
+    if (
+      billingStatus.data?.access_status === 'trialing' ||
+      (billingStatus.data?.access_status === 'demo' && billingStatus.data.is_demo_mode_active)
+    ) {
       dispatchOpenPricing();
       return;
     }
@@ -78,10 +81,6 @@ export function PlanSection() {
       return;
     }
     setMutationError(null);
-    if (billingStatus.data.access_status === 'trialing') {
-      await workflow.startTrialPaymentMethod(config);
-      return;
-    }
     await workflow.startPremiumCheckout(config);
   };
 
