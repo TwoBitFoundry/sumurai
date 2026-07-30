@@ -1,9 +1,14 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use opentelemetry::trace::Status;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tracing::{field::Empty, Instrument, Span};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 use uuid::Uuid;
+
+use crate::services::external_http;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CreateCheckoutRequest {
@@ -176,36 +181,189 @@ impl PaddleClient {
         path: &str,
         body: serde_json::Value,
     ) -> Result<T> {
-        let response = self
-            .http
-            .post(format!("{}{}", self.base_url, path))
-            .bearer_auth(&self.api_key)
-            .json(&body)
-            .send()
-            .await?;
-        self.parse_response(response).await
+        let span = tracing::info_span!(
+            "external_http",
+            event_name = "external.http",
+            external.service = "paddle",
+            http.method = "POST",
+            http.route = %path,
+            http.status_code = Empty,
+            error.type = Empty,
+            error.message = Empty,
+            error.reason = Empty,
+            error.stack_trace = Empty,
+        );
+        async move {
+            let response = self
+                .http
+                .post(format!("{}{}", self.base_url, path))
+                .bearer_auth(&self.api_key)
+                .json(&body)
+                .send()
+                .await
+                .inspect_err(|error| self.record_transport_error(path, error))?;
+            self.parse_response(response, "POST", path, Some(&body))
+                .await
+        }
+        .instrument(span)
+        .await
     }
 
     async fn get<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T> {
-        let response = self
-            .http
-            .get(format!("{}{}", self.base_url, path))
-            .bearer_auth(&self.api_key)
-            .send()
-            .await?;
-        self.parse_response(response).await
+        let span = tracing::info_span!(
+            "external_http",
+            event_name = "external.http",
+            external.service = "paddle",
+            http.method = "GET",
+            http.route = %path,
+            http.status_code = Empty,
+            error.type = Empty,
+            error.message = Empty,
+            error.reason = Empty,
+            error.stack_trace = Empty,
+        );
+        async move {
+            let response = self
+                .http
+                .get(format!("{}{}", self.base_url, path))
+                .bearer_auth(&self.api_key)
+                .send()
+                .await
+                .inspect_err(|error| self.record_transport_error(path, error))?;
+            self.parse_response(response, "GET", path, None).await
+        }
+        .instrument(span)
+        .await
     }
 
     async fn parse_response<T: serde::de::DeserializeOwned>(
         &self,
         response: reqwest::Response,
+        method: &str,
+        path: &str,
+        request_payload: Option<&serde_json::Value>,
     ) -> Result<T> {
         let status = response.status();
         if !status.is_success() {
-            return Err(anyhow!("Paddle API request failed with status {}", status));
+            let response_body = response.text().await.unwrap_or_default();
+            if let Some(request_payload) = request_payload {
+                external_http::log_request_payload("paddle", method, path, request_payload);
+            }
+            external_http::log_response_payload(
+                "paddle",
+                method,
+                path,
+                status.as_u16(),
+                &response_body,
+            );
+            let (error_type, message, reason) = paddle_error_fields(&response_body);
+            let message = message.unwrap_or_else(|| "Paddle API request failed".to_string());
+            let reason = reason.unwrap_or_else(|| status.to_string());
+            let error = anyhow!("Paddle API request failed with status {status}: {message}");
+            Span::current().record("http.status_code", status.as_u16());
+            Span::current().record("error.type", error_type.as_deref().unwrap_or("paddle"));
+            Span::current().record("error.message", message.as_str());
+            Span::current().record("error.reason", reason.as_str());
+            Span::current().record(
+                "error.stack_trace",
+                external_http::truncate_telemetry_text(format!("{error:?}")),
+            );
+            Span::current().set_status(Status::error(message.clone()));
+            tracing::error!(
+                event_name = "external.http.error",
+                external.service = "paddle",
+                http.status_code = status.as_u16(),
+                error.type = error_type.as_deref().unwrap_or("paddle"),
+                error.message = %message,
+                error.reason = %reason,
+                error.stack_trace = %external_http::truncate_telemetry_text(format!("{error:?}")),
+                "external endpoint request failed"
+            );
+            return Err(error);
         }
-        Ok(response.json::<T>().await?)
+        Span::current().record("http.status_code", status.as_u16());
+        tracing::info!(
+            event_name = "external.http.completed",
+            external.service = "paddle",
+            http.method = method,
+            http.route = path,
+            http.status_code = status.as_u16(),
+            message = "external endpoint completed",
+            "external endpoint completed"
+        );
+        let response_body = response.text().await?;
+        serde_json::from_str::<T>(&response_body).map_err(|error| {
+            external_http::log_response_payload(
+                "paddle",
+                method,
+                path,
+                status.as_u16(),
+                &response_body,
+            );
+            Span::current().record("error.type", "decode");
+            Span::current().record(
+                "error.message",
+                external_http::truncate_telemetry_text(error.to_string()),
+            );
+            Span::current().record("error.reason", "invalid_json");
+            Span::current().set_status(Status::error("Paddle response decode failed"));
+            tracing::error!(
+                event_name = "external.http.decode_error",
+                external.service = "paddle",
+                http.status_code = status.as_u16(),
+                error.type = "decode",
+                error.message = %error,
+                error.reason = "invalid_json",
+                error.stack_trace = %external_http::truncate_telemetry_text(format!("{error:?}")),
+                "external endpoint response could not be decoded"
+            );
+            error.into()
+        })
     }
+
+    fn record_transport_error(&self, path: &str, error: &reqwest::Error) {
+        Span::current().record("error.type", "transport");
+        Span::current().record("error.message", error.to_string().as_str());
+        Span::current().record("error.reason", "request_failed");
+        Span::current().record(
+            "error.stack_trace",
+            external_http::truncate_telemetry_text(format!("{error:?}")),
+        );
+        Span::current().set_status(Status::error("Paddle transport request failed"));
+        tracing::error!(
+            event_name = "external.http.transport_error",
+            external.service = "paddle",
+            http.route = path,
+            error.type = "transport",
+            error.message = %error,
+            error.reason = "request_failed",
+            error.stack_trace = %external_http::truncate_telemetry_text(format!("{error:?}")),
+            "external endpoint request could not be sent"
+        );
+    }
+}
+
+fn paddle_error_fields(body: &str) -> (Option<String>, Option<String>, Option<String>) {
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(body) else {
+        return (None, None, None);
+    };
+    let error = value.get("error").unwrap_or(&value);
+    (
+        error
+            .get("type")
+            .and_then(|value| value.as_str())
+            .map(str::to_string),
+        error
+            .get("detail")
+            .or_else(|| error.get("message"))
+            .and_then(|value| value.as_str())
+            .map(str::to_string),
+        error
+            .get("code")
+            .or_else(|| error.get("reason"))
+            .and_then(|value| value.as_str())
+            .map(str::to_string),
+    )
 }
 
 #[async_trait]

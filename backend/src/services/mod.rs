@@ -11,6 +11,7 @@ pub mod connection_service;
 pub mod demo_mode_service;
 pub mod diy_service;
 pub mod export_service;
+pub mod external_http;
 pub mod import_service;
 pub mod merchant_normalization;
 pub mod otel_traces_relay;
