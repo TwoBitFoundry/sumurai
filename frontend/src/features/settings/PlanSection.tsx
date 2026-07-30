@@ -8,6 +8,7 @@ import { dispatchOpenPricing } from '@/utils/events';
 import { CancelMembershipModal } from './CancelMembershipModal';
 import { PlanSectionView } from './PlanSectionView';
 import { resolvePlanPolicy } from './planPolicy';
+import { TrialStartModal } from './TrialStartModal';
 
 const workflowErrorCopy = {
   trial_already_used: 'This account has already used its free trial.',
@@ -68,6 +69,10 @@ export function PlanSection() {
   };
 
   const upgradePremium = async () => {
+    if (billingStatus.data?.access_status === 'demo') {
+      dispatchOpenPricing();
+      return;
+    }
     const config = paddleConfig();
     if (!config || !billingStatus.data?.billing_enabled) {
       return;
@@ -137,11 +142,8 @@ export function PlanSection() {
         mutationPending={pending}
         mutationError={mutationError ?? workflowError}
         mutationRetryLabel={workflow.status === 'timeout' ? 'Retry activation' : undefined}
-        trialFormOpen={trialFormOpen}
         onRetry={() => void billingStatus.refetch()}
         onRetryMutation={workflow.status === 'timeout' ? () => void workflow.retry() : undefined}
-        onStartTrialRequest={startTrial}
-        onCancelTrialForm={() => setTrialFormOpen(false)}
         onSwitchSelfHosted={dispatchOpenPricing}
         onStartTrial={() => {
           setMutationError(null);
@@ -163,6 +165,18 @@ export function PlanSection() {
         onClose={() => {
           if (!cancelPending) {
             setCancelConfirmOpen(false);
+            setMutationError(null);
+          }
+        }}
+      />
+      <TrialStartModal
+        isOpen={trialFormOpen}
+        isPending={pending}
+        error={mutationError ?? workflowError}
+        onStartTrial={startTrial}
+        onClose={() => {
+          if (!pending) {
+            setTrialFormOpen(false);
             setMutationError(null);
           }
         }}

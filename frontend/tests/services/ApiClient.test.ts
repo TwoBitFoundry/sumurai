@@ -387,27 +387,39 @@ describe('ApiClient with Injected IHttpClient', () => {
       expect(mockHttp.post).toHaveBeenCalledOnce();
     });
 
-    it('should retry POST requests on transient errors', async () => {
-      mockHttp.post
-        .mockRejectedValueOnce(new Error('Request timeout'))
-        .mockResolvedValueOnce({ success: true });
+    it('should not retry POST requests on transient errors', async () => {
+      mockHttp.post.mockRejectedValueOnce(new Error('Request timeout'));
 
-      const result = await ApiClient.post('/test', { data: 'test' });
+      await expect(ApiClient.post('/test', { data: 'test' })).rejects.toThrow(NetworkError);
 
-      expect(result).toEqual({ success: true });
-      expect(mockHttp.post).toHaveBeenCalledTimes(2);
+      expect(mockHttp.post).toHaveBeenCalledOnce();
     });
 
-    it('should retry multipart POST requests on transient errors', async () => {
+    it('should not retry multipart POST requests on transient errors', async () => {
       const formData = new FormData();
-      mockHttp.postFormData
-        .mockRejectedValueOnce(new Error('Request timeout'))
-        .mockResolvedValueOnce({ success: true });
+      mockHttp.postFormData.mockRejectedValueOnce(new Error('Request timeout'));
 
-      const result = await ApiClient.postFormData('/transactions/import', formData);
+      await expect(ApiClient.postFormData('/transactions/import', formData)).rejects.toThrow(
+        NetworkError
+      );
 
-      expect(result).toEqual({ success: true });
-      expect(mockHttp.postFormData).toHaveBeenCalledTimes(2);
+      expect(mockHttp.postFormData).toHaveBeenCalledOnce();
+    });
+
+    it('should not retry PUT requests on transient errors', async () => {
+      mockHttp.put.mockRejectedValueOnce(new ServerError(503, 'Service Unavailable'));
+
+      await expect(ApiClient.put('/test', { data: 'test' })).rejects.toThrow(ServerError);
+
+      expect(mockHttp.put).toHaveBeenCalledOnce();
+    });
+
+    it('should not retry DELETE requests on transient errors', async () => {
+      mockHttp.delete.mockRejectedValueOnce(new Error('Connection reset'));
+
+      await expect(ApiClient.delete('/test')).rejects.toThrow(NetworkError);
+
+      expect(mockHttp.delete).toHaveBeenCalledOnce();
     });
 
     it('should throw NetworkError after exhausting retries', async () => {

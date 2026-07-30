@@ -99,11 +99,12 @@ describe('PlanSection actions', () => {
     window.removeEventListener(OPEN_PRICING_EVENT, handler);
   });
 
-  it('starts a card-less trial with the shared address form', async () => {
+  it('opens a modal and starts a card-less trial with the shared address form', async () => {
     const user = userEvent.setup();
     renderPlan(enabledStatus('demo', { trials_enabled: true }));
 
     await user.click(screen.getByRole('button', { name: 'Start free trial' }));
+    expect(screen.getByRole('dialog', { name: 'Start your free trial' })).toBeInTheDocument();
     await user.type(screen.getByLabelText('Country code'), 'us');
     await user.type(screen.getByLabelText('Postal code'), '78701');
     await user.click(screen.getByRole('button', { name: 'Start free trial' }));
@@ -114,8 +115,20 @@ describe('PlanSection actions', () => {
     });
   });
 
+  it('opens the plan picker for a demo user upgrading to Premium', async () => {
+    const user = userEvent.setup();
+    const handler = jest.fn();
+    window.addEventListener(OPEN_PRICING_EVENT, handler);
+    renderPlan(enabledStatus('demo'));
+
+    await user.click(screen.getByRole('button', { name: 'Upgrade to Premium' }));
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(workflow.startPremiumCheckout).not.toHaveBeenCalled();
+    window.removeEventListener(OPEN_PRICING_EVENT, handler);
+  });
+
   it.each([
-    ['demo', enabledStatus('demo'), 'Upgrade to Premium'],
     ['paused', enabledStatus('paused'), 'Upgrade to Premium'],
     ['canceled', enabledStatus('canceled'), 'Upgrade to Premium'],
     ['expired', enabledStatus('expired'), 'Upgrade to Premium'],

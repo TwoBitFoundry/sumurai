@@ -434,6 +434,29 @@ describe('App paid-access recovery', () => {
 
     expect(screen.queryByRole('dialog', { name: /upgrade required/i })).not.toBeInTheDocument();
   });
+
+  it('ignores background paid-access events in demo mode and opens pricing explicitly', async () => {
+    jest.mocked(AuthService.refreshToken).mockResolvedValueOnce({
+      user_id: 'user-1',
+      expires_at: '2099-01-01T00:00:00.000Z',
+      onboarding_completed: true,
+      demo_mode_active: true,
+    });
+    render(<App />);
+
+    await screen.findByRole('button', { name: /logout/i });
+    act(() => {
+      window.dispatchEvent(new CustomEvent(PAID_ACCESS_REQUIRED_EVENT));
+    });
+
+    expect(screen.queryByRole('dialog', { name: /upgrade required/i })).not.toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent(OPEN_PRICING_EVENT));
+    });
+
+    expect(screen.getByTestId('pricing-screen')).toBeInTheDocument();
+  });
 });
 
 describe('App onboarding gate', () => {

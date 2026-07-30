@@ -56,8 +56,6 @@ const meta = {
     mutationError: null,
     onRetry: fn(),
     onRetryMutation: fn(),
-    onStartTrialRequest: fn(async () => {}),
-    onCancelTrialForm: fn(),
     onSwitchSelfHosted: fn(),
     onStartTrial: fn(),
     onUpgradePremium: fn(),
@@ -232,24 +230,5 @@ export const MutationError: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: 'Retry activation' }));
     await expect(args.onRetryMutation).toHaveBeenCalledTimes(1);
-  },
-};
-
-export const TrialForm: Story = {
-  args: {
-    policy: resolvePlanPolicy(enabledStatus('demo', { trials_enabled: true })),
-    trialFormOpen: true,
-  },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.type(canvas.getByLabelText('Country code'), 'us');
-    await userEvent.type(canvas.getByLabelText('Postal code'), '78701');
-    await userEvent.click(canvas.getByRole('button', { name: 'Start free trial' }));
-    await expect(args.onStartTrialRequest).toHaveBeenCalledWith({
-      country_code: 'US',
-      postal_code: '78701',
-    });
-    await userEvent.click(canvas.getByRole('button', { name: 'Cancel' }));
-    await expect(args.onCancelTrialForm).toHaveBeenCalledTimes(1);
   },
 };

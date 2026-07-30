@@ -163,13 +163,13 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
 
   useEffect(() => {
     const handler = () => {
-      if (isAuthenticated) {
+      if (isAuthenticated && !demoModeActive) {
         setShowUpgradeRequired(true);
       }
     };
     window.addEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
     return () => window.removeEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
-  }, [isAuthenticated]);
+  }, [demoModeActive, isAuthenticated]);
 
   useEffect(() => {
     const handler = () => {

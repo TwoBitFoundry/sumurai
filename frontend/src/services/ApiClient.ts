@@ -84,6 +84,10 @@ export class ApiClient {
     return ApiClient.retryConfig.retryableStatuses.includes(status);
   }
 
+  private static isRetryableMethod(options: RequestInit): boolean {
+    return (options.method || 'GET').toUpperCase() === 'GET';
+  }
+
   private static async delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
@@ -168,6 +172,7 @@ export class ApiClient {
       }
 
       if (
+        ApiClient.isRetryableMethod(options) &&
         error instanceof ApiError &&
         ApiClient.isRetryableStatus(error.status) &&
         attempt < ApiClient.retryConfig.maxRetries
@@ -178,6 +183,7 @@ export class ApiClient {
       }
 
       if (
+        ApiClient.isRetryableMethod(options) &&
         error instanceof Error &&
         ApiClient.isRetryableError(error) &&
         attempt < ApiClient.retryConfig.maxRetries
@@ -253,6 +259,7 @@ export class ApiClient {
       }
 
       if (
+        ApiClient.isRetryableMethod(options) &&
         error instanceof ApiError &&
         ApiClient.isRetryableStatus(error.status) &&
         attempt < ApiClient.retryConfig.maxRetries
@@ -263,6 +270,7 @@ export class ApiClient {
       }
 
       if (
+        ApiClient.isRetryableMethod(options) &&
         error instanceof Error &&
         ApiClient.isRetryableError(error) &&
         attempt < ApiClient.retryConfig.maxRetries
