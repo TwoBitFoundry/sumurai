@@ -227,8 +227,8 @@ pub fn provider_sync_error_to_response(
                 e
             );
             provider_sync_error_json_response(
-                StatusCode::BAD_GATEWAY,
-                "BAD_GATEWAY",
+                StatusCode::FAILED_DEPENDENCY,
+                "FAILED_DEPENDENCY",
                 "The financial provider request failed. Try again in a few minutes.",
                 None,
                 None,

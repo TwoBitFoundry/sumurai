@@ -6,7 +6,7 @@ use std::sync::Arc;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-use crate::models::billing::{BillingEntitlement, PaddleWebhookEvent};
+use crate::models::billing::{BillingEntitlement, BillingProfile, PaddleWebhookEvent};
 use crate::providers::paddle_provider::{
     CancelSubscriptionResponse, CreateCardlessTrialResponse, CreateCheckoutResponse,
     CreatePaymentMethodTransactionResponse, CreatePortalSessionResponse, MockPaddleHttpClient,
@@ -53,6 +53,10 @@ async fn given_billing_disabled_when_get_status_then_returns_unrestricted_disabl
 #[tokio::test]
 async fn given_paddle_billing_when_create_checkout_then_returns_checkout_url() {
     let mock_db = MockDatabaseRepository::new();
+    let mut mock_db = mock_db;
+    mock_db
+        .expect_get_billing_profile()
+        .returning(|_| Box::pin(async { Ok(None) }));
     let mut paddle = MockPaddleHttpClient::new();
     paddle.expect_create_checkout().returning(|request| {
         assert_eq!(request.price_id, "pri_monthly");
@@ -85,7 +89,7 @@ async fn given_paddle_billing_when_create_checkout_then_returns_checkout_url() {
 }
 
 #[tokio::test]
-async fn given_open_trial_paddle_setup_fails_when_starting_then_returns_bad_gateway() {
+async fn given_open_trial_paddle_setup_fails_when_starting_then_returns_failed_dependency() {
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
         .expect_get_billing_entitlement()
@@ -117,7 +121,7 @@ async fn given_open_trial_paddle_setup_fails_when_starting_then_returns_bad_gate
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+    assert_eq!(response.status(), StatusCode::FAILED_DEPENDENCY);
 }
 
 #[tokio::test]
@@ -227,6 +231,68 @@ async fn given_open_trial_when_starting_then_returns_pending_and_records_profile
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let value: Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(value["status"], "pending");
+}
+
+#[tokio::test]
+async fn given_changed_billing_address_when_starting_trial_then_creates_new_address() {
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_billing_entitlement()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_db.expect_get_billing_profile().returning(|user_id| {
+        let user_id = *user_id;
+        Box::pin(async move {
+            Ok(Some(BillingProfile {
+                user_id,
+                paddle_customer_id: Some("ctm_existing".to_string()),
+                paddle_address_id: Some("add_existing".to_string()),
+                billing_country_code: Some("US".to_string()),
+                billing_postal_code: Some("78701".to_string()),
+                created_at: Utc::now(),
+                updated_at: Utc::now(),
+            }))
+        })
+    });
+    mock_db
+        .expect_upsert_billing_profile()
+        .returning(|_| Box::pin(async { Ok(()) }));
+
+    let mut paddle = MockPaddleHttpClient::new();
+    paddle.expect_create_cardless_trial().returning(|request| {
+        assert_eq!(
+            request.existing_customer_id.as_deref(),
+            Some("ctm_existing")
+        );
+        assert!(request.existing_address_id.is_none());
+        assert_eq!(request.country_code, "CA");
+        assert_eq!(request.postal_code, "M5V 2T6");
+        Box::pin(async {
+            Ok(CreateCardlessTrialResponse {
+                customer_id: "ctm_existing".to_string(),
+                address_id: "add_new".to_string(),
+                transaction_id: "txn_trial".to_string(),
+            })
+        })
+    });
+    let app = create_paddle_billing_app(mock_db, paddle).await;
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/billing/trials/start")
+        .header("Cookie", format!("auth_token={token}"))
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::json!({
+                "country_code": "ca",
+                "postal_code": "M5V 2T6"
+            })
+            .to_string(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
 }
 
 #[tokio::test]
@@ -461,7 +527,7 @@ async fn given_entitlement_without_subscription_when_cancel_requested_then_retur
 }
 
 #[tokio::test]
-async fn given_paddle_failure_when_cancel_requested_then_returns_bad_gateway() {
+async fn given_paddle_failure_when_cancel_requested_then_returns_failed_dependency() {
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
         .expect_get_billing_entitlement()
@@ -487,7 +553,7 @@ async fn given_paddle_failure_when_cancel_requested_then_returns_bad_gateway() {
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+    assert_eq!(response.status(), StatusCode::FAILED_DEPENDENCY);
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let value: Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(value["code"], "PADDLE_REQUEST_FAILED");

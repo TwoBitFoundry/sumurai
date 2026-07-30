@@ -6,13 +6,19 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{field::Empty, Instrument, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
+use url::form_urlencoded;
 use uuid::Uuid;
 
 use crate::services::external_http;
 
+fn paddle_route(path: &str) -> &str {
+    path.split('?').next().unwrap_or(path)
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CreateCheckoutRequest {
     pub user_email: String,
+    pub existing_customer_id: Option<String>,
     pub price_id: String,
     pub user_id: Uuid,
 }
@@ -181,6 +187,7 @@ impl PaddleClient {
         path: &str,
         body: serde_json::Value,
     ) -> Result<T> {
+        let route = paddle_route(path);
         let endpoint_url =
             external_http::sanitize_external_url(&format!("{}{}", self.base_url, path));
         let span = tracing::info_span!(
@@ -188,7 +195,7 @@ impl PaddleClient {
             event_name = "external.http",
             external.service = "paddle",
             http.method = "POST",
-            http.route = %path,
+            http.route = %route,
             http.url = %endpoint_url,
             http.status_code = Empty,
             error.type = Empty,
@@ -213,6 +220,7 @@ impl PaddleClient {
     }
 
     async fn get<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T> {
+        let route = paddle_route(path);
         let endpoint_url =
             external_http::sanitize_external_url(&format!("{}{}", self.base_url, path));
         let span = tracing::info_span!(
@@ -220,7 +228,7 @@ impl PaddleClient {
             event_name = "external.http",
             external.service = "paddle",
             http.method = "GET",
-            http.route = %path,
+            http.route = %route,
             http.url = %endpoint_url,
             http.status_code = Empty,
             error.type = Empty,
@@ -242,6 +250,43 @@ impl PaddleClient {
         .await
     }
 
+    async fn patch<T: serde::de::DeserializeOwned>(
+        &self,
+        path: &str,
+        body: serde_json::Value,
+    ) -> Result<T> {
+        let route = paddle_route(path);
+        let endpoint_url =
+            external_http::sanitize_external_url(&format!("{}{}", self.base_url, path));
+        let span = tracing::info_span!(
+            "external_http",
+            event_name = "external.http",
+            external.service = "paddle",
+            http.method = "PATCH",
+            http.route = %route,
+            http.url = %endpoint_url,
+            http.status_code = Empty,
+            error.type = Empty,
+            error.message = Empty,
+            error.reason = Empty,
+            error.stack_trace = Empty,
+        );
+        async move {
+            let response = self
+                .http
+                .patch(format!("{}{}", self.base_url, path))
+                .bearer_auth(&self.api_key)
+                .json(&body)
+                .send()
+                .await
+                .inspect_err(|error| self.record_transport_error(path, error))?;
+            self.parse_response(response, "PATCH", path, Some(&body))
+                .await
+        }
+        .instrument(span)
+        .await
+    }
+
     async fn parse_response<T: serde::de::DeserializeOwned>(
         &self,
         response: reqwest::Response,
@@ -249,16 +294,17 @@ impl PaddleClient {
         path: &str,
         request_payload: Option<&serde_json::Value>,
     ) -> Result<T> {
+        let route = paddle_route(path);
         let status = response.status();
         if !status.is_success() {
             let response_body = response.text().await.unwrap_or_default();
             if let Some(request_payload) = request_payload {
-                external_http::log_request_payload("paddle", method, path, request_payload);
+                external_http::log_request_payload("paddle", method, route, request_payload);
             }
             external_http::log_response_payload(
                 "paddle",
                 method,
-                path,
+                route,
                 status.as_u16(),
                 &response_body,
             );
@@ -279,7 +325,7 @@ impl PaddleClient {
                 event_name = "external.http.error",
                 external.service = "paddle",
                 http.method = method,
-                http.route = path,
+                http.route = route,
                 http.url = %external_http::sanitize_external_url(&format!("{}{}", self.base_url, path)),
                 http.status_code = status.as_u16(),
                 error.type = error_type.as_deref().unwrap_or("paddle"),
@@ -295,7 +341,7 @@ impl PaddleClient {
             event_name = "external.http.completed",
             external.service = "paddle",
             http.method = method,
-            http.route = path,
+            http.route = route,
             http.url = %external_http::sanitize_external_url(&format!("{}{}", self.base_url, path)),
             http.status_code = status.as_u16(),
             message = "external endpoint completed",
@@ -306,7 +352,7 @@ impl PaddleClient {
             external_http::log_response_payload(
                 "paddle",
                 method,
-                path,
+                route,
                 status.as_u16(),
                 &response_body,
             );
@@ -333,6 +379,7 @@ impl PaddleClient {
     }
 
     fn record_transport_error(&self, path: &str, error: &reqwest::Error) {
+        let route = paddle_route(path);
         Span::current().record("error.type", "transport");
         Span::current().record("error.message", error.to_string().as_str());
         Span::current().record("error.reason", "request_failed");
@@ -345,7 +392,7 @@ impl PaddleClient {
             event_name = "external.http.transport_error",
             external.service = "paddle",
             http.url = %external_http::sanitize_external_url(&format!("{}{}", self.base_url, path)),
-            http.route = path,
+            http.route = route,
             error.type = "transport",
             error.message = %error,
             error.reason = "request_failed",
@@ -360,22 +407,84 @@ fn paddle_error_fields(body: &str) -> (Option<String>, Option<String>, Option<St
         return (None, None, None);
     };
     let error = value.get("error").unwrap_or(&value);
-    (
+    let string_field = |name: &str, fallback: &str| {
         error
-            .get("type")
+            .get(name)
+            .or_else(|| value.get(fallback))
             .and_then(|value| value.as_str())
-            .map(str::to_string),
+            .map(str::to_string)
+    };
+    (
+        string_field("type", "error_type"),
         error
             .get("detail")
             .or_else(|| error.get("message"))
             .and_then(|value| value.as_str())
-            .map(str::to_string),
-        error
-            .get("code")
-            .or_else(|| error.get("reason"))
-            .and_then(|value| value.as_str())
-            .map(str::to_string),
+            .map(str::to_string)
+            .or_else(|| string_field("message", "error_message")),
+        string_field("code", "error_code"),
     )
+}
+
+impl PaddleClient {
+    async fn find_customer_by_email(&self, email: &str) -> Result<Option<PaddleCustomer>> {
+        let query = form_urlencoded::Serializer::new(String::new())
+            .append_pair("email", email)
+            .append_pair("status", "active,archived")
+            .append_pair("per_page", "1")
+            .finish();
+        let response: PaddleCustomerListResponse = self.get(&format!("/customers?{query}")).await?;
+        Ok(response.data.into_iter().next())
+    }
+
+    async fn customer_id_for(&self, customer: PaddleCustomer) -> Result<String> {
+        if customer.status == "archived" {
+            let restored: PaddleCustomerResponse = self
+                .patch(
+                    &format!("/customers/{}", customer.id),
+                    json!({ "status": "active" }),
+                )
+                .await?;
+            return Ok(restored.data.id);
+        }
+        Ok(customer.id)
+    }
+
+    async fn resolve_customer_id(&self, customer_id: &str) -> Result<String> {
+        let response: PaddleCustomerDetailsResponse =
+            self.get(&format!("/customers/{customer_id}")).await?;
+        self.customer_id_for(response.data).await
+    }
+
+    async fn find_or_create_customer(
+        &self,
+        request: &CreateCardlessTrialRequest,
+    ) -> Result<String> {
+        if let Some(customer) = self.find_customer_by_email(&request.user_email).await? {
+            return self.customer_id_for(customer).await;
+        }
+
+        let response: Result<PaddleCustomerResponse> = self
+            .post(
+                "/customers",
+                json!({
+                    "email": request.user_email,
+                    "custom_data": { "sumurai_user_id": request.user_id.to_string() },
+                }),
+            )
+            .await;
+        match response {
+            Ok(response) => Ok(response.data.id),
+            Err(error) if error.to_string().contains("customer email conflicts") => {
+                let customer = self
+                    .find_customer_by_email(&request.user_email)
+                    .await?
+                    .ok_or_else(|| anyhow!("Paddle customer conflict could not be reconciled"))?;
+                self.customer_id_for(customer).await
+            }
+            Err(error) => Err(error),
+        }
+    }
 }
 
 #[async_trait]
@@ -384,12 +493,16 @@ impl PaddleHttpClient for PaddleClient {
         &self,
         request: CreateCheckoutRequest,
     ) -> Result<CreateCheckoutResponse> {
+        let customer_id = match request.existing_customer_id {
+            Some(customer_id) => Some(self.resolve_customer_id(&customer_id).await?),
+            None => None,
+        };
         let response: PaddleTransactionResponse = self
             .post(
                 "/transactions",
                 json!({
                     "items": [{ "price_id": request.price_id, "quantity": 1 }],
-                    "customer_ip_address": null,
+                    "customer_id": customer_id,
                     "custom_data": { "sumurai_user_id": request.user_id.to_string() },
                     "collection_mode": "automatic",
                 }),
@@ -410,19 +523,8 @@ impl PaddleHttpClient for PaddleClient {
         request: CreateCardlessTrialRequest,
     ) -> Result<CreateCardlessTrialResponse> {
         let customer_id = match request.existing_customer_id {
-            Some(customer_id) => customer_id,
-            None => {
-                let response: PaddleCustomerResponse = self
-                    .post(
-                        "/customers",
-                        json!({
-                            "email": request.user_email,
-                            "custom_data": { "sumurai_user_id": request.user_id.to_string() },
-                        }),
-                    )
-                    .await?;
-                response.data.id
-            }
+            Some(customer_id) => self.resolve_customer_id(&customer_id).await?,
+            None => self.find_or_create_customer(&request).await?,
         };
 
         let address_id = match request.existing_address_id {
@@ -549,6 +651,22 @@ struct PaddleCheckout {
 #[derive(Deserialize)]
 struct PaddleCustomerResponse {
     data: PaddleId,
+}
+
+#[derive(Deserialize)]
+struct PaddleCustomerDetailsResponse {
+    data: PaddleCustomer,
+}
+
+#[derive(Deserialize)]
+struct PaddleCustomerListResponse {
+    data: Vec<PaddleCustomer>,
+}
+
+#[derive(Deserialize)]
+struct PaddleCustomer {
+    id: String,
+    status: String,
 }
 
 #[derive(Deserialize)]

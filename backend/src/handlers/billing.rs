@@ -114,7 +114,7 @@ fn billing_service_error_response(
             "Paddle request failed",
             "PADDLE_REQUEST_FAILED",
         )
-        .into_response(StatusCode::BAD_GATEWAY),
+        .into_response(StatusCode::FAILED_DEPENDENCY),
         BillingServiceError::RepositoryRequestFailed => {
             api_internal_server_error("Billing request failed")
         }
@@ -221,7 +221,7 @@ pub async fn get_authenticated_billing_status(
         (status = 200, description = "Paddle checkout created", body = BillingCheckoutResponse),
         (status = 401, description = "Unauthorized"),
         (status = 404, description = "Billing disabled", body = ApiErrorResponse),
-        (status = 502, description = "Paddle request failed", body = ApiErrorResponse)
+        (status = 424, description = "Paddle request failed", body = ApiErrorResponse)
     ),
     security(("auth_cookie" = [])),
     tag = "Billing"
@@ -256,7 +256,7 @@ pub async fn create_billing_checkout(
         (status = 404, description = "Billing or trials disabled", body = ApiErrorResponse),
         (status = 409, description = "Trial already used", body = ApiErrorResponse),
         (status = 429, description = "Rate limited", body = ApiErrorResponse),
-        (status = 502, description = "Paddle request failed", body = ApiErrorResponse)
+        (status = 424, description = "Paddle request failed", body = ApiErrorResponse)
     ),
     security(("auth_cookie" = [])),
     tag = "Billing"
@@ -320,7 +320,7 @@ pub async fn start_open_trial(
         (status = 401, description = "Unauthorized"),
         (status = 404, description = "Billing disabled", body = ApiErrorResponse),
         (status = 409, description = "Entitlement unavailable", body = ApiErrorResponse),
-        (status = 502, description = "Paddle request failed", body = ApiErrorResponse)
+        (status = 424, description = "Paddle request failed", body = ApiErrorResponse)
     ),
     security(("auth_cookie" = [])),
     tag = "Billing"
@@ -352,7 +352,7 @@ pub async fn create_billing_payment_method(
         (status = 401, description = "Unauthorized"),
         (status = 404, description = "Billing disabled", body = ApiErrorResponse),
         (status = 409, description = "Entitlement unavailable", body = ApiErrorResponse),
-        (status = 502, description = "Paddle request failed", body = ApiErrorResponse)
+        (status = 424, description = "Paddle request failed", body = ApiErrorResponse)
     ),
     security(("auth_cookie" = [])),
     tag = "Billing"
@@ -384,7 +384,7 @@ pub async fn create_billing_portal_session(
         (status = 401, description = "Unauthorized"),
         (status = 404, description = "Billing disabled", body = ApiErrorResponse),
         (status = 409, description = "Entitlement unavailable", body = ApiErrorResponse),
-        (status = 502, description = "Paddle request failed", body = ApiErrorResponse)
+        (status = 424, description = "Paddle request failed", body = ApiErrorResponse)
     ),
     security(("auth_cookie" = [])),
     tag = "Billing"
