@@ -29,8 +29,6 @@ use tracing_subscriber::{
     EnvFilter,
 };
 
-const SENSITIVE_REQUEST_PATHS: &[&str] = &["/api/plaid/exchange-token", "/api/providers/connect"];
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TracesExporterKind {
     Otlp,
@@ -222,12 +220,18 @@ pub fn init(config: &TelemetryConfig) -> Result<TelemetryHandle> {
 pub async fn request_tracing_middleware(request: Request<Body>, next: Next) -> Response {
     let method = request.method().clone();
     let path = request.uri().path().to_string();
-    if SENSITIVE_REQUEST_PATHS
-        .iter()
-        .any(|&sensitive| sensitive == path)
-    {
-        return next.run(request).await;
-    }
+    let request_content_length = request
+        .headers()
+        .get(axum::http::header::CONTENT_LENGTH)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+    let request_content_type = request
+        .headers()
+        .get(axum::http::header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or("")
+        .to_string();
     let start_time = Instant::now();
 
     let span = info_span!(
@@ -236,7 +240,11 @@ pub async fn request_tracing_middleware(request: Request<Body>, next: Next) -> R
         http.route = %path,
         http.status_code = tracing::field::Empty,
         duration_ms = tracing::field::Empty,
-        session_id = tracing::field::Empty
+        session_id = tracing::field::Empty,
+        error.type = tracing::field::Empty,
+        error.message = tracing::field::Empty,
+        error.reason = tracing::field::Empty,
+        error.stack_trace = tracing::field::Empty
     );
 
     let span_name = format!("{method} {path}");
@@ -246,6 +254,14 @@ pub async fn request_tracing_middleware(request: Request<Body>, next: Next) -> R
             .context()
             .span()
             .update_name(span_name.clone());
+        tracing::info!(
+            event_name = "http.request",
+            http.method = %method,
+            http.route = %path,
+            request.content_length = %request_content_length,
+            request.content_type = %request_content_type,
+            "endpoint request received"
+        );
 
         let response = next.run(request).await;
         let status = response.status();
@@ -253,6 +269,24 @@ pub async fn request_tracing_middleware(request: Request<Body>, next: Next) -> R
 
         Span::current().record("http.status_code", status.as_u16() as i64);
         Span::current().record("duration_ms", duration_ms);
+        tracing::info!(
+            event_name = "http.response",
+            http.method = %method,
+            http.route = %path,
+            http.status_code = status.as_u16(),
+            response.content_length = response
+                .headers()
+                .get(axum::http::header::CONTENT_LENGTH)
+                .and_then(|value| value.to_str().ok())
+                .unwrap_or(""),
+            response.content_type = response
+                .headers()
+                .get(axum::http::header::CONTENT_TYPE)
+                .and_then(|value| value.to_str().ok())
+                .unwrap_or(""),
+            duration_ms,
+            "endpoint response completed"
+        );
 
         response
     }

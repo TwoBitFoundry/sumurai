@@ -15,6 +15,7 @@ use crate::models::transaction::{ProviderTransactionsResult, Transaction};
 use crate::providers::trait_definition::{
     FinancialDataProvider, InstitutionInfo, ProviderCredentials,
 };
+use crate::services::external_http;
 
 const MAX_TRANSACTION_WINDOW_DAYS: i64 = 90;
 pub(crate) const BETA_DEMO_BRIDGE_ACCESS_URL: &str =
@@ -130,7 +131,8 @@ fn build_accounts_url(base: &Url, params: &AccountsQuery) -> Result<Url> {
 #[async_trait]
 impl SimpleFinHttpClient for RealSimpleFinHttpClient {
     async fn claim(&self, claim_url: &str) -> Result<String> {
-        let response = self.client.post(claim_url).send().await?;
+        let response =
+            external_http::send(self.client.post(claim_url), "simplefin", "POST", "/claim").await?;
         if response.status() == reqwest::StatusCode::FORBIDDEN {
             return Err(anyhow::Error::new(
                 SimpleFinProviderError::SetupTokenAlreadyClaimed,
@@ -152,15 +154,23 @@ impl SimpleFinHttpClient for RealSimpleFinHttpClient {
     ) -> Result<SimpleFinAccountsResponse> {
         let (base, username, password) = parse_access_url(access_url)?;
         let url = build_accounts_url(&base, &params)?;
-        let response = self
-            .client
-            .get(url)
-            .basic_auth(username, Some(password))
-            .send()
-            .await?;
+        let response = external_http::send(
+            self.client.get(url).basic_auth(username, Some(password)),
+            "simplefin",
+            "GET",
+            "/accounts",
+        )
+        .await?;
         let status = response.status();
         let body = response.text().await?;
         if !status.is_success() {
+            external_http::log_response_payload(
+                "simplefin",
+                "GET",
+                "/accounts",
+                status.as_u16(),
+                &body,
+            );
             if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
                 if let Ok(mut parsed) = serde_json::from_str::<SimpleFinAccountsResponse>(&body) {
                     parsed.normalize();

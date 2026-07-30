@@ -12,6 +12,7 @@ use crate::models::{
     account::Account,
     transaction::{ProviderTransactionsResult, Transaction},
 };
+use crate::services::external_http;
 
 #[derive(Clone)]
 pub struct RealPlaidClient {
@@ -55,13 +56,16 @@ impl RealPlaidClient {
             "country_codes": ["US"]
         });
 
-        let response = self
-            .http_client
-            .post(format!("{}/institutions/get_by_id", self.base_url))
-            .header("Content-Type", "application/json")
-            .json(&request_body)
-            .send()
-            .await?;
+        let response = external_http::send(
+            self.http_client
+                .post(format!("{}/institutions/get_by_id", self.base_url))
+                .header("Content-Type", "application/json")
+                .json(&request_body),
+            "plaid",
+            "POST",
+            "/institutions/get_by_id",
+        )
+        .await?;
 
         if response.status().is_success() {
             let data: serde_json::Value = response.json().await?;
@@ -74,6 +78,12 @@ impl RealPlaidClient {
 
             Ok(institution_name)
         } else {
+            external_http::log_request_payload(
+                "plaid",
+                "POST",
+                "/institutions/get_by_id",
+                &request_body,
+            );
             Ok("Connected Bank".to_string())
         }
     }
@@ -93,13 +103,16 @@ impl RealPlaidClient {
             "products": ["transactions"]
         });
 
-        let response = self
-            .http_client
-            .post(format!("{}/link/token/create", self.base_url))
-            .header("Content-Type", "application/json")
-            .json(&request_body)
-            .send()
-            .await?;
+        let response = external_http::send(
+            self.http_client
+                .post(format!("{}/link/token/create", self.base_url))
+                .header("Content-Type", "application/json")
+                .json(&request_body),
+            "plaid",
+            "POST",
+            "/link/token/create",
+        )
+        .await?;
 
         if response.status().is_success() {
             let data: serde_json::Value = response.json().await?;
@@ -109,10 +122,24 @@ impl RealPlaidClient {
                 Err(anyhow::anyhow!("No link_token in response"))
             }
         } else {
+            external_http::log_request_payload(
+                "plaid",
+                "POST",
+                "/link/token/create",
+                &request_body,
+            );
+            let status = response.status().as_u16();
             let error_text = response
                 .text()
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
+            external_http::log_response_payload(
+                "plaid",
+                "POST",
+                "/link/token/create",
+                status,
+                &error_text,
+            );
             Err(anyhow::anyhow!("Plaid API error: {}", error_text))
         }
     }
@@ -124,13 +151,16 @@ impl RealPlaidClient {
             "public_token": public_token
         });
 
-        let response = self
-            .http_client
-            .post(format!("{}/item/public_token/exchange", self.base_url))
-            .header("Content-Type", "application/json")
-            .json(&request_body)
-            .send()
-            .await?;
+        let response = external_http::send(
+            self.http_client
+                .post(format!("{}/item/public_token/exchange", self.base_url))
+                .header("Content-Type", "application/json")
+                .json(&request_body),
+            "plaid",
+            "POST",
+            "/item/public_token/exchange",
+        )
+        .await?;
 
         if response.status().is_success() {
             let data: serde_json::Value = response.json().await?;
@@ -140,10 +170,24 @@ impl RealPlaidClient {
                 Err(anyhow::anyhow!("No access_token in response"))
             }
         } else {
+            external_http::log_request_payload(
+                "plaid",
+                "POST",
+                "/item/public_token/exchange",
+                &request_body,
+            );
+            let status = response.status().as_u16();
             let error_text = response
                 .text()
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
+            external_http::log_response_payload(
+                "plaid",
+                "POST",
+                "/item/public_token/exchange",
+                status,
+                &error_text,
+            );
             Err(anyhow::anyhow!("Plaid API error: {}", error_text))
         }
     }
@@ -155,13 +199,16 @@ impl RealPlaidClient {
             "access_token": access_token
         });
 
-        let response = self
-            .http_client
-            .post(format!("{}/accounts/get", self.base_url))
-            .header("Content-Type", "application/json")
-            .json(&request_body)
-            .send()
-            .await?;
+        let response = external_http::send(
+            self.http_client
+                .post(format!("{}/accounts/get", self.base_url))
+                .header("Content-Type", "application/json")
+                .json(&request_body),
+            "plaid",
+            "POST",
+            "/accounts/get",
+        )
+        .await?;
 
         if response.status().is_success() {
             let data: serde_json::Value = response.json().await?;
@@ -216,10 +263,19 @@ impl RealPlaidClient {
 
             Ok(accounts)
         } else {
+            external_http::log_request_payload("plaid", "POST", "/accounts/get", &request_body);
+            let status = response.status().as_u16();
             let error_text = response
                 .text()
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
+            external_http::log_response_payload(
+                "plaid",
+                "POST",
+                "/accounts/get",
+                status,
+                &error_text,
+            );
             Err(anyhow::anyhow!("Plaid API error: {}", error_text))
         }
     }
@@ -249,19 +305,36 @@ impl RealPlaidClient {
                 }
             });
 
-            let response = self
-                .http_client
-                .post(format!("{}/transactions/get", self.base_url))
-                .header("Content-Type", "application/json")
-                .json(&request_body)
-                .send()
-                .await?;
+            let response = external_http::send(
+                self.http_client
+                    .post(format!("{}/transactions/get", self.base_url))
+                    .header("Content-Type", "application/json")
+                    .json(&request_body),
+                "plaid",
+                "POST",
+                "/transactions/get",
+            )
+            .await?;
 
             if !response.status().is_success() {
+                external_http::log_request_payload(
+                    "plaid",
+                    "POST",
+                    "/transactions/get",
+                    &request_body,
+                );
+                let status = response.status().as_u16();
                 let error_text = response
                     .text()
                     .await
                     .unwrap_or_else(|_| "Unknown error".to_string());
+                external_http::log_response_payload(
+                    "plaid",
+                    "POST",
+                    "/transactions/get",
+                    status,
+                    &error_text,
+                );
                 return Err(anyhow::anyhow!("Plaid API error: {}", error_text));
             }
 
@@ -316,13 +389,16 @@ impl RealPlaidClient {
             "access_token": access_token,
         });
 
-        let response = self
-            .http_client
-            .post(format!("{}/item/get", self.base_url))
-            .header("Content-Type", "application/json")
-            .json(&request_body)
-            .send()
-            .await?;
+        let response = external_http::send(
+            self.http_client
+                .post(format!("{}/item/get", self.base_url))
+                .header("Content-Type", "application/json")
+                .json(&request_body),
+            "plaid",
+            "POST",
+            "/item/get",
+        )
+        .await?;
 
         if response.status().is_success() {
             let data: serde_json::Value = response.json().await?;
@@ -351,10 +427,13 @@ impl RealPlaidClient {
                 institution_name,
             ))
         } else {
+            external_http::log_request_payload("plaid", "POST", "/item/get", &request_body);
+            let status = response.status().as_u16();
             let error_text = response
                 .text()
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
+            external_http::log_response_payload("plaid", "POST", "/item/get", status, &error_text);
             Err(anyhow::anyhow!("Failed to get item info: {}", error_text))
         }
     }

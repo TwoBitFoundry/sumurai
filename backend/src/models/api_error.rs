@@ -12,6 +12,12 @@ pub struct ApiErrorResponse {
     pub message: String,
     pub code: Option<String>,
     pub details: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub status_code: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub trace_id: Option<String>,
 }
 
 impl ApiErrorResponse {
@@ -21,6 +27,9 @@ impl ApiErrorResponse {
             message: message.to_string(),
             code: None,
             details: None,
+            status_code: None,
+            reason: None,
+            trace_id: None,
         }
     }
 
@@ -30,6 +39,9 @@ impl ApiErrorResponse {
             message: message.to_string(),
             code: Some(code.to_string()),
             details: None,
+            status_code: None,
+            reason: None,
+            trace_id: None,
         }
     }
 

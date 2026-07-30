@@ -3,7 +3,7 @@ use axum::{
     body::Body,
     extract::{DefaultBodyLimit, Multipart, Query, Request, State},
     http::{
-        header::{AUTHORIZATION, CONTENT_TYPE, COOKIE, SET_COOKIE},
+        header::{AUTHORIZATION, CONTENT_LENGTH, CONTENT_TYPE, COOKIE, SET_COOKIE},
         HeaderMap, HeaderValue, Method, StatusCode,
     },
     middleware::{from_fn, from_fn_with_state, Next},
@@ -16,10 +16,12 @@ use axum_tracing_opentelemetry::tracing_opentelemetry_instrumentation_sdk as ote
 use chrono::NaiveDate;
 use chrono::Utc;
 use csv::StringRecord;
+use opentelemetry::trace::Status as OtelStatus;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 use uuid::Uuid;
 
 #[allow(unused_imports)]
@@ -829,28 +831,63 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
         .and_then(|value| value.to_str().ok())
         .map(|content_type| content_type.starts_with("application/json"))
         .unwrap_or(false);
+    let trace_id = span_trace_id
+        .clone()
+        .or_else(otel_sdk::find_current_trace_id);
+    if status.is_client_error() || status.is_server_error() {
+        let stack_trace = std::backtrace::Backtrace::capture();
+        let error_type = if status.is_server_error() {
+            "server_error"
+        } else {
+            "client_error"
+        };
+        tracing::Span::current().record("error.type", error_type);
+        tracing::Span::current().record(
+            "error.message",
+            status.canonical_reason().unwrap_or("HTTP request failed"),
+        );
+        tracing::Span::current().record("error.reason", status.as_str());
+        tracing::Span::current().record(
+            "error.stack_trace",
+            crate::services::external_http::truncate_telemetry_text(format!("{stack_trace:?}")),
+        );
+        tracing::Span::current().set_status(OtelStatus::error(status.to_string()));
+        tracing::error!(
+            event_name = "http.error",
+            status_code = status.as_u16(),
+            method = %method,
+            path = %path,
+            trace_id = trace_id.as_deref().unwrap_or(""),
+            error.type = error_type,
+            error.message = status.canonical_reason().unwrap_or("HTTP request failed"),
+            error.reason = status.as_str(),
+            error.stack_trace = %crate::services::external_http::truncate_telemetry_text(format!("{stack_trace:?}")),
+            "endpoint request failed"
+        );
+    }
 
     if status.is_server_error() {
-        let trace_id = span_trace_id
-            .clone()
-            .or_else(otel_sdk::find_current_trace_id);
         match trace_id.as_deref() {
             Some(trace_id) => {
                 tracing::error!(
-                    status = %status,
+                    event_name = "http.server_error",
+                    status_code = status.as_u16(),
                     %trace_id,
                     method = %method,
                     %path,
                     error_type = "server_error",
+                    error_message = "request resulted in server error",
                     "request resulted in server error"
                 )
             }
             None => {
                 tracing::error!(
-                    status = %status,
+                    event_name = "http.server_error",
+                    status_code = status.as_u16(),
                     method = %method,
                     %path,
                     error_type = "server_error",
+                    error_message = "request resulted in server error",
                     "request resulted in server error"
                 )
             }
@@ -860,13 +897,13 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
                 "INTERNAL_SERVER_ERROR",
                 "An unexpected server error occurred",
             );
-            error.details = trace_id.map(|id| json!({ "trace_id": id }));
+            error.status_code = Some(status.as_u16());
+            error.reason = Some("server_error".to_string());
+            error.trace_id = trace_id.clone();
+            error.details = trace_id.clone().map(|id| json!({ "trace_id": id }));
             return (StatusCode::INTERNAL_SERVER_ERROR, Json(error)).into_response();
         }
     } else if status.is_client_error() {
-        let trace_id = span_trace_id
-            .clone()
-            .or_else(otel_sdk::find_current_trace_id);
         let error_category = match status.as_u16() {
             400 => "validation_error",
             401 => "authentication_error",
@@ -887,21 +924,25 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
             Some(trace_id) => match log_level {
                 tracing::Level::WARN => {
                     tracing::warn!(
-                        status = %status,
+                        event_name = "http.client_error",
+                        status_code = status.as_u16(),
                         %trace_id,
                         method = %method,
                         %path,
                         error_category = %error_category,
+                        error_message = "request resulted in client error",
                         "request resulted in client error"
                     )
                 }
                 _ => {
                     tracing::debug!(
-                        status = %status,
+                        event_name = "http.client_error",
+                        status_code = status.as_u16(),
                         %trace_id,
                         method = %method,
                         %path,
                         error_category = %error_category,
+                        error_message = "request resulted in client error",
                         "request resulted in client error"
                     )
                 }
@@ -909,19 +950,23 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
             None => match log_level {
                 tracing::Level::WARN => {
                     tracing::warn!(
-                        status = %status,
+                        event_name = "http.client_error",
+                        status_code = status.as_u16(),
                         method = %method,
                         %path,
                         error_category = %error_category,
+                        error_message = "request resulted in client error",
                         "request resulted in client error"
                     )
                 }
                 _ => {
                     tracing::debug!(
-                        status = %status,
+                        event_name = "http.client_error",
+                        status_code = status.as_u16(),
                         method = %method,
                         %path,
                         error_category = %error_category,
+                        error_message = "request resulted in client error",
                         "request resulted in client error"
                     )
                 }
@@ -929,7 +974,30 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
         }
     }
 
-    response
+    if !has_json_content_type || !(status.is_client_error() || status.is_server_error()) {
+        return response;
+    }
+
+    let (mut parts, body) = response.into_parts();
+    let Ok(bytes) = axum::body::to_bytes(body, 1024 * 1024).await else {
+        return Response::from_parts(parts, Body::empty());
+    };
+    let Ok(mut error) = serde_json::from_slice::<ApiErrorResponse>(&bytes) else {
+        return Response::from_parts(parts, Body::from(bytes));
+    };
+    error.status_code = Some(status.as_u16());
+    error.reason = Some(
+        error
+            .reason
+            .or_else(|| error.code.clone())
+            .unwrap_or_else(|| error.error.clone()),
+    );
+    error.trace_id = trace_id;
+    let Ok(body) = serde_json::to_vec(&error) else {
+        return Response::from_parts(parts, Body::from(bytes));
+    };
+    parts.headers.remove(CONTENT_LENGTH);
+    Response::from_parts(parts, Body::from(body))
 }
 
 #[utoipa::path(
@@ -2380,6 +2448,7 @@ async fn ensure_import_account_owned(
         })
 }
 
+#[allow(clippy::result_large_err)]
 fn detect_csv_mapping_from_content(
     content: &str,
 ) -> Result<CsvColumnMapping, (StatusCode, Json<ApiErrorResponse>)> {
@@ -3866,6 +3935,9 @@ async fn connect_authenticated_provider(
                     message,
                     code: Some("SIMPLEFIN_AUTH_REQUIRED".to_string()),
                     details: serde_json::to_value(notices).ok(),
+                    status_code: None,
+                    reason: None,
+                    trace_id: None,
                 }
                 .into_response(StatusCode::UNPROCESSABLE_ENTITY))
             }
