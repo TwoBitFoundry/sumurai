@@ -99,11 +99,12 @@ describe('PlanSection actions', () => {
     window.removeEventListener(OPEN_PRICING_EVENT, handler);
   });
 
-  it('starts a card-less trial with the shared address form', async () => {
+  it('opens a modal and starts a card-less trial with the shared address form', async () => {
     const user = userEvent.setup();
     renderPlan(enabledStatus('demo', { trials_enabled: true }));
 
     await user.click(screen.getByRole('button', { name: 'Start free trial' }));
+    expect(screen.getByRole('dialog', { name: 'Start your free trial' })).toBeInTheDocument();
     await user.type(screen.getByLabelText('Country code'), 'us');
     await user.type(screen.getByLabelText('Postal code'), '78701');
     await user.click(screen.getByRole('button', { name: 'Start free trial' }));
@@ -114,8 +115,36 @@ describe('PlanSection actions', () => {
     });
   });
 
+  it('opens the plan picker for a demo user upgrading to Premium', async () => {
+    const user = userEvent.setup();
+    const handler = jest.fn();
+    window.addEventListener(OPEN_PRICING_EVENT, handler);
+    renderPlan(enabledStatus('demo', { is_demo_mode_active: true }));
+
+    await user.click(screen.getByRole('button', { name: 'Upgrade to Premium' }));
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(workflow.startPremiumCheckout).not.toHaveBeenCalled();
+    window.removeEventListener(OPEN_PRICING_EVENT, handler);
+  });
+
+  it('uses Premium checkout when demo access is not an active demo session', async () => {
+    const user = userEvent.setup();
+    const handler = jest.fn();
+    window.addEventListener(OPEN_PRICING_EVENT, handler);
+    renderPlan(enabledStatus('demo', { is_demo_mode_active: false }));
+
+    await user.click(screen.getByRole('button', { name: 'Upgrade to Premium' }));
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(workflow.startPremiumCheckout).toHaveBeenCalledWith({
+      token: 'test_client_token',
+      environment: 'sandbox',
+    });
+    window.removeEventListener(OPEN_PRICING_EVENT, handler);
+  });
+
   it.each([
-    ['demo', enabledStatus('demo'), 'Upgrade to Premium'],
     ['paused', enabledStatus('paused'), 'Upgrade to Premium'],
     ['canceled', enabledStatus('canceled'), 'Upgrade to Premium'],
     ['expired', enabledStatus('expired'), 'Upgrade to Premium'],
@@ -131,8 +160,10 @@ describe('PlanSection actions', () => {
     });
   });
 
-  it('uses the trial payment-method target and preserves the trial plan while it runs', async () => {
+  it('opens the plan picker from an active beta trial', async () => {
     const user = userEvent.setup();
+    const handler = jest.fn();
+    window.addEventListener(OPEN_PRICING_EVENT, handler);
     renderPlan(
       enabledStatus('trialing', {
         payment_method_required: true,
@@ -142,11 +173,10 @@ describe('PlanSection actions', () => {
 
     await user.click(screen.getByRole('button', { name: 'Upgrade to Premium' }));
 
-    expect(workflow.startTrialPaymentMethod).toHaveBeenCalledWith({
-      token: 'test_client_token',
-      environment: 'sandbox',
-    });
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(workflow.startTrialPaymentMethod).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', { name: 'Free trial' })).toBeInTheDocument();
+    window.removeEventListener(OPEN_PRICING_EVENT, handler);
   });
 
   it('uses the past-due recovery target', async () => {

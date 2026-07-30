@@ -1,5 +1,6 @@
 import { AlertTriangle } from 'lucide-react';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
+import { settingsConfirmationCodeTypography } from '@/features/settings/DeleteAccountModal';
 import { PasskeySecuritySection } from '@/features/settings/PasskeySecuritySection';
 import { PlanSectionView } from '@/features/settings/PlanSectionView';
 import { resolvePlanPolicy } from '@/features/settings/planPolicy';
@@ -20,7 +21,6 @@ import {
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { settingsConfirmationCodeTypography } from '@/views/SettingsPage';
 
 const settingsSlicePlanPolicy = resolvePlanPolicy({
   billing_enabled: false,

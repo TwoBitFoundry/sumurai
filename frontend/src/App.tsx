@@ -11,6 +11,7 @@ import {
   EnrollPasskeyScreen,
   type PendingPasskeyRecoveryEnrollment,
 } from './features/auth/EnrollPasskeyScreen';
+import { EndedTrialAccessScreen } from './features/billing/EndedTrialAccessScreen';
 import { PricingScreen } from './features/billing/PricingScreen';
 import { UpgradeRequiredModal } from './features/billing/UpgradeRequiredModal';
 import { BILLING_STATUS_QUERY_KEY, useBillingStatus } from './features/billing/useBillingStatus';
@@ -56,6 +57,14 @@ interface AppContentProps {
   initialAuthScreen?: 'login' | 'register';
 }
 
+function hasEndedTrialAccess(billingStatus: BillingStatusResponse | undefined) {
+  if (!billingStatus?.billing_enabled || billingStatus.trial_ends_at === null) {
+    return false;
+  }
+
+  return ['past_due', 'paused', 'canceled', 'expired'].includes(billingStatus.access_status);
+}
+
 function AppLoadingShell() {
   return (
     <GradientShell>
@@ -92,6 +101,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [demoModeActive, setDemoModeActive] = useState(false);
   const [pendingDemoModeActive, setPendingDemoModeActive] = useState(false);
   const [pricingComplete, setPricingComplete] = useState(false);
+  const [pricingRequested, setPricingRequested] = useState(false);
   const [showUpgradeRequired, setShowUpgradeRequired] = useState(false);
 
   const isOnline = useOnlineStatus();
@@ -110,6 +120,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
       setSessionExpiresAt(authResponse.expires_at);
       setDemoModeActive(authResponse.demo_mode_active);
       setPricingComplete(false);
+      setPricingRequested(false);
       if (authResponse.email) {
         queryClient.setQueryData(['user', 'email'], authResponse.email);
       }
@@ -131,6 +142,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     setPendingExpiresAt(null);
     setPendingDemoModeActive(false);
     setPricingComplete(false);
+    setPricingRequested(false);
     setShowUpgradeRequired(false);
     setAuthScreen(screen);
     AuthService.clearToken();
@@ -163,25 +175,26 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
 
   useEffect(() => {
     const handler = () => {
-      if (isAuthenticated) {
+      if (isAuthenticated && !demoModeActive) {
         setShowUpgradeRequired(true);
       }
     };
     window.addEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
     return () => window.removeEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
-  }, [isAuthenticated]);
+  }, [demoModeActive, isAuthenticated]);
 
   useEffect(() => {
     const handler = () => {
-      if (!isAuthenticated || !demoModeActive) {
+      if (!isAuthenticated) {
         return;
       }
       setPricingComplete(false);
+      setPricingRequested(true);
       setShowOnboarding(true);
     };
     window.addEventListener(OPEN_PRICING_EVENT, handler);
     return () => window.removeEventListener(OPEN_PRICING_EVENT, handler);
-  }, [demoModeActive, isAuthenticated]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     let active = true;
@@ -317,6 +330,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
 
   const handleOnboardingComplete = useCallback(() => {
     setShowOnboarding(false);
+    setPricingRequested(false);
     setRemountTab('dashboard');
     setMainAppKey((prev) => prev + 1);
   }, []);
@@ -400,20 +414,33 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     );
   }
 
-  if (showOnboarding) {
-    if (!billingStatus.data) {
-      return <AppLoadingShell />;
-    }
+  if (billingStatus.isPending || !billingStatus.data) {
+    return <AppLoadingShell />;
+  }
 
+  if (billingStatus.data.billing_enabled && hasEndedTrialAccess(billingStatus.data)) {
+    return (
+      <EndedTrialAccessScreen
+        billingStatus={billingStatus.data}
+        onLogout={() => void handleLogout()}
+      />
+    );
+  }
+
+  if (showOnboarding) {
     if (
-      !pricingComplete &&
-      !(billingStatus.data.billing_enabled && billingStatus.data.can_use_own_data)
+      pricingRequested ||
+      (!pricingComplete &&
+        !(billingStatus.data.billing_enabled && billingStatus.data.can_use_own_data))
     ) {
       return (
         <PricingScreen
           billingStatus={billingStatus.data}
           onDemoActivated={handleDemoActivated}
-          onContinueToProviders={() => setPricingComplete(true)}
+          onContinueToProviders={() => {
+            setPricingRequested(false);
+            setPricingComplete(true);
+          }}
           onLogout={handleLogout}
         />
       );

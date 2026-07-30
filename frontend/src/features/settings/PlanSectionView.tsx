@@ -1,6 +1,4 @@
 import { Check, Crown, FlaskConical, type LucideIcon, Rocket, Server } from 'lucide-react';
-import { PricingTrialForm } from '@/features/billing/PricingTrialForm';
-import type { BillingTrialStartRequest } from '@/types/api';
 import { Alert, Button, GlassCard } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import {
@@ -22,11 +20,8 @@ export interface PlanSectionViewProps {
   mutationPending: boolean;
   mutationError: string | null;
   mutationRetryLabel?: string;
-  trialFormOpen?: boolean;
   onRetry: () => void;
   onRetryMutation?: () => void;
-  onStartTrialRequest?: (request: BillingTrialStartRequest) => Promise<void>;
-  onCancelTrialForm?: () => void;
   onSwitchSelfHosted: () => void;
   onStartTrial: () => void;
   onUpgradePremium: () => void;
@@ -73,11 +68,8 @@ export function PlanSectionView({
   mutationPending,
   mutationError,
   mutationRetryLabel,
-  trialFormOpen = false,
   onRetry,
   onRetryMutation,
-  onStartTrialRequest,
-  onCancelTrialForm,
   onSwitchSelfHosted,
   onStartTrial,
   onUpgradePremium,
@@ -98,8 +90,7 @@ export function PlanSectionView({
     manage_billing: onManageBilling,
   };
 
-  const headerActions =
-    policy && !trialFormOpen && policy.actions.length > 0 ? policy.actions : null;
+  const headerActions = policy && policy.actions.length > 0 ? policy.actions : null;
 
   return (
     <GlassCard
@@ -231,22 +222,6 @@ export function PlanSectionView({
                     ) : null}
                   </div>
                 </Alert>
-              ) : null}
-
-              {trialFormOpen && onStartTrialRequest ? (
-                <div className={cn('flex', 'w-full', 'flex-col', 'gap-3')}>
-                  <PricingTrialForm disabled={mutationPending} onStartTrial={onStartTrialRequest} />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="md"
-                    className={cn(...settingsPlanLayout.headerAction)}
-                    disabled={mutationPending}
-                    onClick={onCancelTrialForm}
-                  >
-                    Cancel
-                  </Button>
-                </div>
               ) : null}
             </div>
           </div>
