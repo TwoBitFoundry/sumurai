@@ -228,8 +228,14 @@ impl BillingService {
             .config
             .paddle_billing()
             .ok_or(BillingServiceError::BillingDisabled)?;
+        let profile = self
+            .repository
+            .get_billing_profile(&user.id)
+            .await
+            .map_err(|_| BillingServiceError::RepositoryRequestFailed)?;
         self.create_checkout(CreateCheckoutRequest {
             user_email: user.email.clone(),
+            existing_customer_id: profile.and_then(|profile| profile.paddle_customer_id),
             user_id: user.id,
             price_id: paddle.monthly_price_id.clone(),
         })
@@ -250,6 +256,8 @@ impl BillingService {
         if input.country_code.trim().is_empty() || input.postal_code.trim().is_empty() {
             return Err(BillingServiceError::InvalidTrialStart);
         }
+        let billing_country_code = input.country_code.trim().to_uppercase();
+        let billing_postal_code = input.postal_code.trim().to_string();
 
         let paddle = self
             .config
@@ -289,9 +297,15 @@ impl BillingService {
                     .and_then(|profile| profile.paddle_customer_id.clone()),
                 existing_address_id: profile
                     .as_ref()
+                    .filter(|profile| {
+                        profile.billing_country_code.as_deref()
+                            == Some(billing_country_code.as_str())
+                            && profile.billing_postal_code.as_deref()
+                                == Some(billing_postal_code.as_str())
+                    })
                     .and_then(|profile| profile.paddle_address_id.clone()),
-                country_code: input.country_code.trim().to_uppercase(),
-                postal_code: input.postal_code.trim().to_string(),
+                country_code: billing_country_code.clone(),
+                postal_code: billing_postal_code.clone(),
                 price_id,
             })
             .await
@@ -303,8 +317,8 @@ impl BillingService {
                 user_id: user.id,
                 paddle_customer_id: Some(trial.customer_id),
                 paddle_address_id: Some(trial.address_id),
-                billing_country_code: Some(input.country_code.trim().to_uppercase()),
-                billing_postal_code: Some(input.postal_code.trim().to_string()),
+                billing_country_code: Some(billing_country_code),
+                billing_postal_code: Some(billing_postal_code),
                 created_at: profile
                     .as_ref()
                     .map(|profile| profile.created_at)

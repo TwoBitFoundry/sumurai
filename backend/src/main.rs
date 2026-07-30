@@ -2510,7 +2510,7 @@ fn api_internal_server_error(message: impl Into<String>) -> (StatusCode, Json<Ap
         (status = 400, description = "Unsupported provider"),
         (status = 401, description = "Unauthorized"),
         (status = 402, description = "Paid access required", body = ApiErrorResponse),
-        (status = 500, description = "Failed to create link token"),
+        (status = 424, description = "Provider request failed", body = ApiErrorResponse),
     ),
     security(("auth_cookie" = [])),
     tag = "Plaid"
@@ -2548,7 +2548,12 @@ async fn create_authenticated_link_token(
                 auth_context.user_id,
                 e
             );
-            Err(api_internal_server_error("Failed to create link token"))
+            Err(ApiErrorResponse::with_code(
+                "FAILED_DEPENDENCY",
+                "Provider request failed",
+                "PROVIDER_REQUEST_FAILED",
+            )
+            .into_response(StatusCode::FAILED_DEPENDENCY))
         }
     }
 }
@@ -2563,7 +2568,7 @@ async fn create_authenticated_link_token(
         (status = 400, description = "Unsupported provider"),
         (status = 401, description = "Unauthorized"),
         (status = 402, description = "Paid access required", body = ApiErrorResponse),
-        (status = 502, description = "Token exchange failed with provider"),
+        (status = 424, description = "Token exchange failed with provider"),
         (status = 500, description = "Internal server error"),
     ),
     security(("auth_cookie" = [])),
@@ -2603,7 +2608,7 @@ async fn exchange_authenticated_public_token(
         Err(ExchangeTokenError::ExchangeFailed(e)) => {
             log_provider_credential_outcome(
                 provider,
-                StatusCode::BAD_GATEWAY,
+                StatusCode::FAILED_DEPENDENCY,
                 "plaid.exchange-token",
             );
             tracing::error!(
@@ -2613,11 +2618,11 @@ async fn exchange_authenticated_public_token(
                 e
             );
             Err(ApiErrorResponse::with_code(
-                "BAD_GATEWAY",
+                "FAILED_DEPENDENCY",
                 "Token exchange failed with provider",
                 "PROVIDER_REQUEST_FAILED",
             )
-            .into_response(StatusCode::BAD_GATEWAY))
+            .into_response(StatusCode::FAILED_DEPENDENCY))
         }
     }
 }
@@ -2720,7 +2725,7 @@ async fn get_authenticated_plaid_accounts(
         (status = 402, description = "Paid access required", body = ApiErrorResponse),
         (status = 415, description = "Unsupported media type"),
         (status = 404, description = "Connection not found or credentials missing"),
-        (status = 502, description = "Provider request failed"),
+        (status = 424, description = "Provider request failed"),
         (status = 500, description = "Internal server error"),
     ),
     security(("auth_cookie" = [])),
@@ -3721,6 +3726,7 @@ async fn load_connection_statuses(
         (status = 400, description = "Unsupported provider"),
         (status = 401, description = "Unauthorized"),
         (status = 402, description = "Paid access required", body = ApiErrorResponse),
+        (status = 424, description = "Provider request failed", body = ApiErrorResponse),
         (status = 500, description = "Failed to connect provider", body = ApiErrorResponse),
     ),
     security(("auth_cookie" = [])),
@@ -3851,7 +3857,7 @@ async fn connect_authenticated_provider(
             Err(SimpleFinConnectError::SnapshotFetch(e)) => {
                 log_provider_credential_outcome(
                     "simplefin",
-                    StatusCode::INTERNAL_SERVER_ERROR,
+                    StatusCode::FAILED_DEPENDENCY,
                     "provider.connect",
                 );
                 tracing::error!(
@@ -3859,11 +3865,10 @@ async fn connect_authenticated_provider(
                     auth_context.user_id,
                     e
                 );
-                Err(ApiErrorResponse::new(
-                    "INTERNAL_SERVER_ERROR",
-                    "Failed to fetch accounts from SimpleFIN bridge",
+                Err(
+                    ApiErrorResponse::new("FAILED_DEPENDENCY", "SimpleFIN provider request failed")
+                        .into_response(StatusCode::FAILED_DEPENDENCY),
                 )
-                .into_response(StatusCode::INTERNAL_SERVER_ERROR))
             }
             Err(SimpleFinConnectError::ConnectionPersistence(e)) => {
                 log_provider_credential_outcome(

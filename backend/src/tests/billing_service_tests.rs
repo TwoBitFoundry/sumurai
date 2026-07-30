@@ -289,6 +289,7 @@ async fn given_billing_disabled_when_creating_checkout_then_paddle_client_is_not
     let result = service
         .create_checkout(CreateCheckoutRequest {
             user_email: "me@example.com".to_string(),
+            existing_customer_id: None,
             price_id: "pri_monthly".to_string(),
             user_id: Uuid::new_v4(),
         })
