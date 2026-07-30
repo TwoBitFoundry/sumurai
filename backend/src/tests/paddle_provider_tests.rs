@@ -101,7 +101,11 @@ async fn spawn_paddle_archived_customer_test_server() -> Option<String> {
         )
         .route(
             "/customers/{customer_id}",
-            axum::routing::patch(
+            axum::routing::get(|Path(customer_id): Path<String>| async move {
+                assert_eq!(customer_id, "ctm_archived");
+                Json(serde_json::json!({"data": {"id": "ctm_archived", "status": "archived"}}))
+            })
+            .patch(
                 |Path(customer_id): Path<String>, Json(body): Json<Value>| async move {
                     assert_eq!(customer_id, "ctm_archived");
                     assert_eq!(body, serde_json::json!({"status": "active"}));
@@ -118,7 +122,14 @@ async fn spawn_paddle_archived_customer_test_server() -> Option<String> {
         )
         .route(
             "/transactions",
-            post(|| async { Json(serde_json::json!({"data": {"id": "txn_123"}})) }),
+            post(|| async {
+                Json(serde_json::json!({
+                    "data": {
+                        "id": "txn_123",
+                        "checkout": {"url": "https://checkout.paddle.test/txn_123"}
+                    }
+                }))
+            }),
         );
     let listener = match TcpListener::bind("127.0.0.1:0").await {
         Ok(listener) => listener,
@@ -216,6 +227,25 @@ async fn given_archived_customer_when_creating_cardless_trial_then_restores_and_
 
     assert_eq!(response.customer_id, "ctm_archived");
     assert_eq!(response.address_id, "add_123");
+    assert_eq!(response.transaction_id, "txn_123");
+}
+
+#[tokio::test]
+async fn given_stored_archived_customer_when_creating_checkout_then_restores_and_reuses_it() {
+    let Some(base_url) = spawn_paddle_archived_customer_test_server().await else {
+        return;
+    };
+    let client = PaddleClient::new_for_test(base_url);
+    let response = client
+        .create_checkout(CreateCheckoutRequest {
+            user_email: "me@test.com".to_string(),
+            existing_customer_id: Some("ctm_archived".to_string()),
+            price_id: "pri_monthly".to_string(),
+            user_id: Uuid::nil(),
+        })
+        .await
+        .expect("archived checkout customer should be restored");
+
     assert_eq!(response.transaction_id, "txn_123");
 }
 
