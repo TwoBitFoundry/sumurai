@@ -181,12 +181,15 @@ impl PaddleClient {
         path: &str,
         body: serde_json::Value,
     ) -> Result<T> {
+        let endpoint_url =
+            external_http::sanitize_external_url(&format!("{}{}", self.base_url, path));
         let span = tracing::info_span!(
             "external_http",
             event_name = "external.http",
             external.service = "paddle",
             http.method = "POST",
             http.route = %path,
+            http.url = %endpoint_url,
             http.status_code = Empty,
             error.type = Empty,
             error.message = Empty,
@@ -210,12 +213,15 @@ impl PaddleClient {
     }
 
     async fn get<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T> {
+        let endpoint_url =
+            external_http::sanitize_external_url(&format!("{}{}", self.base_url, path));
         let span = tracing::info_span!(
             "external_http",
             event_name = "external.http",
             external.service = "paddle",
             http.method = "GET",
             http.route = %path,
+            http.url = %endpoint_url,
             http.status_code = Empty,
             error.type = Empty,
             error.message = Empty,
@@ -272,6 +278,9 @@ impl PaddleClient {
             tracing::error!(
                 event_name = "external.http.error",
                 external.service = "paddle",
+                http.method = method,
+                http.route = path,
+                http.url = %external_http::sanitize_external_url(&format!("{}{}", self.base_url, path)),
                 http.status_code = status.as_u16(),
                 error.type = error_type.as_deref().unwrap_or("paddle"),
                 error.message = %message,
@@ -287,6 +296,7 @@ impl PaddleClient {
             external.service = "paddle",
             http.method = method,
             http.route = path,
+            http.url = %external_http::sanitize_external_url(&format!("{}{}", self.base_url, path)),
             http.status_code = status.as_u16(),
             message = "external endpoint completed",
             "external endpoint completed"
@@ -311,6 +321,7 @@ impl PaddleClient {
                 event_name = "external.http.decode_error",
                 external.service = "paddle",
                 http.status_code = status.as_u16(),
+                http.url = %external_http::sanitize_external_url(&format!("{}{}", self.base_url, path)),
                 error.type = "decode",
                 error.message = %error,
                 error.reason = "invalid_json",
@@ -333,6 +344,7 @@ impl PaddleClient {
         tracing::error!(
             event_name = "external.http.transport_error",
             external.service = "paddle",
+            http.url = %external_http::sanitize_external_url(&format!("{}{}", self.base_url, path)),
             http.route = path,
             error.type = "transport",
             error.message = %error,

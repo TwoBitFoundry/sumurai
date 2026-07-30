@@ -7,6 +7,17 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 pub const MAX_TELEMETRY_TEXT_CHARS: usize = 8192;
 
+pub fn sanitize_external_url(value: &str) -> String {
+    let Ok(mut url) = url::Url::parse(value) else {
+        return value.split('?').next().unwrap_or(value).to_string();
+    };
+    let _ = url.set_username("");
+    let _ = url.set_password(None);
+    url.set_query(None);
+    url.set_fragment(None);
+    url.to_string()
+}
+
 pub fn truncate_telemetry_text(value: impl AsRef<str>) -> String {
     let value = value.as_ref();
     let mut truncated = value
@@ -25,12 +36,18 @@ pub async fn send(
     method: &'static str,
     route: &str,
 ) -> Result<Response, reqwest::Error> {
+    let sanitized_url = request
+        .try_clone()
+        .and_then(|request| request.build().ok())
+        .map(|request| sanitize_external_url(request.url().as_str()))
+        .unwrap_or_else(|| route.to_string());
     let span = tracing::info_span!(
         "external_http",
         event_name = "external.http",
         external.service = service,
         http.method = method,
         http.route = route,
+        http.url = %sanitized_url,
         http.status_code = Empty,
         error.type = Empty,
         error.message = Empty,
@@ -38,10 +55,9 @@ pub async fn send(
         error.stack_trace = Empty,
     );
     async move {
-        let response = request
-            .send()
-            .await
-            .inspect_err(|error| record_transport_error(service, method, route, error))?;
+        let response = request.send().await.inspect_err(|error| {
+            record_transport_error(service, method, route, &sanitized_url, error)
+        })?;
         let status = response.status();
         Span::current().record("http.status_code", status.as_u16());
         if status.is_success() {
@@ -50,6 +66,7 @@ pub async fn send(
                 external.service = service,
                 http.method = method,
                 http.route = route,
+                http.url = %sanitized_url,
                 http.status_code = status.as_u16(),
                 message = "external endpoint completed",
                 "external endpoint completed"
@@ -68,6 +85,7 @@ pub async fn send(
                 external.service = service,
                 http.method = method,
                 http.route = route,
+                http.url = %sanitized_url,
                 http.status_code = status.as_u16(),
                 error.type = "http",
                 error.message = message,
@@ -87,6 +105,7 @@ pub fn log_request_payload(service: &str, method: &str, route: &str, payload: &V
         external.service = service,
         http.method = method,
         http.route = route,
+        http.url = route,
         request.payload = %redacted_payload(payload),
         "external endpoint request sent"
     );
@@ -95,11 +114,12 @@ pub fn log_request_payload(service: &str, method: &str, route: &str, payload: &V
 pub fn log_response_payload(service: &str, method: &str, route: &str, status: u16, body: &str) {
     let digest = Sha256::digest(body.as_bytes());
     let body_json = safe_response_summary(body);
-    tracing::info!(
+    tracing::error!(
         event_name = "external.http.response_payload",
         external.service = service,
         http.method = method,
         http.route = route,
+        http.url = route,
         http.status_code = status,
         response.payload = %body_json,
         response.body_bytes = body.len(),
@@ -170,7 +190,13 @@ fn safe_response_summary(body: &str) -> Value {
     })
 }
 
-fn record_transport_error(service: &str, method: &str, route: &str, error: &reqwest::Error) {
+fn record_transport_error(
+    service: &str,
+    method: &str,
+    route: &str,
+    url: &str,
+    error: &reqwest::Error,
+) {
     Span::current().record("error.type", "transport");
     Span::current().record("error.message", truncate_telemetry_text(error.to_string()));
     Span::current().record("error.reason", "request_failed");
@@ -184,6 +210,7 @@ fn record_transport_error(service: &str, method: &str, route: &str, error: &reqw
         external.service = service,
         http.method = method,
         http.route = route,
+        http.url = url,
         error.type = "transport",
         error.message = %error,
         error.reason = "request_failed",
