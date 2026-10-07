@@ -88,8 +88,10 @@ export class BudgetCalculator {
           const subMatches = detailed === targetSub;
           const primaryMatches =
             primary.toLowerCase() === targetCat ||
-            formatCategoryName(primary).toLowerCase() === formatCategoryName(categoryId).toLowerCase() ||
-            resolveMajorCategory(primary).toLowerCase() === resolveMajorCategory(categoryId).toLowerCase();
+            formatCategoryName(primary).toLowerCase() ===
+              formatCategoryName(categoryId).toLowerCase() ||
+            resolveMajorCategory(primary).toLowerCase() ===
+              resolveMajorCategory(categoryId).toLowerCase();
           return primaryMatches && subMatches;
         }
 
@@ -97,13 +99,12 @@ export class BudgetCalculator {
           detailed &&
           (detailed === targetCat ||
             formatCategoryName(detailed).toLowerCase() ===
-            formatCategoryName(categoryId).toLowerCase())
+              formatCategoryName(categoryId).toLowerCase())
         ) {
           return true;
         }
 
-        const isTargetCatMajor =
-          resolveMajorCategory(categoryId).toLowerCase() === targetCat;
+        const isTargetCatMajor = resolveMajorCategory(categoryId).toLowerCase() === targetCat;
 
         const primaryMatches = primary.toLowerCase() === targetCat;
         const primaryFriendlyMatches =
@@ -112,7 +113,7 @@ export class BudgetCalculator {
         const majorMatches =
           isTargetCatMajor &&
           resolveMajorCategory(primary).toLowerCase() ===
-          resolveMajorCategory(categoryId).toLowerCase();
+            resolveMajorCategory(categoryId).toLowerCase();
         return primaryMatches || primaryFriendlyMatches || majorMatches;
       })
       .filter((t) => {
@@ -236,8 +237,12 @@ export class BudgetCalculator {
     }
 
     const availableThisMonth = isFullYear
-      ? (rollover ? periodAmount + priorCarryover : periodAmount)
-      : (rollover ? monthlyAmount + priorCarryover : monthlyAmount);
+      ? rollover
+        ? periodAmount + priorCarryover
+        : periodAmount
+      : rollover
+        ? monthlyAmount + priorCarryover
+        : monthlyAmount;
     const remainingThisMonth = availableThisMonth - monthSpent;
     const isOverBudget = remainingThisMonth < 0;
     const percentageUsed =

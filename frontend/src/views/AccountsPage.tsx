@@ -286,9 +286,9 @@ const AccountsPage = ({ onError, onAccountSelect }: AccountsPageProps) => {
         setManualForm((prev) =>
           prev.currency === manualForm.currency
             ? {
-              ...prev,
-              conversion_rate: nativeToUsdRate.toFixed(8),
-            }
+                ...prev,
+                conversion_rate: nativeToUsdRate.toFixed(8),
+              }
             : prev
         );
         setManualRateDate(next.date);

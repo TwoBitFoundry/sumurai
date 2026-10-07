@@ -10,6 +10,7 @@ const baseTransaction = {
   category: { primary: 'OTHER' },
   account_name: 'Checking',
   account_type: 'depository',
+  provider: 'teller',
 } satisfies Omit<Transaction, 'amount'>;
 
 const renderTable = (items: Transaction[]) =>
@@ -42,9 +43,7 @@ describe('TransactionsTable', () => {
   });
 
   it('shows credit card purchases as negative red amounts', () => {
-    renderTable([
-      { ...baseTransaction, id: 'purchase', account_type: 'credit', amount: -147.34 },
-    ]);
+    renderTable([{ ...baseTransaction, id: 'purchase', account_type: 'credit', amount: -147.34 }]);
 
     const amount = screen.getByText('-$147.34');
     expect(amount).toHaveClass('text-red-600');
@@ -53,7 +52,12 @@ describe('TransactionsTable', () => {
 
   it('normalizes string amounts from the backend before display math', () => {
     renderTable([
-      { ...baseTransaction, id: 'string-credit-purchase', account_type: 'credit', amount: '-35.00' as unknown as number },
+      {
+        ...baseTransaction,
+        id: 'string-credit-purchase',
+        account_type: 'credit',
+        amount: '-35.00' as unknown as number,
+      },
     ]);
 
     const amount = screen.getByText('-$35.00');
@@ -61,9 +65,7 @@ describe('TransactionsTable', () => {
   });
 
   it('shows credit card refunds as positive green amounts', () => {
-    renderTable([
-      { ...baseTransaction, id: 'refund', account_type: 'credit', amount: 37.9 },
-    ]);
+    renderTable([{ ...baseTransaction, id: 'refund', account_type: 'credit', amount: 37.9 }]);
 
     const amount = screen.getByText('$37.90');
     expect(amount).toHaveClass('text-green-600');
@@ -84,5 +86,35 @@ describe('TransactionsTable', () => {
     ]);
 
     expect(screen.getByText('5/2/2026')).toBeInTheDocument();
+  });
+
+  it('renders visual cue badge for pending transactions', () => {
+    renderTable([
+      {
+        ...baseTransaction,
+        id: 'txn-pending',
+        name: 'Coffee Shop',
+        amount: -4.5,
+        pending: true,
+      },
+    ]);
+
+    const badge = screen.getByTestId('pending-badge');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent(/pending/i);
+  });
+
+  it('does not render pending visual cue badge for posted transactions', () => {
+    renderTable([
+      {
+        ...baseTransaction,
+        id: 'txn-posted',
+        name: 'Coffee Shop',
+        amount: -4.5,
+        pending: false,
+      },
+    ]);
+
+    expect(screen.queryByTestId('pending-badge')).not.toBeInTheDocument();
   });
 });

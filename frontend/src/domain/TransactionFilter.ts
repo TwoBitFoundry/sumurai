@@ -16,7 +16,10 @@ export class TransactionFilter {
     return transactions.filter((t) => {
       const name = (t.name || '').toLowerCase();
       const merchant = (t.merchant || '').toLowerCase();
-      return name.includes(s) || merchant.includes(s);
+      const matchesPending = Boolean(
+        t.pending && (s === 'pending' || (s.length >= 4 && 'pending'.startsWith(s)))
+      );
+      return name.includes(s) || merchant.includes(s) || matchesPending;
     });
   }
 

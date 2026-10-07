@@ -676,7 +676,29 @@ impl DatabaseRepository for PostgresRepository {
                 FROM candidate
                 WHERE t.id = $1
                   AND t.user_id = $2
-                RETURNING t.duplicate_of_transaction_id
+                RETURNING t.duplicate_of_transaction_id, candidate.id AS canonical_id, t.id AS pending_id
+            ),
+            transferred_overrides AS (
+                INSERT INTO transaction_category_overrides (transaction_id, user_id, category_name, subcategory_name, created_at)
+                SELECT 
+                    u.canonical_id,
+                    tco.user_id,
+                    tco.category_name,
+                    tco.subcategory_name,
+                    tco.created_at
+                FROM updated u
+                JOIN transaction_category_overrides tco ON tco.transaction_id = u.pending_id AND tco.user_id = $2
+                LEFT JOIN transaction_category_overrides tco_posted ON tco_posted.transaction_id = u.canonical_id AND tco_posted.user_id = $2
+                WHERE tco_posted.category_name IS NULL
+                ON CONFLICT (transaction_id, user_id) DO NOTHING
+                RETURNING 1
+            ),
+            transferred_receipts AS (
+                UPDATE amazon_receipts ar
+                SET matched_transaction_id = u.canonical_id
+                FROM updated u
+                WHERE ar.matched_transaction_id = u.pending_id
+                RETURNING 1
             )
             SELECT duplicate_of_transaction_id FROM updated
             "#,
@@ -765,7 +787,29 @@ impl DatabaseRepository for PostgresRepository {
                 FROM matched_pairs m
                 WHERE t.id = m.pending_id
                   AND t.user_id = $1
-                RETURNING t.id
+                RETURNING t.id AS pending_id, m.posted_id
+            ),
+            transferred_overrides AS (
+                INSERT INTO transaction_category_overrides (transaction_id, user_id, category_name, subcategory_name, created_at)
+                SELECT 
+                    u.posted_id,
+                    tco.user_id,
+                    tco.category_name,
+                    tco.subcategory_name,
+                    tco.created_at
+                FROM updated u
+                JOIN transaction_category_overrides tco ON tco.transaction_id = u.pending_id AND tco.user_id = $1
+                LEFT JOIN transaction_category_overrides tco_posted ON tco_posted.transaction_id = u.posted_id AND tco_posted.user_id = $1
+                WHERE tco_posted.category_name IS NULL
+                ON CONFLICT (transaction_id, user_id) DO NOTHING
+                RETURNING 1
+            ),
+            transferred_receipts AS (
+                UPDATE amazon_receipts ar
+                SET matched_transaction_id = u.posted_id
+                FROM updated u
+                WHERE ar.matched_transaction_id = u.pending_id
+                RETURNING 1
             )
             SELECT COUNT(*)::BIGINT FROM updated
             "#,
@@ -1413,13 +1457,24 @@ impl DatabaseRepository for PostgresRepository {
                      WHEN pc.item_id IS NOT NULL THEN 'plaid'
                      ELSE NULL
                    END as provider,
-                   tco.category_name as custom_category,
-                   tco.subcategory_name as custom_subcategory
+                   COALESCE(tco.category_name, tco_dup.category_name) as custom_category,
+                   COALESCE(tco.subcategory_name, tco_dup.subcategory_name) as custom_subcategory
             FROM transactions t
             INNER JOIN accounts a ON t.account_id = a.id
             LEFT JOIN provider_connections pc ON a.provider_connection_id = pc.id
             LEFT JOIN transaction_category_overrides tco
                 ON t.id = tco.transaction_id AND tco.user_id = $1
+            LEFT JOIN (
+                SELECT DISTINCT ON (t_p.duplicate_of_transaction_id)
+                    t_p.duplicate_of_transaction_id,
+                    tco_p.category_name,
+                    tco_p.subcategory_name
+                FROM transactions t_p
+                JOIN transaction_category_overrides tco_p
+                    ON t_p.id = tco_p.transaction_id AND tco_p.user_id = $1
+                WHERE t_p.duplicate_of_transaction_id IS NOT NULL
+                ORDER BY t_p.duplicate_of_transaction_id, t_p.created_at DESC
+            ) tco_dup ON t.id = tco_dup.duplicate_of_transaction_id
             WHERE t.user_id = $1
               AND t.duplicate_of_transaction_id IS NULL
             ORDER BY t.date DESC, t.created_at DESC

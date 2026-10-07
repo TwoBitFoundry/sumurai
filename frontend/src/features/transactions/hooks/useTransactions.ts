@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ProviderAccount } from '../../../context/AccountFilterContext';
 import { type FilterCriteria, TransactionFilter } from '../../../domain/TransactionFilter';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { CategoryService } from '../../../services/CategoryService';
@@ -15,7 +16,6 @@ import {
   type MonthYearSelection,
 } from '../../../utils/dateRanges';
 import { getNetSpendingAmount } from '../../../utils/transactionAmounts';
-import type { ProviderAccount } from '../../../context/AccountFilterContext';
 
 export interface UseTransactionsOptions {
   initialSearch?: string;
@@ -56,11 +56,25 @@ export interface UseTransactionsResult {
   // category management
   userCategories: UserCategory[];
   markTransactionDuplicate: (transactionId: string) => Promise<void>;
-  updateTransactionCategory: (transactionId: string, categoryName: string, subcategoryName?: string) => Promise<void>;
+  updateTransactionCategory: (
+    transactionId: string,
+    categoryName: string,
+    subcategoryName?: string
+  ) => Promise<void>;
   resetTransactionCategory: (transactionId: string) => Promise<void>;
-  createCategoryAndAssign: (transactionId: string, name: string, parentCategory?: string) => Promise<void>;
-  createCategoryRule: (transactionId: string, pattern: string, categoryName: string, subcategoryName?: string) => Promise<void>;
+  createCategoryAndAssign: (
+    transactionId: string,
+    name: string,
+    parentCategory?: string
+  ) => Promise<void>;
+  createCategoryRule: (
+    transactionId: string,
+    pattern: string,
+    categoryName: string,
+    subcategoryName?: string
+  ) => Promise<void>;
   deleteUserCategory: (categoryId: string) => Promise<void>;
+  load: (isSilent?: boolean) => Promise<void>;
 }
 
 export function useTransactions(options: UseTransactionsOptions = {}): UseTransactionsResult {
@@ -124,47 +138,54 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     [accountsByBank]
   );
 
-  const load = useCallback(async () => {
-    if (accountsLoading) {
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
-    try {
-      const filters: TransactionFilters = {};
-      if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
-        setAll([]);
+  const load = useCallback(
+    async (isSilent = false) => {
+      if (accountsLoading) {
         return;
       }
-      if (selectedAccountId) {
-        filters.accountIds = [selectedAccountId];
-      } else if (!isAllAccountsSelected && selectedAccountIds.length > 0) {
-        filters.accountIds = selectedAccountIds;
+      if (!isSilent) {
+        setIsLoading(true);
       }
-      filters.startDate = monthRange.start;
-      filters.endDate = monthRange.end;
-      const txns = await TransactionService.getTransactions(filters);
-      setAll(txns);
-    } catch (error: unknown) {
-      const status = getStatus(error);
-      const msg =
-        status === 401
-          ? 'You are not authenticated. Please log in again.'
-          : 'Failed to load transactions.';
-      setError(msg);
-      setAll([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [
-    accountsLoading,
-    isAllAccountsSelected,
-    selectedAccountIds,
-    selectedAccountId,
-    allAccountIds,
-    monthRange.start,
-    monthRange.end,
-  ]);
+      setError(null);
+      try {
+        const filters: TransactionFilters = {};
+        if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
+          setAll([]);
+          return;
+        }
+        if (selectedAccountId) {
+          filters.accountIds = [selectedAccountId];
+        } else if (!isAllAccountsSelected && selectedAccountIds.length > 0) {
+          filters.accountIds = selectedAccountIds;
+        }
+        filters.startDate = monthRange.start;
+        filters.endDate = monthRange.end;
+        const txns = await TransactionService.getTransactions(filters);
+        setAll(txns);
+      } catch (error: unknown) {
+        const status = getStatus(error);
+        const msg =
+          status === 401
+            ? 'You are not authenticated. Please log in again.'
+            : 'Failed to load transactions.';
+        setError(msg);
+        setAll([]);
+      } finally {
+        if (!isSilent) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [
+      accountsLoading,
+      isAllAccountsSelected,
+      selectedAccountIds,
+      selectedAccountId,
+      allAccountIds,
+      monthRange.start,
+      monthRange.end,
+    ]
+  );
 
   useEffect(() => {
     load();
@@ -173,7 +194,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
   useEffect(() => {
     CategoryService.getCategories()
       .then(setUserCategories)
-      .catch(() => { });
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -200,15 +221,15 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
         prev.map((t) =>
           t.id === transactionId
             ? {
-              ...t,
-              custom_category: categoryName,
-              custom_subcategory: subcategoryName,
-              category: {
-                ...t.category,
-                primary: categoryName,
-                ...(subcategoryName ? { detailed: subcategoryName } : {}),
-              },
-            }
+                ...t,
+                custom_category: categoryName,
+                custom_subcategory: subcategoryName,
+                category: {
+                  ...t.category,
+                  primary: categoryName,
+                  ...(subcategoryName ? { detailed: subcategoryName } : {}),
+                },
+              }
             : t
         )
       );
@@ -216,31 +237,34 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     []
   );
 
-  const resetTransactionCategory = useCallback(async (transactionId: string) => {
-    await CategoryService.removeTransactionCategory(transactionId);
-    // Reload to get original provider category
-    await load();
-  }, [load]);
+  const resetTransactionCategory = useCallback(
+    async (transactionId: string) => {
+      await CategoryService.removeTransactionCategory(transactionId);
+      // Reload silently so provider/rule category is restored without unmounting
+      await load(true);
+    },
+    [load]
+  );
 
   const createCategoryAndAssign = useCallback(
     async (transactionId: string, name: string, parentCategory?: string) => {
       const created = await CategoryService.createCategory(name, parentCategory);
       setUserCategories((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
-      const majorCat = parentCategory || 'Other';
+      const majorCat = parentCategory || 'Shopping';
       await CategoryService.setTransactionCategory(transactionId, majorCat, name);
       setAll((prev) =>
         prev.map((t) =>
           t.id === transactionId
             ? {
-              ...t,
-              custom_category: majorCat,
-              custom_subcategory: name,
-              category: {
-                ...t.category,
-                primary: majorCat,
-                detailed: name,
-              },
-            }
+                ...t,
+                custom_category: majorCat,
+                custom_subcategory: name,
+                category: {
+                  ...t.category,
+                  primary: majorCat,
+                  detailed: name,
+                },
+              }
             : t
         )
       );
@@ -249,7 +273,36 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
   );
 
   const createCategoryRule = useCallback(
-    async (transactionId: string, pattern: string, categoryName: string, subcategoryName?: string) => {
+    async (
+      transactionId: string,
+      pattern: string,
+      categoryName: string,
+      subcategoryName?: string
+    ) => {
+      // Optimistically update matching transactions in state immediately
+      setAll((prev) =>
+        prev.map((t) => {
+          const merchant = t.merchant || t.name || '';
+          const isTarget = t.id === transactionId;
+          const isMatch = matchGlob(pattern, merchant);
+          if (isTarget || (!t.custom_category && isMatch)) {
+            return {
+              ...t,
+              custom_category: undefined,
+              custom_subcategory: undefined,
+              rule_category: categoryName,
+              rule_subcategory: subcategoryName,
+              category: {
+                ...t.category,
+                primary: categoryName,
+                ...(subcategoryName ? { detailed: subcategoryName } : {}),
+              },
+            };
+          }
+          return t;
+        })
+      );
+
       await CategoryService.createRule(pattern, categoryName, subcategoryName);
       if (transactionId) {
         try {
@@ -258,8 +311,8 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
           // Ignore if no override existed
         }
       }
-      // Reload so glob matching is re-applied server-side for all transactions
-      await load();
+      // Silently reload in background so backend glob matching is synced without unmounting the table
+      await load(true);
     },
     [load]
   );
@@ -283,7 +336,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
 
   const resolveCategoryLabel = useCallback((t: Transaction) => {
     if (!t.category?.primary) {
-      return 'Uncategorized';
+      return 'Shopping';
     }
     return resolveMajorCategory(t.category.primary);
   }, []);
@@ -314,12 +367,19 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
       return result;
     }
     return result.filter((transaction) => getNetSpendingAmount(transaction) !== 0);
-  }, [all, debouncedSearch, selectedCategory, selectedSubcategory, monthRange.start, monthRange.end]);
+  }, [
+    all,
+    debouncedSearch,
+    selectedCategory,
+    selectedSubcategory,
+    monthRange.start,
+    monthRange.end,
+  ]);
 
   const availableCategories = useMemo(() => {
     const names = new Set<string>();
     for (const t of categoryOptionItems) {
-      const name = resolveCategoryLabel(t) || 'Uncategorized';
+      const name = resolveCategoryLabel(t) || 'Shopping';
       if (name) names.add(name);
     }
     return Array.from(names).sort((a, b) => a.localeCompare(b));
@@ -371,15 +431,19 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
         sub &&
         sub.toLowerCase() !== 'other' &&
         !sub.toLowerCase().startsWith('other ') &&
-        (cat
-          ? cat.toLowerCase() === 'groceries' || sub.toLowerCase() !== cat.toLowerCase()
-          : true)
+        (cat ? cat.toLowerCase() === 'groceries' || sub.toLowerCase() !== cat.toLowerCase() : true)
       ) {
         names.add(sub);
       }
     }
     return Array.from(names).sort((a, b) => a.localeCompare(b));
-  }, [selectedCategory, userCategories, categoryOptionItems, resolveCategoryLabel, resolveSubcategoryLabel]);
+  }, [
+    selectedCategory,
+    userCategories,
+    categoryOptionItems,
+    resolveCategoryLabel,
+    resolveSubcategoryLabel,
+  ]);
 
   useEffect(() => {
     if (
@@ -442,7 +506,14 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
   // biome-ignore lint/correctness/useExhaustiveDependencies: specific filters should reset pagination
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory, selectedSubcategory, debouncedSearch, period, selectedAccountIds, selectedAccountId]);
+  }, [
+    selectedCategory,
+    selectedSubcategory,
+    debouncedSearch,
+    period,
+    selectedAccountIds,
+    selectedAccountId,
+  ]);
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -480,6 +551,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     createCategoryAndAssign,
     createCategoryRule,
     deleteUserCategory,
+    load,
   };
 }
 
@@ -571,4 +643,13 @@ function getStatus(error: unknown): number | undefined {
     return typeof status === 'number' ? status : undefined;
   }
   return undefined;
+}
+
+function matchGlob(pattern: string, text: string): boolean {
+  if (!pattern || !text) return false;
+  const escaped = pattern
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*/g, '.*')
+    .replace(/\?/g, '.');
+  return new RegExp(`^${escaped}$`, 'i').test(text);
 }

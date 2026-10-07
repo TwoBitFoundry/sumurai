@@ -87,12 +87,7 @@ export function AuthenticatedApp({ onLogout, initialTab }: AuthenticatedAppProps
                   onCategorySelect={openTransactionsForCategory}
                 />
               )}
-              {tab === 'trends' && (
-                <TrendsPage
-                  period={period}
-                  onPeriodChange={setPeriod}
-                />
-              )}
+              {tab === 'trends' && <TrendsPage period={period} onPeriodChange={setPeriod} />}
               {tab === 'transactions' && (
                 <TransactionsPage
                   initialAccountId={transactionAccountId}

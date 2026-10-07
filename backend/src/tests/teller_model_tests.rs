@@ -54,7 +54,7 @@ fn given_teller_transaction_json_when_from_teller_then_maps_fields_correctly() {
     assert_eq!(transaction.amount, Decimal::from_str("89.40").unwrap());
     assert_eq!(transaction.date.to_string(), "2024-01-15");
     assert_eq!(transaction.merchant_name, Some("Starbucks".to_string()));
-    assert_eq!(transaction.category_primary, "GENERAL_MERCHANDISE");
+    assert_eq!(transaction.category_primary, "Shopping");
     assert_eq!(transaction.category_detailed, "");
     assert_eq!(transaction.category_confidence, "");
     assert!(!transaction.pending);
@@ -83,14 +83,14 @@ fn given_teller_transaction_with_service_category_when_from_teller_then_normaliz
 }
 
 #[test]
-fn given_teller_transaction_with_unknown_category_when_from_teller_then_normalizes_to_other() {
+fn given_teller_transaction_with_unknown_category_when_from_teller_then_normalizes_to_shopping() {
     let account_id = Uuid::new_v4();
     let teller_json =
         serde_json::from_str(TestFixtures::teller_transaction_unknown_category()).unwrap();
 
     let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
-    assert_eq!(transaction.category_primary, "OTHER");
+    assert_eq!(transaction.category_primary, "Shopping");
 }
 
 #[test]

@@ -288,7 +288,7 @@ impl Transaction {
         let raw_primary = categories
             .and_then(|arr| arr.first())
             .and_then(|v| v.as_str())
-            .unwrap_or("OTHER")
+            .unwrap_or("Shopping")
             .to_string();
 
         let raw_detailed = categories
@@ -308,6 +308,19 @@ impl Transaction {
                 "Utilities"
             };
             ("Bills & Utilities".to_string(), mapped_detailed.to_string())
+        } else if raw_primary.eq_ignore_ascii_case("GENERAL_MERCHANDISE")
+            || raw_primary.eq_ignore_ascii_case("OTHER")
+            || raw_primary.trim().is_empty()
+            || raw_primary.eq_ignore_ascii_case("uncategorized")
+        {
+            let mapped_detailed = if raw_detailed.to_uppercase().contains("ELECTRONICS") {
+                "Electronics"
+            } else if raw_detailed.to_uppercase().contains("CLOTHING") {
+                "Clothing"
+            } else {
+                "Shopping"
+            };
+            ("Shopping".to_string(), mapped_detailed.to_string())
         } else {
             (raw_primary, raw_detailed)
         };
@@ -338,9 +351,9 @@ impl Transaction {
 
     fn normalize_teller_category(teller_cat: &str) -> String {
         match teller_cat {
-            "general" => "GENERAL_MERCHANDISE",
+            "general" => "Shopping",
             "service" => "GENERAL_SERVICES",
-            _ => "OTHER",
+            _ => "Shopping",
         }
         .to_string()
     }

@@ -33,6 +33,8 @@ backend/Cargo.lock
 .env.test.local
 .env.production.local
 .env.backend
+amazon-syncer/amazon-syncer.env
+*.env
 
 # Database connection strings
 database.url

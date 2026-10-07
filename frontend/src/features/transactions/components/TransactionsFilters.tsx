@@ -49,8 +49,7 @@ const ScrollablePillRow: React.FC<{
     const handleWheel = (event: WheelEvent) => {
       if (el.scrollWidth <= el.clientWidth) return;
 
-      const delta =
-        Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
       if (delta === 0) return;
 
       event.preventDefault();

@@ -2,6 +2,7 @@ import {
   formatCategoryName,
   getTagThemeForCategory,
   isSpendingExcludedCategory,
+  resolveMajorCategory,
 } from '@/utils/categories';
 
 describe('categories utils', () => {
@@ -10,8 +11,25 @@ describe('categories utils', () => {
     expect(formatCategoryName('TRANSPORT')).toBe('Transport');
     expect(formatCategoryName('Credit Card Bills')).toBe('Credit Card Bills');
     expect(formatCategoryName('Credit card bills')).toBe('Credit Card Bills');
-    expect(formatCategoryName(undefined)).toBe('Other');
-    expect(formatCategoryName(null as any)).toBe('Other');
+    expect(formatCategoryName(undefined)).toBe('Shopping');
+    expect(formatCategoryName(null as any)).toBe('Shopping');
+    expect(formatCategoryName('other')).toBe('Shopping');
+    expect(formatCategoryName('GENERAL_MERCHANDISE')).toBe('Shopping');
+    expect(formatCategoryName('General Merchandise')).toBe('Shopping');
+  });
+
+  it('resolves General Merchandise, Other, and unknown to Shopping', () => {
+    expect(resolveMajorCategory('GENERAL_MERCHANDISE')).toBe('Shopping');
+    expect(resolveMajorCategory('General Merchandise')).toBe('Shopping');
+    expect(resolveMajorCategory('other')).toBe('Shopping');
+    expect(resolveMajorCategory('Other')).toBe('Shopping');
+    expect(resolveMajorCategory('uncategorized')).toBe('Shopping');
+    expect(resolveMajorCategory(undefined)).toBe('Shopping');
+    expect(resolveMajorCategory('')).toBe('Shopping');
+    expect(resolveMajorCategory('unknown')).toBe('Shopping');
+    expect(resolveMajorCategory('Unknown')).toBe('Shopping');
+    expect(resolveMajorCategory('Home Supplies')).toBe('Home Improvement');
+    expect(resolveMajorCategory('Household Supplies')).toBe('Home Improvement');
   });
 
   it('maps same name to stable theme', () => {

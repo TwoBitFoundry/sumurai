@@ -3,20 +3,7 @@ import type React from 'react';
 import { cn } from '@/ui/primitives';
 import type { MonthYearSelection } from '../utils/dateRanges';
 
-const months = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
+const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 interface MonthYearSelectorProps {
   value: MonthYearSelection;
@@ -32,8 +19,7 @@ export const MonthYearSelector: React.FC<MonthYearSelectorProps> = ({
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth();
-  const availableMonths =
-    value.year === currentYear ? months.slice(0, currentMonth + 1) : months;
+  const availableMonths = value.year === currentYear ? months.slice(0, currentMonth + 1) : months;
 
   const isAllYear = value.month === null;
   const setMonth = (month: number) => onChange({ ...value, month });

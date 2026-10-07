@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import type React from 'react';
+import { useMemo, useState } from 'react';
 import { ResponsiveContainer, Sankey, Tooltip } from 'recharts';
 import type { SankeyLinkData, SankeyNodeData } from '../../../domain/SankeyCalculator';
 import { useCurrency } from '../../../hooks/useCurrency';
@@ -11,11 +12,7 @@ interface SankeyChartProps {
   height?: number;
 }
 
-export const SankeyChart: React.FC<SankeyChartProps> = ({
-  nodes,
-  links,
-  height,
-}) => {
+export const SankeyChart: React.FC<SankeyChartProps> = ({ nodes, links, height }) => {
   const { format } = useCurrency();
   const [hoveredLinkIdx, setHoveredLinkIdx] = useState<number | null>(null);
   const [hoveredNodeIdx, setHoveredNodeIdx] = useState<number | null>(null);
@@ -276,4 +273,3 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
     </div>
   );
 };
-

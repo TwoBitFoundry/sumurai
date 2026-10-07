@@ -55,12 +55,14 @@ interface CategoryDropdownProps {
   onCreateAndSelect: (name: string, parentCategory?: string) => Promise<void>;
   onCreateRule: (pattern: string, categoryName: string, subcategoryName?: string) => Promise<void>;
   onDeleteCategory: (categoryId: string) => Promise<void>;
+  onOpenRulesModal?: () => void;
 }
 
 // Icon mapping for each major category
 function getCategoryIcon(name: string) {
   const norm = name.toLowerCase();
-  if (norm.includes('bill') || norm.includes('util')) return <Zap className="h-4 w-4 text-amber-500" />;
+  if (norm.includes('bill') || norm.includes('util'))
+    return <Zap className="h-4 w-4 text-amber-500" />;
   if (norm.includes('childcare')) return <Heart className="h-4 w-4 text-rose-500" />;
   if (norm.includes('earned income')) return <Briefcase className="h-4 w-4 text-emerald-500" />;
   if (norm.includes('education')) return <GraduationCap className="h-4 w-4 text-blue-500" />;
@@ -83,11 +85,42 @@ function getCategoryIcon(name: string) {
   return <Receipt className="h-4 w-4 text-slate-400" />;
 }
 
-function suggestPattern(name: string): string {
-  const tokens = name.trim().split(/\s+/);
-  const cut = tokens.findIndex((t) => /^\d{4,}/.test(t) || /^#?\d{3,}/.test(t));
-  const prefix = cut > 0 ? tokens.slice(0, cut).join(' ') : name;
-  return prefix.trimEnd() + '*';
+export function suggestPattern(name: string): string {
+  let clean = (name || '').trim();
+  if (!clean) return '*';
+
+  // Strip common bank/processor noise prefixes
+  clean = clean
+    .replace(/^(recurring payment authorized on \d\d\/\d\d\s*)/i, '')
+    .replace(/^(purchase authorized on \d\d\/\d\d\s*)/i, '')
+    .replace(/^(recurring payment authorized\s*)/i, '')
+    .replace(/^(purchase authorized\s*)/i, '')
+    .replace(/^(business to business ach\s*)/i, '')
+    .replace(/^(checkcard purchase\s*)/i, '')
+    .replace(/^(checkcard\s*)/i, '')
+    .replace(/^(pos debit\s*)/i, '')
+    .replace(/^(debit card purchase\s*)/i, '')
+    .replace(/^(purchase\s+)/i, '')
+    .replace(/^(aplpay\s+)/i, '')
+    .replace(/^(py\s*\*\s*)/i, '')
+    .replace(/^(sq\s*\*\s*)/i, '')
+    .replace(/^(tst\s*\*\s*)/i, '')
+    .trim();
+
+  // Strip store numbers, card masks, phone numbers
+  const tokens = clean.split(/\s+/);
+  const cut = tokens.findIndex(
+    (t) =>
+      /^\d{3,}/.test(t) ||
+      /^#\d+/.test(t) ||
+      /^card\s*\d+/i.test(t) ||
+      /^800-|^888-|^877-|^866-/.test(t) ||
+      /^s\d{10,}/i.test(t)
+  );
+  const core = cut > 0 ? tokens.slice(0, cut).join(' ') : clean;
+  const trimmed = core.trim().replace(/^[*\s]+|[*\s]+$/g, '');
+  if (!trimmed) return '*';
+  return `*${trimmed}*`;
 }
 
 export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
@@ -101,6 +134,7 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
   onCreateAndSelect,
   onCreateRule,
   onDeleteCategory: _onDeleteCategory,
+  onOpenRulesModal,
 }) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -259,10 +293,28 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
   const openRuleForm = useCallback(() => {
     setCreatingRule(true);
     setRulePattern(suggestPattern(merchantName ?? ''));
-    setRuleCategory(resolvedCurrentMajor);
+    setRuleCategory(resolvedCurrentMajor || 'Shopping');
     setRuleSubcategory(currentSubcategory ?? '');
     setError(null);
   }, [merchantName, resolvedCurrentMajor, currentSubcategory]);
+
+  const ruleSubcategoriesList = useMemo(() => {
+    if (!ruleCategory) return [];
+    const cat = CATEGORIES_TAXONOMY.find(
+      (c) => c.name.toLowerCase() === ruleCategory.toLowerCase()
+    );
+    const customSubs = userCategories
+      .filter((uc) => uc.parent_category?.toLowerCase() === ruleCategory.toLowerCase())
+      .map((uc) => uc.name);
+    return Array.from(new Set([...(cat?.subcategories || []), ...customSubs])).filter(
+      (sub) =>
+        !sub.toLowerCase().startsWith('other ') &&
+        sub.toLowerCase() !== 'other' &&
+        sub.toLowerCase() !== 'uncategorized' &&
+        sub.toLowerCase() !== 'general merchandise' &&
+        sub.toLowerCase() !== 'general_merchandise'
+    );
+  }, [ruleCategory, userCategories]);
 
   // Build the hierarchical list combining CATEGORIES_TAXONOMY and userCategories
   const categoriesList = useMemo(() => {
@@ -271,13 +323,17 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
         .filter((uc) => uc.parent_category?.toLowerCase() === cat.name.toLowerCase())
         .map((uc) => uc.name);
 
-      const combinedSubs = Array.from(new Set([...cat.subcategories, ...customSubs]))
-        .filter(
-          (sub) =>
-            !sub.toLowerCase().startsWith('other ') &&
-            sub.toLowerCase() !== 'uncategorized' &&
-            (cat.name.toLowerCase() === 'groceries' ? true : sub.trim().toLowerCase() !== cat.name.toLowerCase())
-        );
+      const combinedSubs = Array.from(new Set([...cat.subcategories, ...customSubs])).filter(
+        (sub) =>
+          !sub.toLowerCase().startsWith('other ') &&
+          sub.toLowerCase() !== 'other' &&
+          sub.toLowerCase() !== 'uncategorized' &&
+          sub.toLowerCase() !== 'general merchandise' &&
+          sub.toLowerCase() !== 'general_merchandise' &&
+          (cat.name.toLowerCase() === 'groceries'
+            ? true
+            : sub.trim().toLowerCase() !== cat.name.toLowerCase())
+      );
       return {
         ...cat,
         subcategories: combinedSubs,
@@ -291,9 +347,7 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
     return list
       .map((cat) => {
         const catMatches = cat.name.toLowerCase().includes(s);
-        const filteredSubs = cat.subcategories.filter((sub) =>
-          sub.toLowerCase().includes(s)
-        );
+        const filteredSubs = cat.subcategories.filter((sub) => sub.toLowerCase().includes(s));
         if (catMatches) {
           return cat;
         }
@@ -305,7 +359,7 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
         }
         return null;
       })
-      .filter((cat): cat is typeof list[0] => cat !== null);
+      .filter((cat): cat is (typeof list)[0] => cat !== null);
   }, [userCategories, search]);
 
   const catName = formatCategoryName(resolvedCurrentMajor);
@@ -370,9 +424,24 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
                 Reset override
               </button>
             ) : overrideType === 'rule' ? (
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">
-                Rule matched
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">
+                  <AdjustmentsHorizontalIcon className="h-3 w-3" />
+                  Rule matched
+                </span>
+                {onOpenRulesModal && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      onOpenRulesModal();
+                    }}
+                    className="text-[10px] text-violet-500 underline hover:text-violet-700 dark:text-violet-400 cursor-pointer"
+                  >
+                    View rules
+                  </button>
+                )}
+              </div>
             ) : (
               <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                 Categories
@@ -385,7 +454,7 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
               className="flex items-center gap-1 text-[11px] font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400"
             >
               <AdjustmentsHorizontalIcon className="h-3 w-3" />
-              Auto-rule
+              {overrideType === 'rule' ? 'Edit rule' : 'Auto-rule'}
             </button>
           </div>
 
@@ -398,10 +467,13 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
 
           {/* Create rule panel */}
           {creatingRule ? (
-            <form onSubmit={handleCreateRule} className="flex flex-col gap-2 p-3 bg-slate-50 dark:bg-slate-800/50">
+            <form
+              onSubmit={handleCreateRule}
+              className="flex flex-col gap-2 p-3 bg-violet-50/50 dark:bg-violet-950/20 border-b border-violet-100 dark:border-violet-900/40"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">
-                  New auto-rule for merchant
+                <span className="text-[11px] font-semibold text-violet-900 dark:text-violet-200">
+                  Auto-rule for merchant
                 </span>
                 <button
                   type="button"
@@ -411,30 +483,59 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
                   <XMarkIcon className="h-4 w-4" />
                 </button>
               </div>
-              <input
-                value={rulePattern}
-                onChange={(e) => setRulePattern(e.target.value)}
-                placeholder="Merchant pattern (e.g. STARBUCKS*)"
-                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-              />
+              <div>
+                <label className="mb-0.5 block text-[10px] font-medium text-slate-500">
+                  Merchant Pattern
+                </label>
+                <input
+                  value={rulePattern}
+                  onChange={(e) => setRulePattern(e.target.value)}
+                  placeholder="Merchant pattern (e.g. *STARBUCKS*)"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1 font-mono text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                />
+              </div>
               <div className="grid grid-cols-2 gap-1.5">
-                <input
-                  value={ruleCategory}
-                  onChange={(e) => setRuleCategory(e.target.value)}
-                  placeholder="Category"
-                  className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-                />
-                <input
-                  value={ruleSubcategory}
-                  onChange={(e) => setRuleSubcategory(e.target.value)}
-                  placeholder="Subcategory (opt)"
-                  className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-                />
+                <div>
+                  <label className="mb-0.5 block text-[10px] font-medium text-slate-500">
+                    Category
+                  </label>
+                  <select
+                    value={ruleCategory}
+                    onChange={(e) => {
+                      setRuleCategory(e.target.value);
+                      setRuleSubcategory('');
+                    }}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                  >
+                    {CATEGORIES_TAXONOMY.map((c) => (
+                      <option key={c.name} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-0.5 block text-[10px] font-medium text-slate-500">
+                    Subcategory
+                  </label>
+                  <select
+                    value={ruleSubcategory}
+                    onChange={(e) => setRuleSubcategory(e.target.value)}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                  >
+                    <option value="">No subcategory</option>
+                    {ruleSubcategoriesList.map((sub) => (
+                      <option key={sub} value={sub}>
+                        {sub}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <button
                 type="submit"
                 disabled={saving || !rulePattern.trim() || !ruleCategory.trim()}
-                className="rounded-lg bg-violet-600 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
+                className="mt-1 rounded-lg bg-violet-600 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save Rule'}
               </button>
@@ -460,7 +561,9 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
                         onClick={() => handleSelect(cat.name, undefined)}
                         className={cn(
                           'sticky top-0 z-10 flex w-full items-center gap-2 rounded-lg bg-white/95 px-2 py-1.5 text-left text-xs font-semibold backdrop-blur-md transition-colors dark:bg-slate-900/95',
-                          isCurrentMajor && (!currentSubcategory || currentSubcategory.toLowerCase() === cat.name.toLowerCase())
+                          isCurrentMajor &&
+                            (!currentSubcategory ||
+                              currentSubcategory.toLowerCase() === cat.name.toLowerCase())
                             ? 'text-sky-600 dark:text-sky-400 bg-sky-50/80 dark:bg-sky-950/50'
                             : 'text-slate-900 hover:bg-slate-100/70 dark:text-slate-100 dark:hover:bg-slate-800/60'
                         )}
@@ -468,19 +571,26 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
                       >
                         {getCategoryIcon(cat.name)}
                         <span className="flex-1 truncate">
-                          {cat.name} <span className="font-normal text-[11px] text-slate-400">({cat.type})</span>
+                          {cat.name}{' '}
+                          <span className="font-normal text-[11px] text-slate-400">
+                            ({cat.type})
+                          </span>
                         </span>
                         <span
                           className={cn(
                             'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border transition-all',
-                            isCurrentMajor && (!currentSubcategory || currentSubcategory.toLowerCase() === cat.name.toLowerCase())
+                            isCurrentMajor &&
+                              (!currentSubcategory ||
+                                currentSubcategory.toLowerCase() === cat.name.toLowerCase())
                               ? 'border-sky-500 bg-sky-500 text-white dark:border-sky-400 dark:bg-sky-400'
                               : 'border-slate-300 dark:border-slate-600'
                           )}
                         >
-                          {isCurrentMajor && (!currentSubcategory || currentSubcategory.toLowerCase() === cat.name.toLowerCase()) && (
-                            <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                          )}
+                          {isCurrentMajor &&
+                            (!currentSubcategory ||
+                              currentSubcategory.toLowerCase() === cat.name.toLowerCase()) && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                            )}
                         </span>
                       </button>
 
@@ -606,12 +716,19 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
         />
         <span className="max-w-[170px] truncate">{displayLabel}</span>
         {overrideType === 'rule' && (
-          <span title="Auto-rule applied" className="ml-0.5 opacity-60">
+          <span
+            title="Auto-categorized by rule"
+            className="ml-0.5 inline-flex items-center gap-0.5 rounded-full bg-violet-100/90 px-1 py-0.2 text-[9px] font-semibold text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
+          >
             <AdjustmentsHorizontalIcon className="h-2.5 w-2.5" />
+            <span>rule</span>
           </span>
         )}
         {overrideType === 'explicit' && (
-          <span title="Manually set" className="ml-0.5 text-[9px] font-semibold opacity-60">
+          <span
+            title="Manually set override"
+            className="ml-0.5 text-[9px] font-semibold opacity-60"
+          >
             ✎
           </span>
         )}

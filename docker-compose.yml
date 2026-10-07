@@ -15,6 +15,9 @@ networks:
     internal: true
   egress_net: {}
   public_net: {}
+  internal_ai:
+    external: true
+    name: open-webui_internal-ai
 
 services:
   frontend:
@@ -210,6 +213,22 @@ services:
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/www/certbot
     entrypoint: [ "sh", "-c", "sleep infinity" ]
+
+  amazon-syncer:
+    build:
+      context: ./amazon-syncer
+    container_name: sumurai-amazon-syncer
+    restart: unless-stopped
+    volumes:
+      - ./amazon-syncer/syncer.py:/app/syncer.py:ro
+    env_file:
+      - ./amazon-syncer/amazon-syncer.env
+    networks:
+      - app_net
+      - internal_ai
+      - egress_net
+    depends_on:
+      - postgres
 
 volumes:
   redis_data:

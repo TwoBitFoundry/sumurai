@@ -183,7 +183,14 @@ export const BankCard: React.FC<BankCardProps> = ({
           >
             {(() => {
               const sortedAccounts = bank.accounts.slice().sort((a, b) => {
-                const typeOrder = { checking: 1, savings: 1, credit: 2, loan: 3, investment: 4, other: 5 };
+                const typeOrder = {
+                  checking: 1,
+                  savings: 1,
+                  credit: 2,
+                  loan: 3,
+                  investment: 4,
+                  other: 5,
+                };
                 const aOrder = typeOrder[a.type] || 4;
                 const bOrder = typeOrder[b.type] || 4;
 
@@ -217,7 +224,6 @@ export const BankCard: React.FC<BankCardProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
-
     </GlassCard>
   );
 };

@@ -334,10 +334,11 @@ export default function BudgetsPage({ onCategorySelect }: BudgetsPageProps = {})
             )}
           >
             <div
-              className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${stats.totalSpent > stats.totalBudgeted
+              className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${
+                stats.totalSpent > stats.totalBudgeted
                   ? 'bg-gradient-to-r from-rose-400 via-rose-500 to-rose-600 shadow-[0_0_12px_rgba(244,63,94,0.35)]'
                   : 'bg-gradient-to-r from-sky-400 via-cyan-400 to-violet-500 shadow-[0_0_12px_rgba(14,165,233,0.35)]'
-                }`}
+              }`}
               style={{ width: `${Math.min(100, utilization * 100)}%` }}
             />
           </div>

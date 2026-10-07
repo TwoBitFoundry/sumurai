@@ -300,7 +300,7 @@ impl RealPlaidClient {
                             .get("personal_finance_category")
                             .and_then(|pfc| pfc.get("primary"))
                             .and_then(|v| v.as_str())
-                            .unwrap_or("OTHER");
+                            .unwrap_or("Shopping");
 
                         let detailed = t
                             .get("personal_finance_category")
@@ -319,6 +319,19 @@ impl RealPlaidClient {
                                 "Utilities"
                             };
                             ("Bills & Utilities".to_string(), mapped_detailed.to_string())
+                        } else if primary.eq_ignore_ascii_case("GENERAL_MERCHANDISE")
+                            || primary.eq_ignore_ascii_case("OTHER")
+                            || primary.trim().is_empty()
+                            || primary.eq_ignore_ascii_case("uncategorized")
+                        {
+                            let mapped_detailed = if detailed.to_uppercase().contains("ELECTRONICS") {
+                                "Electronics"
+                            } else if detailed.to_uppercase().contains("CLOTHING") {
+                                "Clothing"
+                            } else {
+                                "Shopping"
+                            };
+                            ("Shopping".to_string(), mapped_detailed.to_string())
                         } else {
                             (primary.to_string(), detailed.to_string())
                         }

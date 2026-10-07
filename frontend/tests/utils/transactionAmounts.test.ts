@@ -126,4 +126,3 @@ describe('transactionAmounts', () => {
     expect(isSpendingTransaction(rent)).toBe(true);
   });
 });
-

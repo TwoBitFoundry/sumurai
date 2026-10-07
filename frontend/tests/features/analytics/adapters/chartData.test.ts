@@ -10,7 +10,7 @@ describe('chartData adapters', () => {
       ])
     ).toEqual([
       { name: 'Credit Card Bills', value: 2843.08 },
-      { name: 'General Merchandise', value: 25 },
+      { name: 'Shopping', value: 25 },
     ]);
   });
 });

@@ -4,7 +4,11 @@ import {
   isSpendingExcludedCategory,
   resolveMajorCategory,
 } from '../utils/categories';
-import { getDisplayAmount, getNetSpendingAmount, isSpendingTransaction } from '../utils/transactionAmounts';
+import {
+  getDisplayAmount,
+  getNetSpendingAmount,
+  isSpendingTransaction,
+} from '../utils/transactionAmounts';
 
 export interface SankeyNodeData {
   id: string;
@@ -149,7 +153,10 @@ export class SankeyCalculator {
 
     // Accumulators
     const inflowBySource = new Map<string, number>();
-    const outflowByCategory = new Map<string, { total: number; subcategories: Map<string, number> }>();
+    const outflowByCategory = new Map<
+      string,
+      { total: number; subcategories: Map<string, number> }
+    >();
     let totalInflow = 0;
     let totalOutflow = 0;
     let inflowCount = 0;
@@ -212,10 +219,7 @@ export class SankeyCalculator {
       if (isSpend && netSpend > 0) {
         const catKey = resolvedMajor;
         const subRaw =
-          t.custom_subcategory ??
-          t.rule_subcategory ??
-          t.category?.detailed ??
-          rawCategory;
+          t.custom_subcategory ?? t.rule_subcategory ?? t.category?.detailed ?? rawCategory;
 
         const isGeneric =
           !subRaw ||
@@ -233,10 +237,7 @@ export class SankeyCalculator {
         }
         const catEntry = outflowByCategory.get(catKey)!;
         catEntry.total += netSpend;
-        catEntry.subcategories.set(
-          subName,
-          (catEntry.subcategories.get(subName) ?? 0) + netSpend
-        );
+        catEntry.subcategories.set(subName, (catEntry.subcategories.get(subName) ?? 0) + netSpend);
 
         totalOutflow += netSpend;
         outflowCount++;
@@ -310,12 +311,7 @@ export class SankeyCalculator {
       return index;
     };
 
-    const addLink = (
-      sourceIdx: number,
-      targetIdx: number,
-      value: number,
-      color?: string
-    ) => {
+    const addLink = (sourceIdx: number, targetIdx: number, value: number, color?: string) => {
       const roundedVal = Math.round(value * 100) / 100;
       if (roundedVal <= 0) return;
       const sourceNode = nodes[sourceIdx];
@@ -354,14 +350,7 @@ export class SankeyCalculator {
       for (const [srcName, amount] of inflowBySource.entries()) {
         const srcId = `inflow_${srcName}`;
         const pct = totalInflow > 0 ? Math.round((amount / totalInflow) * 100) : 0;
-        const srcIdx = addNode(
-          srcId,
-          srcName,
-          amount,
-          getCategoryColor(srcName),
-          'inflow',
-          pct
-        );
+        const srcIdx = addNode(srcId, srcName, amount, getCategoryColor(srcName), 'inflow', pct);
         addLink(srcIdx, hubIdx, amount, nodes[srcIdx].color);
       }
 
@@ -369,13 +358,7 @@ export class SankeyCalculator {
       if (netSavings < 0) {
         const deficitAmt = Math.abs(netSavings);
         const defId = 'inflow_from_savings';
-        const defIdx = addNode(
-          defId,
-          'From Savings',
-          deficitAmt,
-          '#f59e0b',
-          'deficit'
-        );
+        const defIdx = addNode(defId, 'From Savings', deficitAmt, '#f59e0b', 'deficit');
         addLink(defIdx, hubIdx, deficitAmt, '#f59e0b');
       }
 
@@ -395,9 +378,7 @@ export class SankeyCalculator {
 
         // Layer 3: Major Category -> Subcategories (if enabled)
         if (includeSub && catData.subcategories.size > 0) {
-          const rawSubs = Array.from(catData.subcategories.entries()).sort(
-            (a, b) => b[1] - a[1]
-          );
+          const rawSubs = Array.from(catData.subcategories.entries()).sort((a, b) => b[1] - a[1]);
           const sortedSubs = groupMinorSubcategories(rawSubs, catData.total);
 
           for (const [subName, subAmt] of sortedSubs) {
@@ -419,14 +400,7 @@ export class SankeyCalculator {
       // If surplus, link Total Income Hub -> Net Savings
       if (netSavings > 0) {
         const savId = 'savings_net';
-        const savIdx = addNode(
-          savId,
-          'Net Savings',
-          netSavings,
-          '#10b981',
-          'savings',
-          savingsRate
-        );
+        const savIdx = addNode(savId, 'Net Savings', netSavings, '#10b981', 'savings', savingsRate);
         addLink(hubIdx, savIdx, netSavings, '#10b981');
       }
     } else {
@@ -434,13 +408,7 @@ export class SankeyCalculator {
       // CASE 2: Spending-Only Flow (No Income recorded)
       // ==========================================
       const hubId = 'hub_total_spending';
-      const hubIdx = addNode(
-        hubId,
-        'Total Spending',
-        totalOutflow,
-        '#64748b',
-        'hub'
-      );
+      const hubIdx = addNode(hubId, 'Total Spending', totalOutflow, '#64748b', 'hub');
 
       for (const [catName, catData] of sortedCategories) {
         const catId = `cat_${catName}`;
@@ -456,9 +424,7 @@ export class SankeyCalculator {
         addLink(hubIdx, catIdx, catData.total, nodes[catIdx].color);
 
         if (includeSub && catData.subcategories.size > 0) {
-          const rawSubs = Array.from(catData.subcategories.entries()).sort(
-            (a, b) => b[1] - a[1]
-          );
+          const rawSubs = Array.from(catData.subcategories.entries()).sort((a, b) => b[1] - a[1]);
           const sortedSubs = groupMinorSubcategories(rawSubs, catData.total);
 
           for (const [subName, subAmt] of sortedSubs) {
@@ -487,4 +453,3 @@ export class SankeyCalculator {
     };
   }
 }
-

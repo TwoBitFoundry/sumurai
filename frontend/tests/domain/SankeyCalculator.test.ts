@@ -275,5 +275,3 @@ describe('SankeyCalculator', () => {
     });
   });
 });
-
-

@@ -238,12 +238,7 @@ describe('BudgetCalculator.calculateSpent', () => {
     ];
 
     expect(
-      BudgetCalculator.calculateSpent(
-        transactions,
-        'Home Improvement',
-        '2025-10-01',
-        '2025-10-31'
-      )
+      BudgetCalculator.calculateSpent(transactions, 'Home Improvement', '2025-10-01', '2025-10-31')
     ).toBe(120);
   });
 });
@@ -390,11 +385,10 @@ describe('BudgetCalculator.computeRolloverBudget', () => {
     ];
 
     // Case 1: In September 2026 (the start month, month index 8)
-    const sepResult = BudgetCalculator.computeRolloverBudget(
-      budget,
-      allYtdTransactions,
-      { month: 8, year: 2026 }
-    );
+    const sepResult = BudgetCalculator.computeRolloverBudget(budget, allYtdTransactions, {
+      month: 8,
+      year: 2026,
+    });
 
     // Carryover should be $0.00 since September is the start month (no accumulation before start month)
     expect(sepResult.priorCarryover).toBe(0);
@@ -407,11 +401,10 @@ describe('BudgetCalculator.computeRolloverBudget', () => {
 
     // Case 2: In October 2026 (month index 9)
     // In Sep, allocated $450, spent $705.97 -> net negative, so carryover is 0
-    const octResult = BudgetCalculator.computeRolloverBudget(
-      budget,
-      allYtdTransactions,
-      { month: 9, year: 2026 }
-    );
+    const octResult = BudgetCalculator.computeRolloverBudget(budget, allYtdTransactions, {
+      month: 9,
+      year: 2026,
+    });
     expect(octResult.priorCarryover).toBe(0);
 
     // Case 3: If in September spend was under budget (e.g., $300 spent instead of $705.97)
@@ -436,11 +429,10 @@ describe('BudgetCalculator.computeRolloverBudget', () => {
       },
     ];
 
-    const octUnderResult = BudgetCalculator.computeRolloverBudget(
-      budget,
-      underSpendTransactions,
-      { month: 9, year: 2026 }
-    );
+    const octUnderResult = BudgetCalculator.computeRolloverBudget(budget, underSpendTransactions, {
+      month: 9,
+      year: 2026,
+    });
     // Prior month (September only, NOT August): 1 month * $450 = $450 allocated, $300 spent => +$150 carryover
     expect(octUnderResult.priorMonthsSpent).toBe(300);
     expect(octUnderResult.priorMonthsAllocated).toBe(450);
@@ -547,11 +539,10 @@ describe('BudgetCalculator.computeCompositeMajorBudget', () => {
       },
     ];
 
-    const result = BudgetCalculator.computeRolloverBudget(
-      budget,
-      transactions,
-      { month: null, year: 2026 }
-    );
+    const result = BudgetCalculator.computeRolloverBudget(budget, transactions, {
+      month: null,
+      year: 2026,
+    });
 
     // Full year target is 12 * $400 = $4,800
     expect(result.periodAmount).toBe(4800);

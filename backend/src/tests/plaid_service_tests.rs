@@ -57,7 +57,7 @@ fn test_category_parsing_handles_missing_fields() {
         .get("personal_finance_category")
         .and_then(|pfc| pfc.get("primary"))
         .and_then(|v| v.as_str())
-        .unwrap_or("OTHER")
+        .unwrap_or("Shopping")
         .to_string();
 
     let category_detailed = plaid_transaction
@@ -85,8 +85,8 @@ fn test_category_parsing_handles_missing_fields() {
         .unwrap_or(false);
 
     // Verify defaults are used when fields are missing
-    assert_eq!(category_primary, "OTHER");
-    assert_eq!(category_detailed, "OTHER"); // Falls back to primary when detailed missing
+    assert_eq!(category_primary, "Shopping");
+    assert_eq!(category_detailed, "Shopping"); // Falls back to primary when detailed missing
     assert_eq!(category_confidence, "MEDIUM");
     assert_eq!(payment_channel, None);
     assert!(!pending);

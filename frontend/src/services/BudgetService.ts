@@ -69,7 +69,10 @@ export class BudgetService {
     if (created.rollover !== undefined || budgetData.rollover !== undefined) {
       result.rollover = created.rollover ?? budgetData.rollover;
     }
-    if (created.rollover_start_month !== undefined || budgetData.rollover_start_month !== undefined) {
+    if (
+      created.rollover_start_month !== undefined ||
+      budgetData.rollover_start_month !== undefined
+    ) {
       result.rollover_start_month = created.rollover_start_month ?? budgetData.rollover_start_month;
     }
     if (created.created_at !== undefined) {
@@ -107,7 +110,10 @@ export class BudgetService {
     if (updated.rollover !== undefined || budgetData.rollover !== undefined) {
       result.rollover = updated.rollover ?? budgetData.rollover;
     }
-    if (updated.rollover_start_month !== undefined || budgetData.rollover_start_month !== undefined) {
+    if (
+      updated.rollover_start_month !== undefined ||
+      budgetData.rollover_start_month !== undefined
+    ) {
       result.rollover_start_month = updated.rollover_start_month ?? budgetData.rollover_start_month;
     }
     if (updated.created_at !== undefined) {

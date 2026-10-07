@@ -72,7 +72,9 @@ export function BudgetList({
             className={cn(
               'group relative overflow-hidden rounded-[1.75rem] border border-slate-200/70 bg-white/90 p-6 shadow-[0_32px_80px_-58px_rgba(15,23,42,0.58)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_38px_110px_-62px_rgba(14,165,233,0.35)] dark:border-white/10 dark:bg-[#111a2f]/90 dark:shadow-[0_32px_90px_-60px_rgba(2,6,23,0.76)] ring-1 ring-offset-1 ring-offset-white dark:ring-offset-[#0f172a]',
               tagTheme.ring,
-              !isEditing && onCategorySelect && 'cursor-pointer hover:ring-2 hover:ring-sky-400/80 dark:hover:ring-sky-400/70'
+              !isEditing &&
+                onCategorySelect &&
+                'cursor-pointer hover:ring-2 hover:ring-sky-400/80 dark:hover:ring-sky-400/70'
             )}
             title={!isEditing && onCategorySelect ? `View ${displayName} transactions` : undefined}
           >

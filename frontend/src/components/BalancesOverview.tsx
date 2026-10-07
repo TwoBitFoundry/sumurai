@@ -2,10 +2,10 @@ import {
   CircleDollarSign,
   CreditCard,
   HandCoins,
+  Home,
   LineChart,
   PiggyBank,
   RefreshCcw,
-  Home,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
@@ -20,8 +20,8 @@ import {
 } from 'recharts';
 import type { Props as DefaultLegendContentProps } from 'recharts/types/component/DefaultLegendContent';
 import { useTheme } from '../context/ThemeContext';
-import { useCurrency } from '../hooks/useCurrency';
 import { useBalancesOverview } from '../hooks/useBalancesOverview';
+import { useCurrency } from '../hooks/useCurrency';
 import { formatRatio } from '../services/AnalyticsService';
 import { Alert, Button, cn, GlassCard } from '../ui/primitives';
 import { Amount } from './Amount';
@@ -487,10 +487,7 @@ export function BalancesOverview() {
               iconSize={10}
               wrapperStyle={{ paddingTop: 8 }}
               content={(legendProps) => (
-                <BalancesLegend
-                  {...legendProps}
-                  ratio={data?.overall?.ratio ?? null}
-                />
+                <BalancesLegend {...legendProps} ratio={data?.overall?.ratio ?? null} />
               )}
             />
             <Bar

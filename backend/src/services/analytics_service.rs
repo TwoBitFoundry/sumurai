@@ -184,8 +184,9 @@ impl AnalyticsService {
         match norm.as_str() {
             "billsutilities" | "billsandutilities" | "billsutilitiesexpense" | "ai" | "internet"
             | "otherbillsutilities" | "otherbillsandutilities" | "phone" | "television" | "utilities"
-            | "water" | "rentutilities" | "rentandutilities" | "rentutilitieswater"
-            | "uncategorized" => "Bills & Utilities".to_string(),
+            | "water" | "rentutilities" | "rentandutilities" | "rentutilitieswater" => {
+                "Bills & Utilities".to_string()
+            }
 
             "childcare" | "childcareexpense" | "babysupplies" | "babysitterdaycare"
             | "babysitteranddaycare" | "childsupport" | "kidsactivities" | "otherchildcare" => {
@@ -204,8 +205,8 @@ impl AnalyticsService {
             | "otherentertainment" | "subscription" | "subscriptions" => "Entertainment".to_string(),
 
             "fooddining" | "foodanddining" | "fooddiningexpense" | "foodanddiningexpense"
-            | "alcoholbars" | "alcoholandbars" | "coffeeshops" | "fastfood"
-            | "otherfooddining" | "otherfoodanddining" | "restaurants" | "restaurant" => {
+            | "foodanddrink" | "fooddrink" | "alcoholbars" | "alcoholandbars" | "coffeeshops"
+            | "fastfood" | "otherfooddining" | "otherfoodanddining" | "restaurants" | "restaurant" => {
                 "Food & Dining".to_string()
             }
 
@@ -216,7 +217,7 @@ impl AnalyticsService {
             "groceries" | "groceriesexpense" => "Groceries".to_string(),
 
             "homeimprovement" | "homeimprovementexpense" | "furnishings" | "homeimprovements"
-            | "homesupplies" | "lawngarden" | "lawnandgarden" | "otherhome" | "plantsneeds"
+            | "homesupplies" | "householdsupplies" | "lawngarden" | "lawnandgarden" | "otherhome" | "plantsneeds"
             | "plantsandneeds" => "Home Improvement".to_string(),
 
             "homemanagement" | "homemanagementexpense" | "homeservices" | "mortgagerent"
@@ -233,7 +234,9 @@ impl AnalyticsService {
             "shopping" | "shoppingexpense" | "books" | "clothing" | "decor" | "electronics"
             | "hobbies" | "home" | "kitchen" | "othershopping" | "toys"
             | "personalcare" | "personalcareexpense" | "hair" | "laundry" | "otherpersonalcare"
-            | "spamassage" | "spaandmassage" => "Shopping".to_string(),
+            | "spamassage" | "spaandmassage"
+            | "generalmerchandise" | "generalmerchandiseexpense"
+            | "other" | "otherexpense" | "uncategorized" => "Shopping".to_string(),
 
             "taxes" | "taxesexpense" | "taxfiling" | "propertytax" | "salestax" | "statetax"
             | "localtax" | "federaltax" | "othertaxes" => "Taxes".to_string(),
@@ -254,20 +257,13 @@ impl AnalyticsService {
             "travel" | "travelexpense" | "airtravel" | "hotel" | "othertravel"
             | "rentalcartransportation" | "rentalcarandtransportation" => "Travel".to_string(),
 
-            _ => {
-                let trimmed = cat.trim();
-                if trimmed.is_empty() {
-                    "Uncategorized".to_string()
-                } else {
-                    trimmed.to_string()
-                }
-            }
+            _ => "Shopping".to_string(),
         }
     }
 
     fn get_category_name(transaction: &Transaction) -> String {
         if transaction.category_primary.is_empty() {
-            "Uncategorized".to_string()
+            "Shopping".to_string()
         } else {
             Self::resolve_major_category(&transaction.category_primary)
         }
@@ -297,7 +293,7 @@ impl AnalyticsService {
             .map(|s| s.as_str())
             .unwrap_or_else(|| {
                 if transaction.category_primary.is_empty() {
-                    "Uncategorized"
+                    "Shopping"
                 } else {
                     &transaction.category_primary
                 }

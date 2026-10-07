@@ -4,6 +4,7 @@ import {
   Plus,
   ReceiptText,
   ShoppingBag,
+  SlidersHorizontal,
   Sparkles,
   Target,
   Trash2,
@@ -12,11 +13,12 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, FormLabel, GlassCard, Input, Modal, cn } from '@/ui/primitives';
 import type { ProviderAccount } from '@/context/AccountFilterContext';
+import { Alert, Button, cn, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
 import MonthYearSelector from '../components/MonthYearSelector';
 import HeroStatCard from '../components/widgets/HeroStatCard';
 import { BudgetCalculator } from '../domain/BudgetCalculator';
+import CategoryRulesModal from '../features/transactions/components/CategoryRulesModal';
 import TransactionsFilters from '../features/transactions/components/TransactionsFilters';
 import TransactionsTable from '../features/transactions/components/TransactionsTable';
 import { useTransactions } from '../features/transactions/hooks/useTransactions';
@@ -94,6 +96,7 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
     createCategoryAndAssign,
     createCategoryRule,
     deleteUserCategory,
+    load: reloadTransactions,
   } = useTransactions({
     pageSize: 8,
     initialAccountId,
@@ -101,6 +104,29 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
     period,
     setPeriod: onPeriodChange,
   });
+
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
+  const handleCreateCategoryRule = useCallback(
+    async (
+      transactionId: string,
+      pattern: string,
+      categoryName: string,
+      subcategoryName?: string
+    ) => {
+      await createCategoryRule(transactionId, pattern, categoryName, subcategoryName);
+      setToastMessage(`Auto-rule "${pattern}" saved successfully`);
+    },
+    [createCategoryRule]
+  );
 
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [ytdTransactions, setYtdTransactions] = useState<Transaction[]>([]);
@@ -152,19 +178,11 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
   const matchedBudget = useMemo(() => {
     if (selectedSubcategory) {
       const targetSub = selectedSubcategory.trim().toLowerCase();
-      return (
-        budgets.find(
-          (b) => b.category.trim().toLowerCase() === targetSub
-        ) ?? null
-      );
+      return budgets.find((b) => b.category.trim().toLowerCase() === targetSub) ?? null;
     }
     if (selectedCategory) {
       const targetCat = selectedCategory.trim().toLowerCase();
-      return (
-        budgets.find(
-          (b) => b.category.trim().toLowerCase() === targetCat
-        ) ?? null
-      );
+      return budgets.find((b) => b.category.trim().toLowerCase() === targetCat) ?? null;
     }
     return null;
   }, [budgets, selectedCategory, selectedSubcategory]);
@@ -183,9 +201,7 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
     if (!selectedCategory || selectedSubcategory) return null;
 
     const normMajor = selectedCategory.trim().toLowerCase();
-    const directBudget = budgets.find(
-      (b) => b.category.trim().toLowerCase() === normMajor
-    ) ?? null;
+    const directBudget = budgets.find((b) => b.category.trim().toLowerCase() === normMajor) ?? null;
 
     const subcategoryBudgets = budgets
       .filter((b) => {
@@ -243,7 +259,13 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
       monthRange.end,
       selectedSubcategory
     );
-  }, [effectiveYtdTransactions, selectedCategory, selectedSubcategory, period.year, monthRange.end]);
+  }, [
+    effectiveYtdTransactions,
+    selectedCategory,
+    selectedSubcategory,
+    period.year,
+    monthRange.end,
+  ]);
 
   const totalBudgeted = useMemo(() => {
     const isFullYear = period.month === null;
@@ -274,12 +296,7 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
 
       const isBudgeted = budgets.some((b) => {
         return (
-          BudgetCalculator.calculateSpent(
-            [t],
-            b.category,
-            monthRange.start,
-            monthRange.end
-          ) !== 0
+          BudgetCalculator.calculateSpent([t], b.category, monthRange.start, monthRange.end) !== 0
         );
       });
 
@@ -344,12 +361,12 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
           pills: [
             ...(freqBadge !== 'Monthly'
               ? [
-                {
-                  label: freqBadge,
-                  type: 'semantic' as const,
-                  tone: 'info' as const,
-                },
-              ]
+                  {
+                    label: freqBadge,
+                    type: 'semantic' as const,
+                    tone: 'info' as const,
+                  },
+                ]
               : []),
             {
               label: 'Rollover',
@@ -392,12 +409,12 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
         pills: [
           ...(freqBadge !== 'Monthly'
             ? [
-              {
-                label: freqBadge,
-                type: 'semantic' as const,
-                tone: 'info' as const,
-              },
-            ]
+                {
+                  label: freqBadge,
+                  type: 'semantic' as const,
+                  tone: 'info' as const,
+                },
+              ]
             : []),
           {
             label: isOver ? `${format(-remaining)} over` : `${format(remaining)} left`,
@@ -453,21 +470,21 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
         pills: [
           ...(subCount > 0
             ? [
-              {
-                label: `Includes ${subCount} subcategory`,
-                type: 'semantic' as const,
-                tone: 'info' as const,
-              },
-            ]
+                {
+                  label: `Includes ${subCount} subcategory`,
+                  type: 'semantic' as const,
+                  tone: 'info' as const,
+                },
+              ]
             : []),
           ...(compositeMajorData.hasRollover
             ? [
-              {
-                label: 'Rollover',
-                type: 'semantic' as const,
-                tone: 'info' as const,
-              },
-            ]
+                {
+                  label: 'Rollover',
+                  type: 'semantic' as const,
+                  tone: 'info' as const,
+                },
+              ]
             : []),
           {
             label: isOver ? `${format(-remaining)} over` : `${format(remaining)} left`,
@@ -517,15 +534,19 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
         },
         ...(rolloverCount > 0
           ? [
-            {
-              label: `${rolloverCount} rollover`,
-              type: 'semantic' as const,
-              tone: 'info' as const,
-            },
-          ]
+              {
+                label: `${rolloverCount} rollover`,
+                type: 'semantic' as const,
+                tone: 'info' as const,
+              },
+            ]
           : []),
       ],
-      accent: isOver ? ('rose' as const) : percent >= 85 ? ('amber' as const) : ('emerald' as const),
+      accent: isOver
+        ? ('rose' as const)
+        : percent >= 85
+          ? ('amber' as const)
+          : ('emerald' as const),
     };
   }, [
     selectedCategory,
@@ -540,6 +561,8 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
     totalBudgeted,
     totalBudgetSpent,
     rolloverCount,
+    period.month,
+    period.year,
   ]);
 
   const handleOpenBudgetModal = (targetCategory?: string) => {
@@ -549,9 +572,7 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
 
     if (cat) {
       const targetCat = cat.trim().toLowerCase();
-      const existing = budgets.find(
-        (b) => b.category.trim().toLowerCase() === targetCat
-      );
+      const existing = budgets.find((b) => b.category.trim().toLowerCase() === targetCat);
       if (existing) {
         setBudgetDraftAmount(String(existing.amount));
         setBudgetDraftFrequency(existing.frequency || 'monthly');
@@ -584,16 +605,14 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
     setBudgetError(null);
     try {
       const targetCat = budgetModalCategory.trim().toLowerCase();
-      const existing = budgets.find(
-        (b) => b.category.trim().toLowerCase() === targetCat
-      );
+      const existing = budgets.find((b) => b.category.trim().toLowerCase() === targetCat);
 
       const currentPeriodStr =
         period.month === null
           ? `${period.year}-01`
           : `${period.year}-${String(period.month + 1).padStart(2, '0')}`;
       const rolloverStart = budgetDraftRollover
-        ? (existing?.rollover_start_month || currentPeriodStr)
+        ? existing?.rollover_start_month || currentPeriodStr
         : undefined;
 
       if (existing) {
@@ -643,15 +662,13 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
     if (!budgetModalCategory) return null;
     const amount = Number(budgetDraftAmount) || 0;
     const targetCat = budgetModalCategory.trim().toLowerCase();
-    const existing = budgets.find(
-      (b) => b.category.trim().toLowerCase() === targetCat
-    );
+    const existing = budgets.find((b) => b.category.trim().toLowerCase() === targetCat);
     const currentPeriodStr =
       period.month === null
         ? `${period.year}-01`
         : `${period.year}-${String(period.month + 1).padStart(2, '0')}`;
     const rolloverStart = budgetDraftRollover
-      ? (existing?.rollover_start_month || currentPeriodStr)
+      ? existing?.rollover_start_month || currentPeriodStr
       : undefined;
 
     const tempBudget: Budget = {
@@ -697,15 +714,14 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
     const largestTransaction =
       transactions.length > 0
         ? transactions.reduce(
-          (max, t) =>
-            Math.abs(getDisplayAmount(t)) > Math.abs(getDisplayAmount(max)) ? t : max,
-          transactions[0]
-        )
+            (max, t) => (Math.abs(getDisplayAmount(t)) > Math.abs(getDisplayAmount(max)) ? t : max),
+            transactions[0]
+          )
         : null;
 
     const categoryCounts = new Map<string, number>();
     transactions.forEach((t) => {
-      const cat = formatCategoryName(t.category?.primary || 'Uncategorized');
+      const cat = formatCategoryName(t.category?.primary || 'Shopping');
       categoryCounts.set(cat, (categoryCounts.get(cat) || 0) + 1);
     });
 
@@ -723,11 +739,15 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
           : `${warningSymbol} ${topCategories[0]} & ${topCategories[1]}`
         : null;
 
+    const pendingTransactions = transactions.filter((t) => Boolean(t.pending));
+    const pendingCount = pendingTransactions.length;
+
     return {
       totalCount,
       totalShown,
       totalSpent,
       spendingCount: spendingTransactions.length,
+      pendingCount,
       avgTransaction,
       largestTransaction,
       categoryDriver,
@@ -752,6 +772,17 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
               value={stats.totalCount}
               suffix={stats.totalCount === 1 ? 'item' : 'items'}
               subtext={`Net flow ${format(stats.totalShown)}`}
+              pills={
+                stats.pendingCount > 0
+                  ? [
+                      {
+                        label: `${stats.pendingCount} pending`,
+                        type: 'semantic' as const,
+                        tone: 'warning' as const,
+                      },
+                    ]
+                  : undefined
+              }
             />
 
             <HeroStatCard
@@ -759,8 +790,9 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
               title="Total spent"
               icon={<ShoppingBag className={cn('h-4', 'w-4')} />}
               value={format(stats.totalSpent)}
-              subtext={`${stats.spendingCount} ${stats.spendingCount === 1 ? 'spend item' : 'spend items'
-                }`}
+              subtext={`${stats.spendingCount} ${
+                stats.spendingCount === 1 ? 'spend item' : 'spend items'
+              }`}
               accent="rose"
             />
 
@@ -784,12 +816,12 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
               pills={
                 stats.largestTransaction && stats.totalCount > 1
                   ? [
-                    {
-                      label:
-                        (stats.largestTransaction.merchant || stats.largestTransaction.name) ??
-                        '',
-                    },
-                  ]
+                      {
+                        label:
+                          (stats.largestTransaction.merchant || stats.largestTransaction.name) ??
+                          '',
+                      },
+                    ]
                   : []
               }
             />
@@ -879,7 +911,7 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                     showSubcategories={false}
                   />
                 </div>
-                <div className={cn('flex', 'flex-shrink-0', 'items-center', 'gap-3')}>
+                <div className={cn('flex', 'flex-shrink-0', 'items-center', 'gap-2')}>
                   <TransactionsFilters
                     search={search}
                     onSearch={setSearch}
@@ -887,6 +919,17 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                     showCategories={false}
                     showSubcategories={false}
                   />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setIsRulesModalOpen(true)}
+                    className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-violet-600 dark:text-slate-300 dark:hover:text-violet-400"
+                    title="Manage auto-categorization rules"
+                  >
+                    <SlidersHorizontal className="h-3.5 w-3.5 text-violet-500" />
+                    <span>Rules</span>
+                  </Button>
                 </div>
               </div>
 
@@ -996,7 +1039,9 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                               : 'bg-white/65 text-slate-600 hover:-translate-y-[2px] hover:shadow-lg dark:bg-white/10 dark:text-slate-300'
                           )}
                           aria-pressed={isSelected}
-                          title={isSelected ? `Remove account filter: ${title}` : `Filter by ${title}`}
+                          title={
+                            isSelected ? `Remove account filter: ${title}` : `Filter by ${title}`
+                          }
                         >
                           <span
                             className={cn(
@@ -1048,8 +1093,9 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                 onCategorySelect={updateTransactionCategory}
                 onCategoryReset={resetTransactionCategory}
                 onCategoryCreate={createCategoryAndAssign}
-                onCategoryRule={createCategoryRule}
+                onCategoryRule={handleCreateCategoryRule}
                 onCategoryDelete={deleteUserCategory}
+                onOpenRulesModal={() => setIsRulesModalOpen(true)}
               />
             )}
           </div>
@@ -1068,14 +1114,20 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 {selectedSubcategory || selectedCategory
                   ? matchedBudget
-                    ? `Edit Budget: ${formatCategoryName(selectedSubcategory || selectedCategory)}${selectedSubcategory && selectedCategory && selectedSubcategory !== selectedCategory
-                      ? ` (${formatCategoryName(selectedCategory)})`
-                      : ''
-                    }`
-                    : `Set Budget: ${formatCategoryName(selectedSubcategory || selectedCategory)}${selectedSubcategory && selectedCategory && selectedSubcategory !== selectedCategory
-                      ? ` (${formatCategoryName(selectedCategory)})`
-                      : ''
-                    }`
+                    ? `Edit Budget: ${formatCategoryName(selectedSubcategory || selectedCategory)}${
+                        selectedSubcategory &&
+                        selectedCategory &&
+                        selectedSubcategory !== selectedCategory
+                          ? ` (${formatCategoryName(selectedCategory)})`
+                          : ''
+                      }`
+                    : `Set Budget: ${formatCategoryName(selectedSubcategory || selectedCategory)}${
+                        selectedSubcategory &&
+                        selectedCategory &&
+                        selectedSubcategory !== selectedCategory
+                          ? ` (${formatCategoryName(selectedCategory)})`
+                          : ''
+                      }`
                   : 'Manage Budgets'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1138,7 +1190,9 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                   >
                     <option value="monthly">Monthly (every month)</option>
                     <option value="quarterly">Quarterly (every 3 months, e.g. Water)</option>
-                    <option value="semi_annual">Semi-Annually (twice a year, e.g. Car Insurance)</option>
+                    <option value="semi_annual">
+                      Semi-Annually (twice a year, e.g. Car Insurance)
+                    </option>
                     <option value="annual">Annually (once a year)</option>
                   </select>
                 </div>
@@ -1158,7 +1212,8 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                       Rollover Budget
                     </div>
                     <div className="text-[0.7rem] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Accumulate unspent monthly budget and carry it forward into future months (ideal for quarterly bills or semi-annual insurance payments).
+                      Accumulate unspent monthly budget and carry it forward into future months
+                      (ideal for quarterly bills or semi-annual insurance payments).
                     </div>
                   </div>
                 </label>
@@ -1174,7 +1229,8 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                     </span>
                     {budgetDraftFrequency !== 'monthly' && (
                       <span className="text-[0.7rem] px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/60 dark:text-sky-300 font-medium">
-                        {format(modalPreview.periodAmount)} every {modalPreview.periodMultiplier} months
+                        {format(modalPreview.periodAmount)} every {modalPreview.periodMultiplier}{' '}
+                        months
                       </span>
                     )}
                   </div>
@@ -1311,16 +1367,18 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                       className="w-full rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:border-white/10 dark:bg-[#111a2f] dark:text-white"
                     >
                       <option value="">Select category...</option>
-                      {CATEGORIES_TAXONOMY.filter((c) => c.type !== 'Exclude from Budget').map((c) => (
-                        <optgroup key={c.name} label={c.name}>
-                          <option value={c.name}>{c.name} (All)</option>
-                          {c.subcategories.map((sub) => (
-                            <option key={`${c.name}-${sub}`} value={sub}>
-                              {sub}
-                            </option>
-                          ))}
-                        </optgroup>
-                      ))}
+                      {CATEGORIES_TAXONOMY.filter((c) => c.type !== 'Exclude from Budget').map(
+                        (c) => (
+                          <optgroup key={c.name} label={c.name}>
+                            <option value={c.name}>{c.name} (All)</option>
+                            {c.subcategories.map((sub) => (
+                              <option key={`${c.name}-${sub}`} value={sub}>
+                                {sub}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )
+                      )}
                     </select>
                   </div>
                   <div>
@@ -1386,21 +1444,39 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                       </span>
                       {budgetDraftFrequency !== 'monthly' && (
                         <span className="text-[0.68rem] text-sky-700 dark:text-sky-300">
-                          {format(modalPreview.periodAmount)} every {modalPreview.periodMultiplier} mo
+                          {format(modalPreview.periodAmount)} every {modalPreview.periodMultiplier}{' '}
+                          mo
                         </span>
                       )}
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[0.72rem] text-slate-600 dark:text-slate-300">
-                      <div>Target: <span className="font-semibold text-slate-900 dark:text-white">{format(modalPreview.monthlyAmount)}/mo</span></div>
+                      <div>
+                        Target:{' '}
+                        <span className="font-semibold text-slate-900 dark:text-white">
+                          {format(modalPreview.monthlyAmount)}/mo
+                        </span>
+                      </div>
                       {budgetDraftRollover && (
-                        <div>Carryover: <span className="font-semibold text-emerald-600 dark:text-emerald-400">+{format(modalPreview.priorCarryover)}</span></div>
+                        <div>
+                          Carryover:{' '}
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                            +{format(modalPreview.priorCarryover)}
+                          </span>
+                        </div>
                       )}
-                      <div>Spent this mo: <span className="font-semibold text-slate-900 dark:text-white">{format(modalPreview.monthSpent)}</span></div>
+                      <div>
+                        Spent this mo:{' '}
+                        <span className="font-semibold text-slate-900 dark:text-white">
+                          {format(modalPreview.monthSpent)}
+                        </span>
+                      </div>
                       <div>
                         {resolveMajorCategory(budgetModalCategory).toLowerCase() === 'insurance'
                           ? 'All Insurances YTD: '
                           : 'YTD: '}
-                        <span className="font-bold text-slate-900 dark:text-white">{format(modalPreview.ytdSpent)}</span>
+                        <span className="font-bold text-slate-900 dark:text-white">
+                          {format(modalPreview.ytdSpent)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1524,6 +1600,29 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
           )}
         </GlassCard>
       </Modal>
+
+      <CategoryRulesModal
+        isOpen={isRulesModalOpen}
+        onClose={() => setIsRulesModalOpen(false)}
+        userCategories={userCategories}
+        onRulesChanged={() => reloadTransactions(true)}
+      />
+
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl border border-violet-200 bg-white/95 px-4 py-3 text-xs font-medium text-slate-800 shadow-xl backdrop-blur-md dark:border-violet-800 dark:bg-slate-900/95 dark:text-slate-100">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-600 dark:bg-violet-900/50 dark:text-violet-300">
+            ✓
+          </span>
+          <span>{toastMessage}</span>
+          <button
+            type="button"
+            onClick={() => setToastMessage(null)}
+            className="ml-2 rounded p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -184,7 +184,14 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, onSelect }) => 
       {onSelect ? (
         <button
           type="button"
-          className={cn('block', 'w-full', 'text-left', 'focus:outline-none', 'focus-visible:ring-2', 'focus-visible:ring-sky-400')}
+          className={cn(
+            'block',
+            'w-full',
+            'text-left',
+            'focus:outline-none',
+            'focus-visible:ring-2',
+            'focus-visible:ring-sky-400'
+          )}
           onClick={() => onSelect(account.id)}
         >
           {content}

@@ -10,7 +10,7 @@ describe('AppTitleBar', () => {
           state="unauthenticated"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
+          onThemeToggle={() => {}}
         />
       );
       expect(screen.getByText('Sumurai')).toBeInTheDocument();
@@ -22,7 +22,7 @@ describe('AppTitleBar', () => {
           state="unauthenticated"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
+          onThemeToggle={() => {}}
         />
       );
       expect(screen.getByLabelText('Toggle theme')).toBeInTheDocument();
@@ -34,7 +34,7 @@ describe('AppTitleBar', () => {
           state="unauthenticated"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
+          onThemeToggle={() => {}}
         />
       );
       expect(screen.queryByText('Logout')).not.toBeInTheDocument();
@@ -46,7 +46,7 @@ describe('AppTitleBar', () => {
           state="unauthenticated"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
+          onThemeToggle={() => {}}
         />
       );
       expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
@@ -75,8 +75,8 @@ describe('AppTitleBar', () => {
           state="onboarding"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
-          onLogout={() => { }}
+          onThemeToggle={() => {}}
+          onLogout={() => {}}
         />
       );
       expect(screen.getByText('Sumurai')).toBeInTheDocument();
@@ -88,8 +88,8 @@ describe('AppTitleBar', () => {
           state="onboarding"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
-          onLogout={() => { }}
+          onThemeToggle={() => {}}
+          onLogout={() => {}}
         />
       );
       expect(screen.getByLabelText('Toggle theme')).toBeInTheDocument();
@@ -101,8 +101,8 @@ describe('AppTitleBar', () => {
           state="onboarding"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
-          onLogout={() => { }}
+          onThemeToggle={() => {}}
+          onLogout={() => {}}
         />
       );
       expect(screen.getByText('Logout')).toBeInTheDocument();
@@ -114,8 +114,8 @@ describe('AppTitleBar', () => {
           state="onboarding"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
-          onLogout={() => { }}
+          onThemeToggle={() => {}}
+          onLogout={() => {}}
         />
       );
       expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
@@ -129,7 +129,7 @@ describe('AppTitleBar', () => {
           state="onboarding"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
+          onThemeToggle={() => {}}
           onLogout={onLogout}
         />
       );
@@ -145,10 +145,10 @@ describe('AppTitleBar', () => {
           state="authenticated"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
-          onLogout={() => { }}
+          onThemeToggle={() => {}}
+          onLogout={() => {}}
           currentTab="dashboard"
-          onTabChange={() => { }}
+          onTabChange={() => {}}
         />
       );
       expect(screen.getByText('Sumurai')).toBeInTheDocument();
@@ -160,10 +160,10 @@ describe('AppTitleBar', () => {
           state="authenticated"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
-          onLogout={() => { }}
+          onThemeToggle={() => {}}
+          onLogout={() => {}}
           currentTab="dashboard"
-          onTabChange={() => { }}
+          onTabChange={() => {}}
         />
       );
       expect(screen.getByText('Dashboard')).toBeInTheDocument();
@@ -177,10 +177,10 @@ describe('AppTitleBar', () => {
           state="authenticated"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
-          onLogout={() => { }}
+          onThemeToggle={() => {}}
+          onLogout={() => {}}
           currentTab="dashboard"
-          onTabChange={() => { }}
+          onTabChange={() => {}}
         />
       );
       expect(screen.getByLabelText('Toggle theme')).toBeInTheDocument();
@@ -192,10 +192,10 @@ describe('AppTitleBar', () => {
           state="authenticated"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
-          onLogout={() => { }}
+          onThemeToggle={() => {}}
+          onLogout={() => {}}
           currentTab="dashboard"
-          onTabChange={() => { }}
+          onTabChange={() => {}}
         />
       );
       expect(screen.getByText('Logout')).toBeInTheDocument();
@@ -207,10 +207,10 @@ describe('AppTitleBar', () => {
           state="authenticated"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
-          onLogout={() => { }}
+          onThemeToggle={() => {}}
+          onLogout={() => {}}
           currentTab="dashboard"
-          onTabChange={() => { }}
+          onTabChange={() => {}}
           accountFilterNode={<div>Account Filter</div>}
         />
       );
@@ -225,8 +225,8 @@ describe('AppTitleBar', () => {
           state="authenticated"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
-          onLogout={() => { }}
+          onThemeToggle={() => {}}
+          onLogout={() => {}}
           currentTab="dashboard"
           onTabChange={onTabChange}
         />
@@ -241,10 +241,10 @@ describe('AppTitleBar', () => {
           state="authenticated"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
-          onLogout={() => { }}
+          onThemeToggle={() => {}}
+          onLogout={() => {}}
           currentTab="dashboard"
-          onTabChange={() => { }}
+          onTabChange={() => {}}
         />
       );
       const buttons = container.querySelectorAll('button');
@@ -276,9 +276,9 @@ describe('AppTitleBar', () => {
             state="authenticated"
             scrolled={false}
             themeMode="light"
-            onThemeToggle={() => { }}
+            onThemeToggle={() => {}}
             currentTab="dashboard"
-            onTabChange={() => { }}
+            onTabChange={() => {}}
             accountIssues={[]}
           />
         );
@@ -291,9 +291,9 @@ describe('AppTitleBar', () => {
             state="authenticated"
             scrolled={false}
             themeMode="light"
-            onThemeToggle={() => { }}
+            onThemeToggle={() => {}}
             currentTab="dashboard"
-            onTabChange={() => { }}
+            onTabChange={() => {}}
             accountIssues={mockIssues}
           />
         );
@@ -310,7 +310,7 @@ describe('AppTitleBar', () => {
             state="authenticated"
             scrolled={false}
             themeMode="light"
-            onThemeToggle={() => { }}
+            onThemeToggle={() => {}}
             currentTab="dashboard"
             onTabChange={onTabChange}
           />
@@ -327,7 +327,7 @@ describe('AppTitleBar', () => {
             state="authenticated"
             scrolled={false}
             themeMode="light"
-            onThemeToggle={() => { }}
+            onThemeToggle={() => {}}
             currentTab="dashboard"
             onTabChange={onTabChange}
             accountIssues={mockIssues}
@@ -360,7 +360,7 @@ describe('AppTitleBar', () => {
           state="unauthenticated"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
+          onThemeToggle={() => {}}
         />
       );
       const header = container.querySelector('header');
@@ -373,7 +373,7 @@ describe('AppTitleBar', () => {
           state="unauthenticated"
           scrolled={true}
           themeMode="light"
-          onThemeToggle={() => { }}
+          onThemeToggle={() => {}}
         />
       );
       const header = container.querySelector('header');
@@ -388,7 +388,7 @@ describe('AppTitleBar', () => {
           state="unauthenticated"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
+          onThemeToggle={() => {}}
         />
       );
       const header = container.querySelector('header');
@@ -401,7 +401,7 @@ describe('AppTitleBar', () => {
           state="unauthenticated"
           scrolled={false}
           themeMode="dark"
-          onThemeToggle={() => { }}
+          onThemeToggle={() => {}}
         />
       );
       const header = container.querySelector('header');
@@ -416,7 +416,7 @@ describe('AppTitleBar', () => {
           state="unauthenticated"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
+          onThemeToggle={() => {}}
         />
       );
       expect(container.firstChild).toMatchSnapshot();
@@ -428,8 +428,8 @@ describe('AppTitleBar', () => {
           state="onboarding"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
-          onLogout={() => { }}
+          onThemeToggle={() => {}}
+          onLogout={() => {}}
         />
       );
       expect(container.firstChild).toMatchSnapshot();
@@ -441,10 +441,10 @@ describe('AppTitleBar', () => {
           state="authenticated"
           scrolled={false}
           themeMode="light"
-          onThemeToggle={() => { }}
-          onLogout={() => { }}
+          onThemeToggle={() => {}}
+          onLogout={() => {}}
           currentTab="dashboard"
-          onTabChange={() => { }}
+          onTabChange={() => {}}
         />
       );
       expect(container.firstChild).toMatchSnapshot();

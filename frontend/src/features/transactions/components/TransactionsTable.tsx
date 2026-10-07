@@ -1,8 +1,8 @@
 import { CheckCircleIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Receipt } from 'lucide-react';
-import { useState } from 'react';
+import { Clock, Receipt } from 'lucide-react';
 import type React from 'react';
+import { useState } from 'react';
 import { useCurrency } from '@/hooks/useCurrency';
 import { cn, EmptyState } from '@/ui/primitives';
 import type { Transaction, UserCategory } from '../../../types/api';
@@ -20,11 +20,21 @@ interface Props {
   duplicateCandidateIds: string[];
   onMarkDuplicate: (transactionId: string) => Promise<void>;
   userCategories: UserCategory[];
-  onCategorySelect: (transactionId: string, categoryName: string, subcategoryName?: string) => Promise<void>;
+  onCategorySelect: (
+    transactionId: string,
+    categoryName: string,
+    subcategoryName?: string
+  ) => Promise<void>;
   onCategoryReset: (transactionId: string) => Promise<void>;
   onCategoryCreate: (transactionId: string, name: string, parentCategory?: string) => Promise<void>;
-  onCategoryRule: (transactionId: string, pattern: string, categoryName: string, subcategoryName?: string) => Promise<void>;
+  onCategoryRule: (
+    transactionId: string,
+    pattern: string,
+    categoryName: string,
+    subcategoryName?: string
+  ) => Promise<void>;
   onCategoryDelete: (categoryId: string) => Promise<void>;
+  onOpenRulesModal?: () => void;
 }
 
 export const TransactionsTable: React.FC<Props> = ({
@@ -42,6 +52,7 @@ export const TransactionsTable: React.FC<Props> = ({
   onCategoryCreate,
   onCategoryRule,
   onCategoryDelete,
+  onOpenRulesModal,
 }) => {
   const { format } = useCurrency();
   const [markingDuplicateId, setMarkingDuplicateId] = useState<string | null>(null);
@@ -158,7 +169,11 @@ export const TransactionsTable: React.FC<Props> = ({
                   transition={{ duration: 0.24, ease: [0.22, 0.61, 0.36, 1] }}
                 >
                   {items.map((r, i) => {
-                    const overrideType = r.custom_category ? 'explicit' : r.rule_category ? 'rule' : 'none';
+                    const overrideType = r.custom_category
+                      ? 'explicit'
+                      : r.rule_category
+                        ? 'rule'
+                        : 'none';
                     const displayAmount = getDisplayAmount(r);
                     const isDuplicateCandidate = duplicateCandidates.has(r.id);
                     const isMarkingDuplicate = markingDuplicateId === r.id;
@@ -173,10 +188,12 @@ export const TransactionsTable: React.FC<Props> = ({
                     return (
                       <tr
                         key={r.id}
-                        className={`group relative border-b border-slate-200/70 transition-all duration-150 ease-out hover:-translate-y-[2px] hover:ring-2 hover:ring-sky-400/60 dark:border-slate-700/50 dark:hover:ring-sky-400/50 ${i % 2
-                          ? 'bg-slate-100 dark:bg-slate-700/20'
-                          : 'bg-white dark:bg-transparent'
-                          }`}
+                        data-pending={r.pending ? 'true' : undefined}
+                        className={`group relative border-b border-slate-200/70 transition-all duration-150 ease-out hover:-translate-y-[2px] hover:ring-2 hover:ring-sky-400/60 dark:border-slate-700/50 dark:hover:ring-sky-400/50 ${
+                          i % 2
+                            ? 'bg-slate-100 dark:bg-slate-700/20'
+                            : 'bg-white dark:bg-transparent'
+                        }`}
                       >
                         <td
                           className={cn(
@@ -190,6 +207,11 @@ export const TransactionsTable: React.FC<Props> = ({
                             'duration-500',
                             'dark:text-white'
                           )}
+                          title={
+                            r.pending
+                              ? `Pending transaction (authorized: ${formatDateOnly(r.date)})`
+                              : undefined
+                          }
                         >
                           {formatDateOnly(r.date)}
                         </td>
@@ -232,6 +254,35 @@ export const TransactionsTable: React.FC<Props> = ({
                                 {r.name || r.merchant || '-'}
                               </span>
                             </div>
+                            {r.pending && (
+                              <span
+                                className={cn(
+                                  'inline-flex',
+                                  'flex-shrink-0',
+                                  'items-center',
+                                  'gap-1',
+                                  'rounded-full',
+                                  'border',
+                                  'border-amber-400/40',
+                                  'bg-amber-100/90',
+                                  'px-2',
+                                  'py-0.5',
+                                  'text-[0.65rem]',
+                                  'font-semibold',
+                                  'uppercase',
+                                  'tracking-[0.16em]',
+                                  'text-amber-800',
+                                  'dark:border-amber-400/30',
+                                  'dark:bg-amber-400/15',
+                                  'dark:text-amber-200'
+                                )}
+                                title="Pending transaction"
+                                data-testid="pending-badge"
+                              >
+                                <Clock className={cn('h-3', 'w-3')} />
+                                Pending
+                              </span>
+                            )}
                             {isDuplicateCandidate && (
                               <span
                                 className={cn(
@@ -255,12 +306,13 @@ export const TransactionsTable: React.FC<Props> = ({
                           </div>
                         </td>
                         <td
-                          className={`whitespace-nowrap px-4 py-3 text-right align-middle tabular-nums font-semibold transition-colors duration-500 ${displayAmount > 0
-                            ? 'text-green-600 dark:text-green-400'
-                            : displayAmount < 0
-                              ? 'text-red-600 dark:text-red-400'
-                              : 'text-slate-600 dark:text-slate-400'
-                            }`}
+                          className={`whitespace-nowrap px-4 py-3 text-right align-middle tabular-nums font-semibold transition-colors duration-500 ${
+                            displayAmount > 0
+                              ? 'text-green-600 dark:text-green-400'
+                              : displayAmount < 0
+                                ? 'text-red-600 dark:text-red-400'
+                                : 'text-slate-600 dark:text-slate-400'
+                          }`}
                         >
                           {format(displayAmount)}
                         </td>
@@ -294,15 +346,24 @@ export const TransactionsTable: React.FC<Props> = ({
                           <div className={cn('flex', 'items-center', 'gap-2')}>
                             <CategoryDropdown
                               currentCategory={r.category?.primary ?? 'OTHER'}
-                              currentSubcategory={r.category?.detailed ?? r.custom_subcategory ?? r.rule_subcategory}
+                              currentSubcategory={
+                                r.category?.detailed ?? r.custom_subcategory ?? r.rule_subcategory
+                              }
                               overrideType={overrideType}
                               merchantName={r.merchant || r.name}
                               userCategories={userCategories}
-                              onSelect={(categoryName, subcategoryName) => onCategorySelect(r.id, categoryName, subcategoryName)}
+                              onSelect={(categoryName, subcategoryName) =>
+                                onCategorySelect(r.id, categoryName, subcategoryName)
+                              }
                               onReset={() => onCategoryReset(r.id)}
-                              onCreateAndSelect={(name, parentCategory) => onCategoryCreate(r.id, name, parentCategory)}
-                              onCreateRule={(pattern, categoryName, subcategoryName) => onCategoryRule(r.id, pattern, categoryName, subcategoryName)}
+                              onCreateAndSelect={(name, parentCategory) =>
+                                onCategoryCreate(r.id, name, parentCategory)
+                              }
+                              onCreateRule={(pattern, categoryName, subcategoryName) =>
+                                onCategoryRule(r.id, pattern, categoryName, subcategoryName)
+                              }
                               onDeleteCategory={onCategoryDelete}
+                              onOpenRulesModal={onOpenRulesModal}
                             />
                             {isDuplicateCandidate && (
                               <button

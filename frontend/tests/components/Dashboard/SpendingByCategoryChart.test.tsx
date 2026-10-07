@@ -47,4 +47,3 @@ describe('SpendingByCategoryChart', () => {
     expect(screen.getByText('$0.00')).toBeInTheDocument();
   });
 });
-

@@ -125,13 +125,14 @@ describe('useTransactions', () => {
     let accountFilterHook: ReturnType<typeof useAccountFilter>;
 
     // Mock a large set of transactions
+    const testPeriod = { month: 8, year: 2026 };
     const transactions = Array.from({ length: 25 }, (_, i) => asTransaction(`t${i + 1}`));
     jest.mocked(TransactionService.getTransactions).mockResolvedValue(transactions as any);
 
     const { result } = renderHook(
       () => {
         accountFilterHook = useAccountFilter();
-        return useTransactions({ pageSize: 10, initialDateRange: 'all-time' });
+        return useTransactions({ pageSize: 10, period: testPeriod });
       },
       { wrapper: TestWrapper }
     );
@@ -203,10 +204,9 @@ describe('useTransactions', () => {
   it('should pass the local account filter to the service when selected', async () => {
     jest.mocked(TransactionService.getTransactions).mockResolvedValue([asTransaction('t1')] as any);
 
-    const { result } = renderHook(
-      () => useTransactions({ initialAccountId: 'account2' }),
-      { wrapper: TestWrapper }
-    );
+    const { result } = renderHook(() => useTransactions({ initialAccountId: 'account2' }), {
+      wrapper: TestWrapper,
+    });
 
     await waitFor(() => {
       expect(TransactionService.getTransactions).toHaveBeenCalledWith(
@@ -354,9 +354,7 @@ describe('useTransactions', () => {
     });
 
     await waitFor(() => {
-      expect(TransactionService.getTransactions).toHaveBeenCalledWith(
-        expect.objectContaining({})
-      );
+      expect(TransactionService.getTransactions).toHaveBeenCalledWith(expect.objectContaining({}));
     });
   });
 
@@ -402,4 +400,3 @@ describe('useTransactions', () => {
     });
   });
 });
-

@@ -412,9 +412,7 @@ export default function TrendsPage({
               <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 {label}
               </div>
-              <div className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
-                {value}
-              </div>
+              <div className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{value}</div>
             </Card>
           ))
         )}
@@ -460,13 +458,12 @@ export default function TrendsPage({
             ) : !sankeyResult.hasData ? (
               <div className="flex h-[360px] flex-col items-center justify-center text-sm text-slate-500">
                 <p>No transaction data available for this range.</p>
-                <p className="text-xs text-slate-400 mt-1">Try selecting a different time window above.</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Try selecting a different time window above.
+                </p>
               </div>
             ) : (
-              <SankeyChart
-                nodes={sankeyResult.nodes}
-                links={sankeyResult.links}
-              />
+              <SankeyChart nodes={sankeyResult.nodes} links={sankeyResult.links} />
             )}
           </div>
         ) : (
@@ -477,7 +474,8 @@ export default function TrendsPage({
                   Category comparison
                 </h2>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Select up to {MAX_SELECTED_CATEGORIES} categories. The current month may be incomplete.
+                  Select up to {MAX_SELECTED_CATEGORIES} categories. The current month may be
+                  incomplete.
                 </p>
               </div>
               <div className="flex gap-2">
@@ -513,8 +511,7 @@ export default function TrendsPage({
             <div className="mb-6 flex flex-wrap gap-2">
               {categoryTotals.map(({ category }) => {
                 const selected = selectedCategories.includes(category);
-                const disabled =
-                  !selected && selectedCategories.length >= MAX_SELECTED_CATEGORIES;
+                const disabled = !selected && selectedCategories.length >= MAX_SELECTED_CATEGORIES;
                 return (
                   <button
                     key={category}
@@ -555,10 +552,7 @@ export default function TrendsPage({
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={chartData}
-                    margin={{ top: 12, right: 20, left: 8, bottom: 8 }}
-                  >
+                  <LineChart data={chartData} margin={{ top: 12, right: 20, left: 8, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.22} />
                     <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                     <YAxis

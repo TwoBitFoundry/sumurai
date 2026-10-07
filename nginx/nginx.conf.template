@@ -1,17 +1,8 @@
 events {}
 
 http {
-    upstream frontend_upstream {
-        server frontend:8080;
-    }
-
-    upstream backend_upstream {
-        server backend:3000;
-    }
-
-    upstream seq_upstream {
-        server seq:80;
-    }
+    # Docker embedded DNS resolver for dynamic container discovery
+    resolver 127.0.0.11 valid=10s ipv6=off;
 
     map $http_x_forwarded_proto $real_scheme {
         default $scheme;

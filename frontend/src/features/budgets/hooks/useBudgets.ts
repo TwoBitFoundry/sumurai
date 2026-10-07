@@ -255,23 +255,18 @@ export function useBudgets(): UseBudgetsResult {
   );
 
   const update = useCallback(
-    async (
-      id: string,
-      amount: number,
-      frequency?: Budget['frequency'],
-      rollover?: boolean
-    ) => {
+    async (id: string, amount: number, frequency?: Budget['frequency'], rollover?: boolean) => {
       setError(null);
       const snapshot = budgets;
       setBudgets((prev) =>
         prev.map((b) =>
           b.id === id
             ? {
-              ...b,
-              amount,
-              frequency: frequency !== undefined ? frequency : b.frequency,
-              rollover: rollover !== undefined ? rollover : b.rollover,
-            }
+                ...b,
+                amount,
+                frequency: frequency !== undefined ? frequency : b.frequency,
+                rollover: rollover !== undefined ? rollover : b.rollover,
+              }
             : b
         )
       );

@@ -1,11 +1,26 @@
 export function formatCategoryName(categoryPrimary: string | undefined | null): string {
-  if (!categoryPrimary) return 'Other';
-  return categoryPrimary
+  if (!categoryPrimary) return 'Shopping';
+  const norm = categoryPrimary.trim().toLowerCase();
+  if (
+    norm === 'other' ||
+    norm === 'uncategorized' ||
+    norm === 'unknown' ||
+    norm === 'general merchandise' ||
+    norm === 'general_merchandise' ||
+    norm === 'general'
+  ) {
+    return 'Shopping';
+  }
+  const formatted = categoryPrimary
     .trim()
     .split(/[_\s]+/)
     .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
+  if (formatted.toLowerCase() === 'general merchandise' || formatted.toLowerCase() === 'other') {
+    return 'Shopping';
+  }
+  return formatted;
 }
 
 export type CategoryGroupType = 'Expense' | 'Income' | 'Exclude from Budget';
@@ -25,7 +40,13 @@ export const CATEGORIES_TAXONOMY: CategoryDefinition[] = [
   {
     name: 'Childcare',
     type: 'Expense',
-    subcategories: ['Baby Supplies', 'Babysitter & Daycare', 'Child Support', 'Kids Activities', 'Toys'],
+    subcategories: [
+      'Baby Supplies',
+      'Babysitter & Daycare',
+      'Child Support',
+      'Kids Activities',
+      'Toys',
+    ],
   },
   {
     name: 'Earned Income',
@@ -40,7 +61,14 @@ export const CATEGORIES_TAXONOMY: CategoryDefinition[] = [
   {
     name: 'Entertainment',
     type: 'Expense',
-    subcategories: ['Amusement', 'Arts', 'Movies & DVDs', 'Music', 'Newspaper & Magazines', 'Subscription'],
+    subcategories: [
+      'Amusement',
+      'Arts',
+      'Movies & DVDs',
+      'Music',
+      'Newspaper & Magazines',
+      'Subscription',
+    ],
   },
   {
     name: 'Food & Dining',
@@ -60,7 +88,7 @@ export const CATEGORIES_TAXONOMY: CategoryDefinition[] = [
   {
     name: 'Home Improvement',
     type: 'Expense',
-    subcategories: ['Furnishings', 'Home Supplies', 'Lawn & Garden', 'Plants & Needs'],
+    subcategories: ['Furnishings', 'Household Supplies', 'Lawn & Garden', 'Plants & Needs'],
   },
   {
     name: 'Home Management',
@@ -85,12 +113,32 @@ export const CATEGORIES_TAXONOMY: CategoryDefinition[] = [
   {
     name: 'Shopping',
     type: 'Expense',
-    subcategories: ['Books', 'Clothing', 'Decor', 'Electronics', 'Hair', 'Hobbies', 'Home', 'Kitchen', 'Laundry', 'Personal Care', 'Spa & Massage', 'Toys'],
+    subcategories: [
+      'Books',
+      'Clothing',
+      'Decor',
+      'Electronics',
+      'Hair',
+      'Hobbies',
+      'Home',
+      'Kitchen',
+      'Laundry',
+      'Personal Care',
+      'Spa & Massage',
+      'Toys',
+    ],
   },
   {
     name: 'Taxes',
     type: 'Expense',
-    subcategories: ['Federal Tax', 'Local Tax', 'Property Tax', 'Sales Tax', 'State Tax', 'Tax Filing'],
+    subcategories: [
+      'Federal Tax',
+      'Local Tax',
+      'Property Tax',
+      'Sales Tax',
+      'State Tax',
+      'Tax Filing',
+    ],
   },
   {
     name: 'Tax Refund',
@@ -154,11 +202,14 @@ export function getSubcategoriesForCategory(
     }
   }
 
-  // Filter out any "Other xx" or "Uncategorized" subcategories, or subcategories matching the category itself
+  // Filter out any "Other xx" or "Uncategorized" or "Other" or "General Merchandise" subcategories, or subcategories matching the category itself
   baseSubcategories = baseSubcategories.filter(
     (sub) =>
       !sub.toLowerCase().startsWith('other ') &&
+      sub.toLowerCase() !== 'other' &&
       sub.toLowerCase() !== 'uncategorized' &&
+      sub.toLowerCase() !== 'general merchandise' &&
+      sub.toLowerCase() !== 'general_merchandise' &&
       (norm === 'groceries' ? true : sub.trim().toLowerCase() !== norm)
   );
 
@@ -170,6 +221,16 @@ export function getMajorCategoryForSubcategory(
   userCategories?: Array<{ name: string; parent_category?: string }>
 ): string | undefined {
   const norm = subcategoryName.trim().toLowerCase();
+
+  if (
+    norm === 'general merchandise' ||
+    norm === 'general_merchandise' ||
+    norm === 'other' ||
+    norm === 'uncategorized' ||
+    norm === 'general'
+  ) {
+    return 'Shopping';
+  }
 
   // Check user custom categories first
   if (userCategories) {
@@ -189,23 +250,34 @@ export function getMajorCategoryForSubcategory(
   // If subcategory is like "Other Shopping", map to "Shopping"
   if (norm.startsWith('other ')) {
     const candidate = norm.slice(6).trim();
-    const matched = CATEGORIES_TAXONOMY.find(
-      (c) => c.name.toLowerCase() === candidate
-    );
+    const matched = CATEGORIES_TAXONOMY.find((c) => c.name.toLowerCase() === candidate);
     if (matched) return matched.name;
+    return 'Shopping';
   }
 
-  if (norm === 'water' || norm.includes('water') || norm.includes('rent_and_utilities') || norm.includes('rent & utilities')) {
+  if (
+    norm === 'water' ||
+    norm.includes('water') ||
+    norm.includes('rent_and_utilities') ||
+    norm.includes('rent & utilities')
+  ) {
     return 'Bills & Utilities';
+  }
+
+  if (norm === 'home supplies' || norm === 'home_supplies' || norm === 'homesupplies') {
+    return 'Home Improvement';
   }
 
   return undefined;
 }
 
-export function resolveMajorCategory(categoryOrSubcategory?: string | null): string {
-  if (!categoryOrSubcategory) return 'Uncategorized';
+export function resolveMajorCategory(
+  categoryOrSubcategory?: string | null,
+  userCategories?: Array<{ name: string; parent_category?: string }>
+): string {
+  if (!categoryOrSubcategory) return 'Shopping';
   const clean = categoryOrSubcategory.trim();
-  if (!clean) return 'Uncategorized';
+  if (!clean) return 'Shopping';
 
   const normKey = clean.toLowerCase().replace(/[^a-z0-9]/g, '');
   if (
@@ -217,18 +289,30 @@ export function resolveMajorCategory(categoryOrSubcategory?: string | null): str
     return 'Bills & Utilities';
   }
 
-  if (normKey === 'personalcare') {
+  if (normKey === 'homesupplies' || normKey === 'householdsupplies') {
+    return 'Home Improvement';
+  }
+
+  if (
+    normKey === 'personalcare' ||
+    normKey === 'generalmerchandise' ||
+    normKey === 'other' ||
+    normKey === 'uncategorized' ||
+    normKey === 'unknown'
+  ) {
     return 'Shopping';
   }
 
+  if (normKey === 'foodanddrink' || normKey === 'fooddrink') {
+    return 'Food & Dining';
+  }
+
   // If it's already a major category
-  const directMatch = CATEGORIES_TAXONOMY.find(
-    (c) => c.name.toLowerCase() === clean.toLowerCase()
-  );
+  const directMatch = CATEGORIES_TAXONOMY.find((c) => c.name.toLowerCase() === clean.toLowerCase());
   if (directMatch) return directMatch.name;
 
   // Try subcategory lookup
-  const fromSub = getMajorCategoryForSubcategory(clean);
+  const fromSub = getMajorCategoryForSubcategory(clean, userCategories);
   if (fromSub) return fromSub;
 
   if (clean.toLowerCase().startsWith('other ')) {
@@ -237,9 +321,25 @@ export function resolveMajorCategory(categoryOrSubcategory?: string | null): str
       (c) => c.name.toLowerCase() === candidate.toLowerCase()
     );
     if (matched) return matched.name;
+    return 'Shopping';
   }
 
-  return formatCategoryName(clean);
+  // If user has a custom top-level category
+  if (userCategories) {
+    const uc = userCategories.find((c) => c.name.toLowerCase() === clean.toLowerCase());
+    if (uc) return uc.parent_category || uc.name;
+  }
+
+  const formatted = formatCategoryName(clean);
+  if (formatted === 'Shopping') return 'Shopping';
+
+  // Check if formatCategoryName matches any major category
+  const matchFormatted = CATEGORIES_TAXONOMY.find(
+    (c) => c.name.toLowerCase() === formatted.toLowerCase()
+  );
+  if (matchFormatted) return matchFormatted.name;
+
+  return formatted;
 }
 
 export function isSpendingExcludedCategory(category: string | undefined | null): boolean {

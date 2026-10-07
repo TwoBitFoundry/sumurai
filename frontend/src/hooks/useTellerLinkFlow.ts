@@ -34,7 +34,8 @@ interface LoadResult {
 const tellerSyncCooldownMs = 15 * 60 * 1000;
 const tellerSyncDelayMs = 4000;
 
-const wait = (ms: number): Promise<void> => new Promise((resolve) => window.setTimeout(resolve, ms));
+const wait = (ms: number): Promise<void> =>
+  new Promise((resolve) => window.setTimeout(resolve, ms));
 
 function isRecentlySynced(lastSyncAt: string | null | undefined): boolean {
   if (!lastSyncAt) return false;
@@ -303,7 +304,11 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       await loadConnections();
       setToast('Teller connection reauthenticated and synced');
     } catch (error) {
-      console.warn('Failed to sync Teller connection after reauth', pendingReauthConnectionId, error);
+      console.warn(
+        'Failed to sync Teller connection after reauth',
+        pendingReauthConnectionId,
+        error
+      );
       handleError(getErrorMessage(error, 'Teller reconnected, but sync still failed'));
       await loadConnectionsWithRetry();
     }
@@ -328,21 +333,24 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
     void loadConnections();
   }, [applicationId, enabled, loadConnections, handleError, clearError]);
 
-  const connect = useCallback(async (connectionId?: string) => {
-    clearError();
-    if (!enabled) {
-      return;
-    }
+  const connect = useCallback(
+    async (connectionId?: string) => {
+      clearError();
+      if (!enabled) {
+        return;
+      }
 
-    if (!applicationId) {
-      handleError('Missing Teller application ID');
-      return;
-    }
-    if (!ready) {
-      setToast('Preparing Teller Connect...');
-    }
-    open(connectionId);
-  }, [applicationId, clearError, handleError, open, ready, enabled]);
+      if (!applicationId) {
+        handleError('Missing Teller application ID');
+        return;
+      }
+      if (!ready) {
+        setToast('Preparing Teller Connect...');
+      }
+      open(connectionId);
+    },
+    [applicationId, clearError, handleError, open, ready, enabled]
+  );
 
   const syncOne = useCallback(
     async (connectionId: string) => {

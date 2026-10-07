@@ -1,5 +1,9 @@
-import type { Transaction, TransactionCategory, TransactionLocation } from '../types/api';
-import type { FinancialProvider } from '../types/api';
+import type {
+  FinancialProvider,
+  Transaction,
+  TransactionCategory,
+  TransactionLocation,
+} from '../types/api';
 
 export interface BackendTransaction {
   id: string;

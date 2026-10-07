@@ -276,14 +276,17 @@ export function useTellerConnect(options: UseTellerConnectOptions): UseTellerCon
     };
   }, [applicationId, environment, gateway]);
 
-  const open = useCallback((connectionId?: string) => {
-    connectionIdRef.current = connectionId;
-    if (instance) {
-      instance.open();
-      return;
-    }
-    pendingOpenRef.current = true;
-  }, [instance]);
+  const open = useCallback(
+    (connectionId?: string) => {
+      connectionIdRef.current = connectionId;
+      if (instance) {
+        instance.open();
+        return;
+      }
+      pendingOpenRef.current = true;
+    },
+    [instance]
+  );
 
   return {
     ready: Boolean(instance),
