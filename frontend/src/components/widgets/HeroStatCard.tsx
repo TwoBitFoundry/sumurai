@@ -1,5 +1,5 @@
 import React, { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
-import { cn } from '@/ui/primitives';
+import { cn, InfoTooltip } from '@/ui/primitives';
 import { getTagThemeForCategory } from '../../utils/categories';
 
 type Accent = 'emerald' | 'sky' | 'violet' | 'amber' | 'slate' | 'rose';
@@ -27,6 +27,8 @@ export type HeroStatCardProps = {
   /** Standardized min height for hero widgets */
   minHeightClassName?: string;
   onClick?: () => void;
+  /** Optional tooltip content rendered via info icon next to title */
+  infoTooltip?: React.ReactNode;
 };
 
 const classNames = (...classes: (string | false | null | undefined)[]) =>
@@ -186,6 +188,7 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
   className,
   minHeightClassName = 'min-h-[120px]',
   onClick,
+  infoTooltip,
 }) => {
   const accent = accentProp ?? accentFromIndex(index);
   const styles = ACCENT_STYLES[accent];
@@ -286,6 +289,7 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
             >
               {title}
             </div>
+            {infoTooltip ? <InfoTooltip content={infoTooltip} /> : null}
           </div>
           <div className={cn('flex', 'min-w-0', 'items-baseline', 'gap-2')}>
             <div

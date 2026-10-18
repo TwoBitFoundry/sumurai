@@ -15,6 +15,8 @@ export type { GlassCardProps } from './GlassCard';
 export { GlassCard } from './GlassCard';
 export type { GradientShellProps } from './GradientShell';
 export { GradientShell } from './GradientShell';
+export type { InfoTooltipProps } from './InfoTooltip';
+export { InfoTooltip } from './InfoTooltip';
 export type { InputProps } from './Input';
 export { Input } from './Input';
 export type { MenuDropdownProps, MenuItemProps } from './MenuDropdown';

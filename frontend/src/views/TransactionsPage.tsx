@@ -794,6 +794,7 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                 stats.spendingCount === 1 ? 'spend item' : 'spend items'
               }`}
               accent="rose"
+              infoTooltip="Pending transactions are included in this total, along with settled transactions."
             />
 
             <HeroStatCard

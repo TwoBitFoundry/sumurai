@@ -12,7 +12,7 @@ import {
   YAxis,
 } from 'recharts';
 import type { DotItemDotProps } from 'recharts/types/util/types';
-import { cn, EmptyState } from '@/ui/primitives';
+import { cn, EmptyState, InfoTooltip } from '@/ui/primitives';
 import BalancesOverview from '../components/BalancesOverview';
 import MonthYearSelector from '../components/MonthYearSelector';
 import Card from '../components/ui/Card';
@@ -194,16 +194,22 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             <Card className="h-full">
               <div className={cn('mb-4', 'flex', 'items-center', 'justify-between')}>
                 <div>
-                  <h3
-                    className={cn(
-                      'text-base',
-                      'font-semibold',
-                      'text-slate-900',
-                      'dark:text-slate-100'
-                    )}
-                  >
-                    Spending Over Time
-                  </h3>
+                  <div className={cn('flex', 'items-center', 'gap-1.5')}>
+                    <h3
+                      className={cn(
+                        'text-base',
+                        'font-semibold',
+                        'text-slate-900',
+                        'dark:text-slate-100'
+                      )}
+                    >
+                      Spending Over Time
+                    </h3>
+                    <InfoTooltip
+                      content="Pending transactions are excluded from dashboard totals. Only settled (posted) spending is shown."
+                      ariaLabel="Pending transactions spending explanation"
+                    />
+                  </div>
                   <p className={cn('text-xs', 'text-slate-600', 'dark:text-slate-400')}>
                     Breakdown by category
                   </p>

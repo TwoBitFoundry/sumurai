@@ -40,6 +40,12 @@ http {
         ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
         ssl_prefer_server_ciphers off;
 
+        # Upstream service endpoints using variables to force dynamic DNS resolution
+        set $frontend_upstream http://frontend:8080;
+        set $backend_upstream http://backend:3000;
+        set $seq_upstream http://seq:80;
+        set $backend_docs http://backend:3000/scalar;
+
         # Basic proxy headers for upstream services
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -52,13 +58,18 @@ http {
             return 200 "ok";
         }
 
+        # Backend health check (used by Uptime Kuma)
+        location = /health {
+            proxy_pass $backend_upstream;
+        }
+
         # Public: Backend API docs only (Scalar UI)
         location = /docs {
             return 302 /docs/;
         }
 
         location /docs/ {
-            proxy_pass http://backend_upstream/scalar;
+            proxy_pass $backend_docs;
         }
 
         # Public: Seq UI
@@ -68,23 +79,23 @@ http {
 
         location /seq/ {
             rewrite ^/seq/?(.*)$ /$1 break;
-            proxy_pass http://seq_upstream;
+            proxy_pass $seq_upstream;
         }
 
         # Public: OTLP HTTP ingestion -> Seq
         location /ingest/otlp {
-            proxy_pass http://seq_upstream/ingest/otlp;
+            proxy_pass $seq_upstream;
             proxy_http_version 1.1;
             client_max_body_size 10m;
         }
 
         location /api {
-            proxy_pass http://backend_upstream;
+            proxy_pass $backend_upstream;
         }
 
         location /_next/static/ {
             add_header Cache-Control "public, max-age=31536000, immutable" always;
-            proxy_pass http://frontend_upstream;
+            proxy_pass $frontend_upstream;
         }
 
         # Default: frontend SPA
@@ -92,7 +103,7 @@ http {
             add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate" always;
             add_header Pragma "no-cache" always;
             add_header Expires "0" always;
-            proxy_pass http://frontend_upstream;
+            proxy_pass $frontend_upstream;
         }
     }
 }
