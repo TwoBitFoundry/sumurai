@@ -76,10 +76,7 @@ impl MerchantNormalizationService {
                 continue;
             }
 
-            if matches!(
-                txn.normalization_source.as_deref(),
-                Some("plaid") | Some("teller")
-            ) {
+            if matches!(txn.normalization_source.as_deref(), Some("plaid")) {
                 if let Some(display) = txn
                     .merchant_name
                     .as_deref()

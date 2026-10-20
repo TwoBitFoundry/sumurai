@@ -4,7 +4,7 @@
 Keep user data only as long as necessary for product functionality.
 
 **Rules**
-- Teller/Plaid tokens deleted on user disconnect.  
+- Plaid tokens deleted on user disconnect.  
 - Transaction data cached ≤ 90 days unless user opts-in for history.  
 - Backups retained 30 days, encrypted, auto-purged.  
 - User deletion requests honored within 30 days.  

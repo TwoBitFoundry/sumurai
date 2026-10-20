@@ -1,10 +1,6 @@
 import type { ReactNode } from 'react';
 import { isValidElement } from 'react';
 import type { TooltipContentProps } from 'recharts';
-import {
-  type DebouncedFadePresenceOptions,
-  useDebouncedFadePresence,
-} from '@/hooks/useDebouncedFadePresence';
 import { cn } from '@/ui/primitives';
 import { chartTooltip, font, text as uiTextRecipes } from '@/ui/recipes';
 
@@ -22,36 +18,7 @@ export function ChartTooltipShell({
   );
 }
 
-type ChartTooltipFadeHostProps<T> = {
-  active: T | null | undefined;
-  children: (content: T) => ReactNode;
-  wrapperClassName?: string;
-  presence?: DebouncedFadePresenceOptions;
-};
-
-export function ChartTooltipFadeHost<T>({
-  active,
-  children,
-  wrapperClassName,
-  presence,
-}: ChartTooltipFadeHostProps<T>) {
-  const { content, visible, fadeDurationMs } = useDebouncedFadePresence(active, presence);
-
-  if (content == null) {
-    return null;
-  }
-
-  return (
-    <div
-      className={cn(chartTooltip.fade, visible ? 'opacity-100' : 'opacity-0', wrapperClassName)}
-      style={{ transitionDuration: `${fadeDurationMs}ms` }}
-    >
-      {children(content)}
-    </div>
-  );
-}
-
-export const chartTooltipRechartsContentStyle = {
+const chartTooltipRechartsContentStyle = {
   background: 'transparent',
   border: 'none',
   boxShadow: 'none',
@@ -59,7 +26,7 @@ export const chartTooltipRechartsContentStyle = {
   borderRadius: 'var(--radius-standard)',
 } as const;
 
-export const chartTooltipRechartsWrapperStyle = {
+const chartTooltipRechartsWrapperStyle = {
   background: 'transparent',
   border: 'none',
   boxShadow: 'none',

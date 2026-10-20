@@ -24,7 +24,6 @@ use tower_http::cors::CorsLayer;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use uuid::Uuid;
 
-#[allow(unused_imports)]
 use serde_json::json;
 
 mod auth_middleware;
@@ -164,9 +163,9 @@ use services::{
         telemetry_public_browser_governor_layer,
     },
     AuthService, AuthorizationService, BudgetService, CacheService, CategorizationService,
-    Categorizer, ConnectionService, ExchangeTokenError, LinkTokenError, PlaidService,
+    Categorizer, ConnectionService, ExchangeTokenError, LinkTokenError,
     ProviderSyncRateLimitService, RedisCache, SimpleFinConnectError, SyncConnectionParams,
-    SyncService, SyncServiceFactory, TellerConnectError,
+    SyncService, SyncServiceFactory,
 };
 use services::{AnalyticsService, RealPlaidClient, SpendingTransactionQuery};
 use utils::auth_cookie::{build_auth_cookie, build_clearing_auth_cookie, extract_auth_cookie};
@@ -235,8 +234,6 @@ async fn main() -> anyhow::Result<()> {
         Arc::new(providers::SimpleFinProvider::new_with_real_client().await?);
 
     let provider_registry = Arc::new(build_provider_registry(plaid_provider, simplefin_provider));
-
-    let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
 
     let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
 
@@ -430,7 +427,6 @@ async fn main() -> anyhow::Result<()> {
     ));
 
     let state = AppState {
-        plaid_service,
         plaid_client,
         sync_service,
         sync_service_factory,
@@ -2673,16 +2669,8 @@ async fn sync_authenticated_provider_transactions(
     let mut connection = connection;
 
     let provider = connection.provider.clone();
-    if provider != "teller" && !state.config.is_financial_provider_enabled(&provider) {
+    if !state.config.is_financial_provider_enabled(&provider) {
         return Err(provider_disabled_response(&provider).into_response());
-    }
-
-    if provider == "teller" {
-        return Err(provider_sync_error_to_response(
-            crate::services::connection_service::ProviderSyncError::TellerNoLongerSupported,
-            user_id,
-            &connection.item_id,
-        ));
     }
 
     match state
@@ -3658,29 +3646,6 @@ async fn connect_authenticated_provider(
     }
 
     match req.provider.as_str() {
-        "teller" => match state
-            .connection_service
-            .connect_teller_provider(&auth_context.user_id, &auth_context.jwt_id, &req)
-            .await
-        {
-            Ok(response) => {
-                log_provider_credential_outcome("teller", StatusCode::OK, "provider.connect");
-                Ok(Json(response))
-            }
-            Err(TellerConnectError::NoLongerSupported) => {
-                log_provider_credential_outcome(
-                    "teller",
-                    StatusCode::BAD_REQUEST,
-                    "provider.connect",
-                );
-                Err(ApiErrorResponse::with_code(
-                    "BAD_REQUEST",
-                    services::sync_service_dispatcher::TELLER_NO_LONGER_SUPPORTED_MESSAGE,
-                    "TELLER_NO_LONGER_SUPPORTED",
-                )
-                .into_response(StatusCode::BAD_REQUEST))
-            }
-        },
         "simplefin" => match state
             .connection_service
             .connect_simplefin_provider(&auth_context.user_id, &auth_context.jwt_id, &req)
@@ -3690,7 +3655,7 @@ async fn connect_authenticated_provider(
                 log_provider_credential_outcome("simplefin", StatusCode::OK, "provider.connect");
                 Ok(Json(response))
             }
-            Err(SimpleFinConnectError::InvalidProvider(_)) => {
+            Err(SimpleFinConnectError::InvalidProvider) => {
                 log_provider_credential_outcome(
                     &req.provider,
                     StatusCode::BAD_REQUEST,
@@ -4683,7 +4648,6 @@ async fn get_authenticated_provider_info(
 
     let user_provider = user
         .active_provider()
-        .filter(|provider| *provider != "teller")
         .filter(|provider| state.provider_registry.get(provider).is_some())
         .filter(|provider| state.config.is_financial_provider_enabled(provider))
         .map(str::to_string);
@@ -4716,15 +4680,6 @@ async fn select_authenticated_provider(
 ) -> Result<Json<ProviderSelectResponse>, (StatusCode, Json<ApiErrorResponse>)> {
     let user_id = auth_context.user_id;
     let requested_provider = req.provider;
-
-    if requested_provider == "teller" {
-        return Err(ApiErrorResponse::with_code(
-            "BAD_REQUEST",
-            services::sync_service_dispatcher::TELLER_NO_LONGER_SUPPORTED_MESSAGE,
-            "TELLER_NO_LONGER_SUPPORTED",
-        )
-        .into_response(StatusCode::BAD_REQUEST));
-    }
 
     if state.provider_registry.get(&requested_provider).is_none() {
         return Err(ApiErrorResponse::new(

@@ -24,7 +24,7 @@ export type ToastStackTransientItem = {
   type?: 'error' | 'success';
 };
 
-export type ToastStackProgress = {
+type ToastStackProgress = {
   processed: number;
   total: number;
 };

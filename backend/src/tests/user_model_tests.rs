@@ -8,15 +8,15 @@ fn given_new_user_when_created_with_provider_then_has_provider_field() {
         id: Uuid::new_v4(),
         email: "test@example.com".to_string(),
         password_hash: Some("hashed_password".to_string()),
-        provider: "teller".to_string(),
+        provider: "simplefin".to_string(),
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: false,
         demo_mode_active: true,
     };
 
-    assert_eq!(user.provider, "teller");
-    assert_eq!(user.active_provider(), Some("teller"));
+    assert_eq!(user.provider, "simplefin");
+    assert_eq!(user.active_provider(), Some("simplefin"));
     assert!(user.demo_mode_active);
 }
 
@@ -60,7 +60,7 @@ fn given_user_when_serialized_then_includes_provider() {
         id: Uuid::new_v4(),
         email: "test@example.com".to_string(),
         password_hash: Some("hashed_password".to_string()),
-        provider: "teller".to_string(),
+        provider: "simplefin".to_string(),
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: false,
@@ -68,6 +68,6 @@ fn given_user_when_serialized_then_includes_provider() {
     };
 
     let json_str = serde_json::to_string(&user).unwrap();
-    assert!(json_str.contains("\"provider\":\"teller\""));
+    assert!(json_str.contains("\"provider\":\"simplefin\""));
     assert!(json_str.contains("\"demo_mode_active\":true"));
 }

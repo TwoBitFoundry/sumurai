@@ -7,12 +7,9 @@ use crate::models::api_error::ApiErrorResponse;
 use crate::models::plaid::ProviderConnection;
 use crate::models::transaction::SyncTransactionsResponse;
 use crate::services::connection_service::{
-    ConnectionService, ProviderSyncError, SyncConnectionParams, TellerSyncError,
+    ConnectionService, ProviderSyncError, SyncConnectionParams,
 };
 use crate::services::sync_service::SyncService;
-
-pub const TELLER_NO_LONGER_SUPPORTED_MESSAGE: &str =
-    "Teller is no longer supported because the provider no longer offers API access.";
 
 #[async_trait]
 pub trait SyncServiceDispatcher: Send + Sync {
@@ -97,33 +94,6 @@ impl SyncServiceDispatcher for SimpleFinSyncDispatcher {
                 reference_date,
             )
             .await
-    }
-}
-
-pub struct TellerSyncDispatcher {
-    connection_service: Arc<ConnectionService>,
-}
-
-impl TellerSyncDispatcher {
-    pub fn new(connection_service: Arc<ConnectionService>) -> Self {
-        Self { connection_service }
-    }
-}
-
-#[async_trait]
-impl SyncServiceDispatcher for TellerSyncDispatcher {
-    async fn sync(
-        &self,
-        params: SyncConnectionParams<'_>,
-        connection: &mut ProviderConnection,
-        reference_date: Option<NaiveDate>,
-    ) -> Result<SyncTransactionsResponse, ProviderSyncError> {
-        self.connection_service
-            .sync_teller_connection(params.user_id, params.jwt_id, connection, reference_date)
-            .await
-            .map_err(|err| match err {
-                TellerSyncError::NoLongerSupported => ProviderSyncError::TellerNoLongerSupported,
-            })
     }
 }
 
@@ -277,20 +247,6 @@ pub fn provider_sync_error_to_response(
                 "Sync failed unexpectedly. Try again.",
                 None,
                 None,
-            )
-        }
-        ProviderSyncError::TellerNoLongerSupported => {
-            tracing::info!(
-                "Teller sync rejected for user {} and item {}: provider no longer supported",
-                user_id,
-                item_id
-            );
-            provider_sync_error_json_response(
-                StatusCode::BAD_REQUEST,
-                "BAD_REQUEST",
-                TELLER_NO_LONGER_SUPPORTED_MESSAGE,
-                None,
-                Some("TELLER_NO_LONGER_SUPPORTED"),
             )
         }
     }

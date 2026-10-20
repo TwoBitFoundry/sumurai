@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 pub const EXCLUDED_MERCHANTS: &[&str] = &[
     "starbucks",
     "dunkindonuts",

@@ -8,10 +8,10 @@ import {
   type TransactionQueryResetMode,
 } from '@/features/transactions/utils/transactionQueryCache';
 
-export type SyncProvider = 'plaid' | 'teller' | 'simplefin';
+export type SyncProvider = 'plaid' | 'simplefin';
 
 export function isSyncProvider(provider: string): provider is SyncProvider {
-  return provider === 'plaid' || provider === 'teller' || provider === 'simplefin';
+  return provider === 'plaid' || provider === 'simplefin';
 }
 
 export type InvalidateStaleCacheOptions = {
@@ -22,7 +22,6 @@ const BASE_QUERY_KEYS = [['accounts'], ['transactions'], ['analytics'], ['budget
 
 const CONNECTION_QUERY_KEYS: Record<SyncProvider, readonly [string, string]> = {
   plaid: ['plaid', 'connections'],
-  teller: ['teller', 'connections'],
   simplefin: ['simplefin', 'connections'],
 } as const;
 
@@ -33,7 +32,6 @@ const APP_REFRESH_RESET_QUERY_KEYS = [
   ['budgets'],
   ['provider', 'catalog'],
   ['plaid', 'connections'],
-  ['teller', 'connections'],
   ['simplefin', 'connections'],
   ['simplefin', 'ignored-institutions'],
 ] as const;

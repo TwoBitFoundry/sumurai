@@ -1,6 +1,5 @@
 use crate::models::account::Account;
 use crate::models::plaid::{ProviderConnectResponse, ProviderConnection};
-use crate::models::predicted_category::PredictedCategory;
 use crate::models::provider_connect::ProviderConnectRequest;
 use crate::models::simplefin::SimpleFinTransaction;
 use crate::models::simplefin::{
@@ -23,7 +22,6 @@ use crate::services::sync_service::SyncService;
 use crate::services::Categorizer;
 use crate::test_fixtures::{noop_categorizer, TestFixtures};
 use anyhow::Result;
-use async_trait::async_trait;
 use axum::body::to_bytes;
 use base64::Engine;
 use chrono::NaiveDate;
@@ -44,15 +42,6 @@ fn stable_uuid(value: &str) -> Uuid {
     bytes[6] = (bytes[6] & 0x0f) | 0x50;
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
     Uuid::from_u128(u128::from_be_bytes(bytes))
-}
-
-struct PanicCategorizer;
-
-#[async_trait]
-impl Categorizer for PanicCategorizer {
-    async fn categorize_batch(&self, _descriptions: Vec<String>) -> Result<Vec<PredictedCategory>> {
-        panic!("categorizer should not be called for SimpleFIN sync");
-    }
 }
 
 fn simplefin_org_item_id(user_id: &Uuid, org_conn_id: &str) -> String {
@@ -883,9 +872,8 @@ async fn build_simplefin_handler_app(
         authorization_service::AuthorizationService,
         auto_categorization::AutoCategorizationService, budget_service::BudgetService,
         cache_service::CacheService, connection_service::ConnectionService,
-        otel_traces_relay::OtlpTracesRelay, plaid_service::PlaidService,
-        repository_service::DatabaseRepository, sync_service::SyncService,
-        sync_service_factory::SyncServiceFactory, RealPlaidClient,
+        otel_traces_relay::OtlpTracesRelay, repository_service::DatabaseRepository,
+        sync_service::SyncService, sync_service_factory::SyncServiceFactory, RealPlaidClient,
     };
 
     let snapshot_for_accounts = snapshot;
@@ -912,7 +900,6 @@ async fn build_simplefin_handler_app(
         "test_secret".to_string(),
         "sandbox".to_string(),
     ));
-    let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
 
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
@@ -1007,7 +994,6 @@ async fn build_simplefin_handler_app(
     ));
 
     let state = AppState {
-        plaid_service,
         plaid_client,
         sync_service,
         sync_service_factory,
@@ -2040,7 +2026,6 @@ async fn given_last_simplefin_org_connection_when_disconnect_then_clears_root_an
     mock_db
         .expect_disconnect_provider_connection_cascade()
         .times(0);
-    mock_db.expect_insert_simplefin_hidden_org().times(0);
     mock_db
         .expect_update_user_provider()
         .with(mockall::predicate::eq(user_id), mockall::predicate::eq(""))
@@ -2103,7 +2088,6 @@ async fn given_simplefin_connection_remaining_when_disconnect_then_keeps_root_cr
     mock_db
         .expect_disconnect_provider_connection_cascade()
         .times(0);
-    mock_db.expect_insert_simplefin_hidden_org().times(0);
     mock_db.expect_update_user_provider().times(0);
 
     let service = build_disconnect_service(mock_db);
@@ -2126,7 +2110,6 @@ async fn given_simplefin_disconnect_failure_when_atomic_disconnect_fails_then_re
     mock_db
         .expect_disconnect_simplefin_org()
         .returning(|_, _, _, _| Box::pin(async { Err(anyhow::anyhow!("cascade delete failed")) }));
-    mock_db.expect_insert_simplefin_hidden_org().times(0);
 
     let service = build_disconnect_service(mock_db);
     let result = service
@@ -2137,15 +2120,20 @@ async fn given_simplefin_disconnect_failure_when_atomic_disconnect_fails_then_re
 }
 
 #[tokio::test]
-async fn given_teller_connection_when_disconnect_then_does_not_call_simplefin_disconnect() {
+async fn given_legacy_teller_connection_when_disconnect_then_removes_connection_via_generic_path() {
     let user_id = Uuid::new_v4();
-    let connection = ProviderConnection::new(user_id, "teller_enrollment-1");
+    let mut connection = ProviderConnection::new(user_id, "teller_enrollment-1");
+    connection.provider = "teller".to_string();
 
     let mut mock_db = MockDatabaseRepository::new();
     mock_db.expect_disconnect_simplefin_org().times(0);
-    mock_db.expect_insert_simplefin_hidden_org().times(0);
     mock_db
         .expect_disconnect_provider_connection_cascade()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq("teller_enrollment-1"),
+        )
+        .times(1)
         .returning(|_, _| Box::pin(async { Ok((0, 0)) }));
     mock_db
         .expect_get_all_provider_connections_by_user()

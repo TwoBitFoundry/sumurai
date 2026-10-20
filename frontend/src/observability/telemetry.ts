@@ -16,12 +16,12 @@ import { preventSensitiveSpans, sanitizeSpanAttributes } from './sanitization';
 let tracerProvider: WebTracerProvider | null = null;
 let tracer: Tracer | null = null;
 
-export const IGNORE_OTEL_SELF_EXPORT_URLS = [
+const IGNORE_OTEL_SELF_EXPORT_URLS = [
   /\/api\/v1\/public\/telemetry/,
   /\/api\/v1\/private\/telemetry/,
 ] as const;
 
-export const PUBLIC_BROWSER_OTLP_EXPORT_PATH = '/api/v1/public/telemetry';
+const PUBLIC_BROWSER_OTLP_EXPORT_PATH = '/api/v1/public/telemetry';
 
 function getConfig() {
   const env = typeof process !== 'undefined' ? process.env : ({} as NodeJS.ProcessEnv);
@@ -34,7 +34,7 @@ function getConfig() {
   };
 }
 
-export function resolveBrowserOtlpExportUrl(endpoint: string): string {
+function resolveBrowserOtlpExportUrl(endpoint: string): string {
   const trimmed = endpoint.trim().replace(/\/+$/, '');
   const base = trimmed || PUBLIC_BROWSER_OTLP_EXPORT_PATH;
   if (/^https?:\/\//i.test(base)) {
@@ -177,10 +177,6 @@ export async function initTelemetry(): Promise<Tracer | null> {
 
   tracer = trace.getTracer(config.serviceName, config.serviceVersion);
 
-  return tracer;
-}
-
-export function getTracer(): Tracer | null {
   return tracer;
 }
 

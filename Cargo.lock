@@ -2588,17 +2588,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ofx-rs"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57549435899db40dc886fcf710d261cb06dc77398f103d9bd670fa584320db42"
-dependencies = [
- "quick-xml 0.39.4",
- "rust_decimal",
- "time",
-]
-
-[[package]]
 name = "oid-registry"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3237,15 +3226,6 @@ dependencies = [
  "wasi",
  "web-sys",
  "winapi",
-]
-
-[[package]]
-name = "quick-xml"
-version = "0.39.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cdcc8dd4e2f670d309a5f0e83fe36dfdc05af317008fea29144da1a2ac858e5e"
-dependencies = [
- "memchr",
 ]
 
 [[package]]
@@ -4582,12 +4562,10 @@ dependencies = [
  "futures",
  "governor",
  "hex",
- "hyper",
  "jsonwebtoken",
  "migration",
  "mockall",
  "ndarray",
- "ofx-rs",
  "once_cell",
  "opentelemetry",
  "opentelemetry-otlp",
@@ -4595,7 +4573,7 @@ dependencies = [
  "opentelemetry_sdk",
  "ort",
  "prost",
- "quick-xml 0.40.1",
+ "quick-xml",
  "rand 0.10.1",
  "redis",
  "regex",

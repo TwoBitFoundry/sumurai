@@ -1,6 +1,6 @@
-export const CHART_PRIOR_MONTHS = 1;
+const CHART_PRIOR_MONTHS = 1;
 
-export function shiftCalendarMonth(isoDate: string, deltaMonths: number): string {
+function shiftCalendarMonth(isoDate: string, deltaMonths: number): string {
   const parts = parseIsoDateParts(isoDate);
   if (!parts) {
     return isoDate;
@@ -16,7 +16,7 @@ export function chartSeriesStartDate(rangeStart: string, priorMonths = CHART_PRI
   return shiftCalendarMonth(rangeStart, -priorMonths);
 }
 
-export function parseIsoDateParts(isoDate: string): { year: number; month: number } | null {
+function parseIsoDateParts(isoDate: string): { year: number; month: number } | null {
   const [yearPart, monthPart] = isoDate.slice(0, 10).split('-');
   const year = Number(yearPart);
   const month = Number(monthPart);

@@ -9,7 +9,7 @@ Use this map to place backend changes in the right module.
 - `backend/src/auth_middleware.rs`: cookie and JWT auth middleware that attaches `AuthContext` for protected routes.
 - `backend/src/models`: API/domain data structures, app state, errors, query types, auth/account/budget/transaction models, and cache-related models.
 - `backend/src/services`: business logic for auth, authorization, analytics, budgets, cache, connections, providers, repository access, sync, rate limiting, and telemetry relay.
-- `backend/src/providers`: provider abstraction and Plaid/Teller provider implementations.
+- `backend/src/providers`: provider abstraction and Plaid, SimpleFIN, and DIY provider implementations.
 - `backend/src/middleware`: cross-cutting Axum middleware such as IP ban, resource authorization, and request telemetry layers (distinct from `auth_middleware.rs`, which owns cookie-JWT authentication).
 - `backend/src/handlers`: request handlers that are not embedded directly in main routing.
 - `backend/src/openapi`: OpenAPI schemas, tags, and generated API documentation shape.

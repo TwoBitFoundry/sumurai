@@ -37,7 +37,7 @@ Do not group, filter, or aggregate on raw stored category or `original_merchant_
 
 ## Providers
 
-- Use provider traits and registry patterns for Plaid/Teller behavior.
+- Use provider traits and registry patterns for Plaid, SimpleFIN, and DIY behavior.
 - Keep provider-specific mapping outside generic services unless the mapping is a shared domain rule.
 - Preserve cache and sync behavior when changing provider flows.
 

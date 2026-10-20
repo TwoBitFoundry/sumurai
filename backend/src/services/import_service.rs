@@ -1,7 +1,5 @@
 //! CSV transaction import parsing and persistence.
 
-#![allow(dead_code)]
-
 use chrono::{Datelike, NaiveDate, Utc};
 use csv::{ReaderBuilder, StringRecord};
 use rust_decimal::Decimal;

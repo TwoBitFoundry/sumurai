@@ -4,7 +4,7 @@
 Protect user and system data from unauthorized access, disclosure, or alteration.
 
 **Scope:**  
-All services, APIs, and infrastructure connected to Teller, Plaid, and our cloud environments.
+All services, APIs, and infrastructure connected to Plaid and our cloud environments.
 
 **Core Controls**
 - Data encrypted at rest (AES-256) and in transit (TLS 1.2+).  

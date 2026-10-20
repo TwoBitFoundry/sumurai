@@ -1,6 +1,6 @@
 import type { CurveProps } from 'recharts';
 import { netWorthLineChart } from '@/ui/recipes';
-import { ChartGlowLineCurve, ChartGlowLineFilter } from './ChartGlowLineCurve';
+import { ChartGlowLineCurve } from './ChartGlowLineCurve';
 
 export function netWorthLineGlowFilterId(instanceId: string) {
   return `${instanceId}-net-worth-curve-glow`;
@@ -12,15 +12,6 @@ const netWorthGlowLineStyle = {
   glowOpacity: netWorthLineChart.curveGlow.opacity,
   lineStrokeWidth: netWorthLineChart.lineStrokeWidth,
 } as const;
-
-export function NetWorthLineGlowFilter({ filterId }: { filterId: string }) {
-  return (
-    <ChartGlowLineFilter
-      filterId={filterId}
-      blurStdDeviation={netWorthLineChart.curveGlow.blurStdDeviation}
-    />
-  );
-}
 
 export function NetWorthGlowLineCurve({
   curveProps,

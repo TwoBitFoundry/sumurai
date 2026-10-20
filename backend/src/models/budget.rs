@@ -6,9 +6,6 @@ use uuid::Uuid;
 
 use crate::models::subscription::FixedExpenseSummary;
 
-#[allow(unused_imports)]
-use serde_json::json;
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 #[schema(example = json!({
     "id": "11111111-2222-3333-4444-555555555555",

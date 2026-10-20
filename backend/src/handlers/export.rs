@@ -6,8 +6,6 @@ use axum::{
     },
     response::{IntoResponse, Response},
 };
-#[allow(unused_imports)]
-use uuid::Uuid;
 
 use crate::models::app_state::AppState;
 use crate::models::auth::AuthContext;

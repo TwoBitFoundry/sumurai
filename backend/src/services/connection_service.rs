@@ -41,14 +41,8 @@ pub struct ConnectionService {
 }
 
 #[derive(Debug)]
-pub enum TellerConnectError {
-    NoLongerSupported,
-}
-
-#[derive(Debug)]
 pub enum SimpleFinConnectError {
-    #[allow(dead_code)]
-    InvalidProvider(String),
+    InvalidProvider,
     MissingSetupToken,
     MalformedSetupToken,
     SetupTokenAlreadyClaimed,
@@ -60,11 +54,6 @@ pub enum SimpleFinConnectError {
     AllInstitutionsHidden,
     NoInstitutionsLinked,
     InstitutionsRequireAuth(Vec<crate::models::simplefin::SimpleFinInstitutionAuthRequired>),
-}
-
-#[derive(Debug)]
-pub enum TellerSyncError {
-    NoLongerSupported,
 }
 
 #[derive(Debug)]
@@ -88,7 +77,6 @@ pub enum ProviderSyncError {
     AccountLookup(Error),
     TransactionLookup(Error),
     SyncFailure(Error),
-    TellerNoLongerSupported,
     RateLimited {
         message: String,
         retry_after_secs: String,
@@ -347,15 +335,6 @@ impl ConnectionService {
         })
     }
 
-    pub async fn connect_teller_provider(
-        &self,
-        _user_id: &Uuid,
-        _jwt_id: &str,
-        _request: &ProviderConnectRequest,
-    ) -> Result<ProviderConnectResponse, TellerConnectError> {
-        Err(TellerConnectError::NoLongerSupported)
-    }
-
     pub async fn list_simplefin_ignored_institutions(
         &self,
         user_id: &Uuid,
@@ -472,14 +451,12 @@ impl ConnectionService {
         }
 
         if request.provider.as_str() != "simplefin" {
-            return Err(SimpleFinConnectError::InvalidProvider(
-                request.provider.clone(),
-            ));
+            return Err(SimpleFinConnectError::InvalidProvider);
         }
 
         let provider = self
             .resolve_provider("simplefin")
-            .ok_or_else(|| SimpleFinConnectError::InvalidProvider("simplefin".to_string()))?;
+            .ok_or(SimpleFinConnectError::InvalidProvider)?;
 
         self.exit_demo_mode_before_new_institution(user_id, jwt_id)
             .await
@@ -1448,21 +1425,6 @@ impl ConnectionService {
             simplefin_institution_results: Some(simplefin_institution_results),
             bridge_warnings: (!bridge_warnings.is_empty()).then_some(bridge_warnings),
         })
-    }
-
-    #[tracing::instrument(
-        skip(self, connection),
-        fields(provider = "teller", connection_id = %connection.id)
-    )]
-    pub async fn sync_teller_connection(
-        &self,
-        _user_id: &Uuid,
-        _jwt_id: &str,
-        connection: &mut ProviderConnection,
-        _reference_date: Option<NaiveDate>,
-    ) -> Result<SyncTransactionsResponse, TellerSyncError> {
-        let _ = connection;
-        Err(TellerSyncError::NoLongerSupported)
     }
 
     async fn sync_demo_simplefin_connection(

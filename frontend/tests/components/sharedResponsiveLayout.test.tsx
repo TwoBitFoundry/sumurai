@@ -13,7 +13,6 @@ import { BankCard } from '@/components/BankCard';
 import { HeroStatCard } from '@/components/widgets/HeroStatCard';
 import { DashboardChartCard } from '@/features/analytics/components/DashboardChartCard';
 import { BudgetList } from '@/features/budgets/components/BudgetList';
-import { BudgetSummaryCard } from '@/features/budgets/components/BudgetSummaryCard';
 import { AccountsSummaryStats } from '@/features/plaid/components/AccountsSummaryStats';
 import { ProviderSelectionPanel } from '@/features/plaid/components/ProviderSelectionPanel';
 import { TransactionsFilters } from '@/features/transactions/components/TransactionsFilters';
@@ -153,42 +152,12 @@ describe('shared responsive layout surfaces', () => {
     expect(container.firstElementChild).toHaveClass(uiRadiusRecipes.standard);
   });
 
-  it('keeps budget summary shell padding symmetric', () => {
-    const { container } = render(<BudgetSummaryCard totalBudgeted={1000} totalSpent={250} />);
-
-    const shell = container.querySelector('[data-testid="budget-summary-card"] > div');
-
-    expect(shell).toHaveClass('p-3');
-    expect(shell).toHaveClass('lg:p-4');
-    expect(shell?.className).not.toContain('pt-4');
-    expect(shell?.className).not.toContain('pt-5');
-  });
-
-  it('keeps total planned on the header row and planned amount right aligned', () => {
-    render(<BudgetSummaryCard totalBudgeted={1000} totalSpent={250} />);
-
-    expect(screen.getByText('Total Planned')).toBeInTheDocument();
-    expect(screen.getByText('$1,000.00')).toHaveClass('text-right');
-  });
-
-  it('keeps budget summary captions aligned with the progress bar column', () => {
-    const { container } = render(<BudgetSummaryCard totalBudgeted={1000} totalSpent={250} />);
-
-    const summaryGrid = container.querySelector(
-      '[data-testid="budget-summary-card"] .grid.grid-cols-\\[auto_1fr_auto\\]'
-    );
-
-    expect(summaryGrid).toHaveClass('md:gap-x-3');
-    expect(summaryGrid?.querySelector('[role="progressbar"]')).toBeTruthy();
-    expect(summaryGrid?.textContent).toContain('25%');
-  });
-
   it('matches the provider selection title to other hero cards', () => {
     const { container } = render(
       <ProviderSelectionPanel
         loading={false}
         error={null}
-        availableProviders={['plaid', 'teller']}
+        availableProviders={['plaid', 'simplefin']}
         connectingProvider={null}
         onSelectProvider={jest.fn()}
       />

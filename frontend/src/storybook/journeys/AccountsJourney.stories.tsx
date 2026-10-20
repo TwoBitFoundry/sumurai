@@ -13,7 +13,6 @@ import { installStoryProviderConnectWindows } from '@/storybook/fixtures/provide
 import {
   buildStoryLastInstitutionDisconnectHandlers,
   buildStoryPlaidPickerEmptyHandlers,
-  buildStoryTellerPickerEmptyHandlers,
   storyAutoCategorizeHandlers,
   storyPickerEmptyHandlers,
 } from '@/storybook/support/shared';
@@ -193,50 +192,6 @@ const simpleFinConnectedHandlers = [
   ...storyAutoCategorizeHandlers,
 ];
 
-const storyTellerProviderInfo = {
-  ...storyFullProviderCatalogInfo,
-  user_provider: 'teller' as const,
-};
-
-const tellerEmptyStateHandlers = buildStoryTellerPickerEmptyHandlers();
-
-const storyTellerAccounts = [
-  {
-    id: 'story-teller-account-1',
-    name: 'Checking',
-    provider: 'teller',
-    account_type: 'depository',
-    balance_ledger: 8420.18,
-    balance_available: 8120.18,
-    mask: '5577',
-    institution_name: 'Story Teller Bank',
-    connection_id: 'story-teller-conn-1',
-    transaction_count: 18,
-  },
-];
-
-const storyTellerStatus = {
-  provider: 'teller',
-  connections: [
-    {
-      connection_id: 'story-teller-conn-1',
-      institution_name: 'Story Teller Bank',
-      last_sync_at: '2026-05-02T12:00:00.000Z',
-      transaction_count: 18,
-      account_count: 1,
-      is_connected: true,
-      sync_in_progress: false,
-    },
-  ],
-};
-
-const tellerConnectedHandlers = [
-  route('GET', '/providers/info', () => jsonResponse(storyTellerProviderInfo)),
-  route('GET', '/providers/status', () => jsonResponse(storyTellerStatus)),
-  route('GET', '/providers/accounts', () => jsonResponse(storyTellerAccounts)),
-  ...storyAutoCategorizeHandlers,
-];
-
 export const ProviderPickerEmpty: Story = {
   render: () => (
     <AccountFilterStoryProvider>
@@ -406,45 +361,5 @@ export const SimpleFinConnected: Story = {
     await expect(canvas.queryByPlaceholderText('Paste your token')).not.toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: /^disconnect$/i })).toBeVisible();
     await expect(canvas.queryByRole('button', { name: /sync now/i })).not.toBeInTheDocument();
-  },
-};
-
-export const TellerEmptyState: Story = {
-  render: () => (
-    <AccountFilterStoryProvider>
-      <StoryApiScope handlers={tellerEmptyStateHandlers}>
-        <AccountsPage />
-      </StoryApiScope>
-    </AccountFilterStoryProvider>
-  ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await openProviderPicker(canvas);
-    await waitForPickerLinkButtons(canvas);
-    await expect(canvas.queryByText('Teller')).toBeNull();
-    await expect(canvas.queryByAltText('Teller logo')).toBeNull();
-    await expect(getStoryProviderPickerButton(canvas, 'plaid')).toBeVisible();
-  },
-};
-
-export const TellerConnected: Story = {
-  render: () => (
-    <AccountFilterStoryProvider>
-      <StoryApiScope handlers={tellerConnectedHandlers}>
-        <AccountsPage />
-      </StoryApiScope>
-    </AccountFilterStoryProvider>
-  ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await waitFor(
-      () => {
-        expect(canvas.getByText('Story Teller Bank')).toBeVisible();
-      },
-      { timeout: storyInteractionTimeoutMs }
-    );
-    await expect(canvas.getByRole('button', { name: /sync now/i })).toBeVisible();
   },
 };

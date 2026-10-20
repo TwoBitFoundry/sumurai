@@ -78,16 +78,6 @@ describe('ProviderSelectionPanel', () => {
     expect(buttons[2]).toHaveAccessibleName('Link Account');
   });
 
-  it('does not render a Teller card in the picker', () => {
-    renderPanel({
-      availableProviders: ['plaid', 'simplefin', 'teller'],
-    });
-
-    expect(screen.queryByText('Teller')).not.toBeInTheDocument();
-    expect(screen.queryByText('US Only')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /link account|unavailable/i })).toHaveLength(3);
-  });
-
   it('keeps Plaid disabled when its credentials are missing', async () => {
     const user = userEvent.setup();
     const onSelectProvider = jest.fn();
@@ -153,7 +143,7 @@ describe('ProviderSelectionPanel', () => {
     expect(document.querySelectorAll('svg.lucide-x')).toHaveLength(1);
   });
 
-  it('does not gate picker cards on Teller SDK readiness', () => {
+  it('does not gate picker cards on Plaid SDK readiness', () => {
     renderPanel({
       availableProviders: ['plaid', 'simplefin'],
       providerReadyState: {
@@ -210,7 +200,6 @@ describe('ProviderSelectionPanel', () => {
     expect(screen.getByText('Self-Managed')).toBeVisible();
     expect(screen.getByText('Plaid')).toBeVisible();
     expect(screen.queryByText('SimpleFIN')).not.toBeInTheDocument();
-    expect(screen.queryByText('Teller')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /link account/i })).toHaveLength(2);
   });
 

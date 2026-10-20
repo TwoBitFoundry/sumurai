@@ -3,6 +3,7 @@ use crate::db;
 use crate::models::{
     account::Account,
     auth::User,
+    plaid::ProviderConnection,
     transaction::{InsightState, Transaction},
 };
 use crate::services::repository_service::{DatabaseRepository, PostgresRepository};
@@ -47,7 +48,7 @@ async fn create_test_user(repo: &PostgresRepository) -> User {
         id: Uuid::new_v4(),
         email: format!("test_{}@example.com", Uuid::new_v4()),
         password_hash: Some("original_hash_value".to_string()),
-        provider: "teller".to_string(),
+        provider: "simplefin".to_string(),
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: false,
@@ -101,27 +102,6 @@ fn create_test_transaction(
         normalized_merchant: None,
         normalization_source: None,
     }
-}
-
-#[tokio::test]
-async fn given_valid_user_when_updating_password_then_hash_changes() {
-    let Some(pool) = connect_pool().await else {
-        return;
-    };
-
-    let repo = open_repository(pool.clone());
-    let user = create_test_user(&repo).await;
-
-    let original_hash = user.password_hash.clone();
-    let new_hash = "new_hash_value_argon2id$v=19$m=19456,t=2,p=1$abc123$def456".to_string();
-
-    let result = repo.update_user_password(&user.id, &new_hash).await;
-
-    assert!(result.is_ok());
-
-    let updated_user = repo.get_user_by_id(&user.id).await.unwrap().unwrap();
-    assert_eq!(updated_user.password_hash, Some(new_hash));
-    assert_ne!(updated_user.password_hash, original_hash);
 }
 
 #[tokio::test]
@@ -184,29 +164,6 @@ async fn given_delete_user_when_rls_context_set_then_deletion_succeeds() {
 
     let deleted_user = repo.get_user_by_id(&user.id).await.unwrap();
     assert!(deleted_user.is_none());
-}
-
-#[tokio::test]
-async fn given_update_password_when_executed_then_updated_at_changes() {
-    let Some(pool) = connect_pool().await else {
-        return;
-    };
-
-    let repo = open_repository(pool.clone());
-    let user = create_test_user(&repo).await;
-
-    let original_updated_at = user.updated_at;
-    let new_hash = "new_updated_hash_value".to_string();
-
-    tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-
-    repo.update_user_password(&user.id, &new_hash)
-        .await
-        .unwrap();
-
-    let updated_user = repo.get_user_by_id(&user.id).await.unwrap().unwrap();
-
-    assert!(updated_user.updated_at > original_updated_at);
 }
 
 #[tokio::test]
@@ -1481,26 +1438,15 @@ async fn given_fresh_user_when_list_simplefin_hidden_orgs_then_returns_empty_set
     assert!(hidden.is_empty());
 }
 
-#[tokio::test]
-async fn given_hidden_org_when_insert_twice_then_is_idempotent() {
-    let Some(pool) = connect_pool().await else {
-        return;
-    };
-
-    let repo = open_repository(pool.clone());
-    let user = create_test_user(&repo).await;
-
-    repo.insert_simplefin_hidden_org(&user.id, "conn-abc", Some("Test Bank"))
+async fn hide_org(repo: &PostgresRepository, user_id: &Uuid, org_conn_id: &str, bank: &str) {
+    let item_id = format!("simplefin_{org_conn_id}");
+    let mut connection = ProviderConnection::new(*user_id, &item_id);
+    connection.provider = "simplefin".to_string();
+    connection.mark_connected(bank);
+    repo.save_provider_connection(&connection).await.unwrap();
+    repo.disconnect_simplefin_org(user_id, &item_id, org_conn_id, Some(bank))
         .await
         .unwrap();
-    repo.insert_simplefin_hidden_org(&user.id, "conn-abc", None)
-        .await
-        .unwrap();
-
-    let hidden = repo.list_simplefin_hidden_orgs(&user.id).await.unwrap();
-
-    assert_eq!(hidden.len(), 1);
-    assert!(hidden.contains("conn-abc"));
 }
 
 #[tokio::test]
@@ -1513,9 +1459,7 @@ async fn given_two_users_when_user_a_hides_org_then_user_b_cannot_see_it() {
     let user_a = create_test_user(&repo).await;
     let user_b = create_test_user(&repo).await;
 
-    repo.insert_simplefin_hidden_org(&user_a.id, "conn-private", Some("Private Bank"))
-        .await
-        .unwrap();
+    hide_org(&repo, &user_a.id, "conn-private", "Private Bank").await;
 
     let hidden_a = repo.list_simplefin_hidden_orgs(&user_a.id).await.unwrap();
     let hidden_b = repo.list_simplefin_hidden_orgs(&user_b.id).await.unwrap();

@@ -34,7 +34,7 @@ Import your own data, or connect through an aggregator. For aggregators, check w
 - [SimpleFIN institutions search](https://beta-bridge.simplefin.org/search-institutions)
 - [Plaid US/Canada coverage](https://plaid.com/docs/institutions/) · [Plaid Europe coverage](https://plaid.com/docs/institutions/europe/)
 
-ℹ️ Sumurai never stores your bank login when using an aggregator. Pick the path that's right for you. Plaid requires a developer account. Teller is no longer connectable (API sunset); legacy Teller connections may still display with icon, sync fails, and disconnect still works.
+ℹ️ Sumurai never stores your bank login when using an aggregator. Pick the path that's right for you. Plaid requires a developer account.
 
 
 |               | Self-Managed | SimpleFIN            | Plaid                |
@@ -212,7 +212,7 @@ The app is a static Next.js export served by Nginx on port 8080, with `/api/*` a
 - Frontend: Next.js 16, React 19, TypeScript 7, Tailwind 4, Recharts 3, Biome 2, Bun, and browser OpenTelemetry (enabled per compose via `NEXT_PUBLIC_OTEL_*`)
 - Backend: Rust 1.97.1, Axum, SQLx, Redis, PostgreSQL, JWT auth, provider integrations, and OpenTelemetry tracing (export mode is set per environment; production compose sends OTLP to Seq)
 - Deployment: standalone Docker Compose files—default OSS (`docker-compose.yml`), local dev builds (`docker-compose.dev.yml`), or production with Seq (`docker-compose.prod.yml`); each includes nginx, frontend, backend, Postgres, and Redis.
-- Providers: Plaid, SimpleFIN, and DIY through a shared provider registry. Legacy Teller connections may still display; sync fails and disconnect works. Demo mode seeds SimpleFIN.
+- Providers: Plaid, SimpleFIN, and DIY through a shared provider registry. Demo mode seeds SimpleFIN.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the deeper system breakdown.
 

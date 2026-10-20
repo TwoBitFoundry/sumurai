@@ -34,7 +34,7 @@ const findPlaidScript = (): HTMLScriptElement | null =>
     `script[${PLAID_SCRIPT_ATTR}], script[src="${PLAID_SCRIPT_SRC}"]`
   );
 
-export const ensurePlaidScript = (): Promise<void> => {
+const ensurePlaidScript = (): Promise<void> => {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     return Promise.reject(new Error('Plaid Link can only be initialized in a browser environment'));
   }

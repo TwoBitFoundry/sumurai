@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::sync::Arc;
 
 use anyhow::{anyhow, Context, Result};
@@ -60,12 +58,6 @@ impl AutoCategorizationService {
             categorizer,
             batch_size,
         }
-    }
-
-    pub async fn count_eligible(&self, user_id: &Uuid) -> Result<i64> {
-        self.db
-            .count_eligible_auto_categorize_transactions(user_id)
-            .await
     }
 
     pub async fn start(

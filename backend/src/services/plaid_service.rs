@@ -5,7 +5,6 @@ use chrono::NaiveDate;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use serde_json::json;
-use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::models::{
@@ -436,42 +435,5 @@ impl RealPlaidClient {
             external_http::log_response_payload("plaid", "POST", "/item/get", status, &error_text);
             Err(anyhow::anyhow!("Failed to get item info: {}", error_text))
         }
-    }
-}
-
-pub struct PlaidService {
-    #[allow(dead_code)]
-    client: Arc<RealPlaidClient>,
-}
-
-impl PlaidService {
-    pub fn new(client: Arc<RealPlaidClient>) -> Self {
-        Self { client }
-    }
-}
-
-#[allow(dead_code)]
-impl PlaidService {
-    pub async fn create_link_token(&self, user_id: &str) -> Result<String> {
-        self.client.create_link_token(user_id).await
-    }
-
-    pub async fn exchange_public_token(&self, public_token: &str) -> Result<String> {
-        self.client.exchange_public_token(public_token).await
-    }
-
-    pub async fn get_accounts(&self, access_token: &str) -> Result<Vec<Account>> {
-        self.client.get_accounts(access_token).await
-    }
-
-    pub async fn get_transactions(
-        &self,
-        access_token: &str,
-        start_date: NaiveDate,
-        end_date: NaiveDate,
-    ) -> Result<ProviderTransactionsResult> {
-        self.client
-            .get_transactions(access_token, start_date, end_date)
-            .await
     }
 }

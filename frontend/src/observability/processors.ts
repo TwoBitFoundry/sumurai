@@ -2,7 +2,7 @@ import { type Attributes, type Context, trace } from '@opentelemetry/api';
 import type { ReadableSpan, Span, SpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { redactTokenPatterns } from './sanitization';
 
-const SENSITIVE_ENDPOINTS = [/\/api\/plaid\/exchange-token$/, /\/api\/teller\/exchange-token$/];
+const SENSITIVE_ENDPOINTS = [/\/api\/plaid\/exchange-token$/];
 
 const AUTH_ENDPOINTS = [/\/api\/auth\//, /\/api\/plaid\/link-token$/];
 
@@ -107,12 +107,8 @@ export class SensitiveDataSpanProcessor implements SpanProcessor {
 
   private recordSanitizedOutcome(span: ReadableSpan, url: string): void {
     const tracer = trace.getTracer('sumurai-frontend', '1.0.0');
-    const provider = url.includes('/plaid/')
-      ? 'plaid'
-      : url.includes('/teller/')
-        ? 'teller'
-        : 'unknown';
-    const endpoint = this.getEndpointKey(url, provider);
+    const provider = url.includes('/plaid/') ? 'plaid' : 'unknown';
+    const endpoint = this.getEndpointKey(provider);
     const status =
       (span.attributes['http.status_code'] as number | undefined) ??
       (span.attributes['http.response.status_code'] as number | undefined) ??
@@ -138,17 +134,9 @@ export class SensitiveDataSpanProcessor implements SpanProcessor {
     auditSpan.end();
   }
 
-  private getEndpointKey(url: string, provider: string): string | undefined {
+  private getEndpointKey(provider: string): string | undefined {
     if (provider === 'plaid') {
       return 'plaid.exchange-token';
-    }
-
-    if (provider === 'teller' && url.includes('/connect')) {
-      return 'teller.connect';
-    }
-
-    if (provider === 'teller') {
-      return 'teller.exchange-token';
     }
 
     return undefined;

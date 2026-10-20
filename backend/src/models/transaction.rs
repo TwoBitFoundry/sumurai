@@ -12,9 +12,6 @@ use crate::utils::merchant_name::normalize_merchant_display_case;
 use csv::StringRecord;
 use sha2::{Digest, Sha256};
 
-#[allow(unused_imports)]
-use serde_json::json;
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 #[schema(example = json!({
     "id": "33333333-4444-5555-6666-777777777777",

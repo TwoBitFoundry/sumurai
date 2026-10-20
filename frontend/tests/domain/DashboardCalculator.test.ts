@@ -76,7 +76,7 @@ describe('DashboardCalculator', () => {
       ];
       const domain = DashboardCalculator.calculateNetYAxisDomain(series);
       expect(domain).toBeDefined();
-      const [min, max] = domain!;
+      const [min] = domain!;
       const padding = 10000 - min;
       expect(padding).toBeGreaterThanOrEqual(500);
     });

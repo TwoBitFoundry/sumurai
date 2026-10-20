@@ -40,7 +40,6 @@ fn build_test_sync_service_factory() -> SyncServiceFactory {
 fn given_known_providers_when_get_dispatcher_then_returns_some() {
     let factory = build_test_sync_service_factory();
     assert!(factory.get_dispatcher("plaid").is_some());
-    assert!(factory.get_dispatcher("teller").is_some());
     assert!(factory.get_dispatcher("simplefin").is_some());
 }
 

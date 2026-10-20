@@ -8,8 +8,7 @@ use crate::models::analytics::{
 };
 use crate::models::transaction::Transaction;
 use crate::services::repository_service::{
-    is_excluded_analytics_category, is_transfer_category, DatabaseRepository,
-    EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES,
+    is_transfer_category, DatabaseRepository, EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES,
 };
 use anyhow::Result;
 use chrono::Datelike;
@@ -32,7 +31,6 @@ fn truncate_to_latest_months<T>(result: &mut Vec<T>, months: u32) {
     }
 }
 
-#[allow(dead_code)]
 impl AnalyticsService {
     pub fn map_account_to_balance_category(
         account_type: &str,
@@ -70,18 +68,6 @@ impl AnalyticsService {
                 BalanceCategory::Investments
             }
         }
-    }
-
-    pub fn compute_positive_negative_ratio(
-        positives_total: Decimal,
-        negatives_total: Decimal,
-    ) -> Option<Decimal> {
-        if negatives_total == Decimal::ZERO {
-            return None;
-        }
-        let denom = (-negatives_total).max(Decimal::ONE);
-        let ratio = positives_total / denom;
-        Some(Self::round_amount(ratio))
     }
 
     pub fn new() -> Self {
@@ -581,54 +567,6 @@ impl AnalyticsService {
         result
     }
 
-    pub fn calculate_cash_flow(
-        &self,
-        transactions: &[Transaction],
-        months: u32,
-    ) -> Vec<CashFlowPoint> {
-        use chrono::Datelike;
-
-        #[derive(Default)]
-        struct MonthlyCashFlow {
-            income: Decimal,
-            expenses: Decimal,
-        }
-
-        let mut monthly_flows = std::collections::HashMap::new();
-
-        for transaction in transactions {
-            let month_key = format!(
-                "{}-{:02}",
-                transaction.date.year(),
-                transaction.date.month()
-            );
-            let flow = monthly_flows
-                .entry(month_key)
-                .or_insert(MonthlyCashFlow::default());
-
-            if transaction.amount > Decimal::ZERO
-                && !is_transfer_category(&transaction.category_primary)
-            {
-                flow.income += transaction.amount;
-            } else if transaction.amount < Decimal::ZERO
-                && !is_excluded_analytics_category(&transaction.category_primary)
-            {
-                flow.expenses += -transaction.amount;
-            }
-        }
-
-        let aggregates = monthly_flows
-            .into_iter()
-            .map(|(month, flow)| MonthlyCashFlowAggregate {
-                month,
-                income: flow.income,
-                expenses: flow.expenses,
-            })
-            .collect::<Vec<_>>();
-
-        self.cash_flow_from_monthly_aggregates(&aggregates, months)
-    }
-
     pub fn cash_flow_from_monthly_aggregates(
         &self,
         aggregates: &[MonthlyCashFlowAggregate],
@@ -724,19 +662,6 @@ impl AnalyticsService {
         merchants.truncate(limit);
 
         merchants
-    }
-
-    pub fn get_top_merchants_with_date_range(
-        &self,
-        transactions: &[Transaction],
-        start_date: Option<chrono::NaiveDate>,
-        end_date: Option<chrono::NaiveDate>,
-        limit: usize,
-    ) -> Vec<TopMerchant> {
-        let filtered_transactions = self.filter_by_date_range(transactions, start_date, end_date);
-        let transactions_slice: Vec<Transaction> =
-            filtered_transactions.into_iter().cloned().collect();
-        self.get_top_merchants(&transactions_slice, limit)
     }
 
     pub fn calculate_current_month_spending(&self, transactions: &[Transaction]) -> Decimal {

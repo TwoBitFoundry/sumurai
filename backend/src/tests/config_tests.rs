@@ -33,7 +33,6 @@ fn given_comma_separated_app_origin_when_from_env_provider_then_loads_all_origin
             "http://localhost:3001".to_string(),
         ]
     );
-    assert_eq!(config.app_origin(), "http://localhost:8080");
 }
 
 #[test]

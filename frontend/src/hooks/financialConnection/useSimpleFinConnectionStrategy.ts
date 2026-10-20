@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import { formatSimpleFinAuthRequiredToast } from '@/features/simplefin/utils/formatSimpleFinAuthRequiredToast';
 import { formatSimpleFinInstitutionsLabel } from '@/features/simplefin/utils/formatSimpleFinInstitutionsLabel';
 import { connectionActions } from '@/hooks/financialConnection/connectionState';
 import { recordHandledIssue } from '@/observability';

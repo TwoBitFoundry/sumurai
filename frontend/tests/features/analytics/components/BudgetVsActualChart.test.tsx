@@ -1,5 +1,4 @@
 import { render } from '@testing-library/react';
-import React from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { BudgetVsActualChart } from '@/features/analytics/components/BudgetVsActualChart';
 import { getThemeColors } from '@/ui/tokens';

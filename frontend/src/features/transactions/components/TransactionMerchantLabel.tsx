@@ -128,7 +128,7 @@ function MerchantInteractiveLine({
   );
 }
 
-export const TransactionMerchantLabel: React.FC<Props> = ({
+const TransactionMerchantLabel: React.FC<Props> = ({
   merchantName,
   originalMerchantName,
   className,

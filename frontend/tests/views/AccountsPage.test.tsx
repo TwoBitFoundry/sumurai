@@ -24,8 +24,8 @@ import { useProviderCatalog } from '@/hooks/useProviderCatalog';
 import { ApiError, NotFoundError } from '@/services/ApiClient';
 import { DiyService } from '@/services/DiyService';
 import { PlaidService } from '@/services/PlaidService';
-import { TellerService } from '@/services/TellerService';
 import { buildMockAccountFilterContext } from '@/storybook/mockAccountFilter';
+import type { FinancialProvider } from '@/types/api';
 import type { ProviderCatalogue } from '@/types/providerCatalog';
 import * as events from '@/utils/events';
 import { isProviderConnectable } from '@/utils/providerCapabilities';
@@ -86,10 +86,10 @@ jest.mock('@/components/onboarding/OnboardingProviderConnectModal', () => ({
     onClose,
     onConnected,
   }: {
-    provider: 'plaid' | 'teller' | 'simplefin' | null;
+    provider: 'plaid' | 'simplefin' | null;
     isOpen: boolean;
     onClose: () => void;
-    onConnected: (provider: 'plaid' | 'teller' | 'simplefin') => Promise<void> | void;
+    onConnected: (provider: 'plaid' | 'simplefin') => Promise<void> | void;
   }) =>
     isOpen && provider ? (
       <div role="dialog" aria-label={`connect your ${provider} bridge`}>
@@ -111,11 +111,11 @@ jest.mock('@/features/plaid/components/ProviderSelectionPanel', () => ({
     onSelectProvider,
     visibleProviders,
   }: {
-    availableProviders: Array<'plaid' | 'teller' | 'simplefin' | 'diy'>;
+    availableProviders: Array<'plaid' | 'simplefin' | 'diy'>;
     footerContent?: React.ReactNode;
     onClose?: () => void;
-    onSelectProvider: (provider: 'plaid' | 'teller' | 'simplefin' | 'diy') => void;
-    visibleProviders?: Array<'plaid' | 'teller' | 'simplefin' | 'diy'>;
+    onSelectProvider: (provider: 'plaid' | 'simplefin' | 'diy') => void;
+    visibleProviders?: Array<'plaid' | 'simplefin' | 'diy'>;
   }) => {
     const providers = visibleProviders ?? (['diy', 'simplefin', 'plaid'] as const);
     return (
@@ -173,14 +173,6 @@ jest.mock('@/services/PlaidService', () => ({
   PlaidService: {
     getAccounts: jest.fn(),
     getStatus: jest.fn(),
-    syncTransactions: jest.fn(),
-    disconnect: jest.fn(),
-  },
-}));
-
-jest.mock('@/services/TellerService', () => ({
-  TellerService: {
-    getStatus: jest.fn().mockResolvedValue([]),
     syncTransactions: jest.fn(),
     disconnect: jest.fn(),
   },
@@ -249,7 +241,7 @@ jest.mock('@/features/import/components/ImportModal', () => ({
     ) : null,
 }));
 
-function makeTellerAccountFilter(overrides: Partial<AccountFilterContextType> = {}) {
+function makeBankAccountFilter(overrides: Partial<AccountFilterContextType> = {}) {
   return buildMockAccountFilterContext({
     accountsByBank: {
       'Demo Bank': [
@@ -261,7 +253,7 @@ function makeTellerAccountFilter(overrides: Partial<AccountFilterContextType> = 
           balance_available: 100,
           balance_current: 100,
           mask: '1234',
-          provider: 'teller',
+          provider: 'plaid',
           institution_name: 'Demo Bank',
           connection_id: 'conn_1',
           provider_account_id: 'provider-acc_1',
@@ -310,8 +302,8 @@ describe('AccountsPage', () => {
     });
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
-        available_providers: ['plaid', 'teller'],
-        user_provider: 'teller',
+        available_providers: ['plaid', 'simplefin'],
+        user_provider: 'plaid',
       })
     );
     jest.mocked(useAccountFilter).mockReturnValue({
@@ -328,8 +320,8 @@ describe('AccountsPage', () => {
     jest.mocked(useFinancialConnection).mockReturnValue(makeFinancialConnectionMock());
   });
 
-  it('keeps the Teller accounts page available while offline', () => {
-    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
+  it('keeps the accounts page available while offline', () => {
+    jest.mocked(useAccountFilter).mockReturnValue(makeBankAccountFilter());
     renderAccountsPage();
 
     expect(screen.getByTestId('accounts-page')).toBeInTheDocument();
@@ -339,16 +331,16 @@ describe('AccountsPage', () => {
       })
     ).toBeVisible();
     expect(screen.getByText('Unavailable while offline')).toBeVisible();
-    const tellerButton = screen.getAllByRole('button', {
+    const linkAccountButton = screen.getAllByRole('button', {
       name: /^link account$/i,
     })[0];
-    expect(tellerButton).toBeDisabled();
-    expect(tellerButton.querySelector('svg.lucide-link')).toBeTruthy();
+    expect(linkAccountButton).toBeDisabled();
+    expect(linkAccountButton.querySelector('svg.lucide-link')).toBeTruthy();
   });
 
   it('does not show the auto-categorize action on the accounts page', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
-    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
+    jest.mocked(useAccountFilter).mockReturnValue(makeBankAccountFilter());
 
     renderAccountsPage();
 
@@ -362,7 +354,7 @@ describe('AccountsPage', () => {
     const user = userEvent.setup();
     const exportAccounts = jest.fn().mockResolvedValue(undefined);
     jest.mocked(useOnlineStatus).mockReturnValue(true);
-    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
+    jest.mocked(useAccountFilter).mockReturnValue(makeBankAccountFilter());
     jest.mocked(useExport).mockReturnValue({
       isExporting: false,
       error: null,
@@ -393,7 +385,7 @@ describe('AccountsPage', () => {
     const user = userEvent.setup();
     const exportAccounts = jest.fn().mockResolvedValue(undefined);
     jest.mocked(useOnlineStatus).mockReturnValue(true);
-    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
+    jest.mocked(useAccountFilter).mockReturnValue(makeBankAccountFilter());
     jest.mocked(useExport).mockReturnValue({
       isExporting: false,
       error: null,
@@ -412,7 +404,7 @@ describe('AccountsPage', () => {
 
   it('disables export controls while an export is in flight', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
-    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
+    jest.mocked(useAccountFilter).mockReturnValue(makeBankAccountFilter());
     jest.mocked(useExport).mockReturnValue({
       isExporting: true,
       error: null,
@@ -440,7 +432,7 @@ describe('AccountsPage', () => {
             balance_available: 100,
             balance_current: 100,
             mask: '1234',
-            provider: 'teller',
+            provider: 'plaid',
             institution_name: 'Demo Bank',
             connection_id: 'conn_1',
             provider_account_id: 'provider-acc',
@@ -498,7 +490,7 @@ describe('AccountsPage', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
-        available_providers: ['plaid', 'teller'],
+        available_providers: ['plaid', 'simplefin'],
         user_provider: 'plaid',
       })
     );
@@ -543,12 +535,12 @@ describe('AccountsPage', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
-        available_providers: ['plaid', 'teller'],
+        available_providers: ['plaid', 'simplefin'],
         user_provider: 'plaid',
       })
     );
     jest.mocked(useAccountFilter).mockReturnValue(
-      makeTellerAccountFilter({
+      makeBankAccountFilter({
         accountsByBank: {
           'Demo Bank': [
             {
@@ -580,7 +572,7 @@ describe('AccountsPage', () => {
     const user = userEvent.setup();
     const handler = jest.fn();
     jest.mocked(useOnlineStatus).mockReturnValue(true);
-    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
+    jest.mocked(useAccountFilter).mockReturnValue(makeBankAccountFilter());
     window.addEventListener(events.OPEN_ONBOARDING_PATH_EVENT, handler);
 
     renderAccountsPage({ demoModeActive: true });
@@ -592,32 +584,32 @@ describe('AccountsPage', () => {
     window.removeEventListener(events.OPEN_ONBOARDING_PATH_EVENT, handler);
   });
 
-  it('renders Teller current balances on the accounts page', async () => {
+  it('renders current balances on the accounts page', async () => {
     const user = userEvent.setup();
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
-        available_providers: ['plaid', 'teller'],
-        user_provider: 'teller',
+        available_providers: ['plaid', 'simplefin'],
+        user_provider: 'plaid',
       })
     );
     jest.mocked(useAccountFilter).mockReturnValue({
-      selectedAccountIds: ['acc_teller_1'],
-      allAccountIds: ['acc_teller_1'],
+      selectedAccountIds: ['acc_plaid_1'],
+      allAccountIds: ['acc_plaid_1'],
       isAllAccountsSelected: true,
       accountsByBank: {
         'Demo Bank': [
           {
-            id: 'acc_teller_1',
+            id: 'acc_plaid_1',
             name: 'Checking',
             account_type: 'depository',
             balance_current: 1234.56,
             balance_ledger: null,
             balance_available: null,
             mask: '1234',
-            provider: 'teller',
+            provider: 'plaid',
             institution_name: 'Demo Bank',
-            connection_id: 'conn_teller',
+            connection_id: 'conn_plaid',
             provider_account_id: 'provider-acc',
             transaction_count: 7,
           },
@@ -675,14 +667,14 @@ describe('AccountsPage', () => {
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock(
         {
-          available_providers: ['plaid', 'teller'],
-          user_provider: 'teller',
+          available_providers: ['plaid', 'simplefin'],
+          user_provider: 'plaid',
         },
         { refresh }
       )
     );
     jest.mocked(useAccountFilter).mockReturnValue(
-      makeTellerAccountFilter({
+      makeBankAccountFilter({
         accountsByBank: {
           'Demo Bank': [
             {
@@ -693,7 +685,7 @@ describe('AccountsPage', () => {
               balance_available: 100,
               balance_current: 100,
               mask: '1234',
-              provider: 'teller',
+              provider: 'plaid',
               institution_name: 'Demo Bank',
               connection_id: 'conn_1',
               provider_account_id: 'provider-acc',
@@ -715,8 +707,8 @@ describe('AccountsPage', () => {
     )?.[1];
     expect(typeof updater).toBe('function');
     const updated = (updater as (prev?: ProviderCatalogue) => ProviderCatalogue | undefined)({
-      available_providers: ['plaid', 'teller'],
-      user_provider: 'teller',
+      available_providers: ['plaid', 'simplefin'],
+      user_provider: 'plaid',
     });
     expect(updated?.user_provider).toBeNull();
     expect(refresh).toHaveBeenCalled();
@@ -740,12 +732,12 @@ describe('AccountsPage', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
-        available_providers: ['plaid', 'teller', 'diy'],
+        available_providers: ['plaid', 'simplefin', 'diy'],
         user_provider: 'diy',
       })
     );
     jest.mocked(useAccountFilter).mockReturnValue(
-      makeTellerAccountFilter({
+      makeBankAccountFilter({
         removeAccountsByIds,
         accountsByBank: {
           'My Cash': [
@@ -775,8 +767,58 @@ describe('AccountsPage', () => {
 
     expect(DiyService.disconnectInstitution).toHaveBeenCalledWith('conn_diy_1');
     expect(PlaidService.disconnect).not.toHaveBeenCalled();
-    expect(TellerService.disconnect).not.toHaveBeenCalled();
     expect(removeAccountsByIds).toHaveBeenCalledWith(['acc_diy_1']);
+  });
+
+  it('disconnects an unrecognised legacy provider row through the generic disconnect endpoint without requesting a sync', async () => {
+    const user = userEvent.setup();
+    const removeAccountsByIds = jest.fn();
+    const legacyProvider: string = 'teller';
+
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid', 'simplefin'],
+        user_provider: null,
+      })
+    );
+    jest.mocked(useAccountFilter).mockReturnValue(
+      makeBankAccountFilter({
+        removeAccountsByIds,
+        accountsByBank: {
+          'Legacy Bank': [
+            {
+              id: 'acc_legacy_1',
+              name: 'Checking',
+              account_type: 'depository',
+              balance_ledger: 100,
+              balance_available: 100,
+              balance_current: 100,
+              mask: '1234',
+              provider: legacyProvider as FinancialProvider,
+              institution_name: 'Legacy Bank',
+              connection_id: 'conn_legacy',
+              provider_account_id: 'provider-acc',
+              transaction_count: 0,
+            },
+          ],
+        },
+      })
+    );
+
+    renderAccountsPage();
+
+    expect(screen.getByRole('heading', { name: 'Legacy Bank' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Sync now' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Disconnect' }));
+    await user.click(screen.getByRole('button', { name: /^disconnect$/i }));
+
+    await waitFor(() => {
+      expect(PlaidService.disconnect).toHaveBeenCalledWith('conn_legacy');
+    });
+    expect(removeAccountsByIds).toHaveBeenCalledWith(['acc_legacy_1']);
+    expect(screen.getByText('Legacy Bank disconnected successfully')).toBeVisible();
   });
 
   it('opens the SimpleFIN modal from the connect action once an institution is connected', async () => {
@@ -836,7 +878,7 @@ describe('AccountsPage', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
-        available_providers: ['plaid', 'teller', 'diy'],
+        available_providers: ['plaid', 'simplefin', 'diy'],
         user_provider: null,
       })
     );
@@ -872,12 +914,12 @@ describe('AccountsPage', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
-        available_providers: ['plaid', 'teller', 'diy'],
+        available_providers: ['plaid', 'simplefin', 'diy'],
         user_provider: 'diy',
       })
     );
     jest.mocked(useAccountFilter).mockReturnValue(
-      makeTellerAccountFilter({
+      makeBankAccountFilter({
         accountsByBank: {
           'DIY Bank': [
             {
@@ -964,7 +1006,7 @@ describe('AccountsPage', () => {
       })
     );
     jest.mocked(useAccountFilter).mockReturnValue(
-      makeTellerAccountFilter({
+      makeBankAccountFilter({
         accountsByBank: {
           'Demo Bank': [
             {
@@ -1032,7 +1074,7 @@ describe('AccountsPage', () => {
       })
     );
     jest.mocked(useAccountFilter).mockReturnValue(
-      makeTellerAccountFilter({
+      makeBankAccountFilter({
         accountsByBank: {
           'Demo Bank': [
             {
@@ -1078,7 +1120,7 @@ describe('AccountsPage', () => {
       })
     );
     jest.mocked(useAccountFilter).mockReturnValue(
-      makeTellerAccountFilter({
+      makeBankAccountFilter({
         accountsByBank: {
           'Demo Bank': [
             {
@@ -1122,7 +1164,7 @@ describe('AccountsPage', () => {
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock(
         {
-          available_providers: ['plaid', 'teller'],
+          available_providers: ['plaid', 'simplefin'],
           user_provider: 'plaid',
         },
         {
@@ -1136,7 +1178,7 @@ describe('AccountsPage', () => {
       )
     );
     jest.mocked(useAccountFilter).mockReturnValue(
-      makeTellerAccountFilter({
+      makeBankAccountFilter({
         accountsByBank: {
           'Demo Bank': [
             {
@@ -1161,45 +1203,6 @@ describe('AccountsPage', () => {
     renderAccountsPage();
 
     expect(screen.getByRole('button', { name: /^link account$/i })).toBeEnabled();
-  });
-
-  it('keeps link account available when legacy teller user_provider remains', () => {
-    jest.mocked(useOnlineStatus).mockReturnValue(true);
-    jest.mocked(useProviderCatalog).mockReturnValue(
-      makeProviderCatalogMock({
-        available_providers: ['plaid', 'teller'],
-        user_provider: 'teller',
-      })
-    );
-    jest.mocked(useAccountFilter).mockReturnValue(
-      makeTellerAccountFilter({
-        accountsByBank: {
-          'Demo Bank': [
-            {
-              id: 'acc_plaid_1',
-              name: 'Checking',
-              account_type: 'depository',
-              balance_ledger: 100,
-              balance_available: 100,
-              balance_current: 100,
-              mask: '1234',
-              provider: 'plaid',
-              institution_name: 'Demo Bank',
-              connection_id: 'conn_plaid',
-              provider_account_id: 'provider-acc',
-              transaction_count: 0,
-            },
-          ],
-        },
-      })
-    );
-
-    renderAccountsPage();
-
-    expect(screen.getByRole('button', { name: /^link account$/i })).toBeEnabled();
-    expect(
-      screen.getByRole('button', { name: /^link account$/i }).querySelector('svg.lucide-link')
-    ).toBeTruthy();
   });
 
   describe('diy default state', () => {
@@ -1207,7 +1210,7 @@ describe('AccountsPage', () => {
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
-          available_providers: ['teller', 'simplefin', 'plaid'],
+          available_providers: ['simplefin', 'plaid'],
           user_provider: null,
         })
       );
@@ -1229,7 +1232,7 @@ describe('AccountsPage', () => {
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
-          available_providers: ['teller', 'simplefin', 'plaid'],
+          available_providers: ['simplefin', 'plaid'],
           user_provider: null,
         })
       );
@@ -1250,7 +1253,7 @@ describe('AccountsPage', () => {
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
-          available_providers: ['teller', 'simplefin', 'plaid'],
+          available_providers: ['simplefin', 'plaid'],
           user_provider: null,
         })
       );
@@ -1273,7 +1276,7 @@ describe('AccountsPage', () => {
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
-          available_providers: ['teller', 'simplefin', 'plaid'],
+          available_providers: ['simplefin', 'plaid'],
           user_provider: 'plaid',
         })
       );
@@ -1309,8 +1312,8 @@ describe('AccountsPage', () => {
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
-          available_providers: ['teller', 'simplefin', 'plaid'],
-          user_provider: 'teller',
+          available_providers: ['simplefin', 'plaid'],
+          user_provider: 'plaid',
         })
       );
       jest.mocked(useAccountFilter).mockReturnValue({
@@ -1327,7 +1330,7 @@ describe('AccountsPage', () => {
               balance_available: 100,
               balance_current: 100,
               mask: '1234',
-              provider: 'teller',
+              provider: 'plaid',
               institution_name: 'Demo Bank',
               connection_id: 'conn_1',
               provider_account_id: 'provider-acc',
@@ -1358,12 +1361,12 @@ describe('AccountsPage', () => {
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
-          available_providers: ['teller', 'simplefin', 'plaid', 'diy'],
-          user_provider: 'teller',
+          available_providers: ['simplefin', 'plaid', 'diy'],
+          user_provider: 'plaid',
         })
       );
       jest.mocked(useAccountFilter).mockReturnValue(
-        makeTellerAccountFilter({
+        makeBankAccountFilter({
           accountsByBank: {
             'Demo Bank': [
               {
@@ -1374,7 +1377,7 @@ describe('AccountsPage', () => {
                 balance_available: 100,
                 balance_current: 100,
                 mask: '1234',
-                provider: 'teller',
+                provider: 'plaid',
                 institution_name: 'Demo Bank',
                 connection_id: 'conn_1',
                 provider_account_id: 'provider-acc',
@@ -1392,33 +1395,7 @@ describe('AccountsPage', () => {
       await user.click(screen.getByRole('button', { name: /^link account$/i }));
 
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
-      expect(screen.getAllByRole('button', { name: /^connect$/i })).toHaveLength(1);
-    });
-
-    it('does not offer Teller in the accounts provider picker', async () => {
-      const user = userEvent.setup();
-      const chooseProvider = jest.fn();
-
-      jest.mocked(useOnlineStatus).mockReturnValue(true);
-      jest.mocked(useProviderCatalog).mockReturnValue(
-        makeProviderCatalogMock(
-          {
-            available_providers: ['simplefin', 'plaid'],
-            user_provider: null,
-          },
-          {
-            chooseProvider,
-          }
-        )
-      );
-
-      renderAccountsPage();
-
-      await user.click(screen.getByRole('button', { name: /^link account$/i }));
-
-      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
-      expect(screen.getAllByRole('button', { name: 'Connect' })).toHaveLength(3);
-      expect(chooseProvider).not.toHaveBeenCalled();
+      expect(screen.getAllByRole('button', { name: /^connect$/i })).toHaveLength(2);
     });
 
     it('opens the diy institution modal when diy is selected from the provider picker', async () => {
@@ -1427,7 +1404,7 @@ describe('AccountsPage', () => {
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
-          available_providers: ['teller', 'simplefin', 'plaid', 'diy'],
+          available_providers: ['simplefin', 'plaid', 'diy'],
           user_provider: null,
         })
       );
@@ -1447,7 +1424,7 @@ describe('AccountsPage', () => {
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
-          available_providers: ['plaid', 'teller', 'diy'],
+          available_providers: ['plaid', 'simplefin', 'diy'],
           user_provider: null,
         })
       );
@@ -1484,7 +1461,7 @@ describe('AccountsPage', () => {
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock(
           {
-            available_providers: ['plaid', 'teller', 'diy'],
+            available_providers: ['plaid', 'simplefin', 'diy'],
             user_provider: null,
           },
           { chooseProvider }
@@ -1530,14 +1507,14 @@ describe('AccountsPage', () => {
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock(
           {
-            available_providers: ['plaid', 'teller', 'diy'],
+            available_providers: ['plaid', 'simplefin', 'diy'],
             user_provider: 'plaid',
           },
           { chooseProvider }
         )
       );
       jest.mocked(useAccountFilter).mockReturnValue(
-        makeTellerAccountFilter({
+        makeBankAccountFilter({
           accountsByBank: {
             'DIY Bank': [
               {
@@ -1588,42 +1565,6 @@ describe('AccountsPage', () => {
       });
     });
 
-    it('shows the Teller sunset sync error without marking re-auth needed', async () => {
-      const user = userEvent.setup();
-
-      jest.mocked(useOnlineStatus).mockReturnValue(true);
-      jest.mocked(useProviderCatalog).mockReturnValue(
-        makeProviderCatalogMock({
-          available_providers: ['plaid', 'simplefin'],
-          user_provider: 'teller',
-        })
-      );
-      jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
-      jest
-        .mocked(TellerService.syncTransactions)
-        .mockRejectedValueOnce(
-          new ApiError(
-            400,
-            'Teller is no longer supported because the provider no longer offers API access.',
-            'TELLER_NO_LONGER_SUPPORTED'
-          )
-        );
-
-      renderAccountsPage();
-
-      await user.click(screen.getByRole('button', { name: 'Sync now' }));
-
-      await waitFor(() => {
-        expect(screen.getByRole('status', { name: 'Error' })).toBeVisible();
-      });
-      expect(screen.queryByRole('status', { name: 'Re-auth needed' })).not.toBeInTheDocument();
-      expect(
-        screen.getByText(
-          /Teller is no longer supported because the provider no longer offers API access/i
-        )
-      ).toBeVisible();
-    });
-
     it('keeps the provider picker open if plaid connect exits before completing', async () => {
       const user = userEvent.setup();
       const plaidPickerFlow = { connectionInProgress: false, isConnected: false };
@@ -1631,7 +1572,7 @@ describe('AccountsPage', () => {
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
-          available_providers: ['teller', 'simplefin', 'plaid'],
+          available_providers: ['simplefin', 'plaid'],
           user_provider: null,
         })
       );
@@ -1649,13 +1590,7 @@ describe('AccountsPage', () => {
       jest
         .mocked(useFinancialConnection)
         .mockImplementation(
-          ({
-            provider,
-            mountKey,
-          }: {
-            provider: 'plaid' | 'teller' | 'simplefin';
-            mountKey?: string;
-          }) => {
+          ({ provider, mountKey }: { provider: 'plaid' | 'simplefin'; mountKey?: string }) => {
             if (mountKey === 'accounts-picker-plaid') {
               return makeFinancialConnectionMock({
                 connectionInProgress: plaidPickerFlow.connectionInProgress,
@@ -1702,12 +1637,12 @@ describe('AccountsPage', () => {
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
-          available_providers: ['plaid', 'teller', 'diy'],
+          available_providers: ['plaid', 'simplefin', 'diy'],
           user_provider: 'diy',
         })
       );
       jest.mocked(useAccountFilter).mockReturnValue(
-        makeTellerAccountFilter({
+        makeBankAccountFilter({
           accountsByBank: {
             'DIY Bank': [
               {
@@ -1750,7 +1685,7 @@ describe('AccountsPage', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
-        available_providers: ['plaid', 'teller'],
+        available_providers: ['plaid', 'simplefin'],
         user_provider: 'plaid',
       })
     );

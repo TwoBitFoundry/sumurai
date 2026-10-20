@@ -74,40 +74,6 @@ impl AuthService {
         Ok(auth_token)
     }
 
-    #[allow(dead_code)]
-    pub fn generate_token_with_expiry(
-        &self,
-        user_id: Uuid,
-        expiry_duration: std::time::Duration,
-    ) -> Result<AuthToken, AuthError> {
-        let now = Utc::now();
-        let expiration =
-            now + Duration::from_std(expiry_duration).map_err(|_| AuthError::InvalidToken)?;
-        let jwt_id = Uuid::new_v4().to_string();
-
-        let claims = Claims {
-            sub: user_id.to_string(),
-            exp: expiration.timestamp() as usize,
-            iat: now.timestamp() as usize,
-            jti: jwt_id.clone(),
-        };
-
-        let token = encode(
-            &Header::default(),
-            &claims,
-            &EncodingKey::from_secret(self.secret_key.as_ref()),
-        )
-        .map_err(|_| AuthError::InvalidToken)?;
-
-        let auth_token = AuthToken {
-            token,
-            jwt_id,
-            expires_at: expiration,
-        };
-
-        Ok(auth_token)
-    }
-
     #[tracing::instrument(skip(self, token))]
     pub fn validate_token(&self, token: &str) -> Result<Claims, AuthError> {
         if self.is_malicious_token(token) {

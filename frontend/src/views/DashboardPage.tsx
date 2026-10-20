@@ -16,15 +16,10 @@ import {
 import { heroAccents } from '@/ui/tokens';
 import { BalancesOverviewSummary } from '../components/BalancesOverview';
 import DashboardStatsCarousel from '../components/DashboardStatsCarousel';
-import { DashboardCalculator } from '../domain/DashboardCalculator';
 import { categoriesToDonut } from '../features/analytics/adapters/chartData';
 import { BudgetVsActualChart } from '../features/analytics/components/BudgetVsActualChart';
 import { CashFlowChart } from '../features/analytics/components/CashFlowChart';
 import { ChartFadePresence } from '../features/analytics/components/ChartFadePresence';
-import {
-  ChartGlassTooltip,
-  chartTooltipRechartsProps,
-} from '../features/analytics/components/ChartGlassTooltip';
 import DashboardChartCard from '../features/analytics/components/DashboardChartCard';
 import { SpendingByCategoryChart } from '../features/analytics/components/SpendingByCategoryChart';
 import { TopMerchantsList } from '../features/analytics/components/TopMerchantsList';

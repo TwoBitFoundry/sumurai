@@ -1,4 +1,4 @@
-import { categoryAccents, rotatableCategoryAccents } from '@/ui/tokens';
+import { rotatableCategoryAccents } from '@/ui/tokens';
 import {
   buildCategoryAccentIndex,
   categoryLookupKey,

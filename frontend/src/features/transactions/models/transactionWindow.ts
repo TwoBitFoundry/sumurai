@@ -1,5 +1,3 @@
-import type { Transaction } from '../../../types/api';
-
 export interface TransactionWindowFilters {
   search?: string;
   categoryPrimary?: string;
@@ -40,18 +38,4 @@ export function transactionListContextsEqual(
         left.endDate === right.endDate
       );
   }
-}
-
-export interface TransactionWindowRow {
-  transaction: Transaction;
-}
-
-export interface TransactionWindowResult {
-  rows: Transaction[];
-  hasNextPage: boolean;
-  isFetchingNextPage: boolean;
-  isInitialLoading: boolean;
-  error: Error | null;
-  fetchNextPage: () => void;
-  limit: number;
 }

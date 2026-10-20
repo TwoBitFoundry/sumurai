@@ -25,7 +25,7 @@ const syncedRow: SyncAllRow = {
 
 const issueRow: SyncAllRow = {
   id: 'bank-2',
-  provider: 'teller',
+  provider: 'plaid',
   institutionName: 'Issue Bank',
   connectionId: 'conn-2',
   status: 'rate_limited',

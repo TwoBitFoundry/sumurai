@@ -24,7 +24,7 @@ use crate::services::{
     category_management::service::CategoryManagementService,
     connection_service::ConnectionService,
     otel_traces_relay::OtlpTracesRelay,
-    plaid_service::{PlaidService, RealPlaidClient},
+    plaid_service::RealPlaidClient,
     repository_service::DatabaseRepository,
     repository_service::MockDatabaseRepository,
     sync_service::SyncService,
@@ -316,8 +316,6 @@ impl TestFixtures {
             "test_secret".to_string(),
             "sandbox".to_string(),
         ));
-        let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
-        let plaid_service_arc = plaid_service.clone();
         let plaid_client_arc = plaid_client.clone();
         let plaid_provider: Arc<dyn crate::providers::FinancialDataProvider> =
             Arc::new(crate::providers::PlaidProvider::new(plaid_client.clone()));
@@ -448,7 +446,6 @@ impl TestFixtures {
         ));
 
         let state = AppState {
-            plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
             sync_service,
             sync_service_factory,
@@ -489,8 +486,6 @@ impl TestFixtures {
             "test_secret".to_string(),
             "sandbox".to_string(),
         ));
-        let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
-        let plaid_service_arc = plaid_service.clone();
         let plaid_client_arc = plaid_client.clone();
         let plaid_provider: Arc<dyn crate::providers::FinancialDataProvider> =
             Arc::new(crate::providers::PlaidProvider::new(plaid_client.clone()));
@@ -609,7 +604,6 @@ impl TestFixtures {
         ));
 
         let state = AppState {
-            plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
             sync_service,
             sync_service_factory,
@@ -676,8 +670,6 @@ impl TestFixtures {
             "test_secret".to_string(),
             "sandbox".to_string(),
         ));
-        let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
-        let plaid_service_arc = plaid_service.clone();
         let plaid_client_arc = plaid_client.clone();
         let plaid_provider: Arc<dyn crate::providers::FinancialDataProvider> =
             Arc::new(crate::providers::PlaidProvider::new(plaid_client.clone()));
@@ -739,7 +731,6 @@ impl TestFixtures {
         ));
 
         let state = AppState {
-            plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
             sync_service,
             sync_service_factory,
@@ -780,7 +771,7 @@ impl TestFixtures {
             id: user_id,
             email: format!("test-{}@example.com", user_id),
             password_hash: None,
-            provider: "teller".to_string(),
+            provider: "simplefin".to_string(),
             created_at: Utc::now(),
             updated_at: Utc::now(),
             onboarding_completed: false,
@@ -853,106 +844,6 @@ impl TestFixtures {
 
     pub fn budget_payload_create_rent_1200() -> &'static str {
         r#"{"category":"Rent","amount":"1200.00"}"#
-    }
-
-    pub fn teller_account_test_checking() -> &'static str {
-        r#"{"id":"acc_test_123","name":"Test Checking Account","type":"depository","subtype":"checking","last_four":"9876","status":"open","currency":"USD","institution":{"id":"test_bank","name":"Test Bank"}}"#
-    }
-
-    pub fn teller_account_minimal() -> &'static str {
-        r#"{"id":"acc_456","institution":{}}"#
-    }
-
-    pub fn teller_account_my_checking() -> &'static str {
-        r#"{"id":"acc_123","name":"My Checking","type":"depository","subtype":"checking","last_four":"1234","status":"open","currency":"USD","institution":{"id":"chase","name":"Chase"}}"#
-    }
-
-    pub fn teller_account_my_savings() -> &'static str {
-        r#"{"id":"acc_456","name":"My Savings","type":"depository","subtype":"savings","last_four":"5678","status":"open","currency":"USD","institution":{"id":"chase","name":"Chase"}}"#
-    }
-
-    pub fn teller_account_chase_bank() -> &'static str {
-        r#"{"id":"acc_123","name":"My Checking","type":"depository","subtype":"checking","last_four":"1234","status":"open","currency":"USD","institution":{"id":"chase","name":"Chase Bank"}}"#
-    }
-
-    pub fn teller_balance_primary() -> &'static str {
-        r#"{"ledger":"1234.56","available":"1000.00"}"#
-    }
-
-    pub fn teller_balance_secondary() -> &'static str {
-        r#"{"ledger":"5678.90","available":"5678.90"}"#
-    }
-
-    pub fn teller_transaction_starbucks() -> &'static str {
-        r#"{"id":"txn_1","date":"2024-01-15","amount":"-89.40","description":"Starbucks","status":"posted","details":{"category":"general","counterparty":{"type":"merchant","name":"Starbucks"}}}"#
-    }
-
-    pub fn teller_transaction_walmart() -> &'static str {
-        r#"{"id":"txn_2","date":"2023-12-20","amount":"-150.00","description":"Walmart","status":"posted","details":{"category":"general"}}"#
-    }
-
-    pub fn teller_transaction_gas_station() -> &'static str {
-        r#"{"id":"txn_3","date":"2024-01-20","amount":"-45.00","description":"Gas Station","status":"posted","details":{"category":"service"}}"#
-    }
-
-    pub fn teller_transaction_coffee_shop() -> &'static str {
-        r#"{"id":"txn_test_123","date":"2024-01-15","amount":"-89.40","description":"Coffee Shop","status":"posted","details":{"category":"general","counterparty":{"type":"merchant","name":"Starbucks"}}}"#
-    }
-
-    pub fn teller_transaction_deposit() -> &'static str {
-        r#"{"id":"txn_deposit","date":"2024-01-20","amount":"1500.00","description":"Paycheck","status":"posted","details":{"category":"service"}}"#
-    }
-
-    pub fn teller_transaction_service_category() -> &'static str {
-        r#"{"id":"txn_service","date":"2024-01-10","amount":"-45.00","description":"Haircut","status":"posted","details":{"category":"service"}}"#
-    }
-
-    pub fn teller_transaction_unknown_category() -> &'static str {
-        r#"{"id":"txn_unknown","date":"2024-01-05","amount":"-25.00","description":"Unknown","status":"posted","details":{"category":"some_unknown_category"}}"#
-    }
-
-    pub fn teller_transaction_pending_purchase() -> &'static str {
-        r#"{"id":"txn_pending","date":"2024-01-25","amount":"-100.00","description":"Pending Purchase","status":"pending","details":{"category":"general"}}"#
-    }
-
-    pub fn teller_transaction_generic_store() -> &'static str {
-        r#"{"id":"txn_no_counterparty","date":"2024-01-12","amount":"-75.00","description":"Generic Store","status":"posted","details":{"category":"general"}}"#
-    }
-
-    pub fn teller_transaction_invalid_date() -> &'static str {
-        r#"{"id":"txn_bad_date","date":"invalid-date","amount":"-50.00","description":"Test","status":"posted","details":{"category":"general"}}"#
-    }
-
-    pub fn teller_transaction_zero_amount() -> &'static str {
-        r#"{"id":"txn_zero","date":"2024-01-15","amount":"0.00","description":"Fee Reversal","status":"posted","details":{"category":"general"}}"#
-    }
-
-    pub fn teller_transaction_dining() -> &'static str {
-        r#"{"id":"txn_dining","date":"2024-01-15","amount":"-42.10","description":"Dinner","status":"posted","details":{"category":"dining","counterparty":{"type":"merchant","name":"Restaurant"}}}"#
-    }
-
-    pub fn teller_transaction_fuel() -> &'static str {
-        r#"{"id":"txn_fuel","date":"2024-01-16","amount":"-55.00","description":"Gas","status":"posted","details":{"category":"fuel","counterparty":{"type":"merchant","name":"Gas Station"}}}"#
-    }
-
-    pub fn teller_transaction_income() -> &'static str {
-        r#"{"id":"txn_income","date":"2024-01-17","amount":"1500.00","description":"Paycheck","status":"posted","details":{"category":"income","counterparty":{"type":"organization","name":"Employer"}}}"#
-    }
-
-    pub fn teller_transaction_investment_inflow() -> &'static str {
-        r#"{"id":"txn_investment_in","date":"2024-01-18","amount":"5000.00","description":"Investment contribution","status":"posted","details":{"category":"investment","counterparty":{"type":"organization","name":"Brokerage"}}}"#
-    }
-
-    pub fn teller_transaction_investment_outflow() -> &'static str {
-        r#"{"id":"txn_investment_out","date":"2024-01-19","amount":"-5000.00","description":"Investment withdrawal","status":"posted","details":{"category":"investment","counterparty":{"type":"organization","name":"Brokerage"}}}"#
-    }
-
-    pub fn teller_transaction_utilities() -> &'static str {
-        r#"{"id":"txn_utilities","date":"2024-01-20","amount":"-120.00","description":"Utilities","status":"posted","details":{"category":"utilities","counterparty":{"type":"merchant","name":"Utility Company"}}}"#
-    }
-
-    pub fn teller_transaction_null_category() -> &'static str {
-        r#"{"id":"txn_null_category","date":"2024-01-21","amount":"-12.34","description":"Unknown","status":"posted","details":{"category":null,"counterparty":{"type":"merchant","name":"Merchant"}}}"#
     }
 
     pub fn plaid_transaction_with_category_json() -> &'static str {

@@ -5,9 +5,6 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use utoipa::ToSchema;
 
-#[allow(unused_imports)]
-use serde_json::json;
-
 #[derive(Debug, Serialize, Deserialize, PartialEq, ToSchema)]
 #[schema(example = json!({"month": "2024-01", "total": "1250.40"}))]
 pub struct MonthlySpending {

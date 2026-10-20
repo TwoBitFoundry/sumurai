@@ -126,7 +126,7 @@ const SYSTEM_CATEGORY_ACCENT_KEYS: Record<string, string> = {
   TRAVEL: 'sky',
 };
 
-export function getSystemCategoryAccentKey(name: string): string | null {
+function getSystemCategoryAccentKey(name: string): string | null {
   const slug = toCategorySlug(name);
   const direct = SYSTEM_CATEGORY_ACCENT_KEYS[slug];
   if (direct) {
@@ -262,7 +262,7 @@ export function formatCustomCategoryDisplay(raw: string): string {
     .join(' ');
 }
 
-export type ValidateCustomCategoryNameError =
+type ValidateCustomCategoryNameError =
   | 'too_long'
   | 'too_many_words'
   | 'empty'

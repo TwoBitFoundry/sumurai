@@ -48,12 +48,7 @@ export interface ProviderCatalogState {
 
 const emptyProviders: FinancialProvider[] = [];
 
-const supportedFinancialProviders = new Set<FinancialProvider>([
-  'plaid',
-  'teller',
-  'simplefin',
-  'diy',
-]);
+const supportedFinancialProviders = new Set<FinancialProvider>(['plaid', 'simplefin', 'diy']);
 
 const isSupportedFinancialProvider = (value: string): value is FinancialProvider =>
   supportedFinancialProviders.has(value as FinancialProvider);

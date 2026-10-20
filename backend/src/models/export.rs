@@ -3,9 +3,6 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[allow(unused_imports)]
-use serde_json::json;
-
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, ToSchema)]
 #[serde(rename_all = "lowercase")]
 #[schema(example = json!("csv"))]
@@ -15,7 +12,6 @@ pub enum ExportFormat {
 }
 
 #[derive(Debug, Clone, Deserialize, ToSchema)]
-#[allow(dead_code)]
 pub struct ExportQuery {
     pub format: ExportFormat,
     pub connection_id: Option<Uuid>,
@@ -29,7 +25,6 @@ impl ExportFormat {
         }
     }
 
-    #[allow(dead_code)]
     pub fn content_type(self) -> &'static str {
         match self {
             ExportFormat::Csv => "text/csv",

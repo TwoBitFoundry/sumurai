@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { ExportService } from '@/services/ExportService';
 import type { ExportFormat } from '@/types/api';
 
-export interface ExportGateway {
+interface ExportGateway {
   exportAccounts: (format: ExportFormat, connectionId?: string) => Promise<void>;
 }
 

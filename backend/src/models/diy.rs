@@ -3,9 +3,6 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[allow(unused_imports)]
-use serde_json::json;
-
 #[derive(Debug, Deserialize, ToSchema)]
 #[schema(example = json!({"name": "My Cash"}))]
 pub struct CreateDiyInstitutionRequest {

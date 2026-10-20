@@ -1,5 +1,4 @@
 import { render } from '@testing-library/react';
-import React from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { CashFlowChart } from '@/features/analytics/components/CashFlowChart';
 import { netWorthLineChart } from '@/ui/recipes';

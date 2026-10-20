@@ -7,7 +7,7 @@ import { EmptyState } from '@/ui/primitives';
 import { BankCard } from '../../../components/BankCard';
 import ConnectButton from './ConnectButton';
 
-export interface BankAccount {
+interface BankAccount {
   id: string;
   name: string;
   mask: string;

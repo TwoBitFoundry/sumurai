@@ -3,7 +3,6 @@ import type { BankConnectionViewModel } from '@/features/plaid/components/Connec
 import { ApiError, RateLimitError } from '@/services/ApiClient';
 import { PlaidService } from '@/services/PlaidService';
 import { SimpleFinService } from '@/services/SimpleFinService';
-import { TellerService } from '@/services/TellerService';
 import type { FinancialProvider, Transaction } from '@/types/api';
 import { dispatchFinancialAppRefresh } from '@/utils/events';
 import { formatUserFacingApiError } from '@/utils/formatUserFacingApiError';
@@ -241,27 +240,15 @@ export function useSyncAllOrchestrator({
         setSyncAllRows(currentRows);
 
         try {
-          if (bank.provider === 'teller') {
-            const result = await TellerService.syncTransactions(bank.connectionId);
-            const transactionCount = result.transactions.length;
-            currentRows = updateRow(
-              currentRows,
-              bank.id,
-              'synced',
-              `Synced ${transactionCount} new transaction${transactionCount === 1 ? '' : 's'}`,
-              transactionCount
-            );
-          } else {
-            const result = await PlaidService.syncTransactions(bank.connectionId);
-            const transactionCount = result.transactions.length;
-            currentRows = updateRow(
-              currentRows,
-              bank.id,
-              'synced',
-              `Synced ${transactionCount} new transaction${transactionCount === 1 ? '' : 's'}`,
-              transactionCount
-            );
-          }
+          const result = await PlaidService.syncTransactions(bank.connectionId);
+          const transactionCount = result.transactions.length;
+          currentRows = updateRow(
+            currentRows,
+            bank.id,
+            'synced',
+            `Synced ${transactionCount} new transaction${transactionCount === 1 ? '' : 's'}`,
+            transactionCount
+          );
 
           setSyncAllRows(currentRows);
         } catch (error: unknown) {

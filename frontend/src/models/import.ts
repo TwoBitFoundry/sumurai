@@ -26,7 +26,7 @@ export interface CsvColumnMapping {
   description_column: string | null;
 }
 
-export interface ImportDateRange {
+interface ImportDateRange {
   start_date: string;
   end_date: string;
 }

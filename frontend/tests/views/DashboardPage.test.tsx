@@ -6,7 +6,6 @@ import { useTheme } from '@/context/ThemeContext';
 import { SpendingByCategoryChart } from '@/features/analytics/components/SpendingByCategoryChart';
 import { useAnalytics } from '@/features/analytics/hooks/useAnalytics';
 import { useCashFlow } from '@/features/analytics/hooks/useCashFlow';
-import { useNetWorthSeries } from '@/features/analytics/hooks/useNetWorthSeries';
 import { type UseBudgetsResult, useBudgets } from '@/features/budgets/hooks/useBudgets';
 import { getThemeColors, heroAccents } from '@/ui/tokens';
 import DashboardPage from '@/views/DashboardPage';
@@ -32,10 +31,6 @@ jest.mock('@/features/analytics/hooks/useCashFlow', () => ({
 
 jest.mock('@/features/budgets/hooks/useBudgets', () => ({
   useBudgets: jest.fn(),
-}));
-
-jest.mock('@/features/analytics/hooks/useNetWorthSeries', () => ({
-  useNetWorthSeries: jest.fn(),
 }));
 
 jest.mock('@/components/DashboardStatsCarousel', () => ({
@@ -124,13 +119,6 @@ describe('DashboardPage', () => {
       goToNextMonth: jest.fn(),
       goToCurrentMonth: jest.fn(),
     } as UseBudgetsResult);
-
-    jest.mocked(useNetWorthSeries).mockReturnValue({
-      loading: false,
-      refreshing: false,
-      error: null,
-      series: [{ date: '2026-05-01', value: 10 }] as any,
-    } as any);
   });
 
   it('renders the spending chart and responsive dashboard grid', () => {

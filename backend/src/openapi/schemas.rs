@@ -1,9 +1,6 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[allow(unused_imports)]
-use serde_json::json;
-
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
 #[schema(example = json!({"error": "Unauthorized", "message": "Invalid credentials", "status_code": 401}))]
 pub struct ErrorResponse {

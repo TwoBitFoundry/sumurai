@@ -3,12 +3,7 @@
  */
 
 import { sankeyChartSizing } from '@/ui/recipes';
-import type {
-  AnalyticsTopMerchantsResponse,
-  SankeyLink,
-  SankeyNode,
-  SankeyResponse,
-} from '../../../types/api';
+import type { SankeyLink, SankeyNode, SankeyResponse } from '../../../types/api';
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
 
 export type DonutDatum = {
@@ -46,12 +41,6 @@ export function categoriesToDonut(
   const positive = mapped.filter((d) => d.value > 0);
   positive.sort((a, b) => b.value - a.value);
   return positive;
-}
-
-export type MerchantItem = AnalyticsTopMerchantsResponse;
-
-export function normalizeMerchants(items: AnalyticsTopMerchantsResponse[]): MerchantItem[] {
-  return (items || []).slice().sort((a, b) => Number(b.amount) - Number(a.amount));
 }
 
 export type SankeyPercentContext =

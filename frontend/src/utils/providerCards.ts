@@ -26,7 +26,7 @@ export type ProviderCardSection = {
   synced?: boolean;
 };
 
-export type ProviderPrivacyDetail = {
+type ProviderPrivacyDetail = {
   label: string;
   value: string;
 };
@@ -94,54 +94,6 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
           {
             label: 'How to disconnect',
             value: 'Stops syncing; full deletion requires the Plaid Portal.',
-          },
-        ],
-      },
-      {
-        icon: RefreshCw,
-        label: 'Sync',
-        value: 'Yes',
-        synced: true,
-      },
-    ],
-  },
-  teller: {
-    title: 'Teller',
-    badge: 'Budget Friendly',
-    region: 'US Only',
-    logoSrc: '/teller.webp',
-    privacyHref: 'https://teller.io/legal',
-    sections: [
-      {
-        icon: CircleDollarSign,
-        label: 'Cost',
-        value: 'Free',
-      },
-      {
-        icon: Building2,
-        label: 'Coverage',
-        value: '~7K Banks',
-      },
-      {
-        icon: ShieldCheck,
-        label: 'Privacy',
-        value: 'Moderate',
-        privacyDetails: [
-          {
-            label: 'How it connects',
-            value: 'Uses your bank login to connect your accounts.',
-          },
-          {
-            label: 'What it stores',
-            value: 'May collect login, account, and transaction data.',
-          },
-          {
-            label: 'How it uses data',
-            value: 'Does not sell or license your data.',
-          },
-          {
-            label: 'How to disconnect',
-            value: 'Stops access; deleting data may require a request.',
           },
         ],
       },
@@ -304,8 +256,6 @@ export interface ConnectAccountProviderContent {
     badge?: string;
   };
   securityNote: string;
-  requiresApplicationId?: boolean;
-  applicationIdMissingCopy?: string;
 }
 
 const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
@@ -373,75 +323,6 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
   },
   securityNote:
     '🔒 Bank-level encryption keeps every credential private. Plaid only shares read-only data, so funds stay untouchable.',
-};
-
-const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
-  displayName: 'Teller',
-  logoSrc: '/teller.webp',
-  eyebrow: {
-    text: 'Teller Connect',
-    backgroundClassName: cn(uiStatusRecipes.info.surface),
-    textClassName: cn(uiStatusRecipes.info.text),
-  },
-  heroTitle: 'Connect your accounts',
-  heroDescription:
-    'Teller uses your own API keys to sync accounts without handing off long-lived credentials. Keep full control while budgets stay real-time.',
-  highlightLabel: "What you'll connect",
-  highlightMeta: 'Read-only access',
-  features: [
-    {
-      icon: Landmark,
-      title: 'US Accounts & balances',
-      body: 'See your checking, savings, cards, and up-to-date balances in one place.',
-      palette: featurePalettes.providerFeature.teal,
-    },
-    {
-      icon: Zap,
-      title: 'Recent transactions',
-      body: 'New purchases and payments appear automatically for accurate budgets.',
-      palette: featurePalettes.providerFeature.amber,
-    },
-    {
-      icon: Sparkles,
-      title: 'Clean categories',
-      body: 'Merchants and categories are tidied so reports are easy to understand.',
-      palette: featurePalettes.providerFeature.ocean,
-    },
-  ],
-  highlights: [
-    {
-      icon: Eye,
-      title: 'Read-only by design',
-      body: "We can't move money or make changes—only view balances and transactions.",
-      palette: featurePalettes.highlight.azure,
-    },
-    {
-      icon: Fingerprint,
-      title: "You're in control",
-      body: 'Disconnect anytime from settings; access stops immediately.',
-      palette: featurePalettes.highlight.ocean,
-    },
-    {
-      icon: ShieldCheck,
-      title: 'Bank-grade protection',
-      body: 'The connection is encrypted and identity-verified before any data is shared.',
-      palette: featurePalettes.highlight.teal,
-    },
-    {
-      icon: Building2,
-      title: 'Fully transparent',
-      body: 'Every sync is logged so you can see what was accessed and when.',
-      palette: featurePalettes.highlight.amber,
-    },
-  ],
-  cta: {
-    defaultLabel: 'Connect Teller to an Ally',
-    badge: 'mTLS',
-  },
-  securityNote: '🔒 Industry-grade security standards and connections. Disconnect anytime.',
-  requiresApplicationId: true,
-  applicationIdMissingCopy:
-    'Teller onboarding requires a Teller application ID. Add it in provider settings before connecting.',
 };
 
 const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
@@ -579,7 +460,6 @@ export const CONNECT_ACCOUNT_PROVIDER_CONTENT: Record<
   ConnectAccountProviderContent
 > = {
   plaid: PLAID_CONNECT_CONTENT,
-  teller: TELLER_CONNECT_CONTENT,
   simplefin: SIMPLEFIN_CONNECT_CONTENT,
   diy: DIY_CONNECT_CONTENT,
 };

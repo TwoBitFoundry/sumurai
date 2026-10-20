@@ -83,14 +83,6 @@ impl Config {
         self.clear_sessions_on_boot
     }
 
-    #[allow(dead_code)]
-    pub fn app_origin(&self) -> &str {
-        self.app_origins
-            .first()
-            .map(String::as_str)
-            .expect("app_origins is never empty")
-    }
-
     pub fn app_origins(&self) -> &[String] {
         &self.app_origins
     }

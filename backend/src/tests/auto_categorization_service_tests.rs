@@ -635,36 +635,6 @@ async fn given_multiple_batches_when_earlier_rows_are_categorized_then_later_bat
 }
 
 #[tokio::test]
-async fn given_eligible_query_when_counting_then_excludes_override_backed_transactions() {
-    let user_id = Uuid::new_v4();
-
-    let mut db = MockDatabaseRepository::new();
-    db.expect_count_eligible_auto_categorize_transactions()
-        .with(eq(user_id))
-        .times(1)
-        .returning(|_| Box::pin(async { Ok(2) }));
-
-    let service = make_service(
-        db,
-        InMemoryCache::new().into_mock(),
-        Arc::new(StubCategorizer {
-            predictions: vec![PredictedCategory {
-                primary: "FOOD_AND_DRINK".to_string(),
-                confidence: Confidence::High,
-            }],
-            gate: None,
-            entered: None,
-        }),
-    );
-
-    let count = service
-        .count_eligible(&user_id)
-        .await
-        .expect("eligible count");
-    assert_eq!(count, 2);
-}
-
-#[tokio::test]
 async fn given_completed_job_when_detection_runs_then_detection_count_added_to_updated() {
     let user_id = Uuid::new_v4();
     let jwt_id = "jwt-detection";

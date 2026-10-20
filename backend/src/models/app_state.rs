@@ -6,7 +6,7 @@ use crate::services::categorization::categorization_service::Categorizer;
 use crate::services::category_management::service::CategoryManagementService;
 use crate::services::diy_service::DiyService;
 use crate::services::otel_traces_relay::OtlpTracesRelay;
-use crate::services::plaid_service::{PlaidService, RealPlaidClient};
+use crate::services::plaid_service::RealPlaidClient;
 use crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService;
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::sync_service::SyncService;
@@ -18,7 +18,6 @@ use crate::services::{
 };
 
 pub struct AppState {
-    pub(crate) plaid_service: Arc<PlaidService>,
     pub(crate) plaid_client: Arc<RealPlaidClient>,
     pub(crate) sync_service: Arc<SyncService>,
     pub(crate) sync_service_factory: Arc<SyncServiceFactory>,
@@ -35,7 +34,6 @@ pub struct AppState {
     pub(crate) provider_registry: Arc<ProviderRegistry>,
     pub(crate) otlp_traces_relay: Arc<OtlpTracesRelay>,
     pub(crate) category_management_service: Arc<CategoryManagementService>,
-    #[allow(dead_code)]
     pub(crate) auto_categorization_service: Arc<AutoCategorizationService>,
     pub(crate) webauthn_service: Arc<WebAuthnService>,
     pub(crate) diy_service: Arc<DiyService>,
@@ -44,7 +42,6 @@ pub struct AppState {
 impl Clone for AppState {
     fn clone(&self) -> Self {
         Self {
-            plaid_service: self.plaid_service.clone(),
             plaid_client: self.plaid_client.clone(),
             sync_service: self.sync_service.clone(),
             sync_service_factory: self.sync_service_factory.clone(),

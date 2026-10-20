@@ -25,7 +25,7 @@ describe('invalidateStaleCacheQueries', () => {
       invalidateQueries,
     } as any;
 
-    await invalidateStaleCacheQueries(queryClient, ['plaid', 'teller', 'plaid']);
+    await invalidateStaleCacheQueries(queryClient, ['plaid', 'simplefin', 'plaid']);
 
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ['accounts'],
@@ -48,7 +48,7 @@ describe('invalidateStaleCacheQueries', () => {
       refetchType: 'active',
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
-      queryKey: ['teller', 'connections'],
+      queryKey: ['simplefin', 'connections'],
       refetchType: 'active',
     });
     expect(invalidateQueries).toHaveBeenCalledTimes(6);
@@ -91,7 +91,7 @@ describe('invalidateStaleCacheQueries', () => {
       invalidateQueries,
     } as any;
 
-    await invalidateStaleCacheQueries(queryClient, ['teller'], {
+    await invalidateStaleCacheQueries(queryClient, ['simplefin'], {
       resetTransactions: 'reset',
     });
 

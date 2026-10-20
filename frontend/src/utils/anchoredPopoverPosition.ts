@@ -4,8 +4,8 @@ export type AnchoredPopoverPosition = {
 };
 
 export const ANCHORED_POPOVER_GAP_PX = 8;
-export const ANCHORED_POPOVER_VIEWPORT_PADDING_PX = 16;
-export const ANCHORED_POPOVER_MAX_WIDTH_PX = 320;
+const ANCHORED_POPOVER_VIEWPORT_PADDING_PX = 16;
+const ANCHORED_POPOVER_MAX_WIDTH_PX = 320;
 
 export function resolveAnchoredPopoverWidth(
   viewportWidth: number,

@@ -22,7 +22,7 @@ interface Props {
   onOpenChange?: (open: boolean) => void;
 }
 
-export function InlineCategoryCell({
+function InlineCategoryCell({
   transaction,
   dense: _dense = false,
   readOnly = false,

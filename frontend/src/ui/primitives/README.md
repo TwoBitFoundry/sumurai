@@ -563,16 +563,13 @@ Reusable class strings for consistency:
 
 | Constant | Classes | Use Case |
 |----------|---------|----------|
-| `focusRingClasses` | `focus-visible:outline-none focus-visible:ring-2 ...` | Focus states |
 | `disabledClasses` | `disabled:cursor-not-allowed disabled:opacity-60` | Disabled states |
-| `transitionClasses` | `transition-all duration-200 ease-out` | Smooth transitions |
-| `glassBackdropClasses` | `backdrop-blur-md backdrop-saturate-[150%]` | Glass effects |
 
 **Example:**
 ```tsx
-import { focusRingClasses, cn } from './utils'
+import { disabledClasses, cn } from './utils'
 
-<button className={cn('base-button', focusRingClasses)}>
+<button className={cn('base-button', disabledClasses)}>
   Click Me
 </button>
 ```

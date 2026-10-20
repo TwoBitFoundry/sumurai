@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, Download, Plus, RefreshCw, Shield, Unlink } from 'lucide-react';
+import { ChevronDown, Download, Landmark, Plus, RefreshCw, Shield, Unlink } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import useViewportBreakpoint from '@/hooks/useViewportBreakpoint';
@@ -68,7 +68,7 @@ interface BankCardProps {
   onImportSuccess?: (count: number, mask: string) => void;
 }
 
-const FINANCIAL_PROVIDERS = new Set<FinancialProvider>(['diy', 'simplefin', 'teller', 'plaid']);
+const FINANCIAL_PROVIDERS = new Set<FinancialProvider>(['diy', 'simplefin', 'plaid']);
 
 function resolveBankProvider(provider: string | undefined): FinancialProvider | null {
   if (provider && FINANCIAL_PROVIDERS.has(provider as FinancialProvider)) {
@@ -103,7 +103,7 @@ export const BankCard: React.FC<BankCardProps> = ({
   const syncStartRef = useRef<number | null>(null);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [disconnectLoading, setDisconnectLoading] = useState(false);
-  const showSyncButton = bank.provider !== 'simplefin' && bank.provider !== 'diy';
+  const showSyncButton = bank.provider === 'plaid';
 
   useEffect(() => {
     if (!loading) {
@@ -306,14 +306,18 @@ export const BankCard: React.FC<BankCardProps> = ({
       <span className={cn(...controlIconWell.lg, uiTextRecipes.subtle)}>
         <ProviderLogoIcon strokeWidth={2.25} aria-hidden />
       </span>
-    ) : null;
+    ) : (
+      <span className={cn(...controlIconWell.lg, uiTextRecipes.subtle)}>
+        <Landmark strokeWidth={2.25} aria-hidden />
+      </span>
+    );
 
   const providerEmblemTooltipLabel =
     bankProvider === 'diy'
       ? 'Self-managed'
       : bankProvider
         ? `Connected with ${getProviderCardConfig(bankProvider).title}`
-        : undefined;
+        : 'Connected institution';
 
   const bankTitle = (
     <h3

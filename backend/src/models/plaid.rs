@@ -4,9 +4,6 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[allow(unused_imports)]
-use serde_json::json;
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 #[schema(example = json!({
     "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
@@ -77,9 +74,9 @@ pub struct LinkTokenResponse {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-#[schema(example = json!({"provider": "teller"}))]
+#[schema(example = json!({"provider": "simplefin"}))]
 pub struct ProviderSelectRequest {
-    #[schema(value_type = String, example = "teller")]
+    #[schema(value_type = String, example = "simplefin")]
     pub provider: String,
 }
 
@@ -108,7 +105,6 @@ pub struct ClearSyncedDataResponse {
 }
 
 impl ProviderConnection {
-    #[allow(dead_code)]
     pub fn new(user_id: Uuid, item_id: &str) -> Self {
         let now = Utc::now();
         Self {
@@ -171,7 +167,7 @@ pub struct ProviderConnectionStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[schema(example = json!({
-    "provider": "teller",
+    "provider": "simplefin",
     "connections": [{
         "is_connected": true,
         "last_sync_at": "2024-01-10T12:00:00Z",
@@ -255,15 +251,10 @@ pub struct LatestAccountBalance {
 
 #[derive(Debug, Clone)]
 pub struct PlaidCredentials {
-    #[allow(dead_code)]
     pub id: Uuid,
-    #[allow(dead_code)]
     pub item_id: String,
-    #[allow(dead_code)]
     pub user_id: Option<Uuid>,
     pub access_token: String,
-    #[allow(dead_code)]
     pub created_at: DateTime<Utc>,
-    #[allow(dead_code)]
     pub updated_at: DateTime<Utc>,
 }

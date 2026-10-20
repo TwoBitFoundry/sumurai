@@ -1,6 +1,6 @@
 import * as Popover from '@radix-ui/react-popover';
 import { Check } from 'lucide-react';
-import { type FormEvent, type RefObject, useEffect, useMemo } from 'react';
+import { type FormEvent, type RefObject, useEffect } from 'react';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import {
   cn,

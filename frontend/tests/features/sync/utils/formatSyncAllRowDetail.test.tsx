@@ -76,7 +76,7 @@ describe('formatSyncAllRowDetail', () => {
       <>
         {formatSyncAllRowDetail({
           id: 'row-4',
-          provider: 'teller',
+          provider: 'plaid',
           institutionName: 'Demo Bank',
           connectionId: 'conn-4',
           status: 'synced',

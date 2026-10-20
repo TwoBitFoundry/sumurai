@@ -33,10 +33,10 @@ pub use cache_service::{CacheService, RedisCache};
 pub use categorization::categorization_service::{CategorizationService, Categorizer};
 pub use connection_service::{
     ConnectionService, ExchangeTokenError, LinkTokenError, SimpleFinConnectError,
-    SyncConnectionParams, TellerConnectError,
+    SyncConnectionParams,
 };
 pub use demo_mode_service::DemoModeService;
-pub use plaid_service::{PlaidService, RealPlaidClient};
+pub use plaid_service::RealPlaidClient;
 pub use provider_sync_rate_limit_service::ProviderSyncRateLimitService;
 pub use sync_service::SyncService;
 pub use sync_service_factory::SyncServiceFactory;

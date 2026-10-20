@@ -6,9 +6,6 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[allow(unused_imports)]
-use serde_json::json;
-
 #[derive(Deserialize, ToSchema)]
 #[schema(example = json!({"email": "user@example.com", "name": "Alex"}))]
 pub struct RegisterRequest {

@@ -53,33 +53,6 @@ function DiyStrategyBridge({
   return strategy.render();
 }
 
-function TellerStrategyBridge({
-  strategyRef,
-}: Omit<FinancialConnectionStrategyBridgeProps, 'provider' | 'context'>) {
-  useLayoutEffect(() => {
-    strategyRef.current = {
-      getReady: () => true,
-      open: () => {
-        throw new Error(
-          'Teller is no longer supported because the provider no longer offers API access.'
-        );
-      },
-      load: async () => {},
-      reset: () => {},
-      loadFailedMessage:
-        'Teller is no longer supported because the provider no longer offers API access.',
-      render: () => null,
-      connect: async () => {
-        throw new Error(
-          'Teller is no longer supported because the provider no longer offers API access.'
-        );
-      },
-    };
-  });
-
-  return null;
-}
-
 export function FinancialConnectionStrategyBridge({
   provider,
   context,
@@ -88,8 +61,6 @@ export function FinancialConnectionStrategyBridge({
   switch (provider) {
     case 'plaid':
       return <PlaidStrategyBridge context={context} strategyRef={strategyRef} />;
-    case 'teller':
-      return <TellerStrategyBridge strategyRef={strategyRef} />;
     case 'simplefin':
       return <SimpleFinStrategyBridge context={context} strategyRef={strategyRef} />;
     case 'diy':

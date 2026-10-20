@@ -24,7 +24,6 @@ const TOKEN_PATTERNS = [
     replacement: '[JWT_REDACTED]',
   },
   { pattern: /access-[a-z]+-[a-zA-Z0-9-]{10,}/g, replacement: '[PLAID_TOKEN_REDACTED]' },
-  { pattern: /test_token_[a-zA-Z0-9]+/g, replacement: '[TELLER_TOKEN_REDACTED]' },
   { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, replacement: '[CC_REDACTED]' },
   { pattern: /\b\d{3}-\d{2}-\d{4}\b/g, replacement: '[SSN_REDACTED]' },
   { pattern: /Bearer\s+[A-Za-z0-9_-]+/g, replacement: 'Bearer [REDACTED]' },
@@ -44,7 +43,7 @@ export function redactTokenPatterns(value: string): string {
   return sanitized;
 }
 
-export function sanitizeUrl(url: string): string {
+function sanitizeUrl(url: string): string {
   if (typeof url !== 'string') return url;
 
   try {

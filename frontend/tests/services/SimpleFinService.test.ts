@@ -80,7 +80,7 @@ describe('SimpleFinService', () => {
 
     it('returns empty list when status provider is not simplefin', async () => {
       getSpy.mockResolvedValue({
-        provider: 'teller',
+        provider: 'plaid',
         connections: [],
       } as any);
 

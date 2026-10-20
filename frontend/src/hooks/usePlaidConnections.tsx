@@ -18,7 +18,7 @@ type NormalizedAccount = {
   connectionKey: string | null;
 };
 
-export interface PlaidConnection {
+interface PlaidConnection {
   id: string;
   connectionId: string;
   institutionName: string;
@@ -37,13 +37,13 @@ export interface PlaidConnection {
   }>;
 }
 
-export interface PlaidConnectionsState {
+interface PlaidConnectionsState {
   connections: PlaidConnection[];
   loading: boolean;
   error: string | null;
 }
 
-export interface PlaidConnectionsActions {
+interface PlaidConnectionsActions {
   addConnection: (institutionName: string, connectionId: string) => Promise<void>;
   removeConnection: (connectionId: string) => void;
   updateConnectionSyncInfo: (

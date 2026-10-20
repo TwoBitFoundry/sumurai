@@ -5,11 +5,7 @@ import { type ReactNode, useEffect } from 'react';
 import { App, AppProviders } from '@/App';
 import { AuthenticationError } from '@/services/ApiClient';
 import { AuthService } from '@/services/authService';
-import {
-  FINANCIAL_STATE_CHANGED_EVENT,
-  NAVIGATE_TO_SETTINGS_EVENT,
-  OPEN_ONBOARDING_PATH_EVENT,
-} from '@/utils/events';
+import { FINANCIAL_STATE_CHANGED_EVENT, OPEN_ONBOARDING_PATH_EVENT } from '@/utils/events';
 import * as queryInvalidation from '@/utils/queryInvalidation';
 
 jest.mock('@/Auth', () => ({

@@ -1,4 +1,3 @@
-import { ApiClient } from '@/services/ApiClient';
 import { ImportService } from '@/services/ImportService';
 import { setupTestBoundaries } from '../setup/setupTestBoundaries';
 
