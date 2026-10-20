@@ -28,6 +28,7 @@ mod connection_cache_integration_tests;
 mod connection_service_tests;
 mod demo_mode_teardown_tests;
 mod diy_api_tests;
+mod diy_orchestrator_tests;
 mod entity_smoke_tests;
 mod export_api_tests;
 mod export_model_tests;

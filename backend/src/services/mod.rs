@@ -11,6 +11,7 @@ pub mod category_management;
 pub mod category_orchestrator;
 pub mod connection_service;
 pub mod demo_mode_service;
+pub mod diy_orchestrator;
 pub mod diy_service;
 pub mod export_service;
 pub mod external_http;

@@ -3708,44 +3708,21 @@ async fn create_diy_institution(
     Json<crate::models::diy::CreateDiyInstitutionResponse>,
     (StatusCode, Json<ApiErrorResponse>),
 > {
-    let user_id = auth_context.user_id;
-
     if !state.config.is_financial_provider_enabled("diy") {
         return Err(provider_disabled_response("diy"));
     }
 
-    if req.name.trim().is_empty() {
-        return Err(
-            ApiErrorResponse::new("BAD_REQUEST", "Institution name cannot be empty")
-                .into_response(StatusCode::BAD_REQUEST),
-        );
-    }
-
-    match state
-        .diy_service
-        .create_institution(user_id, &auth_context.jwt_id, req.name.trim())
+    state
+        .diy()
+        .create_institution(auth_context.user_id, &auth_context.jwt_id, &req.name)
         .await
-    {
-        Ok(connection) => Ok(Json(crate::models::diy::CreateDiyInstitutionResponse {
-            connection_id: connection.id,
-        })),
-        Err(e) if e.to_string().contains("already exists") => Err(ApiErrorResponse::conflict(
-            "Institution name already exists",
-        )),
-        Err(e) => {
-            tracing::error!(
-                "Failed to create DIY institution for user {}: {}",
-                user_id,
-                e
-            );
-            Err(ApiErrorResponse::internal_server_error(
-                "Failed to create institution",
-            ))
-        }
-    }
+        .map(|connection| {
+            Json(crate::models::diy::CreateDiyInstitutionResponse {
+                connection_id: connection.id,
+            })
+        })
+        .map_err(Into::into)
 }
-
-const DIY_VALID_ACCOUNT_TYPES: &[&str] = &["depository", "credit", "investment", "loan"];
 
 #[utoipa::path(
     post,
@@ -3773,72 +3750,22 @@ async fn create_diy_account(
     Json(req): Json<crate::models::diy::CreateDiyAccountRequest>,
 ) -> Result<Json<crate::models::diy::CreateDiyAccountResponse>, (StatusCode, Json<ApiErrorResponse>)>
 {
-    let user_id = auth_context.user_id;
-
     if !state.config.is_financial_provider_enabled("diy") {
         return Err(provider_disabled_response("diy"));
     }
 
-    if req.name.trim().is_empty() {
-        return Err(
-            ApiErrorResponse::new("BAD_REQUEST", "Account name cannot be empty")
-                .into_response(StatusCode::BAD_REQUEST),
-        );
-    }
-
-    if !DIY_VALID_ACCOUNT_TYPES.contains(&req.account_type.as_str()) {
-        return Err(ApiErrorResponse::new(
-            "BAD_REQUEST",
-            &format!(
-                "account_type must be one of: {}",
-                DIY_VALID_ACCOUNT_TYPES.join(", ")
-            ),
-        )
-        .into_response(StatusCode::BAD_REQUEST));
-    }
-
-    if req.balance.is_none() {
-        return Err(ApiErrorResponse::new("BAD_REQUEST", "Balance is required")
-            .into_response(StatusCode::BAD_REQUEST));
-    }
-
-    match state
-        .diy_service
-        .create_account(user_id, connection_id, &req)
+    state
+        .diy()
+        .create_account(auth_context.user_id, connection_id, &req)
         .await
-    {
-        Ok(account) => Ok(Json(crate::models::diy::CreateDiyAccountResponse {
-            id: account.id,
-            name: account.name,
-            account_type: account.account_type,
-        })),
-        Err(e) if e.to_string().contains("not found") => {
-            Err(ApiErrorResponse::new("NOT_FOUND", "Connection not found")
-                .into_response(StatusCode::NOT_FOUND))
-        }
-        Err(e) if e.to_string().contains("not diy") => Err(ApiErrorResponse::new(
-            "FORBIDDEN",
-            "Connection is not a DIY connection",
-        )
-        .into_response(StatusCode::FORBIDDEN)),
-        Err(e) if e.to_string().contains("account name already exists") => Err(
-            ApiErrorResponse::conflict("Account name already exists in this institution"),
-        ),
-        Err(e) if e.to_string().contains("account mask already exists") => Err(
-            ApiErrorResponse::conflict("Account mask already exists in this institution"),
-        ),
-        Err(e) => {
-            tracing::error!(
-                "Failed to create DIY account for user {} connection {}: {}",
-                user_id,
-                connection_id,
-                e
-            );
-            Err(ApiErrorResponse::internal_server_error(
-                "Failed to create account",
-            ))
-        }
-    }
+        .map(|account| {
+            Json(crate::models::diy::CreateDiyAccountResponse {
+                id: account.id,
+                name: account.name,
+                account_type: account.account_type,
+            })
+        })
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -3863,57 +3790,12 @@ async fn disconnect_diy_institution(
     auth_context: AuthContext,
     axum::extract::Path(connection_id): axum::extract::Path<uuid::Uuid>,
 ) -> Result<Json<crate::models::plaid::DisconnectResult>, (StatusCode, Json<ApiErrorResponse>)> {
-    let user_id = auth_context.user_id;
-
-    let connection = match state
-        .diy_service
-        .require_diy_institution(user_id, connection_id)
+    state
+        .diy()
+        .disconnect(auth_context.user_id, &auth_context.jwt_id, connection_id)
         .await
-    {
-        Ok(connection) => connection,
-        Err(e) if e.to_string().contains("not found") => {
-            return Err(ApiErrorResponse::new("NOT_FOUND", "Institution not found")
-                .into_response(StatusCode::NOT_FOUND));
-        }
-        Err(e) if e.to_string().contains("not diy") => {
-            return Err(
-                ApiErrorResponse::new("FORBIDDEN", "Connection is not a DIY institution")
-                    .into_response(StatusCode::FORBIDDEN),
-            );
-        }
-        Err(e) => {
-            tracing::error!(
-                "Failed to resolve DIY institution {} for user {}: {}",
-                connection_id,
-                user_id,
-                e
-            );
-            return Err(ApiErrorResponse::internal_server_error(
-                "Failed to disconnect institution",
-            ));
-        }
-    };
-
-    match state
-        .connection_service
-        .disconnect_owned_connection(&connection, &user_id, &auth_context.jwt_id)
-        .await
-    {
-        Ok(result) if result.success => Ok(Json(result)),
-        Ok(_) => Err(ApiErrorResponse::new("NOT_FOUND", "Institution not found")
-            .into_response(StatusCode::NOT_FOUND)),
-        Err(e) => {
-            tracing::error!(
-                "Failed to disconnect DIY institution {} for user {}: {}",
-                connection_id,
-                user_id,
-                e
-            );
-            Err(ApiErrorResponse::internal_server_error(
-                "Failed to disconnect institution",
-            ))
-        }
-    }
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
