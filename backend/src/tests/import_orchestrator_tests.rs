@@ -4,12 +4,10 @@ use anyhow::anyhow;
 use uuid::Uuid;
 
 use crate::models::account::Account;
-use crate::models::import::CsvColumnMapping;
+use crate::models::import::{CsvColumnMapping, ImportUpload};
 use crate::services::authorization_service::AuthorizationService;
 use crate::services::cache_service::MockCacheService;
-use crate::services::import_orchestrator::{
-    ImportOrchestrationError, ImportOrchestrator, ImportUpload,
-};
+use crate::services::import_orchestrator::{ImportOrchestrationError, ImportOrchestrator};
 use crate::services::repository_service::MockDatabaseRepository;
 
 const CSV_CONTENT: &str = "Date,Description,Amount\n2024-01-05,Coffee,-4.50\n";

@@ -3,10 +3,10 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use uuid::Uuid;
 
-use crate::models::transaction::CursorTransactionsResponse;
+use crate::models::transaction::{CursorTransactionsResponse, TransactionFilter, TransactionPage};
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::transaction_orchestrator::{
-    TransactionFilter, TransactionOrchestrationError, TransactionOrchestrator, TransactionPage,
+    TransactionOrchestrationError, TransactionOrchestrator,
 };
 
 fn orchestrator(repository: MockDatabaseRepository) -> TransactionOrchestrator {

@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use chrono::NaiveDate;
 use uuid::Uuid;
 
 use crate::models::transaction::{
-    ContextualInsightsResponse, CursorTransactionsResponse, TransactionsInsightsResponse,
+    ContextualInsightsResponse, CursorTransactionsResponse, TransactionFilter, TransactionPage,
+    TransactionsInsightsResponse,
 };
 use crate::services::repository_service::DatabaseRepository;
 
@@ -17,22 +17,6 @@ pub enum TransactionOrchestrationError {
     ListTransactions,
     LoadInsights,
     LoadContextualInsights,
-}
-
-#[derive(Debug, Clone, Default, PartialEq)]
-pub struct TransactionFilter {
-    pub search: Option<String>,
-    pub merchant: Option<String>,
-    pub category_primary: Option<String>,
-    pub account_ids: Option<Vec<Uuid>>,
-    pub start_date: Option<NaiveDate>,
-    pub end_date: Option<NaiveDate>,
-}
-
-#[derive(Debug, Clone, Default, PartialEq)]
-pub struct TransactionPage {
-    pub cursor: Option<String>,
-    pub limit: Option<i64>,
 }
 
 pub struct TransactionOrchestrator {

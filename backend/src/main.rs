@@ -121,14 +121,14 @@ use middleware::resource_authorization::{
 };
 use middleware::telemetry_middleware::{self, request_tracing_middleware, TelemetryConfig};
 use migration::MigratorTrait;
+use models::import::ImportUpload;
+use models::provider_connect::ProviderSyncRequest;
+use models::transaction::TransactionPage;
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DbBackend, Statement};
 use services::auto_categorization_orchestrator::AutoCategorizationOrchestrationError;
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
 use services::category_management::service::CategoryManagementService;
-use services::import_orchestrator::ImportUpload;
-use services::provider_orchestrator::ProviderSyncRequest;
 use services::repository_service::{DatabaseRepository, PostgresRepository};
-use services::transaction_orchestrator::TransactionPage;
 use services::{
     otel_traces_relay::OtlpTracesRelay,
     rate_limit_service::{
@@ -725,7 +725,7 @@ fn auth_cookie_headers(cookie: String) -> HeaderMap {
 
 fn authenticated_session_response(
     config: &Config,
-    session: services::auth_orchestrator::AuthenticatedSession,
+    session: models::auth::AuthenticatedSession,
 ) -> (HeaderMap, Json<auth_models::AuthResponse>) {
     (
         auth_cookie_headers(build_auth_cookie(

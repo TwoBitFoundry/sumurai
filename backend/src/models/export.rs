@@ -73,3 +73,10 @@ fn sanitize_filename_component(value: &str) -> String {
         trimmed
     }
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ExportFile {
+    pub format: ExportFormat,
+    pub filename: String,
+    pub body: String,
+}

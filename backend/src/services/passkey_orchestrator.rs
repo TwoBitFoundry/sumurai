@@ -7,12 +7,12 @@ use webauthn_rs::prelude::{
 };
 
 use crate::models::auth::{
-    AuthToken, PasskeyItem, PasskeyLoginBeginResponse, PasskeyRegisterBeginResponse, User,
-    WebAuthnCredential,
+    AuthToken, AuthenticatedEnrollmentChallengePayload, AuthenticatedSession,
+    LoginChallengePayload, PasskeyItem, PasskeyLoginBeginResponse, PasskeyRegisterBeginResponse,
+    RegistrationChallengePayload, User, WebAuthnCredential,
 };
 #[cfg(not(feature = "dev-seed"))]
 use crate::models::auth::{RegisterBeginResponse, RegisterRequest};
-use crate::services::auth_orchestrator::AuthenticatedSession;
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::webauthn_service::WebAuthnService;
 use crate::services::{AuthService, CacheService};
@@ -20,28 +20,6 @@ use crate::utils::seed_password_fallback::{dev_password_auth_enabled, user_has_p
 use crate::utils::webauthn_credentials::{
     count_usable_credentials, has_usable_passkey, is_usable_credential, usable_passkeys,
 };
-
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct LoginChallengePayload {
-    pub user_id: Uuid,
-    pub state: serde_json::Value,
-}
-
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct RegistrationChallengePayload {
-    pub user_id: Uuid,
-    pub email: String,
-    pub display_name: String,
-    pub state: serde_json::Value,
-    #[serde(default)]
-    pub existing_user_recovery: bool,
-}
-
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct AuthenticatedEnrollmentChallengePayload {
-    pub user_id: Uuid,
-    pub state: serde_json::Value,
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PasskeyOrchestrationError {

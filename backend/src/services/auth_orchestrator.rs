@@ -6,7 +6,8 @@ use uuid::Uuid;
 #[cfg(feature = "dev-seed")]
 use crate::models::auth::User;
 use crate::models::auth::{
-    AuthToken, DeleteAccountResponse, DeletedItemsSummary, OnboardingCompleteResponse,
+    AuthToken, AuthenticatedSession, DeleteAccountResponse, DeletedItemsSummary,
+    OnboardingCompleteResponse,
 };
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::{AuthService, CacheService, ConnectionService, DemoModeService};
@@ -32,15 +33,6 @@ pub enum AuthOrchestrationError {
     LoadConnectionsFailed,
     LoadBudgetsFailed,
     DeleteUserFailed,
-}
-
-pub struct AuthenticatedSession {
-    pub auth_token: AuthToken,
-    pub user_id: String,
-    pub email: String,
-    pub onboarding_completed: bool,
-    pub demo_mode_active: bool,
-    pub requires_passkey_enrollment: bool,
 }
 
 pub struct AuthOrchestrator {

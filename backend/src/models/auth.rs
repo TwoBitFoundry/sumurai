@@ -221,3 +221,34 @@ pub struct DeleteAccountResponse {
     pub message: String,
     pub deleted_items: DeletedItemsSummary,
 }
+
+pub struct AuthenticatedSession {
+    pub auth_token: AuthToken,
+    pub user_id: String,
+    pub email: String,
+    pub onboarding_completed: bool,
+    pub demo_mode_active: bool,
+    pub requires_passkey_enrollment: bool,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct LoginChallengePayload {
+    pub user_id: Uuid,
+    pub state: serde_json::Value,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct RegistrationChallengePayload {
+    pub user_id: Uuid,
+    pub email: String,
+    pub display_name: String,
+    pub state: serde_json::Value,
+    #[serde(default)]
+    pub existing_user_recovery: bool,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct AuthenticatedEnrollmentChallengePayload {
+    pub user_id: Uuid,
+    pub state: serde_json::Value,
+}

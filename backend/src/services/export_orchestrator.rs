@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use uuid::Uuid;
 
-use crate::models::export::ExportFormat;
+use crate::models::export::{ExportFile, ExportFormat};
 use crate::services::export_service::ExportService;
 use crate::services::repository_service::DatabaseRepository;
 
@@ -10,13 +10,6 @@ use crate::services::repository_service::DatabaseRepository;
 pub enum ExportOrchestrationError {
     LoadAccountsFailed,
     LoadTransactionsFailed,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct ExportFile {
-    pub format: ExportFormat,
-    pub filename: String,
-    pub body: String,
 }
 
 pub struct ExportOrchestrator {

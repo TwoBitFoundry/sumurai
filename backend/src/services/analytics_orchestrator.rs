@@ -6,9 +6,10 @@ use rust_decimal::Decimal;
 use uuid::Uuid;
 
 use crate::models::analytics::{
-    BalanceCategory, BalancesOverviewResponse, BankTotals, BudgetSummary, CashFlowResponse,
-    CategorySpending, DailySpending, DateBoundsResponse, IncomeExpenseTotals, MonthlySpending,
-    NetWorthOverTimeResponse, NetWorthSeriesPoint, SankeyResponse, TopMerchant,
+    AnalyticsFilter, AnalyticsRange, BalanceCategory, BalancesOverviewResponse, BankTotals,
+    BudgetSummary, CashFlowResponse, CategorySpending, DailySpending, DateBoundsResponse,
+    IncomeExpenseTotals, MonthlySpending, NetWorthOverTimeResponse, NetWorthSeriesPoint,
+    SankeyResponse, TopMerchant,
 };
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::{AnalyticsService, AuthService, CacheService, SpendingTransactionQuery};
@@ -33,20 +34,6 @@ pub enum AnalyticsOrchestrationError {
     LoadSankeyTransactions,
     LoadBalances,
     LoadLedgerTransactions,
-}
-
-#[derive(Debug, Clone, Default, PartialEq)]
-pub struct AnalyticsFilter {
-    pub start_date: Option<NaiveDate>,
-    pub end_date: Option<NaiveDate>,
-    pub account_ids: Option<HashSet<Uuid>>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct AnalyticsRange {
-    pub start_date: NaiveDate,
-    pub end_date: NaiveDate,
-    pub account_ids: Option<HashSet<Uuid>>,
 }
 
 pub struct AnalyticsOrchestrator {

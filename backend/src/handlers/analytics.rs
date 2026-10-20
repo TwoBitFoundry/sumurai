@@ -4,10 +4,8 @@ use axum::http::StatusCode;
 use chrono::{Datelike, NaiveDate};
 use uuid::Uuid;
 
-use crate::models::analytics::DateRangeQuery;
-use crate::services::analytics_orchestrator::{
-    AnalyticsFilter, AnalyticsOrchestrationError, AnalyticsRange,
-};
+use crate::models::analytics::{AnalyticsFilter, AnalyticsRange, DateRangeQuery};
+use crate::services::analytics_orchestrator::AnalyticsOrchestrationError;
 
 impl From<AnalyticsOrchestrationError> for StatusCode {
     fn from(error: AnalyticsOrchestrationError) -> Self {

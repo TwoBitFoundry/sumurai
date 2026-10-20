@@ -4,7 +4,8 @@ use axum::http::StatusCode;
 use chrono::NaiveDate;
 use uuid::Uuid;
 
-use crate::services::transaction_orchestrator::{TransactionFilter, TransactionOrchestrationError};
+use crate::models::transaction::TransactionFilter;
+use crate::services::transaction_orchestrator::TransactionOrchestrationError;
 
 impl From<TransactionOrchestrationError> for StatusCode {
     fn from(_error: TransactionOrchestrationError) -> Self {

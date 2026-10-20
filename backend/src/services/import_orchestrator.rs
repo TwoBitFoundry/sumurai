@@ -3,7 +3,9 @@ use std::sync::Arc;
 use csv::StringRecord;
 use uuid::Uuid;
 
-use crate::models::import::{CsvColumnMapping, ImportFileFormat, ImportResponse, ValidateResponse};
+use crate::models::import::{
+    CsvColumnMapping, ImportFileFormat, ImportResponse, ImportUpload, ValidateResponse,
+};
 use crate::services::authorization_service::AuthorizationService;
 use crate::services::cache_service::CacheService;
 use crate::services::import_service::{detect_import_format, read_csv_headers, ImportService};
@@ -25,14 +27,6 @@ pub enum ImportOrchestrationError {
     NormalizeMerchantsFailed,
     ImportFailed,
     RefreshTransactionCountsFailed,
-}
-
-#[derive(Debug, Clone)]
-pub struct ImportUpload {
-    pub file_name: String,
-    pub file_bytes: Vec<u8>,
-    pub account_id: Uuid,
-    pub csv_mapping: Option<CsvColumnMapping>,
 }
 
 pub struct ImportOrchestrator {

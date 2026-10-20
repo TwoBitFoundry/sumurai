@@ -10,12 +10,12 @@ use webauthn_rs::prelude::RequestChallengeResponse;
 
 #[cfg(not(feature = "dev-seed"))]
 use crate::models::auth::RegisterRequest;
-use crate::models::auth::{User, WebAuthnCredential};
-use crate::services::cache_service::{CacheService, MockCacheService};
-use crate::services::passkey_orchestrator::{
-    AuthenticatedEnrollmentChallengePayload, LoginChallengePayload, PasskeyOrchestrationError,
-    PasskeyOrchestrator, RegistrationChallengePayload,
+use crate::models::auth::{
+    AuthenticatedEnrollmentChallengePayload, LoginChallengePayload, RegistrationChallengePayload,
+    User, WebAuthnCredential,
 };
+use crate::services::cache_service::{CacheService, MockCacheService};
+use crate::services::passkey_orchestrator::{PasskeyOrchestrationError, PasskeyOrchestrator};
 use crate::services::repository_service::{DatabaseRepository, MockDatabaseRepository};
 use crate::services::webauthn_service::WebAuthnService;
 use crate::services::AuthService;

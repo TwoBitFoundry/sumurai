@@ -657,3 +657,19 @@ impl Transaction {
         }
     }
 }
+
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct TransactionFilter {
+    pub search: Option<String>,
+    pub merchant: Option<String>,
+    pub category_primary: Option<String>,
+    pub account_ids: Option<Vec<Uuid>>,
+    pub start_date: Option<NaiveDate>,
+    pub end_date: Option<NaiveDate>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct TransactionPage {
+    pub cursor: Option<String>,
+    pub limit: Option<i64>,
+}

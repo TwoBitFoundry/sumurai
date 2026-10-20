@@ -1,9 +1,12 @@
+use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use sea_orm::FromQueryResult;
 use serde::de::{self, Deserializer, IgnoredAny, MapAccess, Visitor};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::fmt;
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, ToSchema)]
 #[schema(example = json!({"month": "2024-01", "total": "1250.40"}))]
@@ -443,4 +446,18 @@ pub fn finalize_totals(
         net: round2(net),
         ratio,
     }
+}
+
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct AnalyticsFilter {
+    pub start_date: Option<NaiveDate>,
+    pub end_date: Option<NaiveDate>,
+    pub account_ids: Option<HashSet<Uuid>>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct AnalyticsRange {
+    pub start_date: NaiveDate,
+    pub end_date: NaiveDate,
+    pub account_ids: Option<HashSet<Uuid>>,
 }

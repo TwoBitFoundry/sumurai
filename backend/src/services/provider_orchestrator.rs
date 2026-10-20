@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use chrono::NaiveDate;
 use uuid::Uuid;
 
 use crate::config::Config;
@@ -8,7 +7,7 @@ use crate::models::plaid::{
     DisconnectResult, ProviderConnectResponse, ProviderConnection, ProviderConnectionStatus,
     ProviderInfoResponse, ProviderSelectResponse, ProviderStatusResponse,
 };
-use crate::models::provider_connect::ProviderConnectRequest;
+use crate::models::provider_connect::{ProviderConnectRequest, ProviderSyncRequest};
 use crate::models::simplefin::{SimpleFinIgnoredInstitution, SimpleFinInstitutionAuthRequired};
 use crate::models::transaction::SyncTransactionsResponse;
 use crate::providers::ProviderRegistry;
@@ -66,12 +65,6 @@ pub enum ProviderOrchestrationError {
     InvalidOrgConnId,
     ListIgnoredInstitutionsFailed,
     RestoreIgnoredInstitutionFailed,
-}
-
-pub struct ProviderSyncRequest {
-    pub client_date: String,
-    pub client_timezone: String,
-    pub reference_date: NaiveDate,
 }
 
 pub struct SyncDependencies {

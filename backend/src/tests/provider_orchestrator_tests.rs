@@ -8,14 +8,13 @@ use uuid::Uuid;
 use crate::config::{Config, MockEnvironment};
 use crate::models::auth::User;
 use crate::models::plaid::ProviderConnection;
-use crate::models::provider_connect::ProviderConnectRequest;
+use crate::models::provider_connect::{ProviderConnectRequest, ProviderSyncRequest};
 use crate::models::simplefin::SimpleFinIgnoredInstitution;
 use crate::providers::{FinancialDataProvider, MockFinancialDataProvider, ProviderRegistry};
 use crate::services::cache_service::{CacheService, MockCacheService};
 use crate::services::connection_service::{ConnectionService, ProviderSyncError};
 use crate::services::provider_orchestrator::{
-    ProviderAvailability, ProviderOrchestrationError, ProviderOrchestrator, ProviderSyncRequest,
-    SyncDependencies,
+    ProviderAvailability, ProviderOrchestrationError, ProviderOrchestrator, SyncDependencies,
 };
 use crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService;
 use crate::services::repository_service::{DatabaseRepository, MockDatabaseRepository};

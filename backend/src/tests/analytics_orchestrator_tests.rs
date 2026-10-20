@@ -7,13 +7,12 @@ use uuid::Uuid;
 
 use crate::models::account::Account;
 use crate::models::analytics::{
-    BalancesOverviewResponse, MonthlyCashFlowAggregate, NetWorthOverTimeResponse,
+    AnalyticsFilter, AnalyticsRange, BalancesOverviewResponse, MonthlyCashFlowAggregate,
+    NetWorthOverTimeResponse,
 };
 use crate::models::plaid::LatestAccountBalance;
 use crate::models::transaction::Transaction;
-use crate::services::analytics_orchestrator::{
-    AnalyticsFilter, AnalyticsOrchestrationError, AnalyticsOrchestrator, AnalyticsRange,
-};
+use crate::services::analytics_orchestrator::{AnalyticsOrchestrationError, AnalyticsOrchestrator};
 use crate::services::cache_service::MockCacheService;
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::{AnalyticsService, AuthService};
