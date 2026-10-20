@@ -8,6 +8,7 @@ use crate::services::categorization::categorization_service::Categorizer;
 use crate::services::category_management::service::CategoryManagementService;
 use crate::services::category_orchestrator::CategoryOrchestrator;
 use crate::services::diy_service::DiyService;
+use crate::services::import_orchestrator::ImportOrchestrator;
 use crate::services::otel_traces_relay::OtlpTracesRelay;
 use crate::services::plaid_service::RealPlaidClient;
 use crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService;
@@ -77,6 +78,14 @@ impl AppState {
     pub fn budgets(&self) -> BudgetOrchestrator {
         BudgetOrchestrator::new(
             self.budget_service.clone(),
+            self.db_repository.clone(),
+            self.cache_service.clone(),
+        )
+    }
+
+    pub fn imports(&self) -> ImportOrchestrator {
+        ImportOrchestrator::new(
+            self.authorization_service.clone(),
             self.db_repository.clone(),
             self.cache_service.clone(),
         )

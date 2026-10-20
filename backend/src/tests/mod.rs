@@ -33,6 +33,7 @@ mod export_api_tests;
 mod export_model_tests;
 mod export_service_tests;
 mod import_handler_categorization_tests;
+mod import_orchestrator_tests;
 mod import_service_tests;
 mod integration_tests;
 mod merchant_name_normalization_tests;

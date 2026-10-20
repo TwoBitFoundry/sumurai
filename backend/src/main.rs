@@ -15,7 +15,6 @@ use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer}
 use axum_tracing_opentelemetry::tracing_opentelemetry_instrumentation_sdk as otel_sdk;
 use chrono::NaiveDate;
 use chrono::Utc;
-use csv::StringRecord;
 use opentelemetry::trace::Status as OtelStatus;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -68,10 +67,7 @@ use crate::models::{
         UpdateBudgetRequest,
     },
     export::{ExportFormat, ExportQuery},
-    import::{
-        CsvColumnMapping, ImportFileFormat, ImportMultipartRequest, ImportResponse,
-        ValidateResponse,
-    },
+    import::{CsvColumnMapping, ImportMultipartRequest, ImportResponse, ValidateResponse},
     plaid::{
         ClearSyncedDataResponse, DisconnectRequest, DisconnectResult, ExchangeTokenRequest,
         ExchangeTokenResponse, LinkTokenRequest, LinkTokenResponse, ProviderConnectResponse,
@@ -154,7 +150,7 @@ use sea_orm::{ConnectOptions, ConnectionTrait, Database, DbBackend, Statement};
 use services::auto_categorization_orchestrator::AutoCategorizationOrchestrationError;
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
 use services::category_management::service::CategoryManagementService;
-use services::import_service::ImportService;
+use services::import_orchestrator::ImportUpload;
 use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::sync_service_dispatcher::provider_sync_error_to_response;
 use services::transaction_orchestrator::TransactionPage;
@@ -1801,31 +1797,27 @@ async fn validate_authenticated_transaction_import(
     auth_context: AuthContext,
     mut multipart: Multipart,
 ) -> Result<Json<ValidateResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    let import = parse_transaction_import_multipart(&mut multipart).await?;
     let ParsedImportMultipart {
         file_name,
         file_bytes,
         account_id,
-        csv_mapping: _,
-    } = import;
+        csv_mapping,
+    } = parse_transaction_import_multipart(&mut multipart).await?;
 
-    ensure_import_account_owned(&state, &auth_context.user_id, &account_id).await?;
-
-    let content = String::from_utf8(file_bytes)
-        .map_err(|_| api_bad_request("Uploaded file must be valid UTF-8"))?;
-
-    if crate::services::import_service::detect_import_format(&file_name).is_none() {
-        return Err(api_bad_request(format!(
-            "Unsupported file extension for '{}'",
-            file_name
-        )));
-    }
-
-    Ok(Json(ImportService::validate_file(
-        &content,
-        &file_name,
-        &account_id,
-    )))
+    state
+        .imports()
+        .validate(
+            auth_context.user_id,
+            ImportUpload {
+                file_name,
+                file_bytes,
+                account_id,
+                csv_mapping,
+            },
+        )
+        .await
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -1848,117 +1840,28 @@ async fn import_authenticated_transactions(
     auth_context: AuthContext,
     mut multipart: Multipart,
 ) -> Result<Json<ImportResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    let import = parse_transaction_import_multipart(&mut multipart).await?;
     let ParsedImportMultipart {
         file_name,
         file_bytes,
         account_id,
         csv_mapping,
-    } = import;
-
-    ensure_import_account_owned(&state, &auth_context.user_id, &account_id).await?;
-
-    let content = String::from_utf8(file_bytes)
-        .map_err(|_| api_bad_request("Uploaded file must be valid UTF-8"))?;
-    let format =
-        crate::services::import_service::detect_import_format(&file_name).ok_or_else(|| {
-            api_bad_request(format!("Unsupported file extension for '{}'", file_name))
-        })?;
-
-    let mut parsed = match format {
-        ImportFileFormat::Ofx
-        | ImportFileFormat::Qfx
-        | ImportFileFormat::Qbo
-        | ImportFileFormat::Qbx => ImportService::parse_ofx(&content, &account_id),
-        ImportFileFormat::Csv => {
-            let mapping = match csv_mapping {
-                Some(mapping) => mapping,
-                None => detect_csv_mapping_from_content(&content)?,
-            };
-
-            let mapping_errors = csv_mapping_errors(&mapping);
-            if !mapping_errors.is_empty() {
-                return Err(api_bad_request(mapping_errors.join("; ")));
-            }
-
-            ImportService::parse_csv(&content, &mapping, &account_id)
-        }
-    };
-
-    if parsed.transactions.is_empty() {
-        let message = if parsed.errors.is_empty() {
-            "No valid transactions were found in the uploaded file".to_string()
-        } else {
-            parsed.errors.join("; ")
-        };
-        return Err(api_bad_request(message));
-    }
-
-    let mut transactions = std::mem::take(&mut parsed.transactions);
-
-    for transaction in &mut transactions {
-        transaction.user_id = Some(auth_context.user_id);
-    }
-
-    let merchant_normalization_service =
-        crate::services::merchant_normalization::service::MerchantNormalizationService::new(
-            state.db_repository.clone(),
-            state.cache_service.clone(),
-        );
-    merchant_normalization_service
-        .normalize_batch(&mut transactions)
-        .await
-        .map_err(|_| api_internal_server_error("Failed to normalize imported merchants"))?;
-
-    let transaction_counts_before = state
-        .db_repository
-        .get_transaction_count_by_account_for_user(&auth_context.user_id)
-        .await
-        .map_err(|_| api_internal_server_error("Failed to load existing transaction counts"))?;
-    let before_count = transaction_counts_before
-        .get(&account_id)
-        .copied()
-        .unwrap_or(0);
+    } = parse_transaction_import_multipart(&mut multipart).await?;
 
     state
-        .db_repository
-        .upsert_transactions_batch(&transactions, &auth_context.user_id)
-        .await
-        .map_err(|_| api_internal_server_error("Failed to import transactions"))?;
-
-    if let Err(e) = state
-        .cache_service
-        .clear_transactions(&auth_context.jwt_id)
-        .await
-    {
-        tracing::warn!(
-            "Failed to clear transaction cache after file import for user {}: {}",
+        .imports()
+        .import(
             auth_context.user_id,
-            e
-        );
-    }
-
-    let transaction_counts_after = state
-        .db_repository
-        .get_transaction_count_by_account_for_user(&auth_context.user_id)
+            &auth_context.jwt_id,
+            ImportUpload {
+                file_name,
+                file_bytes,
+                account_id,
+                csv_mapping,
+            },
+        )
         .await
-        .map_err(|_| api_internal_server_error("Failed to refresh transaction counts"))?;
-    let after_count = transaction_counts_after
-        .get(&account_id)
-        .copied()
-        .unwrap_or(before_count);
-
-    let imported_count = after_count.saturating_sub(before_count);
-    let total_parsed = transactions.len() as i64;
-    let skipped_count = total_parsed.saturating_sub(imported_count);
-
-    Ok(Json(ImportResponse {
-        imported_count,
-        skipped_count,
-        truncated_count: parsed.truncated_count as i64,
-        total_parsed,
-        errors: std::mem::take(&mut parsed.errors),
-    }))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 async fn parse_transaction_import_multipart(
@@ -2025,61 +1928,8 @@ async fn parse_transaction_import_multipart(
     })
 }
 
-async fn ensure_import_account_owned(
-    state: &AppState,
-    user_id: &Uuid,
-    account_id: &Uuid,
-) -> Result<(), (StatusCode, Json<ApiErrorResponse>)> {
-    let account_ids = vec![account_id.to_string()];
-    state
-        .authorization_service
-        .validate_account_ownership(&account_ids, user_id, state.db_repository.as_ref())
-        .await
-        .map(|_| ())
-        .map_err(|status| match status {
-            StatusCode::FORBIDDEN => {
-                api_forbidden("Account does not belong to the authenticated user")
-            }
-            _ => api_internal_server_error("Failed to validate account ownership"),
-        })
-}
-
-#[allow(clippy::result_large_err)]
-fn detect_csv_mapping_from_content(
-    content: &str,
-) -> Result<CsvColumnMapping, (StatusCode, Json<ApiErrorResponse>)> {
-    let headers =
-        crate::services::import_service::read_csv_headers(content).map_err(api_bad_request)?;
-    Ok(ImportService::detect_csv_mapping(&StringRecord::from(
-        headers,
-    )))
-}
-
-fn csv_mapping_errors(mapping: &CsvColumnMapping) -> Vec<String> {
-    let mut errors = Vec::new();
-
-    if mapping.date_column.is_none() {
-        errors.push("Unable to detect a CSV date column".to_string());
-    }
-    if mapping.description_column.is_none() {
-        errors.push("Unable to detect a CSV description column".to_string());
-    }
-    if mapping.amount_column.is_none()
-        && mapping.debit_column.is_none()
-        && mapping.credit_column.is_none()
-    {
-        errors.push("Unable to detect a CSV amount, debit, or credit column".to_string());
-    }
-
-    errors
-}
-
 fn api_bad_request(message: impl Into<String>) -> (StatusCode, Json<ApiErrorResponse>) {
     ApiErrorResponse::new("BAD_REQUEST", &message.into()).into_response(StatusCode::BAD_REQUEST)
-}
-
-fn api_forbidden(message: impl Into<String>) -> (StatusCode, Json<ApiErrorResponse>) {
-    ApiErrorResponse::new("FORBIDDEN", &message.into()).into_response(StatusCode::FORBIDDEN)
 }
 
 fn provider_disabled_response(provider: &str) -> (StatusCode, Json<ApiErrorResponse>) {
@@ -2089,11 +1939,6 @@ fn provider_disabled_response(provider: &str) -> (StatusCode, Json<ApiErrorRespo
         "PROVIDER_DISABLED",
     )
     .into_response(StatusCode::FORBIDDEN)
-}
-
-fn api_internal_server_error(message: impl Into<String>) -> (StatusCode, Json<ApiErrorResponse>) {
-    ApiErrorResponse::new("INTERNAL_SERVER_ERROR", &message.into())
-        .into_response(StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 #[utoipa::path(
