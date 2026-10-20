@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::config::Config;
 use crate::providers::ProviderRegistry;
+use crate::services::budget_orchestrator::BudgetOrchestrator;
 use crate::services::categorization::categorization_service::Categorizer;
 use crate::services::category_management::service::CategoryManagementService;
 use crate::services::diy_service::DiyService;
@@ -62,5 +63,15 @@ impl Clone for AppState {
             webauthn_service: self.webauthn_service.clone(),
             diy_service: self.diy_service.clone(),
         }
+    }
+}
+
+impl AppState {
+    pub fn budgets(&self) -> BudgetOrchestrator {
+        BudgetOrchestrator::new(
+            self.budget_service.clone(),
+            self.db_repository.clone(),
+            self.cache_service.clone(),
+        )
     }
 }

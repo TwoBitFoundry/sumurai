@@ -3964,43 +3964,6 @@ async fn restore_authenticated_simplefin_ignored_institution(
     ))
 }
 
-async fn refresh_session_budget_cache(state: &AppState, jwt_id: &str, user_id: uuid::Uuid) {
-    match state
-        .budget_service
-        .get_budgets_for_user(&*state.db_repository, user_id)
-        .await
-    {
-        Ok(budgets) => match serde_json::to_string(&budgets) {
-            Ok(serialized) => {
-                if let Err(error) = state.cache_service.set_budgets(jwt_id, &serialized).await {
-                    tracing::warn!(
-                        jwt_id,
-                        error = %error,
-                        "Failed to refresh budget cache after mutation"
-                    );
-                }
-            }
-            Err(error) => {
-                tracing::warn!(
-                    jwt_id,
-                    error = %error,
-                    "Failed to serialize budgets for cache refresh"
-                );
-                let _ = state.cache_service.clear_budgets(jwt_id).await;
-            }
-        },
-        Err(error) => {
-            tracing::warn!(
-                jwt_id,
-                user_id = %user_id,
-                error = %error,
-                "Failed to load budgets for cache refresh; clearing budget cache"
-            );
-            let _ = state.cache_service.clear_budgets(jwt_id).await;
-        }
-    }
-}
-
 #[utoipa::path(
     get,
     path = "/api/budgets",
@@ -4017,36 +3980,12 @@ async fn get_authenticated_budgets(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<Vec<crate::models::budget::Budget>>, (StatusCode, Json<ApiErrorResponse>)> {
-    let user_id = auth_context.user_id;
-
-    if let Ok(Some(serialized)) = state.cache_service.get_budgets(&auth_context.jwt_id).await {
-        if let Ok(cached) = serde_json::from_str::<Vec<crate::models::budget::Budget>>(&serialized)
-        {
-            return Ok(Json(cached));
-        }
-    }
-
-    match state
-        .budget_service
-        .get_budgets_for_user(&*state.db_repository, user_id)
+    state
+        .budgets()
+        .list(auth_context.user_id, &auth_context.jwt_id)
         .await
-    {
-        Ok(budgets) => {
-            if let Ok(serialized) = serde_json::to_string(&budgets) {
-                let _ = state
-                    .cache_service
-                    .set_budgets(&auth_context.jwt_id, &serialized)
-                    .await;
-            }
-            Ok(Json(budgets))
-        }
-        Err(e) => {
-            tracing::error!("Failed to get budgets for user {}: {}", user_id, e);
-            Err(ApiErrorResponse::internal_server_error(
-                "Failed to fetch budgets",
-            ))
-        }
-    }
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -4065,80 +4004,12 @@ async fn get_authenticated_budgets_overview(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<BudgetsOverviewResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    let user_id = auth_context.user_id;
-
-    let cached_budgets =
-        if let Ok(Some(serialized)) = state.cache_service.get_budgets(&auth_context.jwt_id).await {
-            serde_json::from_str::<Vec<Budget>>(&serialized).ok()
-        } else {
-            None
-        };
-
-    if let Some(budgets) = cached_budgets {
-        match state
-            .db_repository
-            .get_fixed_expense_summary(&user_id)
-            .await
-        {
-            Ok(fixed_expenses) => Ok(Json(BudgetsOverviewResponse {
-                budgets,
-                fixed_expenses,
-            })),
-            Err(e) => {
-                tracing::error!(
-                    "Failed to get fixed expense summary for user {}: {}",
-                    user_id,
-                    e
-                );
-                Err(ApiErrorResponse::internal_server_error(
-                    "Failed to fetch fixed expenses",
-                ))
-            }
-        }
-    } else {
-        let (budgets_result, fixed_expenses_result) = tokio::join!(
-            state
-                .budget_service
-                .get_budgets_for_user(&*state.db_repository, user_id),
-            state.db_repository.get_fixed_expense_summary(&user_id),
-        );
-
-        let budgets = match budgets_result {
-            Ok(budgets) => budgets,
-            Err(e) => {
-                tracing::error!("Failed to get budgets for user {}: {}", user_id, e);
-                return Err(ApiErrorResponse::internal_server_error(
-                    "Failed to fetch budgets",
-                ));
-            }
-        };
-
-        let fixed_expenses = match fixed_expenses_result {
-            Ok(fixed_expenses) => fixed_expenses,
-            Err(e) => {
-                tracing::error!(
-                    "Failed to get fixed expense summary for user {}: {}",
-                    user_id,
-                    e
-                );
-                return Err(ApiErrorResponse::internal_server_error(
-                    "Failed to fetch fixed expenses",
-                ));
-            }
-        };
-
-        if let Ok(serialized) = serde_json::to_string(&budgets) {
-            let _ = state
-                .cache_service
-                .set_budgets(&auth_context.jwt_id, &serialized)
-                .await;
-        }
-
-        Ok(Json(BudgetsOverviewResponse {
-            budgets,
-            fixed_expenses,
-        }))
-    }
+    state
+        .budgets()
+        .overview(auth_context.user_id, &auth_context.jwt_id)
+        .await
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -4160,42 +4031,17 @@ async fn create_authenticated_budget(
     auth_context: AuthContext,
     Json(req): Json<CreateBudgetRequest>,
 ) -> Result<Json<crate::models::budget::Budget>, (StatusCode, Json<ApiErrorResponse>)> {
-    let user_id = auth_context.user_id;
-
-    match state
-        .budget_service
-        .create_budget_for_user(&*state.db_repository, user_id, req.category, req.amount)
+    state
+        .budgets()
+        .create(
+            auth_context.user_id,
+            &auth_context.jwt_id,
+            req.category,
+            req.amount,
+        )
         .await
-    {
-        Ok(created_budget) => {
-            refresh_session_budget_cache(&state, &auth_context.jwt_id, user_id).await;
-            Ok(Json(created_budget))
-        }
-        Err(e) => {
-            tracing::error!("Failed to create budget for user {}: {}", user_id, e);
-            if e.contains("greater than zero") {
-                Err(
-                    ApiErrorResponse::new("BAD_REQUEST", "Budget amount must be greater than zero")
-                        .into_response(StatusCode::BAD_REQUEST),
-                )
-            } else if e.contains("income or transfer") {
-                Err(ApiErrorResponse::new(
-                    "BAD_REQUEST",
-                    "Budgets cannot be created for income or transfer categories",
-                )
-                .into_response(StatusCode::BAD_REQUEST))
-            } else if e.contains("already exists") {
-                Err(
-                    ApiErrorResponse::new("CONFLICT", "Budget category already exists")
-                        .into_response(StatusCode::CONFLICT),
-                )
-            } else {
-                Err(ApiErrorResponse::internal_server_error(
-                    "Failed to create budget",
-                ))
-            }
-        }
-    }
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -4220,47 +4066,17 @@ async fn update_authenticated_budget(
     AuthorizedBudgetId { budget_id }: AuthorizedBudgetId,
     Json(req): Json<UpdateBudgetRequest>,
 ) -> Result<Json<crate::models::budget::Budget>, (StatusCode, Json<ApiErrorResponse>)> {
-    let user_id = auth_context.user_id;
-
-    if req.amount <= rust_decimal::Decimal::ZERO {
-        return Err(ApiErrorResponse::new(
-            "BAD_REQUEST",
-            "Budget amount must be greater than zero",
+    state
+        .budgets()
+        .update(
+            auth_context.user_id,
+            &auth_context.jwt_id,
+            budget_id,
+            req.amount,
         )
-        .into_response(StatusCode::BAD_REQUEST));
-    }
-
-    match state
-        .budget_service
-        .update_budget_for_user(&*state.db_repository, budget_id, user_id, req.amount)
         .await
-    {
-        Ok(updated_budget) => {
-            refresh_session_budget_cache(&state, &auth_context.jwt_id, user_id).await;
-            Ok(Json(updated_budget))
-        }
-        Err(e) => {
-            tracing::error!(
-                "Failed to update budget {} for user {}: {}",
-                budget_id,
-                user_id,
-                e
-            );
-            if e.contains("greater than zero") {
-                Err(
-                    ApiErrorResponse::new("BAD_REQUEST", "Budget amount must be greater than zero")
-                        .into_response(StatusCode::BAD_REQUEST),
-                )
-            } else if e.contains("not found") || e.contains("access denied") {
-                Err(ApiErrorResponse::new("NOT_FOUND", "Budget not found")
-                    .into_response(StatusCode::NOT_FOUND))
-            } else {
-                Err(ApiErrorResponse::internal_server_error(
-                    "Failed to update budget",
-                ))
-            }
-        }
-    }
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -4282,37 +4098,17 @@ async fn delete_authenticated_budget(
     auth_context: AuthContext,
     AuthorizedBudgetId { budget_id }: AuthorizedBudgetId,
 ) -> Result<Json<DeleteBudgetResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    let user_id = auth_context.user_id;
-
-    match state
-        .budget_service
-        .delete_budget_for_user(&*state.db_repository, budget_id, user_id)
+    state
+        .budgets()
+        .delete(auth_context.user_id, &auth_context.jwt_id, budget_id)
         .await
-    {
-        Ok(_) => {
-            refresh_session_budget_cache(&state, &auth_context.jwt_id, user_id).await;
-            Ok(Json(DeleteBudgetResponse {
+        .map(|()| {
+            Json(DeleteBudgetResponse {
                 deleted: true,
                 budget_id: budget_id.to_string(),
-            }))
-        }
-        Err(e) => {
-            tracing::error!(
-                "Failed to delete budget {} for user {}: {}",
-                budget_id,
-                user_id,
-                e
-            );
-            if e.contains("not found") || e.contains("access denied") {
-                Err(ApiErrorResponse::new("NOT_FOUND", "Budget not found")
-                    .into_response(StatusCode::NOT_FOUND))
-            } else {
-                Err(ApiErrorResponse::internal_server_error(
-                    "Failed to delete budget",
-                ))
-            }
-        }
-    }
+            })
+        })
+        .map_err(Into::into)
 }
 
 #[utoipa::path(

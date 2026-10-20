@@ -2,6 +2,7 @@ pub mod analytics_service;
 pub mod auth_service;
 pub mod authorization_service;
 pub mod auto_categorization;
+pub mod budget_orchestrator;
 pub mod budget_service;
 pub mod cache_service;
 pub mod categorization;
