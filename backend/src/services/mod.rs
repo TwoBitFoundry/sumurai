@@ -7,6 +7,7 @@ pub mod budget_service;
 pub mod cache_service;
 pub mod categorization;
 pub mod category_management;
+pub mod category_orchestrator;
 pub mod connection_service;
 pub mod demo_mode_service;
 pub mod diy_service;

@@ -21,6 +21,7 @@ mod categorization_classifier_tests;
 mod category_handlers_integration_tests;
 mod category_management_service_tests;
 mod category_normalization_tests;
+mod category_orchestrator_tests;
 mod config_tests;
 mod connection_cache_integration_tests;
 mod connection_service_tests;

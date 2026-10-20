@@ -5,6 +5,7 @@ use crate::providers::ProviderRegistry;
 use crate::services::budget_orchestrator::BudgetOrchestrator;
 use crate::services::categorization::categorization_service::Categorizer;
 use crate::services::category_management::service::CategoryManagementService;
+use crate::services::category_orchestrator::CategoryOrchestrator;
 use crate::services::diy_service::DiyService;
 use crate::services::otel_traces_relay::OtlpTracesRelay;
 use crate::services::plaid_service::RealPlaidClient;
@@ -70,6 +71,14 @@ impl AppState {
     pub fn budgets(&self) -> BudgetOrchestrator {
         BudgetOrchestrator::new(
             self.budget_service.clone(),
+            self.db_repository.clone(),
+            self.cache_service.clone(),
+        )
+    }
+
+    pub fn categories(&self) -> CategoryOrchestrator {
+        CategoryOrchestrator::new(
+            self.category_management_service.clone(),
             self.db_repository.clone(),
             self.cache_service.clone(),
         )
