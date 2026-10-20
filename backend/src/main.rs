@@ -150,7 +150,7 @@ use middleware::resource_authorization::{
 use middleware::telemetry_middleware::{self, request_tracing_middleware, TelemetryConfig};
 use migration::MigratorTrait;
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DbBackend, Statement};
-use services::auto_categorization::service::AutoCategorizationError;
+use services::auto_categorization_orchestrator::AutoCategorizationOrchestrationError;
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
 use services::category_management::service::CategoryManagementService;
 use services::import_service::ImportService;
@@ -1852,27 +1852,15 @@ async fn start_auto_categorization(
     auth_context: AuthContext,
 ) -> Result<Response, (StatusCode, Json<ApiErrorResponse>)> {
     match state
-        .auto_categorization_service
-        .start(&auth_context.user_id, &auth_context.jwt_id)
+        .auto_categorization()
+        .start(auth_context.user_id, &auth_context.jwt_id)
         .await
     {
         Ok(job) => Ok((StatusCode::OK, Json(job)).into_response()),
-        Err(AutoCategorizationError::ActiveJobExists(job)) => {
+        Err(AutoCategorizationOrchestrationError::ActiveJobExists(job)) => {
             Ok((StatusCode::CONFLICT, Json(job)).into_response())
         }
-        Err(AutoCategorizationError::NoActiveJob) => Err(ApiErrorResponse::internal_server_error(
-            "Failed to start auto-categorization",
-        )),
-        Err(AutoCategorizationError::Storage(error)) => {
-            tracing::error!(
-                "Failed to start auto-categorization for user {}: {}",
-                auth_context.user_id,
-                error
-            );
-            Err(ApiErrorResponse::internal_server_error(
-                "Failed to start auto-categorization",
-            ))
-        }
+        Err(error) => Err(error.into()),
     }
 }
 
@@ -1891,23 +1879,12 @@ async fn get_auto_categorization_status(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<Option<AutoCategorizationJobState>>, (StatusCode, Json<ApiErrorResponse>)> {
-    match state
-        .auto_categorization_service
-        .get_status(&auth_context.user_id)
+    state
+        .auto_categorization()
+        .status(auth_context.user_id)
         .await
-    {
-        Ok(status) => Ok(Json(status)),
-        Err(error) => {
-            tracing::error!(
-                "Failed to fetch auto-categorization status for user {}: {}",
-                auth_context.user_id,
-                error
-            );
-            Err(ApiErrorResponse::internal_server_error(
-                "Failed to fetch auto-categorization status",
-            ))
-        }
-    }
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -1926,33 +1903,12 @@ async fn cancel_auto_categorization(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<AutoCategorizationJobState>, (StatusCode, Json<ApiErrorResponse>)> {
-    match state
-        .auto_categorization_service
-        .cancel(&auth_context.user_id)
+    state
+        .auto_categorization()
+        .cancel(auth_context.user_id)
         .await
-    {
-        Ok(job) => Ok(Json(job)),
-        Err(AutoCategorizationError::NoActiveJob) => Err((
-            StatusCode::NOT_FOUND,
-            Json(ApiErrorResponse::new(
-                "not_found",
-                "auto_categorization_job_not_found",
-            )),
-        )),
-        Err(AutoCategorizationError::ActiveJobExists(_)) => Err(
-            ApiErrorResponse::internal_server_error("Failed to cancel auto-categorization"),
-        ),
-        Err(AutoCategorizationError::Storage(error)) => {
-            tracing::error!(
-                "Failed to cancel auto-categorization for user {}: {}",
-                auth_context.user_id,
-                error
-            );
-            Err(ApiErrorResponse::internal_server_error(
-                "Failed to cancel auto-categorization",
-            ))
-        }
-    }
+        .map(Json)
+        .map_err(Into::into)
 }
 
 struct ParsedImportMultipart {
