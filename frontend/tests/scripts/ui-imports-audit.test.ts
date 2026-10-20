@@ -42,4 +42,28 @@ describe('ui imports audit', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('rejects primitive tsx imports outside the allowed alias list', () => {
+    const root = mkdtempSync(join(tmpdir(), 'ui-imports-audit-'));
+    const srcDir = join(root, 'src');
+
+    try {
+      mkdirSync(join(srcDir, 'ui', 'primitives', 'button'), { recursive: true });
+      writeFileSync(
+        join(srcDir, 'ui', 'primitives', 'button', 'Button.tsx'),
+        'import { api } from "@/api/client"; export const Button = () => <button>{String(api)}</button>;'
+      );
+
+      const scriptPath = resolve(__dirname, '../../scripts/check-ui-imports.mjs');
+      expect(() =>
+        execFileSync('node', [scriptPath, '--src-root', srcDir], {
+          cwd: root,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+        })
+      ).toThrow(/primitive .tsx may only import/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import * as ts from '@typescript/typescript6';
+import { parse } from '@babel/parser';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const frontendRoot = resolve(scriptDir, '..');
@@ -43,8 +43,8 @@ function walkFiles(dir, acc = []) {
 
 function parseSourceFile(filePath) {
   const content = readFileSync(filePath, 'utf8');
-  const kind = filePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
-  return ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, kind);
+  const plugins = filePath.endsWith('.tsx') ? ['jsx', 'typescript'] : ['typescript'];
+  return parse(content, { sourceType: 'module', plugins });
 }
 
 function isForbiddenRecipesModuleSpecifier(moduleSpecifier) {
@@ -94,16 +94,13 @@ function checkRecipesAndPrimitiveImports(srcRoot) {
 
   for (const file of files) {
     const rel = posixRelative(srcRoot, file);
-    const sourceFile = parseSourceFile(file);
+    const { program } = parseSourceFile(file);
 
-    for (const statement of sourceFile.statements) {
-      if (!ts.isImportDeclaration(statement)) {
+    for (const statement of program.body) {
+      if (statement.type !== 'ImportDeclaration') {
         continue;
       }
-      if (!ts.isStringLiteral(statement.moduleSpecifier)) {
-        continue;
-      }
-      const moduleSpecifier = statement.moduleSpecifier.text;
+      const moduleSpecifier = statement.source.value;
 
       if (isForbiddenRecipesModuleSpecifier(moduleSpecifier)) {
         problems.push({
