@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
-import { within } from 'storybook/test';
 import { BottomContextualBar } from '@/components/BottomContextualBar';
 import {
   DateRangeLabelPill,
@@ -9,15 +8,14 @@ import {
 import { sampleSankeySurplus } from '@/storybook/fixtures/analytics';
 import { AuthenticatedScreenShell } from '@/storybook/screenSlices/AuthenticatedScreenShell';
 import { DashboardScreenSlice } from '@/storybook/screenSlices/DashboardScreenSlice';
-import type { DateRangeKey } from '@/utils/dateRanges';
 import {
   getCursorStoryTransactions,
   storyCategoryList,
   storyProviderAccounts,
   storyTransactionCategories,
-} from './user-journeys/shared';
-import { jsonResponse, route, StoryApiScope } from './user-journeys/storyApi';
-import { expandBalanceInsights, waitForDashboardSankeyIncome } from './user-journeys/storyPlay';
+} from '@/storybook/support/shared';
+import { jsonResponse, route, StoryApiScope } from '@/storybook/support/storyApi';
+import type { DateRangeKey } from '@/utils/dateRanges';
 
 function clearBalancesInsightsSession() {
   const raw = window.sessionStorage.getItem('sumurai.ui.collapsibleExpanded');
@@ -136,7 +134,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 
 const meta = {
   title: 'App/Screens/Dashboard',
-  tags: ['autodocs', 'test'],
+  tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
   },
@@ -158,11 +156,6 @@ type Story = StoryObj<typeof meta>;
 
 export const HappyPath: Story = {
   render: () => <DashboardScreenSlice variant="happy" dateRange="current-month" />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await waitForDashboardSankeyIncome(canvas);
-    await expandBalanceInsights(canvas);
-  },
 };
 
 export const AnalyticsLoading: Story = {

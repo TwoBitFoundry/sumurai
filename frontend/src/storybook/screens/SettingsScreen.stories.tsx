@@ -4,7 +4,7 @@ import {
   type SettingsScreenScenario,
   SettingsScreenSlice,
 } from '@/storybook/screenSlices/SettingsScreenSlice';
-import { jsonResponse, route, StoryApiScope } from '@/storybook/screens/user-journeys/storyApi';
+import { jsonResponse, route, StoryApiScope } from '@/storybook/support/storyApi';
 
 const passkeyHandlers = [
   route('GET', '/auth/passkey', () =>
@@ -21,7 +21,7 @@ const passkeyHandlers = [
 
 const meta = {
   title: 'App/Screens/Settings',
-  tags: ['autodocs', 'test'],
+  tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
   },

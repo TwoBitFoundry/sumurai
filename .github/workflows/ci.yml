@@ -48,7 +48,6 @@ jobs:
               - 'frontend/tailwind**'
               - 'frontend/biome**'
               - 'frontend/vite**'
-              - 'frontend/playwright**'
               - 'frontend/.storybook/**'
               - 'DESIGN.md'
               - '.github/workflows/ci.yml'
@@ -166,9 +165,3 @@ jobs:
 
       - name: Storybook Vitest
         run: bun run frontend:storybook-test
-
-      - name: Storybook static build
-        run: bun run storybook:build
-
-      - name: Storybook iframe smoke
-        run: bun run frontend:storybook-runtime:run

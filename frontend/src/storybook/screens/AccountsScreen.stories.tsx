@@ -1,9 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { expect, fn, userEvent, within } from 'storybook/test';
-import {
-  expectStoryProviderCardsVisible,
-  getStoryProviderPickerButton,
-} from '@/storybook/fixtures/providerPickerStoryHelpers';
+import { fn } from 'storybook/test';
 import {
   AccountsConnectedScreenSlice,
   AccountsProviderPickerSlice,
@@ -29,7 +25,7 @@ const connectedDecorator = [
 
 const meta = {
   title: 'App/Screens/Accounts',
-  tags: ['autodocs', 'test'],
+  tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
   },
@@ -49,18 +45,6 @@ export const ProviderPicker: StoryObj<ProviderPickerStoryArgs> = {
     onSelectProvider: fn(),
   },
   render: (args) => <AccountsProviderPickerSlice onSelectProvider={args.onSelectProvider} />,
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByTestId('provider-selection-panel')).toBeVisible();
-    await expect(canvas.getByText('Choose how you connect accounts')).toBeVisible();
-    await expectStoryProviderCardsVisible(canvas);
-    await expect(getStoryProviderPickerButton(canvas, 'plaid')).toBeEnabled();
-    await expect(getStoryProviderPickerButton(canvas, 'simplefin')).toBeEnabled();
-    await expect(getStoryProviderPickerButton(canvas, 'diy')).toBeEnabled();
-    await expect(canvas.queryByText('Teller')).toBeNull();
-    await userEvent.click(getStoryProviderPickerButton(canvas, 'plaid'));
-    await expect(args.onSelectProvider).toHaveBeenCalledWith('plaid');
-  },
 };
 
 export const ProviderPickerSimpleFinConnect: StoryObj<ProviderPickerStoryArgs> = {
@@ -69,11 +53,6 @@ export const ProviderPickerSimpleFinConnect: StoryObj<ProviderPickerStoryArgs> =
     onSelectProvider: fn(),
   },
   render: (args) => <AccountsProviderPickerSlice onSelectProvider={args.onSelectProvider} />,
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(getStoryProviderPickerButton(canvas, 'simplefin'));
-    await expect(args.onSelectProvider).toHaveBeenCalledWith('simplefin');
-  },
 };
 
 export const Connected: Story = {

@@ -17,13 +17,13 @@ Use these rules when designing Sumurai tests.
 - Keep snapshots limited to stable primitive output where the repo already uses them.
 - Add token tests when changing shared design-token semantics.
 - For rendered UI in a real browser (interactions, a11y-relevant rendering paths, story-driven states), extend or add Storybook stories and cover them with the Storybook Vitest project rather than duplicating the same scenarios only in Bun test when the browser project already owns that boundary.
-- Treat `bun --cwd=frontend run test:storybook-runtime` as a smoke gate on the static Storybook artifact; add or adjust those tests only when the failure mode is load-level or routing of the Storybook build, not for per-component assertions.
+- Journey stories (`bun --cwd=frontend run test:journeys`) cover core user flows only. Add a journey only when a single flow must work end-to-end in the browser; keep per-component assertions in Storybook play functions or Bun tests.
 
 ## Storybook
 
 - Prefer stories and the Vitest Storybook project for component-level browser behavior; follow existing `*.stories.tsx` patterns and Storybook addon-vitest tagging conventions in this repo.
 - Run `bun --cwd=frontend run test:storybook` after changing stories or primitives that participate in browser tests.
-- Run `bun --cwd=frontend run test:storybook-runtime` when touching Storybook config, static build output, or Playwright smoke expectations.
+- Run `bun --cwd=frontend run test:journeys` when touching journey stories or the shared story API helpers in `frontend/src/storybook/support/`.
 
 ## Backend
 
@@ -38,6 +38,6 @@ Use these rules when designing Sumurai tests.
 - Run the narrowest relevant test first.
 - Run all frontend tests when shared frontend test utilities, primitives, or tokens change.
 - Run Storybook Vitest when stories, primitives, or Storybook test config change in ways that affect browser-rendered behavior.
-- Run Storybook build and runtime smoke when Storybook or Playwright storybook config changes, or when verifying CI parity for the static Storybook job.
+- Run `bun --cwd=frontend run test:storybook` when Storybook config or the Vitest browser setup changes.
 - Run all backend tests when shared services, auth, middleware, providers, migrations, or models change.
 - Run typecheck/build commands when TypeScript or Rust public interfaces change.

@@ -16,14 +16,14 @@
 - `bun install` - install root tooling and the `frontend` workspace dependencies (single root `bun.lock`; hoisted linker in `bunfig.toml`).
 - `bun run frontend:dev` - Next.js dev server on `http://localhost:3001`.
 - `bun run frontend:build` / `bun run frontend:test` - frontend build and tests.
-- `bun run precommit` (Husky default): frontend Biome check, `typecheck`, `design:guard`, and `bun test`, then `backend:ci`. Does not reinstall dependencies, nor Storybook static build, Vitest browser tests, Playwright iframe smoke, or Chromium install; `typescript`/`tsc` still covers `*.stories.tsx` under `src/` with the rest of the app sources. Assumes dependencies are installed. Run `bun run backend:ci && bun run frontend:ci` when you need full local parity with the GitHub frontend job (`frontend:ci`).
+- `bun run precommit` (Husky default): frontend Biome check, `typecheck`, `design:guard`, and `bun test`, then `backend:ci`. Does not reinstall dependencies, nor Vitest browser tests or Chromium install; `typescript`/`tsc` still covers `*.stories.tsx` under `src/` with the rest of the app sources. Assumes dependencies are installed. Run `bun run backend:ci && bun run frontend:ci` when you need full local parity with the GitHub frontend job (`frontend:ci`).
 
 ## Design system guardrails and Storybook AI
 
 - `bun run frontend:design` runs DESIGN.md lint, token drift checks, raw styling guard, and regenerates DTCG + Tailwind exports from `DESIGN.md`.
 - `bun run storybook` serves Storybook on port 6006. Global Cursor MCP may point at `http://localhost:6006/mcp`; that endpoint exists only while Storybook is running. Start Storybook first, wait until it prints ready, then reload the Cursor window or toggle the Storybook MCP server off and on so the client reconnects. If it still fails, use Output → MCP Logs. Use Storybook MCP tools for component docs and story workflows before inventing new UI patterns.
 - `bun run frontend:playwright-install` downloads Playwright’s Chromium for light local use. `bun run frontend:ci` installs Chromium with system dependencies to match CI.
-- CI builds static Storybook and runs iframe smoke tests (`test:storybook-runtime`) on pull requests and pushes.
+- CI runs Storybook Vitest (`frontend:storybook-test`) on frontend changes. `bun run frontend:journeys` runs only the journey stories for fast local checks. Default new interaction tests to Bun unless they need a real browser.
 
 ## Coding Style
 - Rust: keep units small and testable, prefer idiomatic error handling, and use `cargo fmt` and `cargo clippy`.
@@ -34,7 +34,7 @@
 - Backend tests live in `backend/src/tests/` and run with `cargo test -p sumurai-backend --locked` from the repository root (`bun run backend:ci` for the full backend suite).
 - Frontend Bun tests live under `frontend/tests/` and own services, domain logic, hooks, API contracts, observability, setup, mocks, token flows, and business rules.
 - Storybook Vitest owns rendered UI states, browser interactions, loading/error/disabled states, form validation display, callback outcomes, and other browser-only component behavior.
-- Playwright Storybook iframe smoke tests own static Storybook load checks without screenshot baselines.
+- Storybook Vitest owns the journey stories in `frontend/src/storybook/journeys/`. Each journey asserts the outgoing request, the visible result, and one guard path, with one story per outcome. Whole-screen stories in `frontend/src/storybook/screens/` are render-only and never run as tests.
 - Add or adjust tests when changing business logic, especially around auth, provider sync, budgets, and cache behavior.
 
 ## Commit And PRs

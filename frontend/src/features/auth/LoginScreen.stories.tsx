@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
-import { pushStoryCredentialsOverride } from '@/storybook/screens/user-journeys/storyApi';
 import { storyDarkTheme } from '@/storybook/storyDarkTheme';
+import { pushStoryCredentialsOverride } from '@/storybook/support/storyApi';
 import { LoginScreen, type LoginScreenProps } from './LoginScreen';
 
 const passkeyChallenge = {

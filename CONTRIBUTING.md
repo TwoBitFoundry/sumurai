@@ -33,7 +33,7 @@ The backend Docker build performs the same fetch automatically, but local `cargo
 
 This project treats **GitHub Actions as the merge gate**. The default Git hook trades some parity for contributor time.
 
-**`bun run precommit` (Husky):** frontend **Biome check**, `typecheck`, **design guard**, and **`bun test`**, then **`bun run backend:ci`**. It does **not** run `bun install`, Storybook static build, Vitest browser tests, or Playwright iframe smoke. Typecheck already includes `*.stories.tsx` under `src/` with the app.
+**`bun run precommit` (Husky):** frontend **Biome check**, `typecheck`, **design guard**, and **`bun test`**, then **`bun run backend:ci`**. It does **not** run `bun install`, Vitest browser tests, or the Chromium install. Typecheck already includes `*.stories.tsx` under `src/` with the app.
 
 For **full parity** with `.github/workflows/ci.yml` frontend steps before you push (for example Storybook/Vite/Playwright paths), run **`bun run backend:ci && bun run frontend:ci`** manually.
 
@@ -108,11 +108,11 @@ Component stories live under `frontend/src` as `*.stories.tsx`. From the repo ro
 
 ```bash
 bun run storybook
-bun run storybook:build
 bun run frontend:storybook-test
+bun run frontend:journeys
 ```
 
-The root Storybook commands route through the `frontend` workspace. `storybook` serves `http://localhost:6006`. `storybook:build` writes `frontend/storybook-static` (used by CI Storybook iframe smoke tests). `frontend:storybook-test` runs the Storybook Vitest project from the repo root. Storybook MCP needs Storybook running first; see `AGENTS.md`.
+The root Storybook commands route through the `frontend` workspace. `storybook` serves `http://localhost:6006`. `frontend:storybook-test` runs the Storybook Vitest project from the repo root; `frontend:journeys` runs only the journey stories. Storybook MCP needs Storybook running first; see `AGENTS.md`.
 
 ## Backend Validation
 

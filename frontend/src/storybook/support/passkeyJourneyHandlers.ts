@@ -1,4 +1,3 @@
-import type { PasskeyItem } from '@/types/api';
 import {
   emptyResponse,
   jsonResponse,
@@ -6,7 +5,8 @@ import {
   route,
   type StoryApiRequest,
   type StoryApiRoute,
-} from './storyApi';
+} from '@/storybook/support/storyApi';
+import type { PasskeyItem } from '@/types/api';
 
 const enrollChallenge = {
   publicKey: {

@@ -12,9 +12,9 @@ import {
   storyCategoryList,
   storyDashboardFixtures,
   storyProviderAccounts,
-} from '@/storybook/screens/user-journeys/shared';
-import { jsonResponse, route, StoryApiScope } from '@/storybook/screens/user-journeys/storyApi';
-import { waitForDashboardSankeyIncome } from '@/storybook/screens/user-journeys/storyPlay';
+} from '@/storybook/support/shared';
+import { jsonResponse, route, StoryApiScope } from '@/storybook/support/storyApi';
+import { waitForDashboardSankeyIncome } from '@/storybook/support/storyPlay';
 import DashboardStatsCarousel from './DashboardStatsCarousel';
 
 const handlers = [

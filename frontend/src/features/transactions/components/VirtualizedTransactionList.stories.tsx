@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { STORY_FIXED_ISO } from '@/storybook/fixtures/time';
-import { jsonResponse, route, StoryApiScope } from '@/storybook/screens/user-journeys/storyApi';
+import { jsonResponse, route, StoryApiScope } from '@/storybook/support/storyApi';
 import type { CursorTransactionsResponse, Transaction } from '@/types/api';
 import { VirtualizedTransactionList } from './VirtualizedTransactionList';
 

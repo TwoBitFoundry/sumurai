@@ -1,30 +1,38 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { createRequestLog, jsonResponse, route, StoryApiScope } from '@/storybook/support/storyApi';
 import SettingsPage from '@/views/SettingsPage';
-import { jsonResponse, route, StoryApiScope } from './storyApi';
 
 type SettingsJourneyStoryArgs = {
   onLogout: () => void;
 };
 
 const meta = {
-  title: 'App/Screens/User Journeys/Settings',
+  title: 'App/Journeys/Settings',
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs', 'test'],
+  tags: ['autodocs', 'test', 'journey'],
   args: {
     onLogout: fn(),
   },
+  decorators: [
+    (Story) => {
+      requests.clear();
+      return <Story />;
+    },
+  ],
 } satisfies Meta<SettingsJourneyStoryArgs>;
 
 export default meta;
 
 type Story = StoryObj<SettingsJourneyStoryArgs>;
 
+const requests = createRequestLog();
+
 const successHandlers = [
   route('GET', '/auth/passkey', () => jsonResponse([])),
-  route('DELETE', '/auth/account', () =>
+  requests.route('DELETE', '/auth/account', () =>
     jsonResponse({
       message: 'Account deleted',
       deleted_items: {
@@ -39,7 +47,7 @@ const successHandlers = [
 
 const deleteFailureHandlers = [
   route('GET', '/auth/passkey', () => jsonResponse([])),
-  route('DELETE', '/auth/account', () =>
+  requests.route('DELETE', '/auth/account', () =>
     jsonResponse({ message: 'Account deletion failed. Try again.' }, { status: 500 })
   ),
 ];
@@ -51,25 +59,6 @@ function SettingsJourney(props: { handlers: typeof successHandlers; onLogout?: (
     </StoryApiScope>
   );
 }
-
-export const Journey: Story = {
-  render: (args) => <SettingsJourney handlers={successHandlers} onLogout={args.onLogout} />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const body = within(canvasElement.ownerDocument.body);
-
-    await waitFor(() => {
-      expect(canvas.getByRole('heading', { name: /inspect the armory/i })).toBeVisible();
-    });
-
-    await userEvent.click(canvas.getByRole('radio', { name: /light/i }));
-
-    await userEvent.click(canvas.getByRole('button', { name: /delete account/i }));
-    await userEvent.type(body.getByLabelText(/^type delete to confirm$/i), 'DELETE');
-    const deleteForever = body.getByRole('button', { name: /delete forever/i });
-    await expect(deleteForever).toBeEnabled();
-  },
-};
 
 export const DeleteAccountCancel: Story = {
   render: (args) => <SettingsJourney handlers={successHandlers} onLogout={args.onLogout} />,
@@ -133,6 +122,7 @@ export const DeleteAccountSuccess: Story = {
     await userEvent.type(body.getByLabelText(/^type delete to confirm$/i), 'DELETE');
     await userEvent.click(body.getByRole('button', { name: /delete forever/i }));
     await waitFor(() => {
+      expect(requests.find('DELETE', '/auth/account')).toHaveLength(1);
       expect(args.onLogout).toHaveBeenCalledTimes(1);
     });
   },
@@ -140,7 +130,7 @@ export const DeleteAccountSuccess: Story = {
 
 export const DeleteAccountFailure: Story = {
   render: (args) => <SettingsJourney handlers={deleteFailureHandlers} onLogout={args.onLogout} />,
-  play: async ({ canvasElement }) => {
+  play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
 
@@ -149,5 +139,6 @@ export const DeleteAccountFailure: Story = {
     await userEvent.click(body.getByRole('button', { name: /delete forever/i }));
     await expect(body.getByText(/account deletion failed/i)).toBeVisible();
     await expect(body.getByRole('heading', { name: /delete account/i })).toBeVisible();
+    await expect(args.onLogout).not.toHaveBeenCalled();
   },
 };

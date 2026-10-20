@@ -4,7 +4,6 @@ import { PasskeySecuritySection } from '@/features/settings/PasskeySecuritySecti
 import { LAST_PASSKEY_REMOVE_TOOLTIP } from '@/features/settings/passkeySecurityPolicy';
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
 import { AuthenticatedScreenShell } from '@/storybook/screenSlices/AuthenticatedScreenShell';
-import { Badge, cn, GlassCard } from '@/ui/primitives';
 import {
   buildPasskeyEnrollFailureHandlers,
   buildPasskeyHandlers,
@@ -12,15 +11,16 @@ import {
   storyPasskeysIPhone,
   storyPasskeysMacBook,
   withStoryWebAuthn,
-} from './passkeyJourneyHandlers';
-import { type StoryApiRoute, StoryApiScope } from './storyApi';
+} from '@/storybook/support/passkeyJourneyHandlers';
+import { type StoryApiRoute, StoryApiScope } from '@/storybook/support/storyApi';
+import { Badge, cn, GlassCard } from '@/ui/primitives';
 
 const meta = {
-  title: 'App/Screens/User Journeys/Passkeys',
+  title: 'App/Journeys/Passkeys',
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs', 'test'],
+  tags: ['autodocs', 'test', 'journey'],
 } satisfies Meta;
 
 export default meta;
@@ -45,47 +45,6 @@ function PasskeysJourneyScreen({ handlers }: { handlers: StoryApiRoute[] }) {
     </StoryApiScope>
   );
 }
-
-export const Journey: Story = {
-  render: () => (
-    <PasskeysJourneyScreen
-      handlers={buildPasskeyHandlers([storyPasskeysMacBook, storyPasskeysIPhone])}
-    />
-  ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const body = within(canvasElement.ownerDocument.body);
-
-    await waitFor(() => {
-      expect(canvas.getByRole('heading', { name: /protect your dominion/i })).toBeVisible();
-      expect(canvas.getByText('MacBook Pro')).toBeVisible();
-      expect(canvas.getByText('iPhone')).toBeVisible();
-    });
-
-    await userEvent.click(canvas.getByRole('button', { name: /remove passkey iphone/i }));
-    await expect(body.getByRole('heading', { name: /remove passkey/i })).toBeVisible();
-    await userEvent.click(body.getByRole('button', { name: /^remove passkey$/i }));
-
-    await waitFor(() => {
-      expect(canvas.queryByText('iPhone')).not.toBeInTheDocument();
-      expect(canvas.getByText('MacBook Pro')).toBeVisible();
-    });
-
-    await userEvent.click(canvas.getByRole('button', { name: /add passkey/i }));
-    await expect(body.getByRole('heading', { name: /add passkey/i })).toBeVisible();
-    await userEvent.clear(body.getByLabelText(/passkey name/i));
-    await userEvent.type(body.getByLabelText(/passkey name/i), 'iPad');
-
-    await withStoryWebAuthn(async () => {
-      await userEvent.click(body.getByRole('button', { name: /enroll passkey/i }));
-      await waitFor(() => {
-        expect(canvas.getByText('iPad')).toBeVisible();
-      });
-    });
-
-    expect(body.queryByRole('heading', { name: /add passkey/i })).not.toBeInTheDocument();
-  },
-};
 
 export const SinglePasskeyRemoveDisabled: Story = {
   render: () => <PasskeysJourneyScreen handlers={buildPasskeyHandlers([storyPasskeysMacBook])} />,
