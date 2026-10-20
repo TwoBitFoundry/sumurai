@@ -34,6 +34,7 @@ mod diy_orchestrator_tests;
 mod entity_smoke_tests;
 mod export_api_tests;
 mod export_model_tests;
+mod export_orchestrator_tests;
 mod export_service_tests;
 mod import_handler_categorization_tests;
 mod import_orchestrator_tests;

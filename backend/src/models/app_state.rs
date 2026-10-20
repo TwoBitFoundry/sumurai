@@ -11,6 +11,7 @@ use crate::services::category_management::service::CategoryManagementService;
 use crate::services::category_orchestrator::CategoryOrchestrator;
 use crate::services::diy_orchestrator::DiyOrchestrator;
 use crate::services::diy_service::DiyService;
+use crate::services::export_orchestrator::ExportOrchestrator;
 use crate::services::import_orchestrator::ImportOrchestrator;
 use crate::services::otel_traces_relay::OtlpTracesRelay;
 use crate::services::plaid_orchestrator::PlaidOrchestrator;
@@ -110,6 +111,10 @@ impl AppState {
 
     pub fn diy(&self) -> DiyOrchestrator {
         DiyOrchestrator::new(self.diy_service.clone(), self.connection_service.clone())
+    }
+
+    pub fn exports(&self) -> ExportOrchestrator {
+        ExportOrchestrator::new(self.db_repository.clone())
     }
 
     pub fn imports(&self) -> ImportOrchestrator {
