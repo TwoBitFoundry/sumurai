@@ -71,8 +71,8 @@ use crate::models::{
     plaid::{
         ClearSyncedDataResponse, DisconnectRequest, DisconnectResult, ExchangeTokenRequest,
         ExchangeTokenResponse, LinkTokenRequest, LinkTokenResponse, ProviderConnectResponse,
-        ProviderConnectionStatus, ProviderInfoResponse, ProviderSelectRequest,
-        ProviderSelectResponse, ProviderStatusResponse, SyncTransactionsRequest,
+        ProviderInfoResponse, ProviderSelectRequest, ProviderSelectResponse,
+        ProviderStatusResponse, SyncTransactionsRequest,
     },
     provider_connect::ProviderConnectRequest,
     transaction::{
@@ -137,6 +137,7 @@ use auth_middleware::auth_middleware;
 use config::Config;
 use handlers::analytics::{lenient_analytics_filter, parse_analytics_range, parse_month_param};
 use handlers::export::build_authenticated_export_response;
+use handlers::provider::provider_disabled_response;
 use handlers::transaction::parse_transaction_filter;
 use middleware::auth_ip_ban::auth_ip_ban_middleware;
 use middleware::passkey_enrollment::{
@@ -152,8 +153,8 @@ use services::auto_categorization_orchestrator::AutoCategorizationOrchestrationE
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
 use services::category_management::service::CategoryManagementService;
 use services::import_orchestrator::ImportUpload;
+use services::provider_orchestrator::ProviderSyncRequest;
 use services::repository_service::{DatabaseRepository, PostgresRepository};
-use services::sync_service_dispatcher::provider_sync_error_to_response;
 use services::transaction_orchestrator::TransactionPage;
 use services::{
     otel_traces_relay::OtlpTracesRelay,
@@ -162,8 +163,8 @@ use services::{
         telemetry_public_browser_governor_layer,
     },
     AuthService, AuthorizationService, BudgetService, CacheService, CategorizationService,
-    Categorizer, ConnectionService, ProviderSyncRateLimitService, RedisCache,
-    SimpleFinConnectError, SyncConnectionParams, SyncService, SyncServiceFactory,
+    Categorizer, ConnectionService, ProviderSyncRateLimitService, RedisCache, SyncService,
+    SyncServiceFactory,
 };
 use services::{AnalyticsService, RealPlaidClient};
 use utils::auth_cookie::{build_auth_cookie, build_clearing_auth_cookie, extract_auth_cookie};
@@ -752,16 +753,6 @@ fn auth_cookie_headers(cookie: String) -> HeaderMap {
 fn extract_auth_cookie_token(headers: &HeaderMap) -> Option<String> {
     let cookie_header = headers.get(COOKIE)?.to_str().ok()?;
     extract_auth_cookie(Some(cookie_header), "auth_token")
-}
-
-fn log_provider_credential_outcome(provider: &str, status: StatusCode, endpoint: &str) {
-    tracing::info!(
-        target: "provider_credentials",
-        provider,
-        status = %status,
-        endpoint,
-        "Provider credential endpoint completed"
-    );
 }
 
 async fn error_handling_middleware(request: Request<Body>, next: Next) -> Response {
@@ -1932,15 +1923,6 @@ fn api_bad_request(message: impl Into<String>) -> (StatusCode, Json<ApiErrorResp
     ApiErrorResponse::new("BAD_REQUEST", &message.into()).into_response(StatusCode::BAD_REQUEST)
 }
 
-fn provider_disabled_response(provider: &str) -> (StatusCode, Json<ApiErrorResponse>) {
-    ApiErrorResponse::with_code(
-        "FORBIDDEN",
-        &format!("Provider '{}' is disabled in this deployment", provider),
-        "PROVIDER_DISABLED",
-    )
-    .into_response(StatusCode::FORBIDDEN)
-}
-
 #[utoipa::path(
     post,
     path = "/api/plaid/link-token",
@@ -2071,116 +2053,27 @@ async fn sync_authenticated_provider_transactions(
 
     let reference_date = NaiveDate::parse_from_str(&request_body.client_date, "%Y-%m-%d")
         .map_err(|_| StatusCode::BAD_REQUEST.into_response())?;
-    let mut connection = connection;
 
     let provider = connection.provider.clone();
     if !state.config.is_financial_provider_enabled(&provider) {
         return Err(provider_disabled_response(&provider).into_response());
     }
 
-    match state
-        .provider_sync_rate_limit_service
-        .try_consume_sync_quota(
-            &user_id,
-            &request_body.client_date,
-            &request_body.client_timezone,
-        )
-        .await
-    {
-        Ok(crate::services::provider_sync_rate_limit_service::SyncQuotaDecision::Allowed { .. }) => {}
-        Ok(crate::services::provider_sync_rate_limit_service::SyncQuotaDecision::Limited {
-            retry_after_secs,
-        }) => {
-            return Err(sync_quota_rate_limited_response(retry_after_secs));
-        }
-        Err(crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitError::InvalidClientDate)
-        | Err(crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitError::InvalidClientTimezone) => {
-            return Err(StatusCode::BAD_REQUEST.into_response());
-        }
-        Err(crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitError::Cache(error)) => {
-            tracing::error!(
-                error = %error,
-                user_id = %user_id,
-                "Sync quota check failed"
-            );
-            return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
-        }
-    }
-
-    let sync_params = SyncConnectionParams {
-        provider: provider.as_str(),
-        user_id: &user_id,
-        jwt_id: &auth_context.jwt_id,
-    };
-
-    let dispatcher = state
-        .sync_service_factory
-        .get_dispatcher(&provider)
-        .ok_or_else(|| {
-            tracing::error!(
-                "Sync transactions: unsupported provider '{}' for user {}",
-                connection.provider,
-                user_id
-            );
-            StatusCode::BAD_REQUEST.into_response()
-        })?;
-
-    match dispatcher
-        .sync(sync_params, &mut connection, Some(reference_date))
-        .await
-    {
-        Ok(response) => {
-            if let Err(e) = state
-                .cache_service
-                .clear_jwt_scoped_bank_connection_cache(&auth_context.jwt_id, connection.id)
-                .await
-            {
-                tracing::warn!(
-                    "Failed to clear connection cache after sync for user {}: {}",
-                    user_id,
-                    e
-                );
-            }
-
-            if let Err(e) = state
-                .cache_service
-                .clear_transactions(&auth_context.jwt_id)
-                .await
-            {
-                tracing::warn!(
-                    "Failed to clear transaction cache after sync for user {}: {}",
-                    user_id,
-                    e
-                );
-            }
-
-            Ok(Json(response))
-        }
-        Err(err) => Err(provider_sync_error_to_response(
-            err,
+    state
+        .providers()
+        .sync_transactions(
             user_id,
-            &connection.item_id,
-        )),
-    }
-}
-
-fn sync_quota_rate_limited_response(retry_after_secs: u64) -> Response {
-    let payload = ApiErrorResponse::with_code(
-        "TOO_MANY_REQUESTS",
-        "Daily sync limit reached (24 per day). Try again tomorrow.",
-        "RATE_LIMITED",
-    );
-    let body = serde_json::to_vec(&payload).unwrap_or_else(|_| b"{}".to_vec());
-
-    Response::builder()
-        .status(StatusCode::TOO_MANY_REQUESTS)
-        .header(CONTENT_TYPE, "application/json")
-        .header(
-            axum::http::header::RETRY_AFTER,
-            retry_after_secs.to_string(),
+            &auth_context.jwt_id,
+            connection,
+            ProviderSyncRequest {
+                client_date: request_body.client_date,
+                client_timezone: request_body.client_timezone,
+                reference_date,
+            },
         )
-        .body(axum::body::Body::from(body))
-        .unwrap_or_else(|_| Response::new(axum::body::Body::empty()))
+        .await
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2560,36 +2453,6 @@ async fn get_authenticated_top_merchants(
         .map_err(Into::into)
 }
 
-async fn load_connection_statuses(
-    state: &AppState,
-    user_id: &Uuid,
-) -> Result<Vec<ProviderConnectionStatus>, StatusCode> {
-    let connections = state
-        .db_repository
-        .get_all_provider_connections_by_user(user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to get connections for user {}: {}", user_id, e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    Ok(connections
-        .into_iter()
-        .filter(|conn| conn.is_connected)
-        .map(|conn| ProviderConnectionStatus {
-            is_connected: conn.is_connected,
-            last_sync_at: conn.last_sync_at.map(|dt| dt.to_rfc3339()),
-            institution_name: conn.institution_name,
-            connection_id: Some(conn.id.to_string()),
-            item_id: Some(conn.item_id),
-            provider: conn.provider,
-            transaction_count: conn.transaction_count,
-            account_count: conn.account_count,
-            sync_in_progress: false,
-        })
-        .collect())
-}
-
 #[utoipa::path(
     post,
     path = "/api/providers/connect",
@@ -2616,195 +2479,12 @@ async fn connect_authenticated_provider(
         return Err(provider_disabled_response(&req.provider));
     }
 
-    match req.provider.as_str() {
-        "simplefin" => match state
-            .connection_service
-            .connect_simplefin_provider(&auth_context.user_id, &auth_context.jwt_id, &req)
-            .await
-        {
-            Ok(response) => {
-                log_provider_credential_outcome("simplefin", StatusCode::OK, "provider.connect");
-                Ok(Json(response))
-            }
-            Err(SimpleFinConnectError::InvalidProvider) => {
-                log_provider_credential_outcome(
-                    &req.provider,
-                    StatusCode::BAD_REQUEST,
-                    "provider.connect",
-                );
-                Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
-                    .into_response(StatusCode::BAD_REQUEST))
-            }
-            Err(SimpleFinConnectError::MissingSetupToken) => {
-                log_provider_credential_outcome(
-                    "simplefin",
-                    StatusCode::BAD_REQUEST,
-                    "provider.connect",
-                );
-                Err(ApiErrorResponse::new(
-                    "BAD_REQUEST",
-                    "Provide a SimpleFIN setup token to connect this account",
-                )
-                .into_response(StatusCode::BAD_REQUEST))
-            }
-            Err(SimpleFinConnectError::MalformedSetupToken) => {
-                log_provider_credential_outcome(
-                    "simplefin",
-                    StatusCode::BAD_REQUEST,
-                    "provider.connect",
-                );
-                Err(
-                    ApiErrorResponse::new("BAD_REQUEST", "The SimpleFIN setup token is malformed")
-                        .into_response(StatusCode::BAD_REQUEST),
-                )
-            }
-            Err(SimpleFinConnectError::SetupTokenAlreadyClaimed) => {
-                log_provider_credential_outcome(
-                    "simplefin",
-                    StatusCode::UNPROCESSABLE_ENTITY,
-                    "provider.connect",
-                );
-                Err(ApiErrorResponse::new(
-                    "SETUP_TOKEN_ALREADY_CLAIMED",
-                    "This SimpleFIN setup token has already been used",
-                )
-                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
-            }
-            Err(SimpleFinConnectError::ClaimFailed(e)) => {
-                log_provider_credential_outcome(
-                    "simplefin",
-                    StatusCode::UNPROCESSABLE_ENTITY,
-                    "provider.connect",
-                );
-                tracing::error!(
-                    "Failed to claim SimpleFIN access URL for user {}: {}",
-                    auth_context.user_id,
-                    e
-                );
-                Err(ApiErrorResponse::new(
-                    "SETUP_TOKEN_CLAIM_FAILED",
-                    "Could not claim the SimpleFIN setup token",
-                )
-                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
-            }
-            Err(SimpleFinConnectError::CredentialStorage(e)) => {
-                log_provider_credential_outcome(
-                    "simplefin",
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "provider.connect",
-                );
-                tracing::error!(
-                    "Failed to store SimpleFIN credentials for user {}: {}",
-                    auth_context.user_id,
-                    e
-                );
-                Err(ApiErrorResponse::internal_server_error(
-                    "Failed to store credentials",
-                ))
-            }
-            Err(SimpleFinConnectError::SnapshotFetch(e)) => {
-                log_provider_credential_outcome(
-                    "simplefin",
-                    StatusCode::FAILED_DEPENDENCY,
-                    "provider.connect",
-                );
-                tracing::error!(
-                    "Failed to fetch SimpleFIN account snapshot for user {}: {}",
-                    auth_context.user_id,
-                    e
-                );
-                Err(
-                    ApiErrorResponse::new("FAILED_DEPENDENCY", "SimpleFIN provider request failed")
-                        .into_response(StatusCode::FAILED_DEPENDENCY),
-                )
-            }
-            Err(SimpleFinConnectError::ConnectionPersistence(e)) => {
-                log_provider_credential_outcome(
-                    "simplefin",
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "provider.connect",
-                );
-                tracing::error!(
-                    "Failed to persist SimpleFIN connection for user {}: {}",
-                    auth_context.user_id,
-                    e
-                );
-                Err(ApiErrorResponse::internal_server_error(
-                    "Failed to save connection",
-                ))
-            }
-            Err(SimpleFinConnectError::NoInstitutionsOnBridge) => {
-                log_provider_credential_outcome(
-                    "simplefin",
-                    StatusCode::UNPROCESSABLE_ENTITY,
-                    "provider.connect",
-                );
-                Err(ApiErrorResponse::new(
-                    "NO_INSTITUTIONS",
-                    "No institutions are available from your SimpleFIN bridge yet",
-                )
-                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
-            }
-            Err(SimpleFinConnectError::AllInstitutionsHidden) => {
-                log_provider_credential_outcome(
-                    "simplefin",
-                    StatusCode::UNPROCESSABLE_ENTITY,
-                    "provider.connect",
-                );
-                Err(ApiErrorResponse::new(
-                    "ALL_INSTITUTIONS_HIDDEN",
-                    "All SimpleFIN institutions are hidden in Sumurai. Restore one to start syncing.",
-                )
-                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
-            }
-            Err(SimpleFinConnectError::NoInstitutionsLinked) => {
-                log_provider_credential_outcome(
-                    "simplefin",
-                    StatusCode::UNPROCESSABLE_ENTITY,
-                    "provider.connect",
-                );
-                Err(ApiErrorResponse::new(
-                    "NO_INSTITUTIONS",
-                    "No SimpleFIN institutions could be linked. Try again or check your bridge setup.",
-                )
-                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
-            }
-            Err(SimpleFinConnectError::InstitutionsRequireAuth(notices)) => {
-                log_provider_credential_outcome(
-                    "simplefin",
-                    StatusCode::UNPROCESSABLE_ENTITY,
-                    "provider.connect",
-                );
-                let message = if notices.len() == 1 {
-                    format!(
-                        "{} needs to be re-authenticated in your SimpleFIN dashboard before it can sync.",
-                        notices[0].institution_name
-                    )
-                } else {
-                    "Some SimpleFIN institutions need to be re-authenticated in your SimpleFIN dashboard before they can sync.".to_string()
-                };
-                Err(ApiErrorResponse {
-                    error: "SIMPLEFIN_INSTITUTIONS_REQUIRE_AUTH".to_string(),
-                    message,
-                    code: Some("SIMPLEFIN_AUTH_REQUIRED".to_string()),
-                    details: serde_json::to_value(notices).ok(),
-                    status_code: None,
-                    reason: None,
-                    trace_id: None,
-                }
-                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
-            }
-        },
-        _ => {
-            log_provider_credential_outcome(
-                &req.provider,
-                StatusCode::BAD_REQUEST,
-                "provider.connect",
-            );
-            Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
-                .into_response(StatusCode::BAD_REQUEST))
-        }
-    }
+    state
+        .providers()
+        .connect(auth_context.user_id, &auth_context.jwt_id, &req)
+        .await
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2823,31 +2503,12 @@ async fn get_authenticated_provider_status(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<ProviderStatusResponse>, StatusCode> {
-    let user_id = auth_context.user_id;
-
-    let provider = match state.db_repository.get_user_by_id(&user_id).await {
-        Ok(Some(user)) => {
-            if state.provider_registry.get(&user.provider).is_some()
-                && state.config.is_financial_provider_enabled(&user.provider)
-            {
-                user.provider
-            } else {
-                String::new()
-            }
-        }
-        Ok(None) => String::new(),
-        Err(e) => {
-            tracing::error!("Failed to load user {} for provider status: {}", user_id, e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-
-    let connections = load_connection_statuses(&state, &user_id).await?;
-
-    Ok(Json(ProviderStatusResponse {
-        provider,
-        connections,
-    }))
+    state
+        .providers()
+        .status(auth_context.user_id)
+        .await
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2870,22 +2531,14 @@ async fn get_authenticated_simplefin_ignored_institutions(
         return Err(StatusCode::FORBIDDEN);
     }
 
-    let institutions = state
-        .connection_service
-        .list_simplefin_ignored_institutions(&auth_context.user_id)
+    state
+        .providers()
+        .list_simplefin_ignored_institutions(auth_context.user_id)
         .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to list SimpleFIN ignored institutions for user {}: {}",
-                auth_context.user_id,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    Ok(Json(
-        crate::models::simplefin::SimpleFinIgnoredInstitutionsResponse { institutions },
-    ))
+        .map(|institutions| {
+            Json(crate::models::simplefin::SimpleFinIgnoredInstitutionsResponse { institutions })
+        })
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2912,27 +2565,14 @@ async fn restore_authenticated_simplefin_ignored_institution(
         return Err(StatusCode::FORBIDDEN);
     }
 
-    let org_conn_id = req.org_conn_id.trim();
-    if org_conn_id.is_empty() {
-        return Err(StatusCode::BAD_REQUEST);
-    }
-
-    let restored = state
-        .connection_service
-        .restore_simplefin_ignored_institution(&auth_context.user_id, org_conn_id)
+    state
+        .providers()
+        .restore_simplefin_ignored_institution(auth_context.user_id, &req.org_conn_id)
         .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to restore SimpleFIN ignored institution for user {}: {}",
-                auth_context.user_id,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    Ok(Json(
-        crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse { restored },
-    ))
+        .map(|restored| {
+            Json(crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse { restored })
+        })
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -3102,21 +2742,12 @@ async fn disconnect_authenticated_connection(
     auth_context: AuthContext,
     req: AuthorizedConnectionRequest<DisconnectRequest>,
 ) -> Result<Json<DisconnectResult>, StatusCode> {
-    let user_id = auth_context.user_id;
-    let connection = req.connection;
-
-    match state
-        .connection_service
-        .disconnect_owned_connection(&connection, &user_id, &auth_context.jwt_id)
+    state
+        .providers()
+        .disconnect(auth_context.user_id, &auth_context.jwt_id, &req.connection)
         .await
-    {
-        Ok(result) if result.success => Ok(Json(result)),
-        Ok(_) => Err(StatusCode::NOT_FOUND),
-        Err(e) => {
-            tracing::error!("Failed to disconnect: {}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -3267,44 +2898,12 @@ async fn get_authenticated_provider_info(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<ProviderInfoResponse>, StatusCode> {
-    let user_id = auth_context.user_id;
-
-    let user = state
-        .db_repository
-        .get_user_by_id(&user_id)
+    state
+        .providers()
+        .info(auth_context.user_id)
         .await
-        .map_err(|e| {
-            tracing::error!("Failed to get user {}: {}", user_id, e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .ok_or_else(|| {
-            tracing::error!("User {} not found", user_id);
-            StatusCode::NOT_FOUND
-        })?;
-
-    let mut available_providers = Vec::new();
-    for provider in ["plaid", "simplefin", "diy"] {
-        if state.provider_registry.get(provider).is_none() {
-            continue;
-        }
-
-        if !state.config.is_financial_provider_enabled(provider) {
-            continue;
-        }
-
-        available_providers.push(provider.to_string());
-    }
-
-    let user_provider = user
-        .active_provider()
-        .filter(|provider| state.provider_registry.get(provider).is_some())
-        .filter(|provider| state.config.is_financial_provider_enabled(provider))
-        .map(str::to_string);
-
-    Ok(Json(ProviderInfoResponse {
-        available_providers,
-        user_provider,
-    }))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -3327,88 +2926,12 @@ async fn select_authenticated_provider(
     auth_context: AuthContext,
     Json(req): Json<ProviderSelectRequest>,
 ) -> Result<Json<ProviderSelectResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    let user_id = auth_context.user_id;
-    let requested_provider = req.provider;
-
-    if state.provider_registry.get(&requested_provider).is_none() {
-        return Err(ApiErrorResponse::new(
-            "BAD_REQUEST",
-            &format!("Provider '{}' is not registered", requested_provider),
-        )
-        .into_response(StatusCode::BAD_REQUEST));
-    }
-
-    if !state
-        .config
-        .is_financial_provider_enabled(&requested_provider)
-    {
-        return Err(provider_disabled_response(&requested_provider));
-    }
-
-    let _user = match state.db_repository.get_user_by_id(&user_id).await {
-        Ok(Some(user)) => user,
-        Ok(None) => {
-            tracing::error!("User {} not found", user_id);
-            return Err(ApiErrorResponse::internal_server_error("User not found"));
-        }
-        Err(e) => {
-            tracing::error!("Failed to get user {}: {}", user_id, e);
-            return Err(ApiErrorResponse::internal_server_error(
-                "Failed to fetch user",
-            ));
-        }
-    };
-
-    let connections = match state
-        .db_repository
-        .get_all_provider_connections_by_user(&user_id)
+    state
+        .providers()
+        .select(auth_context.user_id, req.provider)
         .await
-    {
-        Ok(conns) => conns,
-        Err(e) => {
-            tracing::error!("Failed to get connections for user {}: {}", user_id, e);
-            return Err(ApiErrorResponse::internal_server_error(
-                "Failed to check active connections",
-            ));
-        }
-    };
-
-    if requested_provider != "diy" {
-        if let Some(conflicting_provider) = connections.iter().find_map(|connection| {
-            (connection.is_connected
-                && connection.provider != requested_provider
-                && connection.provider != "diy")
-                .then_some(connection.provider.as_str())
-        }) {
-            return Err(ApiErrorResponse::new(
-                "CONFLICT",
-                &format!(
-                    "Disconnect all {} accounts before switching",
-                    conflicting_provider
-                ),
-            )
-            .into_response(StatusCode::CONFLICT));
-        }
-    }
-
-    match state
-        .db_repository
-        .update_user_provider(&user_id, &requested_provider)
-        .await
-    {
-        Ok(_) => {
-            tracing::info!("User {} selected provider: {}", user_id, requested_provider);
-            Ok(Json(ProviderSelectResponse {
-                user_provider: requested_provider,
-            }))
-        }
-        Err(e) => {
-            tracing::error!("Failed to update provider for user {}: {}", user_id, e);
-            Err(ApiErrorResponse::internal_server_error(
-                "Failed to update provider selection",
-            ))
-        }
-    }
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(

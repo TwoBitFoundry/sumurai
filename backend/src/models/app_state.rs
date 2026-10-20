@@ -14,6 +14,9 @@ use crate::services::import_orchestrator::ImportOrchestrator;
 use crate::services::otel_traces_relay::OtlpTracesRelay;
 use crate::services::plaid_orchestrator::PlaidOrchestrator;
 use crate::services::plaid_service::RealPlaidClient;
+use crate::services::provider_orchestrator::{
+    ProviderAvailability, ProviderOrchestrator, SyncDependencies,
+};
 use crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService;
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::sync_service::SyncService;
@@ -112,6 +115,22 @@ impl AppState {
             self.connection_service.clone(),
             self.db_repository.clone(),
             self.cache_service.clone(),
+        )
+    }
+
+    pub fn providers(&self) -> ProviderOrchestrator {
+        ProviderOrchestrator::new(
+            self.connection_service.clone(),
+            self.db_repository.clone(),
+            self.cache_service.clone(),
+            SyncDependencies {
+                rate_limit_service: self.provider_sync_rate_limit_service.clone(),
+                dispatcher_factory: self.sync_service_factory.clone(),
+            },
+            ProviderAvailability {
+                registry: self.provider_registry.clone(),
+                config: self.config.clone(),
+            },
         )
     }
 

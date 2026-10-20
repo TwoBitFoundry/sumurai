@@ -53,6 +53,7 @@ mod plaid_provider_tests;
 mod plaid_service_tests;
 mod provider_account_scoping_tests;
 mod provider_bootstrap_tests;
+mod provider_orchestrator_tests;
 mod provider_selection_api_tests;
 mod provider_sync_rate_limit_tests;
 mod read_path_overlay_tests;
