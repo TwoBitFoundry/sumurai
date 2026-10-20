@@ -1,3 +1,4 @@
+pub mod analytics;
 pub mod auto_categorization;
 pub mod budget;
 pub mod category;

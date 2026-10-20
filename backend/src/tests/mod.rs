@@ -1,4 +1,5 @@
 mod account_validation_tests;
+mod analytics_orchestrator_tests;
 mod analytics_service_tests;
 mod auth_cookie_tests;
 mod auth_handlers_integration_tests;

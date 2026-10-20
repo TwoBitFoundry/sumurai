@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::config::Config;
 use crate::providers::ProviderRegistry;
+use crate::services::analytics_orchestrator::AnalyticsOrchestrator;
 use crate::services::auto_categorization_orchestrator::AutoCategorizationOrchestrator;
 use crate::services::budget_orchestrator::BudgetOrchestrator;
 use crate::services::categorization::categorization_service::Categorizer;
@@ -72,6 +73,15 @@ impl Clone for AppState {
 }
 
 impl AppState {
+    pub fn analytics(&self) -> AnalyticsOrchestrator {
+        AnalyticsOrchestrator::new(
+            self.analytics_service.clone(),
+            self.db_repository.clone(),
+            self.cache_service.clone(),
+            self.auth_service.clone(),
+        )
+    }
+
     pub fn auto_categorization(&self) -> AutoCategorizationOrchestrator {
         AutoCategorizationOrchestrator::new(self.auto_categorization_service.clone())
     }

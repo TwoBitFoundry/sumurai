@@ -51,9 +51,9 @@ use utils::webauthn_credentials::{
 };
 
 use crate::models::analytics::{
-    BalanceCategory, BalancesOverviewQuery, BalancesOverviewResponse, BudgetSummary,
-    CashFlowResponse, CategorySpending, DailySpending, DateBoundsResponse, IncomeExpenseTotals,
-    MonthlySpending, NetWorthOverTimeResponse, SankeyResponse, TopMerchant,
+    BalancesOverviewQuery, BalancesOverviewResponse, BudgetSummary, CashFlowResponse,
+    CategorySpending, DailySpending, DateBoundsResponse, IncomeExpenseTotals, MonthlySpending,
+    NetWorthOverTimeResponse, SankeyResponse, TopMerchant,
 };
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, AuthMiddlewareState};
@@ -135,6 +135,7 @@ use crate::providers::{PlaidCredentialResolver, SimpleFinCredentialResolver};
 use crate::utils::encryption_key::parse_encryption_key_hex;
 use auth_middleware::auth_middleware;
 use config::Config;
+use handlers::analytics::{lenient_analytics_filter, parse_analytics_range, parse_month_param};
 use handlers::export::build_authenticated_export_response;
 use handlers::transaction::parse_transaction_filter;
 use middleware::auth_ip_ban::auth_ip_ban_middleware;
@@ -165,7 +166,7 @@ use services::{
     ProviderSyncRateLimitService, RedisCache, SimpleFinConnectError, SyncConnectionParams,
     SyncService, SyncServiceFactory,
 };
-use services::{AnalyticsService, RealPlaidClient, SpendingTransactionQuery};
+use services::{AnalyticsService, RealPlaidClient};
 use utils::auth_cookie::{build_auth_cookie, build_clearing_auth_cookie, extract_auth_cookie};
 
 pub(crate) fn build_provider_registry(
@@ -2314,32 +2315,12 @@ async fn get_authenticated_current_month_spending(
     auth_context: AuthContext,
     _headers: HeaderMap,
 ) -> Result<Json<rust_decimal::Decimal>, StatusCode> {
-    let user_id = auth_context.user_id;
-    let (start_date, end_date) = state.analytics_service.current_month_date_range();
-    let transactions = state
-        .analytics_service
-        .load_spending_transactions(
-            state.db_repository.as_ref(),
-            &user_id,
-            SpendingTransactionQuery {
-                start_date: Some(start_date),
-                end_date: Some(end_date),
-                account_ids: None,
-            },
-        )
+    state
+        .analytics()
+        .current_month_spending(auth_context.user_id)
         .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to get spending transactions for user {}: {}",
-                user_id,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-    let total = state
-        .analytics_service
-        .calculate_current_month_spending(&transactions);
-    Ok(Json(total))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2361,56 +2342,14 @@ async fn get_authenticated_daily_spending(
     auth_context: AuthContext,
     Query(params): Query<models::query::DailySpendingQuery>,
 ) -> Result<Json<Vec<DailySpending>>, StatusCode> {
-    let user_id = auth_context.user_id;
+    let (year, month) = parse_month_param(params.month)?;
 
-    let (year, month) = if let Some(month_str) = params.month {
-        let parts: Vec<&str> = month_str.split('-').collect();
-        if parts.len() == 2 {
-            let year = parts[0]
-                .parse::<i32>()
-                .map_err(|_| StatusCode::BAD_REQUEST)?;
-            let month = parts[1]
-                .parse::<u32>()
-                .map_err(|_| StatusCode::BAD_REQUEST)?;
-            (year, month)
-        } else {
-            return Err(StatusCode::BAD_REQUEST);
-        }
-    } else {
-        use chrono::Datelike;
-        let now = chrono::Utc::now().naive_utc().date();
-        (now.year(), now.month())
-    };
-
-    let (start_date, end_date) = state
-        .analytics_service
-        .month_date_range(year, month)
-        .ok_or(StatusCode::BAD_REQUEST)?;
-    let transactions = state
-        .analytics_service
-        .load_spending_transactions(
-            state.db_repository.as_ref(),
-            &user_id,
-            SpendingTransactionQuery {
-                start_date: Some(start_date),
-                end_date: Some(end_date),
-                account_ids: None,
-            },
-        )
+    state
+        .analytics()
+        .daily_spending(auth_context.user_id, year, month)
         .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to get spending transactions for user {}: {}",
-                user_id,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-    let daily_spending =
-        state
-            .analytics_service
-            .calculate_daily_spending(&transactions, year, month);
-    Ok(Json(daily_spending))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2470,43 +2409,14 @@ async fn get_authenticated_income_expense_totals(
         authorized_account_ids,
     }: AuthorizedQuery<DateRangeQuery>,
 ) -> Result<Json<models::analytics::IncomeExpenseTotals>, StatusCode> {
-    let user_id = auth_context.user_id;
+    let filter = lenient_analytics_filter(&query, authorized_account_ids);
 
-    let start_date = query
-        .start_date
-        .as_ref()
-        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-    let end_date = query
-        .end_date
-        .as_ref()
-        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-
-    let account_ids: Option<Vec<Uuid>> = authorized_account_ids
-        .as_ref()
-        .map(|ids| ids.iter().copied().collect());
-
-    let totals = state
-        .analytics_service
-        .get_income_expense_totals(
-            state.db_repository.as_ref(),
-            &user_id,
-            SpendingTransactionQuery {
-                start_date,
-                end_date,
-                account_ids: account_ids.as_deref(),
-            },
-        )
+    state
+        .analytics()
+        .income_expense_totals(auth_context.user_id, filter)
         .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to get income and expense totals for user {}: {}",
-                user_id,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    Ok(Json(totals))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2532,39 +2442,14 @@ async fn get_authenticated_budget_summary(
         authorized_account_ids,
     }: AuthorizedQuery<DateRangeQuery>,
 ) -> Result<Json<BudgetSummary>, StatusCode> {
-    let user_id = auth_context.user_id;
+    let filter = lenient_analytics_filter(&query, authorized_account_ids);
 
-    let start_date = query
-        .start_date
-        .as_ref()
-        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-    let end_date = query
-        .end_date
-        .as_ref()
-        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-
-    let account_ids: Option<Vec<Uuid>> = authorized_account_ids
-        .as_ref()
-        .map(|ids| ids.iter().copied().collect());
-
-    let summary = state
-        .analytics_service
-        .get_budget_summary(
-            state.db_repository.as_ref(),
-            &user_id,
-            SpendingTransactionQuery {
-                start_date,
-                end_date,
-                account_ids: account_ids.as_deref(),
-            },
-        )
+    state
+        .analytics()
+        .budget_summary(auth_context.user_id, filter)
         .await
-        .map_err(|e| {
-            tracing::error!("Failed to get budget summary for user {}: {}", user_id, e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    Ok(Json(summary))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2590,47 +2475,14 @@ async fn get_authenticated_spending_by_date_range(
         authorized_account_ids,
     }: AuthorizedQuery<DateRangeQuery>,
 ) -> Result<Json<rust_decimal::Decimal>, StatusCode> {
-    let user_id = auth_context.user_id;
+    let filter = lenient_analytics_filter(&query, authorized_account_ids);
 
-    let start = query
-        .start_date
-        .as_deref()
-        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-    let end = query
-        .end_date
-        .as_deref()
-        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-
-    let account_ids: Option<Vec<Uuid>> = authorized_account_ids
-        .as_ref()
-        .map(|ids| ids.iter().copied().collect());
-
-    let transactions = state
-        .analytics_service
-        .load_spending_transactions(
-            state.db_repository.as_ref(),
-            &user_id,
-            SpendingTransactionQuery {
-                start_date: start,
-                end_date: end,
-                account_ids: account_ids.as_deref(),
-            },
-        )
+    state
+        .analytics()
+        .spending_by_date_range(auth_context.user_id, filter)
         .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to get spending transactions for user {}: {}",
-                user_id,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-    let total: rust_decimal::Decimal = transactions
-        .into_iter()
-        .filter(|t| t.amount < rust_decimal::Decimal::ZERO)
-        .map(|t| -t.amount)
-        .sum();
-    Ok(Json(total))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2656,42 +2508,14 @@ async fn get_authenticated_category_spending(
         authorized_account_ids,
     }: AuthorizedQuery<DateRangeQuery>,
 ) -> Result<Json<Vec<CategorySpending>>, StatusCode> {
-    let user_id = auth_context.user_id;
+    let filter = lenient_analytics_filter(&query, authorized_account_ids);
 
-    let start_date = query
-        .start_date
-        .as_ref()
-        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-    let end_date = query
-        .end_date
-        .as_ref()
-        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-
-    let account_ids: Option<Vec<Uuid>> = authorized_account_ids
-        .as_ref()
-        .map(|ids| ids.iter().copied().collect());
-
-    let categories = state
-        .analytics_service
-        .get_category_spending(
-            state.db_repository.as_ref(),
-            &user_id,
-            SpendingTransactionQuery {
-                start_date,
-                end_date,
-                account_ids: account_ids.as_deref(),
-            },
-        )
+    state
+        .analytics()
+        .category_spending(auth_context.user_id, filter)
         .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to get category spending for user {}: {}",
-                user_id,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-    Ok(Json(categories))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2719,53 +2543,14 @@ async fn get_authenticated_monthly_totals(
         authorized_account_ids,
     }: AuthorizedQuery<DateRangeQuery>,
 ) -> Result<Json<Vec<MonthlySpending>>, StatusCode> {
-    let user_id = auth_context.user_id;
-    let start_date = query
-        .start_date
-        .as_ref()
-        .and_then(|value| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok())
-        .ok_or(StatusCode::BAD_REQUEST)?;
-    let end_date = query
-        .end_date
-        .as_ref()
-        .and_then(|value| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok())
-        .ok_or(StatusCode::BAD_REQUEST)?;
+    let range = parse_analytics_range(&query, authorized_account_ids)?;
 
-    if end_date < start_date {
-        return Err(StatusCode::BAD_REQUEST);
-    }
-
-    let account_ids: Option<Vec<Uuid>> = authorized_account_ids
-        .as_ref()
-        .map(|ids| ids.iter().copied().collect());
-
-    let transactions = state
-        .analytics_service
-        .load_spending_transactions(
-            state.db_repository.as_ref(),
-            &user_id,
-            SpendingTransactionQuery {
-                start_date: Some(start_date),
-                end_date: Some(end_date),
-                account_ids: account_ids.as_deref(),
-            },
-        )
+    state
+        .analytics()
+        .monthly_totals(auth_context.user_id, range)
         .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to get spending transactions for user {}: {}",
-                user_id,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-    let monthly_totals = state.analytics_service.calculate_monthly_totals(
-        &transactions,
-        state
-            .analytics_service
-            .inclusive_month_count(start_date, end_date),
-    );
-    Ok(Json(monthly_totals))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2790,29 +2575,12 @@ async fn get_authenticated_date_bounds(
         ..
     }: AuthorizedQuery<BalancesOverviewQuery>,
 ) -> Result<Json<DateBoundsResponse>, StatusCode> {
-    let user_id = auth_context.user_id;
-    let account_ids = authorized_account_ids
-        .as_ref()
-        .map(|ids| ids.iter().copied().collect::<Vec<_>>());
-
-    let bounds = state
-        .analytics_service
-        .get_date_bounds(
-            state.db_repository.as_ref(),
-            &user_id,
-            account_ids.as_deref(),
-        )
+    state
+        .analytics()
+        .date_bounds(auth_context.user_id, authorized_account_ids)
         .await
-        .map_err(|error| {
-            tracing::error!(
-                "Failed to get analytics date bounds for user {}: {}",
-                user_id,
-                error
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    Ok(Json(bounds))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2840,61 +2608,14 @@ async fn get_authenticated_cash_flow(
         authorized_account_ids,
     }: AuthorizedQuery<DateRangeQuery>,
 ) -> Result<Json<CashFlowResponse>, StatusCode> {
-    let user_id = auth_context.user_id;
-    let start_date = query
-        .start_date
-        .as_ref()
-        .and_then(|value| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok())
-        .ok_or(StatusCode::BAD_REQUEST)?;
-    let end_date = query
-        .end_date
-        .as_ref()
-        .and_then(|value| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok())
-        .ok_or(StatusCode::BAD_REQUEST)?;
+    let range = parse_analytics_range(&query, authorized_account_ids)?;
 
-    if end_date < start_date {
-        return Err(StatusCode::BAD_REQUEST);
-    }
-
-    let account_ids = authorized_account_ids
-        .as_ref()
-        .map(|ids| ids.iter().copied().collect::<Vec<_>>());
-
-    if matches!(account_ids.as_deref(), Some([])) {
-        return Ok(Json(CashFlowResponse {
-            series: Vec::new(),
-            currency: "USD".to_string(),
-        }));
-    }
-
-    let aggregates = state
-        .db_repository
-        .get_monthly_cash_flow_aggregates_for_user(
-            &user_id,
-            start_date,
-            end_date,
-            account_ids.as_deref(),
-        )
+    state
+        .analytics()
+        .cash_flow(auth_context.user_id, range)
         .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to get cash flow aggregates for user {} in range [{}, {}]: {}",
-                user_id,
-                start_date,
-                end_date,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    let currency = "USD".to_string();
-    let series = state.analytics_service.cash_flow_from_monthly_aggregates(
-        &aggregates,
-        state
-            .analytics_service
-            .inclusive_month_count(start_date, end_date),
-    );
-    Ok(Json(CashFlowResponse { series, currency }))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2921,126 +2642,14 @@ async fn get_authenticated_sankey(
         authorized_account_ids,
     }: AuthorizedQuery<DateRangeQuery>,
 ) -> Result<Json<models::analytics::SankeyResponse>, StatusCode> {
-    use rust_decimal::Decimal;
-    use std::collections::HashSet;
+    let range = parse_analytics_range(&query, authorized_account_ids)?;
 
-    let user_id = auth_context.user_id;
-
-    let start_date = query
-        .start_date
-        .as_ref()
-        .and_then(|value| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok())
-        .ok_or(StatusCode::BAD_REQUEST)?;
-    let end_date = query
-        .end_date
-        .as_ref()
-        .and_then(|value| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok())
-        .ok_or(StatusCode::BAD_REQUEST)?;
-    if end_date < start_date {
-        return Err(StatusCode::BAD_REQUEST);
-    }
-
-    let accounts = state
-        .db_repository
-        .get_accounts_for_user(&user_id)
+    state
+        .analytics()
+        .sankey(auth_context.user_id, &auth_context.jwt_id, range)
         .await
-        .map_err(|e| {
-            tracing::error!("Failed to fetch accounts for sankey: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    let mut allowed_account_ids: HashSet<Uuid> = HashSet::new();
-    for account in accounts {
-        if let Some(ref filtered_ids) = authorized_account_ids {
-            if !filtered_ids.contains(&account.id) {
-                continue;
-            }
-        }
-
-        let category =
-            AnalyticsService::map_account_to_balance_category(&account.account_type, None);
-        if matches!(
-            category,
-            BalanceCategory::Loan | BalanceCategory::Investments
-        ) {
-            continue;
-        }
-
-        allowed_account_ids.insert(account.id);
-    }
-
-    let response = if allowed_account_ids.is_empty() {
-        state
-            .analytics_service
-            .build_sankey(Decimal::ZERO, Vec::new(), "USD")
-    } else {
-        let base_cache_key = format!("{}_sankey_{}_{}", auth_context.jwt_id, start_date, end_date);
-        let cache_key = utils::cache_keys::generate_cache_key_with_account_filter(
-            &base_cache_key,
-            Some(&allowed_account_ids),
-        );
-
-        if let Ok(Some(serialized)) = state.cache_service.get_string(&cache_key).await {
-            if let Ok(cached) =
-                serde_json::from_str::<models::analytics::SankeyResponse>(&serialized)
-            {
-                return Ok(Json(cached));
-            }
-        }
-
-        let allowed_account_ids_vec: Vec<Uuid> = allowed_account_ids.iter().copied().collect();
-        let aggregates = state
-            .db_repository
-            .get_monthly_cash_flow_aggregates_for_user(
-                &user_id,
-                start_date,
-                end_date,
-                Some(&allowed_account_ids_vec),
-            )
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to get sankey income aggregates: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?;
-        let income: Decimal = aggregates.iter().map(|aggregate| aggregate.income).sum();
-
-        let transactions = state
-            .analytics_service
-            .load_spending_transactions(
-                state.db_repository.as_ref(),
-                &user_id,
-                SpendingTransactionQuery {
-                    start_date: Some(start_date),
-                    end_date: Some(end_date),
-                    account_ids: Some(&allowed_account_ids_vec),
-                },
-            )
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to get sankey spending transactions: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?;
-        let categories = state.analytics_service.group_by_category_with_date_range(
-            &transactions,
-            Some(start_date),
-            Some(end_date),
-        );
-
-        let response = state
-            .analytics_service
-            .build_sankey(income, categories, "USD");
-
-        if let Ok(serialized) = serde_json::to_string(&response) {
-            let _ = state
-                .cache_service
-                .set_with_ttl(&cache_key, &serialized, 1800)
-                .await;
-        }
-
-        response
-    };
-
-    Ok(Json(response))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -3066,46 +2675,14 @@ async fn get_authenticated_top_merchants(
         authorized_account_ids,
     }: AuthorizedQuery<DateRangeQuery>,
 ) -> Result<Json<Vec<TopMerchant>>, StatusCode> {
-    let user_id = auth_context.user_id;
-    let limit = 10usize;
+    let filter = lenient_analytics_filter(&query, authorized_account_ids);
 
-    let start_date = query
-        .start_date
-        .as_ref()
-        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-    let end_date = query
-        .end_date
-        .as_ref()
-        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-
-    let account_ids: Option<Vec<Uuid>> = authorized_account_ids
-        .as_ref()
-        .map(|ids| ids.iter().copied().collect());
-
-    let transactions = state
-        .analytics_service
-        .load_spending_transactions(
-            state.db_repository.as_ref(),
-            &user_id,
-            SpendingTransactionQuery {
-                start_date,
-                end_date,
-                account_ids: account_ids.as_deref(),
-            },
-        )
+    state
+        .analytics()
+        .top_merchants(auth_context.user_id, filter)
         .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to get spending transactions for user {}: {}",
-                user_id,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-    let top_merchants = state
-        .analytics_service
-        .get_top_merchants(&transactions, limit);
-    Ok(Json(top_merchants))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 async fn load_connection_statuses(
@@ -3980,174 +3557,16 @@ async fn get_authenticated_balances_overview(
         authorized_account_ids,
     }: AuthorizedQuery<BalancesOverviewQuery>,
 ) -> Result<Json<models::analytics::BalancesOverviewResponse>, StatusCode> {
-    let user_id = auth_context.user_id;
-
-    let base_cache_key = format!("{}_balances_overview", auth_context.jwt_id);
-    let cache_key = utils::cache_keys::generate_cache_key_with_account_filter(
-        &base_cache_key,
-        authorized_account_ids.as_ref(),
-    );
-    if let Ok(Some(serialized)) = state.cache_service.get_string(&cache_key).await {
-        if let Ok(cached) =
-            serde_json::from_str::<models::analytics::BalancesOverviewResponse>(&serialized)
-        {
-            return Ok(Json(cached));
-        }
-    }
-
-    let latest_rows = state
-        .db_repository
-        .get_latest_account_balances_for_user(&user_id)
+    state
+        .analytics()
+        .balances_overview(
+            auth_context.user_id,
+            &auth_context.jwt_id,
+            authorized_account_ids,
+        )
         .await
-        .map_err(|e| {
-            tracing::error!("Failed to fetch latest account balances: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    type LatestMapValue = (String, Option<String>, String, rust_decimal::Decimal);
-    let mut latest_map: std::collections::HashMap<String, Vec<LatestMapValue>> =
-        std::collections::HashMap::new();
-    let mut name_map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
-    let mut mixed_currency = false;
-    for row in latest_rows.into_iter() {
-        if let Some(ref filter_ids) = authorized_account_ids {
-            if !filter_ids.contains(&row.account_id) {
-                continue;
-            }
-        }
-        if row.currency.to_uppercase() != "USD" {
-            mixed_currency = true;
-            continue;
-        }
-        if let Some(ref inst_name) = row.institution_name {
-            name_map
-                .entry(row.institution_id.clone())
-                .or_insert(inst_name.clone());
-        }
-        latest_map.entry(row.institution_id).or_default().push((
-            row.account_type,
-            row.account_subtype,
-            row.currency,
-            row.current_balance,
-        ));
-    }
-
-    // Fallback: if no snapshots present, use current account balances
-    if latest_map.is_empty() {
-        let accounts = state
-            .db_repository
-            .get_accounts_for_user(&user_id)
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to fetch accounts for fallback: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?;
-        for acc in accounts.into_iter() {
-            if let Some(ref filter_ids) = authorized_account_ids {
-                if !filter_ids.contains(&acc.id) {
-                    continue;
-                }
-            }
-            let bal = acc.balance_current.unwrap_or(rust_decimal::Decimal::ZERO);
-            latest_map
-                .entry("unknown_institution".to_string())
-                .or_default()
-                .push((acc.account_type, None, "USD".to_string(), bal));
-        }
-    }
-
-    use rust_decimal::Decimal;
-    let mut overall_cash = Decimal::ZERO;
-    let mut overall_credit = Decimal::ZERO;
-    let mut overall_loan = Decimal::ZERO;
-    let mut overall_investments = Decimal::ZERO;
-    let mut banks: Vec<models::analytics::BankTotals> = Vec::new();
-
-    for (bank_id, accounts) in latest_map.iter() {
-        let mut cash = Decimal::ZERO;
-        let mut credit = Decimal::ZERO;
-        let mut loan = Decimal::ZERO;
-        let mut investments = Decimal::ZERO;
-
-        for (account_type, account_subtype, _currency, balance) in accounts.iter() {
-            let category = AnalyticsService::map_account_to_balance_category(
-                account_type,
-                account_subtype.as_deref(),
-            );
-            match category {
-                BalanceCategory::Cash => {
-                    cash += *balance;
-                }
-                BalanceCategory::Investments => {
-                    investments += *balance;
-                }
-                BalanceCategory::Credit => {
-                    credit += -balance.abs();
-                }
-                BalanceCategory::Loan => {
-                    loan += -balance.abs();
-                }
-            }
-        }
-
-        let totals = models::analytics::finalize_totals(cash, credit, loan, investments);
-
-        let bank_name = name_map
-            .get(bank_id)
-            .cloned()
-            .unwrap_or_else(|| bank_id.clone());
-        banks.push(models::analytics::BankTotals {
-            bank_id: bank_id.clone(),
-            bank_name,
-            totals: totals.clone(),
-        });
-
-        overall_cash += cash;
-        overall_credit += credit;
-        overall_loan += loan;
-        overall_investments += investments;
-    }
-
-    let overall = models::analytics::finalize_totals(
-        overall_cash,
-        overall_credit,
-        overall_loan,
-        overall_investments,
-    );
-    let response = models::analytics::BalancesOverviewResponse {
-        as_of: "latest".to_string(),
-        overall,
-        banks,
-        mixed_currency,
-    };
-
-    if let Ok(serialized) = serde_json::to_string(&response) {
-        // Use JWT's remaining TTL to align cache lifetime with session
-        let mut ttl_seconds: u64 = 1800; // fallback
-        if let Ok(Some(jwt_token)) = state
-            .cache_service
-            .get_jwt_token(&auth_context.jwt_id)
-            .await
-        {
-            if let Ok(claims) = state.auth_service.validate_token(&jwt_token) {
-                let now = chrono::Utc::now().timestamp() as usize;
-                if claims.exp > now {
-                    ttl_seconds = (claims.exp - now) as u64;
-                }
-            }
-        }
-        let _ = state
-            .cache_service
-            .set_with_ttl(&cache_key, &serialized, ttl_seconds)
-            .await;
-    }
-
-    tracing::info!(
-        account_count = response.banks.len(),
-        "Data access: balances"
-    );
-
-    Ok(Json(response))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -4174,186 +3593,14 @@ async fn get_authenticated_net_worth_over_time(
         authorized_account_ids,
     }: AuthorizedQuery<models::analytics::DateRangeQuery>,
 ) -> Result<Json<models::analytics::NetWorthOverTimeResponse>, StatusCode> {
-    use rust_decimal::Decimal;
-    use std::collections::{BTreeMap, HashMap, HashSet};
+    let range = parse_analytics_range(&query, authorized_account_ids)?;
 
-    let user_id = auth_context.user_id;
-
-    // Parse and validate dates
-    let (start_date, end_date) = match (&query.start_date, &query.end_date) {
-        (Some(s), Some(e)) => {
-            let s = chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d")
-                .map_err(|_| StatusCode::BAD_REQUEST)?;
-            let e = chrono::NaiveDate::parse_from_str(e, "%Y-%m-%d")
-                .map_err(|_| StatusCode::BAD_REQUEST)?;
-            if e < s {
-                return Err(StatusCode::BAD_REQUEST);
-            }
-            (s, e)
-        }
-        _ => return Err(StatusCode::BAD_REQUEST),
-    };
-
-    // Cache lookup
-    let base_cache_key = format!(
-        "{}_net_worth_over_time_{}_{}",
-        auth_context.jwt_id, start_date, end_date
-    );
-    let cache_key = utils::cache_keys::generate_cache_key_with_account_filter(
-        &base_cache_key,
-        authorized_account_ids.as_ref(),
-    );
-    if let Ok(Some(serialized)) = state.cache_service.get_string(&cache_key).await {
-        if let Ok(cached) =
-            serde_json::from_str::<models::analytics::NetWorthOverTimeResponse>(&serialized)
-        {
-            return Ok(Json(cached));
-        }
-    }
-
-    // Load depository accounts (checking/savings fall under 'depository')
-    let accounts = state
-        .db_repository
-        .get_accounts_for_user(&user_id)
+    state
+        .analytics()
+        .net_worth_over_time(auth_context.user_id, &auth_context.jwt_id, range)
         .await
-        .map_err(|e| {
-            tracing::error!("Failed to fetch accounts: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    let mut depository_ids: HashSet<uuid::Uuid> = HashSet::new();
-    let mut balance_current_by_id: HashMap<uuid::Uuid, Decimal> = HashMap::new();
-    for acc in accounts.into_iter() {
-        if let Some(ref allowed_ids) = authorized_account_ids {
-            if !allowed_ids.contains(&acc.id) {
-                continue;
-            }
-        }
-        if acc.account_type.to_lowercase() == "depository" {
-            depository_ids.insert(acc.id);
-            balance_current_by_id
-                .entry(acc.id)
-                .or_insert(acc.balance_current.unwrap_or(Decimal::ZERO));
-        }
-    }
-
-    if depository_ids.is_empty() {
-        let response = models::analytics::NetWorthOverTimeResponse {
-            series: Vec::new(),
-            currency: "USD".to_string(),
-        };
-        return Ok(Json(response));
-    }
-
-    // Determine the anchor dates
-    let today = chrono::Utc::now().naive_utc().date();
-    let end_anchor = std::cmp::min(end_date, today);
-
-    // Fetch transactions from start_date..=today (inclusive) for baseline + series
-    let txns = state
-        .db_repository
-        .get_transactions_by_date_range_for_user(&user_id, start_date, today)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to fetch transactions for ledger: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    // Group flows by account and date; filter to depository account_ids
-    let mut flows_by_account: HashMap<uuid::Uuid, BTreeMap<chrono::NaiveDate, Decimal>> =
-        HashMap::new();
-    for t in txns.into_iter() {
-        if let Some(ref allowed_ids) = authorized_account_ids {
-            if !allowed_ids.contains(&t.account_id) {
-                continue;
-            }
-        }
-        if !depository_ids.contains(&t.account_id) {
-            continue;
-        }
-        flows_by_account
-            .entry(t.account_id)
-            .or_default()
-            .entry(t.date)
-            .and_modify(|v| *v += t.amount)
-            .or_insert(t.amount);
-    }
-
-    // Compute baseline at start_date for each account:
-    // base_start = balance_current - sum(flows in (start_date, today]]
-    let mut base_start_by_account: HashMap<uuid::Uuid, Decimal> = HashMap::new();
-    for acc_id in depository_ids.iter() {
-        let current_balance = *balance_current_by_id.get(acc_id).unwrap_or(&Decimal::ZERO);
-        let mut rollback_sum = Decimal::ZERO;
-        if let Some(map) = flows_by_account.get(acc_id) {
-            for (d, amt) in map.range((start_date.succ_opt().unwrap_or(start_date))..=today) {
-                let _ = d; // unused binding except for range
-                rollback_sum += *amt;
-            }
-        }
-        base_start_by_account.insert(*acc_id, current_balance - rollback_sum);
-    }
-
-    // Build daily cumulative series for the requested range (carry forward past end_anchor)
-    let mut series: Vec<models::analytics::NetWorthSeriesPoint> = Vec::new();
-    let mut day = start_date;
-    let mut per_account_cum: HashMap<uuid::Uuid, Decimal> = HashMap::new();
-    while day <= end_date {
-        // Update cumulative flows up to this day for each account
-        if day <= end_anchor {
-            for (acc_id, fmap) in flows_by_account.iter() {
-                let acc_entry = per_account_cum.entry(*acc_id).or_insert(Decimal::ZERO);
-                if let Some(amt) = fmap.get(&day) {
-                    *acc_entry += *amt;
-                }
-            }
-        }
-        // Sum account balances for this day
-        let mut total = Decimal::ZERO;
-        for acc_id in depository_ids.iter() {
-            let base = *base_start_by_account.get(acc_id).unwrap_or(&Decimal::ZERO);
-            let delta = *per_account_cum.get(acc_id).unwrap_or(&Decimal::ZERO);
-            total += base + delta;
-        }
-        series.push(models::analytics::NetWorthSeriesPoint {
-            date: day.format("%Y-%m-%d").to_string(),
-            value: total,
-        });
-
-        day = day.succ_opt().unwrap_or(day);
-        if day == end_date { /* loop condition handles push next */ }
-        if day > end_date {
-            break;
-        }
-    }
-
-    let response = models::analytics::NetWorthOverTimeResponse {
-        series,
-        currency: "USD".to_string(),
-    };
-
-    if let Ok(serialized) = serde_json::to_string(&response) {
-        // Align cache TTL with JWT expiry
-        let mut ttl_seconds: u64 = 1800; // fallback
-        if let Ok(Some(jwt_token)) = state
-            .cache_service
-            .get_jwt_token(&auth_context.jwt_id)
-            .await
-        {
-            if let Ok(claims) = state.auth_service.validate_token(&jwt_token) {
-                let now = chrono::Utc::now().timestamp() as usize;
-                if claims.exp > now {
-                    ttl_seconds = (claims.exp - now) as u64;
-                }
-            }
-        }
-        let _ = state
-            .cache_service
-            .set_with_ttl(&cache_key, &serialized, ttl_seconds)
-            .await;
-    }
-
-    Ok(Json(response))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(

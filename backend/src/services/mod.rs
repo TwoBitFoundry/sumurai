@@ -1,3 +1,4 @@
+pub mod analytics_orchestrator;
 pub mod analytics_service;
 pub mod auth_service;
 pub mod authorization_service;
