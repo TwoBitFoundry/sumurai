@@ -5,16 +5,13 @@ import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { cn } from '@/ui/primitives';
 import { LoginScreen, RegisterScreen } from './Auth';
 import { AuthenticatedApp, type TabKey } from './components/AuthenticatedApp';
+import { OnboardingPathScreen } from './components/onboarding/OnboardingPathScreen';
 import { OnboardingProviderPicker } from './components/onboarding/OnboardingProviderPicker';
 import { ThemeProvider } from './context/ThemeContext';
 import {
   EnrollPasskeyScreen,
   type PendingPasskeyRecoveryEnrollment,
 } from './features/auth/EnrollPasskeyScreen';
-import { EndedTrialAccessScreen } from './features/billing/EndedTrialAccessScreen';
-import { PricingScreen } from './features/billing/PricingScreen';
-import { UpgradeRequiredModal } from './features/billing/UpgradeRequiredModal';
-import { BILLING_STATUS_QUERY_KEY, useBillingStatus } from './features/billing/useBillingStatus';
 import { TransactionListLauncherProvider } from './features/transactions/components/TransactionListLauncherProvider';
 import { AccountFilterProvider } from './hooks/useAccountFilter';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
@@ -23,16 +20,13 @@ import { SessionManager } from './SessionManager';
 import { AuthenticationError } from './services/ApiClient';
 import { AuthService } from './services/authService';
 import { BrowserStorageAdapter } from './services/boundaries';
-import type { BillingStatusResponse } from './types/api';
 import { AppFooter, AppTitleBar, GlassCard, GradientShell } from './ui/primitives';
 import { ControlTooltipProvider } from './ui/primitives/ControlHoverLabel';
 import { authLayout, text as uiTextRecipes, font as uiTypographyRecipes } from './ui/recipes';
 import {
-  dispatchNavigateToSettings,
   FINANCIAL_STATE_CHANGED_EVENT,
   type FinancialStateChangedDetail,
-  OPEN_PRICING_EVENT,
-  PAID_ACCESS_REQUIRED_EVENT,
+  OPEN_ONBOARDING_PATH_EVENT,
 } from './utils/events';
 import { resetFinancialQueriesForAppRefresh } from './utils/queryInvalidation';
 
@@ -55,14 +49,6 @@ const queryClient = new QueryClient({
 interface AppContentProps {
   initialTab?: TabKey;
   initialAuthScreen?: 'login' | 'register';
-}
-
-function hasEndedTrialAccess(billingStatus: BillingStatusResponse | undefined) {
-  if (!billingStatus?.billing_enabled || billingStatus.trial_ends_at === null) {
-    return false;
-  }
-
-  return ['past_due', 'paused', 'canceled', 'expired'].includes(billingStatus.access_status);
 }
 
 function AppLoadingShell() {
@@ -100,12 +86,10 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [sessionExpiresAt, setSessionExpiresAt] = useState<string | null>(null);
   const [demoModeActive, setDemoModeActive] = useState(false);
   const [pendingDemoModeActive, setPendingDemoModeActive] = useState(false);
-  const [pricingComplete, setPricingComplete] = useState(false);
-  const [pricingRequested, setPricingRequested] = useState(false);
-  const [showUpgradeRequired, setShowUpgradeRequired] = useState(false);
+  const [pathComplete, setPathComplete] = useState(false);
+  const [pathRequested, setPathRequested] = useState(false);
 
   const isOnline = useOnlineStatus();
-  const billingStatus = useBillingStatus({ enabled: isAuthenticated });
 
   const applyAuthenticatedSession = useCallback(
     (authResponse: {
@@ -119,8 +103,8 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
       setShowOnboarding(!authResponse.onboarding_completed);
       setSessionExpiresAt(authResponse.expires_at);
       setDemoModeActive(authResponse.demo_mode_active);
-      setPricingComplete(false);
-      setPricingRequested(false);
+      setPathComplete(false);
+      setPathRequested(false);
       if (authResponse.email) {
         queryClient.setQueryData(['user', 'email'], authResponse.email);
       }
@@ -129,7 +113,6 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   );
 
   const resetUnauthenticatedSession = useCallback((screen: 'login' | 'register' = 'login') => {
-    queryClient.removeQueries({ queryKey: BILLING_STATUS_QUERY_KEY, exact: true });
     setIsAuthenticated(false);
     setNeedsPasskeyEnrollment(false);
     setPendingRecoveryEnrollment(null);
@@ -141,9 +124,8 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     setPendingOnboarding(false);
     setPendingExpiresAt(null);
     setPendingDemoModeActive(false);
-    setPricingComplete(false);
-    setPricingRequested(false);
-    setShowUpgradeRequired(false);
+    setPathComplete(false);
+    setPathRequested(false);
     setAuthScreen(screen);
     AuthService.clearToken();
   }, []);
@@ -175,25 +157,15 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
 
   useEffect(() => {
     const handler = () => {
-      if (isAuthenticated && !demoModeActive) {
-        setShowUpgradeRequired(true);
-      }
-    };
-    window.addEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
-    return () => window.removeEventListener(PAID_ACCESS_REQUIRED_EVENT, handler);
-  }, [demoModeActive, isAuthenticated]);
-
-  useEffect(() => {
-    const handler = () => {
       if (!isAuthenticated) {
         return;
       }
-      setPricingComplete(false);
-      setPricingRequested(true);
+      setPathComplete(false);
+      setPathRequested(true);
       setShowOnboarding(true);
     };
-    window.addEventListener(OPEN_PRICING_EVENT, handler);
-    return () => window.removeEventListener(OPEN_PRICING_EVENT, handler);
+    window.addEventListener(OPEN_ONBOARDING_PATH_EVENT, handler);
+    return () => window.removeEventListener(OPEN_ONBOARDING_PATH_EVENT, handler);
   }, [isAuthenticated]);
 
   useEffect(() => {
@@ -266,7 +238,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
       setPendingRecoveryEnrollment(null);
       setEnrollmentLockedEmail(null);
       setIsAuthenticated(true);
-      setPricingComplete(false);
+      setPathComplete(false);
       if (authResponse) {
         setShowOnboarding(!authResponse.onboarding_completed);
         setSessionExpiresAt(authResponse.expires_at);
@@ -320,29 +292,22 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   }, [authScreen, resetUnauthenticatedSession]);
 
   const handleProviderPickerBack = useCallback(() => {
-    if (pricingComplete) {
-      setPricingComplete(false);
+    if (pathComplete) {
+      setPathComplete(false);
       return;
     }
 
     void handleOnboardingBack();
-  }, [handleOnboardingBack, pricingComplete]);
+  }, [handleOnboardingBack, pathComplete]);
 
   const handleOnboardingComplete = useCallback(() => {
     setShowOnboarding(false);
-    setPricingRequested(false);
+    setPathRequested(false);
     setRemountTab('dashboard');
     setMainAppKey((prev) => prev + 1);
   }, []);
 
   const handleDemoActivated = useCallback(() => {
-    queryClient.setQueryData<BillingStatusResponse>(
-      BILLING_STATUS_QUERY_KEY,
-      (currentBillingStatus) =>
-        currentBillingStatus
-          ? { ...currentBillingStatus, is_demo_mode_active: true }
-          : currentBillingStatus
-    );
     setDemoModeActive(true);
     handleOnboardingComplete();
   }, [handleOnboardingComplete]);
@@ -414,32 +379,15 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     );
   }
 
-  if (billingStatus.isPending || !billingStatus.data) {
-    return <AppLoadingShell />;
-  }
-
-  if (billingStatus.data.billing_enabled && hasEndedTrialAccess(billingStatus.data)) {
-    return (
-      <EndedTrialAccessScreen
-        billingStatus={billingStatus.data}
-        onLogout={() => void handleLogout()}
-      />
-    );
-  }
-
   if (showOnboarding) {
-    if (
-      pricingRequested ||
-      (!pricingComplete &&
-        !(billingStatus.data.billing_enabled && billingStatus.data.can_use_own_data))
-    ) {
+    if (pathRequested || !pathComplete) {
       return (
-        <PricingScreen
-          billingStatus={billingStatus.data}
+        <OnboardingPathScreen
+          isDemoModeActive={demoModeActive}
           onDemoActivated={handleDemoActivated}
           onContinueToProviders={() => {
-            setPricingRequested(false);
-            setPricingComplete(true);
+            setPathRequested(false);
+            setPathComplete(true);
           }}
           onLogout={handleLogout}
         />
@@ -476,14 +424,6 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
         isOpen={showEnrollmentModal}
         onEnrollmentComplete={handleEnrollmentComplete}
         onLogout={handleLogout}
-      />
-      <UpgradeRequiredModal
-        isOpen={showUpgradeRequired}
-        onClose={() => setShowUpgradeRequired(false)}
-        onViewPlans={() => {
-          setShowUpgradeRequired(false);
-          dispatchNavigateToSettings();
-        }}
       />
     </SessionManager>
   );

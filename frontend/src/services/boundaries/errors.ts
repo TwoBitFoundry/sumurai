@@ -52,16 +52,6 @@ export class ConflictError extends ApiError {
   }
 }
 
-export class PaymentRequiredError extends ApiError {
-  readonly body?: unknown;
-
-  constructor(message = 'Payment required', code = 'PAYMENT_REQUIRED', body?: unknown) {
-    super(402, message, code);
-    this.name = 'PaymentRequiredError';
-    this.body = body;
-  }
-}
-
 export class NotFoundError extends ApiError {
   constructor(message = 'Resource not found', code = 'NOT_FOUND') {
     super(404, message, code);

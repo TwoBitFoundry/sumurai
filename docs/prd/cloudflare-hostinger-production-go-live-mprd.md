@@ -9,7 +9,7 @@ Last updated: 2026-07-28
 Launch the complete Sumurai application at `https://sumurai.app` with Cloudflare
 in front of the Hostinger VPS and nginx as the only public application ingress.
 The agent performs every automatable repository, server, Cloudflare, Hostinger,
-Paddle, and verification task. Human-only actions are listed once at the end.
+and verification task. Human-only actions are listed once at the end.
 
 ## Confirmed Requirements
 
@@ -56,8 +56,7 @@ Only these controls are required for the first launch:
 4. Trust Cloudflare client-IP headers only from Cloudflare networks.
 5. Bypass Cloudflare cache for application API and operational routes.
 6. Restrict the origin firewall after proxied traffic works.
-7. Complete one end-to-end browser and Paddle webhook check before accepting
-   users.
+7. Complete one end-to-end browser check before accepting users.
 
 Postpone Cloudflare Tunnel, Authenticated Origin Pulls, IPv6, HSTS preload,
 aggressive WAF challenges, and advanced caching until after the initial launch.
@@ -192,8 +191,7 @@ bypass.
   - `/seq*`
   - `/ingest/otlp*`
 - Do not enable Cache Everything.
-- Do not place interactive Cloudflare challenges on `/api/auth/*` or the Paddle
-  webhook.
+- Do not place interactive Cloudflare challenges on `/api/auth/*`.
 - Purge any parked-page cache.
 - Configure the Hostinger managed firewall:
   - Allow the actual SSH port only from the administrator's trusted IP.
@@ -201,9 +199,6 @@ bypass.
   - Do not expose backend, PostgreSQL, Redis, or Seq ports.
 - Keep the active SSH session open until a second connection succeeds under the
   new firewall policy.
-- Configure Paddle's production webhook as:
-  `https://sumurai.app/api/billing/webhooks/paddle`.
-- Send a signed Paddle test event.
 
 ### Acceptance Criteria
 
@@ -217,7 +212,6 @@ bypass.
 - [ ] Hover content is no longer served.
 - [ ] Direct-origin public traffic is rejected after firewall activation.
 - [ ] A second SSH connection succeeds from the approved source.
-- [ ] The signed Paddle webhook succeeds.
 
 ## Phase 4 — Validate and Establish the Production Baseline
 
@@ -230,7 +224,6 @@ non-disposable.
   - Load the SPA.
   - Complete passkey registration and login.
   - Load authenticated accounts, budgets, and transactions.
-  - Read billing status.
   - Log out and log in again.
 - Confirm authenticated API responses are not cached.
 - Review nginx, backend, PostgreSQL, Redis, and Seq health and logs.
@@ -253,7 +246,6 @@ non-disposable.
 - [ ] The complete browser journey succeeds.
 - [ ] Passkey login works after a fresh browser session.
 - [ ] Authenticated data loads through nginx.
-- [ ] Paddle webhook processing updates billing state.
 - [ ] No authenticated API response is served from Cloudflare cache.
 - [ ] All services remain healthy.
 - [ ] The certificate renewal timer is enabled.
@@ -272,7 +264,6 @@ non-disposable.
   - `curl --resolve` origin checks
   - container health and logs
   - browser smoke checks
-  - Paddle signed test delivery
 - If a Rust or TypeScript business-logic change becomes necessary, add only the
   smallest boundary-focused business test in the existing test folders.
 
@@ -280,8 +271,7 @@ non-disposable.
 
 The agent performs all automatable work in this document, including repository
 changes, the scoped VPS wipe, deployment, certificate commands, Cloudflare
-configuration, Hostinger firewall configuration, Paddle webhook configuration,
-and validation. Dashboard actions require the operator to authenticate first,
+configuration, Hostinger firewall configuration, and validation. Dashboard actions require the operator to authenticate first,
 but authentication does not transfer execution ownership to the operator.
 
 ## References
@@ -297,14 +287,13 @@ but authentication does not transfer execution ownership to the operator.
 
 These are the only actions the operator must perform personally:
 
-- [ ] Authenticate to Hostinger, Cloudflare, and Paddle and complete MFA when the
+- [ ] Authenticate to Hostinger and Cloudflare and complete MFA when the
       agent requests access. Never paste passwords, private keys, recovery codes,
       or API tokens into chat.
 - [ ] Complete passkey enrollment and login using the required physical device or
       biometric prompt.
 - [ ] Complete a real financial institution's consent and MFA flow if a live bank
       connection is included in final verification.
-- [ ] Approve any billing check that could create a real Paddle charge.
 - [ ] Visually confirm the authenticated application contains the expected
-      accounts, budgets, transactions, settings, and billing state.
+      accounts, budgets, transactions, and settings.
 - [ ] Give final approval for `sumurai.app` to remain publicly available.

@@ -5,7 +5,6 @@ import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import { useTheme } from '@/context/ThemeContext';
 import { DeleteAccountModal } from '@/features/settings/DeleteAccountModal';
 import { PasskeySecuritySection } from '@/features/settings/PasskeySecuritySection';
-import { PlanSection } from '@/features/settings/PlanSection';
 import { HeroSubtitleInfo } from '@/layouts/HeroSubtitleInfo';
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
 import { AuthService } from '@/services/authService';
@@ -95,8 +94,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
             </section>
           </div>
         </GlassCard>
-
-        <PlanSection />
 
         <PasskeySecuritySection />
 

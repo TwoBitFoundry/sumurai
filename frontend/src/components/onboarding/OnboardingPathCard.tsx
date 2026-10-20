@@ -15,7 +15,7 @@ import {
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 
-interface PricingPlanCardProps {
+interface OnboardingPathCardProps {
   meta: string;
   title: string;
   detail: string;
@@ -24,14 +24,14 @@ interface PricingPlanCardProps {
   children: ReactNode;
 }
 
-export function PricingPlanCard({
+export function OnboardingPathCard({
   meta,
   title,
   detail,
   icon: Icon,
   features,
   children,
-}: PricingPlanCardProps) {
+}: OnboardingPathCardProps) {
   return (
     <GlassCard
       variant="accent"

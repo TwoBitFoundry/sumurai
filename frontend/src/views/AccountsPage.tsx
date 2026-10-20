@@ -41,7 +41,7 @@ import type { ProviderCatalogue } from '../types/providerCatalog';
 import {
   dispatchFinancialAccountsRefresh,
   dispatchFinancialAppRefresh,
-  dispatchOpenPricing,
+  dispatchOpenOnboardingPath,
 } from '../utils/events';
 import { formatUserFacingApiError } from '../utils/formatUserFacingApiError';
 import { getProviderCardConfig, resolvePickerVisibleProviders } from '../utils/providerCards';
@@ -505,7 +505,7 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
 
   const handlePrimaryConnect = useCallback(() => {
     if (demoModeActive) {
-      dispatchOpenPricing();
+      dispatchOpenOnboardingPath();
       return;
     }
     setIsProviderPickerOpen(true);
