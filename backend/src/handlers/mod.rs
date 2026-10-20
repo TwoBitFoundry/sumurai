@@ -6,4 +6,5 @@ pub mod diy;
 pub mod export;
 pub mod import;
 pub mod otel_browser;
+pub mod plaid;
 pub mod transaction;

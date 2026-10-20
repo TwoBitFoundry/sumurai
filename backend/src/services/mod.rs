@@ -20,7 +20,9 @@ pub mod import_orchestrator;
 pub mod import_service;
 pub mod merchant_normalization;
 pub mod otel_traces_relay;
+pub mod plaid_orchestrator;
 pub mod plaid_service;
+pub mod provider_credential_log;
 pub mod provider_sync_rate_limit_service;
 pub mod rate_limit_service;
 pub mod repository_service;
@@ -38,10 +40,7 @@ pub use auto_categorization::AutoCategorizationService;
 pub use budget_service::BudgetService;
 pub use cache_service::{CacheService, RedisCache};
 pub use categorization::categorization_service::{CategorizationService, Categorizer};
-pub use connection_service::{
-    ConnectionService, ExchangeTokenError, LinkTokenError, SimpleFinConnectError,
-    SyncConnectionParams,
-};
+pub use connection_service::{ConnectionService, SimpleFinConnectError, SyncConnectionParams};
 pub use demo_mode_service::DemoModeService;
 pub use plaid_service::RealPlaidClient;
 pub use provider_sync_rate_limit_service::ProviderSyncRateLimitService;

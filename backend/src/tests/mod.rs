@@ -48,6 +48,7 @@ mod passkey_auth_flow_guard_tests;
 mod passkey_enrollment_middleware_tests;
 mod passkey_registration_tests;
 mod password_migration_login_tests;
+mod plaid_orchestrator_tests;
 mod plaid_provider_tests;
 mod plaid_service_tests;
 mod provider_account_scoping_tests;

@@ -162,9 +162,8 @@ use services::{
         telemetry_public_browser_governor_layer,
     },
     AuthService, AuthorizationService, BudgetService, CacheService, CategorizationService,
-    Categorizer, ConnectionService, ExchangeTokenError, LinkTokenError,
-    ProviderSyncRateLimitService, RedisCache, SimpleFinConnectError, SyncConnectionParams,
-    SyncService, SyncServiceFactory,
+    Categorizer, ConnectionService, ProviderSyncRateLimitService, RedisCache,
+    SimpleFinConnectError, SyncConnectionParams, SyncService, SyncServiceFactory,
 };
 use services::{AnalyticsService, RealPlaidClient};
 use utils::auth_cookie::{build_auth_cookie, build_clearing_auth_cookie, extract_auth_cookie};
@@ -1966,35 +1965,12 @@ async fn create_authenticated_link_token(
         return Err(provider_disabled_response(provider));
     }
 
-    match state
-        .connection_service
-        .create_link_token(provider, &auth_context.user_id)
+    state
+        .plaid()
+        .create_link_token(auth_context.user_id)
         .await
-    {
-        Ok(link_token) => Ok(Json(LinkTokenResponse { link_token })),
-        Err(LinkTokenError::ProviderUnavailable(p)) => {
-            tracing::error!(
-                "Link token requested for unsupported provider '{}' by user {}",
-                p,
-                auth_context.user_id
-            );
-            Err(api_bad_request("Unsupported provider"))
-        }
-        Err(LinkTokenError::ProviderRequest(e)) => {
-            tracing::error!(
-                "Failed to create link token for provider {} and user {}: {}",
-                provider,
-                auth_context.user_id,
-                e
-            );
-            Err(ApiErrorResponse::with_code(
-                "FAILED_DEPENDENCY",
-                "Provider request failed",
-                "PROVIDER_REQUEST_FAILED",
-            )
-            .into_response(StatusCode::FAILED_DEPENDENCY))
-        }
-    }
+        .map(|link_token| Json(LinkTokenResponse { link_token }))
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2017,50 +1993,21 @@ async fn exchange_authenticated_public_token(
     auth_context: AuthContext,
     Json(req): Json<ExchangeTokenRequest>,
 ) -> Result<Json<ExchangeTokenResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    let user_id = auth_context.user_id;
     let provider = "plaid";
     if !state.config.is_financial_provider_enabled(provider) {
         return Err(provider_disabled_response(provider));
     }
 
-    match state
-        .connection_service
-        .exchange_public_token(provider, &user_id, &auth_context.jwt_id, &req.public_token)
+    state
+        .plaid()
+        .exchange_public_token(
+            auth_context.user_id,
+            &auth_context.jwt_id,
+            &req.public_token,
+        )
         .await
-    {
-        Ok(response) => {
-            log_provider_credential_outcome(provider, StatusCode::OK, "plaid.exchange-token");
-            Ok(Json(response))
-        }
-        Err(ExchangeTokenError::ProviderUnavailable(p)) => {
-            log_provider_credential_outcome(&p, StatusCode::BAD_REQUEST, "plaid.exchange-token");
-            tracing::error!(
-                "Exchange token requested for unsupported provider '{}' by user {}",
-                p,
-                user_id
-            );
-            Err(api_bad_request("Unsupported provider"))
-        }
-        Err(ExchangeTokenError::ExchangeFailed(e)) => {
-            log_provider_credential_outcome(
-                provider,
-                StatusCode::FAILED_DEPENDENCY,
-                "plaid.exchange-token",
-            );
-            tracing::error!(
-                "Failed to exchange public token for provider {} and user {}: {}",
-                provider,
-                user_id,
-                e
-            );
-            Err(ApiErrorResponse::with_code(
-                "FAILED_DEPENDENCY",
-                "Token exchange failed with provider",
-                "PROVIDER_REQUEST_FAILED",
-            )
-            .into_response(StatusCode::FAILED_DEPENDENCY))
-        }
-    }
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2079,74 +2026,12 @@ async fn get_authenticated_plaid_accounts(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<Vec<AccountResponse>>, StatusCode> {
-    let user_id = auth_context.user_id;
-
-    let db_accounts = match state.db_repository.get_accounts_for_user(&user_id).await {
-        Ok(accounts) => accounts,
-        Err(e) => {
-            tracing::error!("Failed to get accounts for user {}: {}", user_id, e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-
-    let transaction_counts = state
-        .db_repository
-        .get_transaction_count_by_account_for_user(&user_id)
+    state
+        .plaid()
+        .list_accounts(auth_context.user_id)
         .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to get transaction counts for user {}: {}",
-                user_id,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    let provider_by_connection_id = state
-        .db_repository
-        .get_all_provider_connections_by_user(&user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to get provider connections for user {}: {}",
-                user_id,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .into_iter()
-        .map(|connection| (connection.id, connection.provider))
-        .collect::<std::collections::HashMap<_, _>>();
-
-    let account_responses: Vec<AccountResponse> = db_accounts
-        .into_iter()
-        .map(|account| {
-            let transaction_count = transaction_counts.get(&account.id).unwrap_or(&0);
-            AccountResponse {
-                id: account.id,
-                user_id: Some(user_id),
-                provider: account.provider_connection_id.and_then(|connection_id| {
-                    provider_by_connection_id.get(&connection_id).cloned()
-                }),
-                provider_account_id: account.provider_account_id.clone(),
-                provider_connection_id: account.provider_connection_id,
-                name: account.name,
-                account_type: account.account_type,
-                balance_current: account.balance_current,
-                mask: account.mask,
-                transaction_count: *transaction_count,
-                institution_name: account.institution_name,
-            }
-        })
-        .collect();
-
-    tracing::info!(
-        record_count = account_responses.len(),
-        provider = "unified",
-        "Data access: accounts"
-    );
-
-    Ok(Json(account_responses))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -2368,22 +2253,12 @@ async fn clear_authenticated_synced_data(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<ClearSyncedDataResponse>, StatusCode> {
-    let user_id = auth_context.user_id;
-
-    match state
-        .cache_service
-        .clear_transactions(&auth_context.jwt_id)
+    state
+        .plaid()
+        .clear_synced_data(auth_context.user_id, &auth_context.jwt_id)
         .await
-    {
-        Ok(_) => Ok(Json(ClearSyncedDataResponse {
-            cleared: true,
-            user_id: user_id.to_string(),
-        })),
-        Err(e) => {
-            tracing::error!("Failed to clear synced data for user {}: {}", user_id, e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
