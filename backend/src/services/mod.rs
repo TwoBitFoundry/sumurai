@@ -27,6 +27,7 @@ pub mod subscription_detection;
 pub mod sync_service;
 pub mod sync_service_dispatcher;
 pub mod sync_service_factory;
+pub mod transaction_orchestrator;
 pub use analytics_service::{AnalyticsService, SpendingTransactionQuery};
 pub use auth_service::AuthService;
 pub use authorization_service::AuthorizationService;

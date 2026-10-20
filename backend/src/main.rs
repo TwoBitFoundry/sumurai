@@ -140,6 +140,7 @@ use crate::utils::encryption_key::parse_encryption_key_hex;
 use auth_middleware::auth_middleware;
 use config::Config;
 use handlers::export::build_authenticated_export_response;
+use handlers::transaction::parse_transaction_filter;
 use middleware::auth_ip_ban::auth_ip_ban_middleware;
 use middleware::passkey_enrollment::{
     passkey_enrollment_middleware, PasskeyEnrollmentMiddlewareState,
@@ -156,6 +157,7 @@ use services::category_management::service::CategoryManagementService;
 use services::import_service::ImportService;
 use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::sync_service_dispatcher::provider_sync_error_to_response;
+use services::transaction_orchestrator::TransactionPage;
 use services::{
     otel_traces_relay::OtlpTracesRelay,
     rate_limit_service::{
@@ -1420,8 +1422,6 @@ async fn get_authenticated_transactions(
         authorized_account_ids,
     }: AuthorizedQuery<TransactionsQuery>,
 ) -> Result<Json<CursorTransactionsResponse>, StatusCode> {
-    let user_id = auth_context.user_id;
-
     let TransactionsQuery {
         search,
         account_ids: _,
@@ -1433,78 +1433,25 @@ async fn get_authenticated_transactions(
         category_primary,
     } = query;
 
-    let limit = limit.unwrap_or(40).clamp(1, 100);
+    let mut filter = parse_transaction_filter(
+        search,
+        category_primary,
+        start_date.as_deref(),
+        end_date.as_deref(),
+        authorized_account_ids.as_ref(),
+    )?;
+    filter.merchant = merchant;
 
-    let search = search
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty());
-    let category_primary = category_primary
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty());
-    let merchant = merchant
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty());
-
-    let start_date = match start_date.as_deref() {
-        Some(raw) => {
-            Some(NaiveDate::parse_from_str(raw, "%Y-%m-%d").map_err(|_| StatusCode::BAD_REQUEST)?)
-        }
-        None => None,
-    };
-    let end_date = match end_date.as_deref() {
-        Some(raw) => {
-            Some(NaiveDate::parse_from_str(raw, "%Y-%m-%d").map_err(|_| StatusCode::BAD_REQUEST)?)
-        }
-        None => None,
-    };
-
-    if let (Some(start_date), Some(end_date)) = (start_date, end_date) {
-        if end_date < start_date {
-            return Err(StatusCode::BAD_REQUEST);
-        }
-    }
-
-    let account_ids: Option<Vec<Uuid>> = authorized_account_ids
-        .as_ref()
-        .map(|ids| ids.iter().copied().collect());
-    let account_ids_ref = account_ids.as_deref();
-
-    tracing::info!(
-        search = ?search,
-        limit,
-        has_cursor = cursor.is_some(),
-        "Transactions keyset query params"
-    );
-
-    let result = state
-        .db_repository
-        .get_transactions_keyset(
-            &user_id,
-            limit,
-            cursor.as_deref(),
-            search,
-            account_ids_ref,
-            start_date,
-            end_date,
-            category_primary,
-            merchant,
+    state
+        .transactions()
+        .list(
+            auth_context.user_id,
+            filter,
+            TransactionPage { cursor, limit },
         )
         .await
-        .map_err(|e| {
-            tracing::error!("Failed to fetch transactions for user {}: {}", user_id, e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    tracing::info!(
-        record_count = result.transactions.len(),
-        has_more = result.has_more,
-        "Data access: transactions"
-    );
-
-    Ok(Json(result))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -1534,8 +1481,6 @@ async fn get_authenticated_transactions_insights(
         authorized_account_ids,
     }: AuthorizedQuery<TransactionsQuery>,
 ) -> Result<Json<TransactionsInsightsResponse>, StatusCode> {
-    let user_id = auth_context.user_id;
-
     let TransactionsQuery {
         search,
         account_ids: _,
@@ -1547,60 +1492,20 @@ async fn get_authenticated_transactions_insights(
         category_primary,
     } = query;
 
-    let search = search
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty());
-    let category_primary = category_primary
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty());
+    let filter = parse_transaction_filter(
+        search,
+        category_primary,
+        start_date.as_deref(),
+        end_date.as_deref(),
+        authorized_account_ids.as_ref(),
+    )?;
 
-    let start_date = match start_date.as_deref() {
-        Some(raw) => {
-            Some(NaiveDate::parse_from_str(raw, "%Y-%m-%d").map_err(|_| StatusCode::BAD_REQUEST)?)
-        }
-        None => None,
-    };
-    let end_date = match end_date.as_deref() {
-        Some(raw) => {
-            Some(NaiveDate::parse_from_str(raw, "%Y-%m-%d").map_err(|_| StatusCode::BAD_REQUEST)?)
-        }
-        None => None,
-    };
-
-    if let (Some(start_date), Some(end_date)) = (start_date, end_date) {
-        if end_date < start_date {
-            return Err(StatusCode::BAD_REQUEST);
-        }
-    }
-
-    let account_ids: Option<Vec<Uuid>> = authorized_account_ids
-        .as_ref()
-        .map(|ids| ids.iter().copied().collect());
-    let account_ids_ref = account_ids.as_deref();
-
-    let insights = state
-        .db_repository
-        .get_transactions_insights(
-            &user_id,
-            search,
-            account_ids_ref,
-            start_date,
-            end_date,
-            category_primary,
-        )
+    state
+        .transactions()
+        .insights(auth_context.user_id, filter)
         .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to load transaction insights for user {}: {}",
-                user_id,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    Ok(Json(insights))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -1632,8 +1537,6 @@ async fn get_authenticated_transactions_contextual_insights(
         authorized_account_ids,
     }: AuthorizedQuery<TransactionsQuery>,
 ) -> Result<Json<ContextualInsightsResponse>, StatusCode> {
-    let user_id = auth_context.user_id;
-
     let TransactionsQuery {
         search,
         account_ids: _,
@@ -1645,60 +1548,20 @@ async fn get_authenticated_transactions_contextual_insights(
         category_primary,
     } = query;
 
-    let search = search
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty());
-    let category_primary = category_primary
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty());
+    let filter = parse_transaction_filter(
+        search,
+        category_primary,
+        start_date.as_deref(),
+        end_date.as_deref(),
+        authorized_account_ids.as_ref(),
+    )?;
 
-    let start_date = match start_date.as_deref() {
-        Some(raw) => {
-            Some(NaiveDate::parse_from_str(raw, "%Y-%m-%d").map_err(|_| StatusCode::BAD_REQUEST)?)
-        }
-        None => None,
-    };
-    let end_date = match end_date.as_deref() {
-        Some(raw) => {
-            Some(NaiveDate::parse_from_str(raw, "%Y-%m-%d").map_err(|_| StatusCode::BAD_REQUEST)?)
-        }
-        None => None,
-    };
-
-    if let (Some(start_date), Some(end_date)) = (start_date, end_date) {
-        if end_date < start_date {
-            return Err(StatusCode::BAD_REQUEST);
-        }
-    }
-
-    let account_ids: Option<Vec<Uuid>> = authorized_account_ids
-        .as_ref()
-        .map(|ids| ids.iter().copied().collect());
-    let account_ids_ref = account_ids.as_deref();
-
-    let insights = state
-        .db_repository
-        .get_transactions_contextual_insights(
-            &user_id,
-            search,
-            account_ids_ref,
-            start_date,
-            end_date,
-            category_primary,
-        )
+    state
+        .transactions()
+        .contextual_insights(auth_context.user_id, filter)
         .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to load contextual insights for user {}: {}",
-                user_id,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    Ok(Json(insights))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
