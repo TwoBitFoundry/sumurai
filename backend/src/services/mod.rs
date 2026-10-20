@@ -22,6 +22,7 @@ pub mod import_orchestrator;
 pub mod import_service;
 pub mod merchant_normalization;
 pub mod otel_traces_relay;
+pub mod passkey_orchestrator;
 pub mod plaid_orchestrator;
 pub mod plaid_service;
 pub mod provider_credential_log;

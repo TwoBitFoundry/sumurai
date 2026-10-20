@@ -14,6 +14,7 @@ use crate::services::diy_service::DiyService;
 use crate::services::export_orchestrator::ExportOrchestrator;
 use crate::services::import_orchestrator::ImportOrchestrator;
 use crate::services::otel_traces_relay::OtlpTracesRelay;
+use crate::services::passkey_orchestrator::PasskeyOrchestrator;
 use crate::services::plaid_orchestrator::PlaidOrchestrator;
 use crate::services::plaid_service::RealPlaidClient;
 use crate::services::provider_orchestrator::{
@@ -122,6 +123,15 @@ impl AppState {
             self.authorization_service.clone(),
             self.db_repository.clone(),
             self.cache_service.clone(),
+        )
+    }
+
+    pub fn passkeys(&self) -> PasskeyOrchestrator {
+        PasskeyOrchestrator::new(
+            self.auth_service.clone(),
+            self.db_repository.clone(),
+            self.cache_service.clone(),
+            self.webauthn_service.clone(),
         )
     }
 
