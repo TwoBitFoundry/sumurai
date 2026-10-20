@@ -45,5 +45,8 @@
     "conventional-changelog-conventionalcommits": "^10.2.1",
     "husky": "^9.1.7",
     "semantic-release": "^25.0.8"
+  },
+  "overrides": {
+    "happy-dom": "20.11.1"
   }
 }
