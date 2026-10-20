@@ -4,7 +4,7 @@ import HeroStatCard from '@/components/widgets/HeroStatCard';
 import VirtualizedTransactionList from '@/features/transactions/components/VirtualizedTransactionList';
 import { PageLayout } from '@/layouts/PageLayout';
 import { transactionsTablePage } from '@/storybook/fixtures/transactions';
-import { jsonResponse, route, StoryApiScope } from '@/storybook/screens/user-journeys/storyApi';
+import { jsonResponse, route, StoryApiScope } from '@/storybook/support/storyApi';
 import type { CursorTransactionsResponse, Transaction } from '@/types/api';
 import { cn, GlassCard } from '@/ui/primitives';
 import { controlIconWell, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';

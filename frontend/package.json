@@ -36,13 +36,11 @@
     "precommit": "bun run precommit:verify && bun run design:guard && bun run test:ci && bun run build",
     "storybook": "storybook dev -p 6006",
     "storybook:doctor": "storybook doctor",
-    "storybook:build": "storybook build -o storybook-static",
     "test:storybook": "vitest --project=storybook run",
+    "test:journeys": "vitest --project=storybook run journeys",
     "test:storybook:watch": "vitest --project=storybook",
     "playwright:install": "playwright install chromium",
-    "playwright:install-ci": "playwright install chromium --with-deps",
-    "test:storybook-runtime:run": "playwright test --config playwright.storybook-runtime.config.ts",
-    "test:storybook-runtime": "bun run storybook:build && bun run test:storybook-runtime:run"
+    "playwright:install-ci": "playwright install chromium --with-deps"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

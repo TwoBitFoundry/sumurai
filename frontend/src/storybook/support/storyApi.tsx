@@ -175,6 +175,26 @@ export function route(
   };
 }
 
+export function createRequestLog() {
+  const calls: StoryApiRequest[] = [];
+  return {
+    clear: () => {
+      calls.length = 0;
+    },
+    find: (method: string, path: string) =>
+      calls.filter((request) => request.method === method.toUpperCase() && request.path === path),
+    route: (
+      method: string,
+      path: string,
+      respond: (request: StoryApiRequest) => StoryApiResult | Promise<StoryApiResult>
+    ): StoryApiRoute =>
+      route(method, path, (request) => {
+        calls.push(request);
+        return respond(request);
+      }),
+  };
+}
+
 function buildRequest(input: RequestInfo | URL, init?: RequestInit): StoryApiRequest {
   const url =
     input instanceof Request
@@ -253,3 +273,5 @@ export function StoryApiScope({
 
   return <>{children}</>;
 }
+
+export type StoryRequestLog = ReturnType<typeof createRequestLog>;

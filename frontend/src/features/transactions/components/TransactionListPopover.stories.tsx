@@ -3,16 +3,13 @@ import { useRef, useState } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import type { TransactionListContext } from '@/features/transactions/models/transactionWindow';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
-import {
-  getCursorStoryTransactions,
-  storyProviderAccounts,
-} from '@/storybook/screens/user-journeys/shared';
+import { getCursorStoryTransactions, storyProviderAccounts } from '@/storybook/support/shared';
 import {
   jsonResponse,
   route,
   type StoryApiRequest,
   StoryApiScope,
-} from '@/storybook/screens/user-journeys/storyApi';
+} from '@/storybook/support/storyApi';
 import { NAVIGATE_TO_TRANSACTIONS_EVENT, type NavigateToTransactionsDetail } from '@/utils/events';
 import { TransactionListPopover } from './TransactionListPopover';
 

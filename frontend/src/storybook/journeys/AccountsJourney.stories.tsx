@@ -10,23 +10,19 @@ import {
   getStoryProviderPickerButton,
 } from '@/storybook/fixtures/providerPickerStoryHelpers';
 import { installStoryProviderConnectWindows } from '@/storybook/fixtures/providerPickerStorySetup';
-import AccountsPage from '@/views/AccountsPage';
 import {
   buildStoryLastInstitutionDisconnectHandlers,
   buildStoryPlaidPickerEmptyHandlers,
   buildStoryTellerPickerEmptyHandlers,
   storyAutoCategorizeHandlers,
   storyPickerEmptyHandlers,
-  storyPlaidDisconnect,
-  storyPlaidStatus,
-  storyPlaidSyncTransactions,
-  storyProviderAccounts,
-  storyProviderInfo,
-  storyProviderSelect,
-} from './shared';
-import { jsonResponse, route, StoryApiScope } from './storyApi';
+} from '@/storybook/support/shared';
+import { createRequestLog, jsonResponse, route, StoryApiScope } from '@/storybook/support/storyApi';
+import AccountsPage from '@/views/AccountsPage';
 
 const storyInteractionTimeoutMs = 20_000;
+
+const disconnectRequests = createRequestLog();
 
 async function waitForPickerSdkConnect(
   canvas: ReturnType<typeof within>,
@@ -95,10 +91,6 @@ async function waitForPickerLinkButtons(canvas: ReturnType<typeof within>) {
   );
 }
 
-async function waitForPickerConnectButtons(canvas: ReturnType<typeof within>) {
-  await waitForPickerLinkButtons(canvas);
-}
-
 async function waitForProviderPicker(canvas: ReturnType<typeof within>) {
   await waitFor(
     () => {
@@ -161,11 +153,11 @@ function patchNavigatorOnline() {
 }
 
 const meta = {
-  title: 'App/Screens/User Journeys/Accounts',
+  title: 'App/Journeys/Accounts',
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs', 'test'],
+  tags: ['autodocs', 'test', 'journey'],
   decorators: [
     (Story) => {
       patchNavigatorOnline();
@@ -178,26 +170,6 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
-
-const storyPlaidProviderInfo = {
-  ...storyProviderInfo,
-  user_provider: 'plaid' as const,
-};
-
-const handlers = [
-  route('GET', '/providers/info', () => jsonResponse(storyPlaidProviderInfo)),
-  route('POST', '/providers/select', () => jsonResponse(storyProviderSelect)),
-  route('GET', '/providers/status', () => jsonResponse(storyPlaidStatus)),
-  route('GET', '/providers/accounts', () => jsonResponse(storyProviderAccounts)),
-  route('GET', '/plaid/accounts', () => jsonResponse(storyProviderAccounts)),
-  route('POST', '/plaid/link-token', () => jsonResponse({ link_token: 'story-link-token' })),
-  route('POST', '/plaid/exchange-token', () =>
-    jsonResponse({ access_token: 'story-access-token' })
-  ),
-  route('POST', '/providers/sync-transactions', () => jsonResponse(storyPlaidSyncTransactions)),
-  route('POST', '/providers/disconnect', () => jsonResponse(storyPlaidDisconnect)),
-  ...storyAutoCategorizeHandlers,
-];
 
 const simpleFinEmptyStateHandlers = [
   route('GET', '/providers/info', () => jsonResponse(storySimpleFinProviderInfo)),
@@ -265,51 +237,6 @@ const tellerConnectedHandlers = [
   ...storyAutoCategorizeHandlers,
 ];
 
-function AccountsJourney() {
-  return (
-    <AccountFilterStoryProvider>
-      <StoryApiScope handlers={handlers}>
-        <AccountsPage />
-      </StoryApiScope>
-    </AccountFilterStoryProvider>
-  );
-}
-
-export const Journey: Story = {
-  render: () => <AccountsJourney />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const body = within(canvasElement.ownerDocument.body);
-
-    await waitFor(
-      () => {
-        expect(canvas.getByTestId('accounts-page')).toBeVisible();
-      },
-      { timeout: storyInteractionTimeoutMs }
-    );
-
-    await waitFor(
-      () => {
-        expect(canvas.getAllByRole('button', { name: /sync now/i }).length).toBeGreaterThan(0);
-      },
-      { timeout: storyInteractionTimeoutMs }
-    );
-
-    const syncNow = canvas.getAllByRole('button', { name: /sync now/i })[1];
-    await userEvent.click(syncNow!);
-    await waitFor(
-      () => {
-        const syncToast = body.getByTestId('sync-institution-toast');
-        expect(syncToast).toBeVisible();
-        expect(within(syncToast).getByRole('heading', { name: 'Sync institution' })).toBeVisible();
-        expect(within(syncToast).getByText('Story Federal Credit Union')).toBeVisible();
-        expect(within(syncToast).getByText(/Synced \d+ new transactions?/i)).toBeVisible();
-      },
-      { timeout: storyInteractionTimeoutMs }
-    );
-  },
-};
-
 export const ProviderPickerEmpty: Story = {
   render: () => (
     <AccountFilterStoryProvider>
@@ -372,7 +299,7 @@ export const SimpleFinEmptyState: Story = {
 export const LastInstitutionDisconnect: Story = {
   render: () => (
     <AccountFilterStoryProvider>
-      <StoryApiScope handlers={buildStoryLastInstitutionDisconnectHandlers()}>
+      <StoryApiScope handlers={buildStoryLastInstitutionDisconnectHandlers(disconnectRequests)}>
         <AccountsPage />
       </StoryApiScope>
     </AccountFilterStoryProvider>
@@ -381,6 +308,7 @@ export const LastInstitutionDisconnect: Story = {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
 
+    disconnectRequests.clear();
     await waitForAccountsPage(canvas);
 
     await waitFor(
@@ -396,6 +324,10 @@ export const LastInstitutionDisconnect: Story = {
     await waitFor(
       () => {
         expect(canvas.queryByText('Story Federal Credit Union')).not.toBeInTheDocument();
+        expect(disconnectRequests.find('POST', '/providers/disconnect')).toHaveLength(1);
+        expect(
+          body.getByText(/story federal credit union disconnected successfully/i)
+        ).toBeVisible();
       },
       { timeout: storyInteractionTimeoutMs }
     );
@@ -410,7 +342,7 @@ export const LastInstitutionDisconnect: Story = {
 export const LastInstitutionDisconnectPlaidPicker: Story = {
   render: () => (
     <AccountFilterStoryProvider>
-      <StoryApiScope handlers={buildStoryLastInstitutionDisconnectHandlers()}>
+      <StoryApiScope handlers={buildStoryLastInstitutionDisconnectHandlers(disconnectRequests)}>
         <AccountsPage />
       </StoryApiScope>
     </AccountFilterStoryProvider>
@@ -419,6 +351,7 @@ export const LastInstitutionDisconnectPlaidPicker: Story = {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
 
+    disconnectRequests.clear();
     await waitForAccountsPage(canvas);
 
     await waitFor(
@@ -434,6 +367,10 @@ export const LastInstitutionDisconnectPlaidPicker: Story = {
     await waitFor(
       () => {
         expect(canvas.queryByText('Story Federal Credit Union')).not.toBeInTheDocument();
+        expect(disconnectRequests.find('POST', '/providers/disconnect')).toHaveLength(1);
+        expect(
+          body.getByText(/story federal credit union disconnected successfully/i)
+        ).toBeVisible();
       },
       { timeout: storyInteractionTimeoutMs }
     );

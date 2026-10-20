@@ -34,8 +34,8 @@ Common backend areas:
 
 - Stories live next to components as `*.stories.tsx` (for example under `frontend/src/ui/primitives/`).
 - Browser-level UI behavior is exercised by the Storybook Vitest project (`bun --cwd=frontend run test:storybook`), configured in `frontend/vitest.config.ts` and `frontend/.storybook/` with the Storybook Vitest addon.
-- After static Storybook is built, Playwright smoke tests load the iframe shell (`bun --cwd=frontend run test:storybook-runtime`, config in `frontend/playwright.storybook-runtime.config.ts`). They guard that the built Storybook loads; they do not replace Storybook Vitest for component behavior.
-- Storybook-related checks are not in the default Husky `precommit` path; `bun run frontend:ci` runs lint, typecheck, design guard, `bun test`, build, Playwright install for CI, Storybook Vitest, Storybook build, and the runtime smoke sequence.
+- Core user journeys live in `frontend/src/storybook/journeys/` and run under the Storybook Vitest project (`bun --cwd=frontend run test:journeys` for a scoped run). Whole-screen stories in `frontend/src/storybook/screens/` are render-only.
+- Storybook-related checks are not in the default Husky `precommit` path; `bun run frontend:ci` runs lint, typecheck, design guard, `bun test`, build, Playwright install for CI, and Storybook Vitest.
 
 ## Placement Rules
 

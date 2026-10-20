@@ -3,6 +3,12 @@ import { sampleDonutByCategory, sampleTopMerchants } from '@/storybook/fixtures/
 import { sampleBudgetProgressEntries } from '@/storybook/fixtures/budgets';
 import { storyFullProviderCatalogInfo } from '@/storybook/fixtures/providerPicker';
 import { sampleTransactions, transactionsTablePage } from '@/storybook/fixtures/transactions';
+import {
+  jsonResponse,
+  route,
+  type StoryApiRoute,
+  type StoryRequestLog,
+} from '@/storybook/support/storyApi';
 import type {
   Account,
   AnalyticsCategoryResponse,
@@ -11,7 +17,6 @@ import type {
   FinancialProvider,
   Transaction,
 } from '@/types/api';
-import { jsonResponse, route, type StoryApiRoute } from './storyApi';
 
 const storyNow = new Date();
 
@@ -190,7 +195,9 @@ export function buildStoryTellerPickerEmptyHandlers(): StoryApiRoute[] {
   ];
 }
 
-export function buildStoryLastInstitutionDisconnectHandlers(): StoryApiRoute[] {
+export function buildStoryLastInstitutionDisconnectHandlers(
+  requests: StoryRequestLog
+): StoryApiRoute[] {
   let disconnected = false;
 
   return [
@@ -206,7 +213,7 @@ export function buildStoryLastInstitutionDisconnectHandlers(): StoryApiRoute[] {
     route('GET', '/providers/simplefin/ignored-institutions', () =>
       jsonResponse({ institutions: [] })
     ),
-    route('POST', '/providers/disconnect', () => {
+    requests.route('POST', '/providers/disconnect', () => {
       disconnected = true;
       return jsonResponse(storyPlaidDisconnect);
     }),

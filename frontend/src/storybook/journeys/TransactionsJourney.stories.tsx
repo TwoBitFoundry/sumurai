@@ -5,25 +5,26 @@ import { TransactionsFilters } from '@/features/transactions/components/Transact
 import { TransactionsSearchBar } from '@/features/transactions/components/TransactionsSearchBar';
 import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
-import TransactionsPage from '@/views/TransactionsPage';
 import {
   getCursorStoryTransactions,
   storyCategoryList,
   storyProviderAccounts,
   storyTransactionCategories,
-} from './shared';
-import { jsonResponse, route, StoryApiScope } from './storyApi';
+} from '@/storybook/support/shared';
+import { createRequestLog, jsonResponse, route, StoryApiScope } from '@/storybook/support/storyApi';
+import TransactionsPage from '@/views/TransactionsPage';
 
 const meta = {
-  title: 'App/Screens/User Journeys/Transactions',
+  title: 'App/Journeys/Transactions',
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs', 'test'],
+  tags: ['autodocs', 'test', 'journey'],
   decorators: [
     (Story) => {
       window.sessionStorage.removeItem('sumurai.ui.transactionsSearch');
       window.sessionStorage.removeItem('sumurai.ui.transactionsCategory');
+      requests.clear();
       return <Story />;
     },
   ],
@@ -35,11 +36,13 @@ type Story = StoryObj<typeof meta>;
 
 const storyInteractionTimeoutMs = 20_000;
 
+const requests = createRequestLog();
+
 const handlers = [
   route('GET', '/providers/accounts', () => jsonResponse(storyProviderAccounts)),
   route('GET', '/categories', () => jsonResponse(storyCategoryList)),
   route('GET', '/transactions/categories', () => jsonResponse(storyTransactionCategories)),
-  route('GET', '/transactions', (request) =>
+  requests.route('GET', '/transactions', (request) =>
     jsonResponse(
       getCursorStoryTransactions({
         search: request.query.get('search'),
@@ -80,7 +83,7 @@ function TransactionsJourney() {
   );
 }
 
-export const Journey: Story = {
+export const SearchByMerchant: Story = {
   render: () => <TransactionsJourney />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -89,24 +92,37 @@ export const Journey: Story = {
     });
 
     const page = within(canvas.getByTestId('transactions-page'));
-
-    await waitFor(
-      () => {
-        expect(page.getByRole('region', { name: /transaction list/i })).toBeVisible();
-      },
-      { timeout: storyInteractionTimeoutMs }
-    );
-
     const search = within(canvas.getByTestId('transactions-search-bar')).getByPlaceholderText(
       'Search transactions'
     );
-    await userEvent.clear(search);
     await userEvent.type(search, 'Coffee');
+
+    await waitFor(
+      () => {
+        expect(
+          requests.find('GET', '/transactions').some((r) => r.query.get('search') === 'coffee')
+        ).toBe(true);
+      },
+      { timeout: storyInteractionTimeoutMs }
+    );
     await waitFor(
       () => {
         expect(
           page.getByText(/coffee collective wholesale roasters group international/i)
         ).toBeVisible();
+      },
+      { timeout: storyInteractionTimeoutMs }
+    );
+  },
+};
+
+export const FilterByCategory: Story = {
+  render: () => <TransactionsJourney />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(
+      () => {
+        expect(canvas.getByTestId('transactions-filters')).toBeVisible();
       },
       { timeout: storyInteractionTimeoutMs }
     );
@@ -117,8 +133,47 @@ export const Journey: Story = {
       { timeout: storyInteractionTimeoutMs }
     );
     await userEvent.click(category);
+
     await waitFor(() => {
       expect(category).toHaveAttribute('aria-pressed', 'true');
+      expect(
+        requests
+          .find('GET', '/transactions')
+          .some((r) => /food/i.test(r.query.get('category_primary') ?? ''))
+      ).toBe(true);
     });
+
+    await userEvent.click(category);
+    await waitFor(() => {
+      expect(category).toHaveAttribute('aria-pressed', 'false');
+    });
+  },
+};
+
+export const SearchByMerchantRow: Story = {
+  render: () => <TransactionsJourney />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const merchantButton = await waitFor(
+      () =>
+        canvas.getAllByRole('button', { name: /search transactions for coffee collective/i })[0],
+      { timeout: storyInteractionTimeoutMs }
+    );
+    await userEvent.click(merchantButton);
+
+    await waitFor(
+      () => {
+        expect(
+          requests
+            .find('GET', '/transactions')
+            .some((r) => /^coffee collective/.test(r.query.get('search') ?? ''))
+        ).toBe(true);
+      },
+      { timeout: storyInteractionTimeoutMs }
+    );
+    const search = within(canvas.getByTestId('transactions-search-bar')).getByPlaceholderText(
+      'Search transactions'
+    );
+    expect((search as HTMLInputElement).value.toLowerCase()).toContain('coffee collective');
   },
 };

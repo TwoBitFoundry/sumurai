@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { createRef } from 'react';
+import { type ComponentProps, createRef } from 'react';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { BudgetToolbar } from './BudgetToolbar';
 
 const addButtonRef = createRef<HTMLButtonElement>();
+
+type BudgetToolbarStoryArgs = Omit<ComponentProps<typeof BudgetToolbar>, 'addButtonRef'>;
 
 const meta = {
   title: 'Features/Budgets/BudgetToolbar',
@@ -12,18 +14,18 @@ const meta = {
   args: {
     loading: false,
     isPickerOpen: false,
-    addButtonRef,
     onAddBudget: fn(),
     isEditing: false,
     canEdit: true,
     onStartEdit: fn(),
     onSaveEdit: fn(),
   },
-} satisfies Meta<typeof BudgetToolbar>;
+  render: (args) => <BudgetToolbar {...args} addButtonRef={addButtonRef} />,
+} satisfies Meta<BudgetToolbarStoryArgs>;
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<BudgetToolbarStoryArgs>;
 
 export const Default: Story = {
   play: async ({ args, canvasElement }) => {
@@ -37,7 +39,6 @@ export const Loading: Story = {
   args: {
     loading: true,
     isPickerOpen: false,
-    addButtonRef,
     onAddBudget: fn(),
   },
 };
@@ -45,7 +46,6 @@ export const Loading: Story = {
 export const PickerOpen: Story = {
   args: {
     isPickerOpen: true,
-    addButtonRef,
     onAddBudget: fn(),
   },
 };

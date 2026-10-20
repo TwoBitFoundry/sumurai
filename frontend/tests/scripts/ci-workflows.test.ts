@@ -41,8 +41,6 @@ describe('bun migration ci workflows', () => {
     expect(contents).toContain('run: bunx playwright install-deps chromium');
     expect(contents).toContain('run: bun run frontend:playwright-install');
     expect(contents).toContain('run: bun run frontend:storybook-test');
-    expect(contents).toContain('run: bun run storybook:build');
-    expect(contents).toContain('run: bun run frontend:storybook-runtime:run');
     expect(contents).not.toContain('working-directory: frontend');
   });
 

@@ -1,6 +1,6 @@
 ---
 name: sumurai-testing-policy
-description: Use when adding, updating, reviewing, or debugging Sumurai tests across frontend or backend, including Bun test, Storybook Vitest, and Playwright Storybook smoke runs. Guides agents to keep tests in existing test folders, prefer boundary-focused tests, and run the right validation commands.
+description: Use when adding, updating, reviewing, or debugging Sumurai tests across frontend or backend, including Bun test, Storybook Vitest, and journey runs. Guides agents to keep tests in existing test folders, prefer boundary-focused tests, and run the right validation commands.
 ---
 
 # Sumurai Testing Policy
@@ -22,7 +22,7 @@ Read the relevant reference before changing tests:
 - Test observable behavior, contracts, edge cases, and integration boundaries.
 - Keep mocks and fixtures declarative and deterministic.
 - Use existing test utilities before adding new ones.
-- Use Storybook Vitest for browser-rendered UI behavior (interactions, loading and error states, validation display, callbacks) when Bun test alone is not the right boundary; keep Playwright Storybook runtime for static build and iframe smoke, not fine-grained behavior specs.
+- Use Storybook Vitest for browser-rendered UI behavior (interactions, loading and error states, validation display, callbacks) when Bun test alone is not the right boundary; keep journey stories for core user flows, not fine-grained behavior specs.
 - Do not read or write `.env` files.
 - Do not add comments to source code.
 
@@ -42,7 +42,7 @@ Use the commands that match the touched area:
 - Backend type/build sanity: `cargo check --workspace --locked --all-targets`
 - Frontend tests: `bun --cwd=frontend run test`
 - Storybook browser tests (Vitest project): `bun --cwd=frontend run test:storybook`
-- Storybook static build + Playwright iframe smoke: `bun --cwd=frontend run test:storybook-runtime` (needs Playwright Chromium; use `bun run frontend:playwright-install` or `bun --cwd=frontend run playwright:install-ci` to match CI)
+- Storybook journeys only: `bun --cwd=frontend run test:journeys` (needs Playwright Chromium; use `bun run frontend:playwright-install` or `bun --cwd=frontend run playwright:install-ci` to match CI)
 - Frontend typecheck: `bun --cwd=frontend run typecheck`
 - Frontend build: `bun --cwd=frontend run build`
 - Full repo validation (default Husky hook): `bun run precommit`

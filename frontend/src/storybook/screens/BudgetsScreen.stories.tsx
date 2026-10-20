@@ -4,7 +4,7 @@ import { BudgetsScreenSlice } from '@/storybook/screenSlices/BudgetsScreenSlice'
 
 const meta = {
   title: 'App/Screens/Budgets',
-  tags: ['autodocs', 'test'],
+  tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
   },

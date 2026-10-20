@@ -4,7 +4,7 @@ import { TransactionsScreenSlice } from '@/storybook/screenSlices/TransactionsSc
 
 const meta = {
   title: 'App/Screens/Transactions',
-  tags: ['autodocs', 'test'],
+  tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
   },
