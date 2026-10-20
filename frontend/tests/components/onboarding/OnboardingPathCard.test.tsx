@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { FlaskConical } from 'lucide-react';
-import { PricingPlanCard } from '@/features/billing/PricingPlanCard';
+import { OnboardingPathCard } from '@/components/onboarding/OnboardingPathCard';
 
-describe('PricingPlanCard', () => {
+describe('OnboardingPathCard', () => {
   it('uses the nested card surface for feature rows', () => {
     render(
-      <PricingPlanCard
+      <OnboardingPathCard
         meta="Explore"
         title="Demo mode"
         detail="Safe sample data."
@@ -13,7 +13,7 @@ describe('PricingPlanCard', () => {
         features={['Play around with demo data']}
       >
         <button type="button">Continue</button>
-      </PricingPlanCard>
+      </OnboardingPathCard>
     );
 
     const featureRow = screen.getByText('Play around with demo data').parentElement;

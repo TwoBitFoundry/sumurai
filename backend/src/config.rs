@@ -30,33 +30,6 @@ impl fmt::Display for AuthCookieSameSite {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum BillingMode {
-    Disabled,
-    Paddle,
-}
-
-impl BillingMode {
-    fn parse(value: &str) -> Result<Self> {
-        match value {
-            "disabled" => Ok(Self::Disabled),
-            "paddle" => Ok(Self::Paddle),
-            _ => Err(anyhow!("BILLING_MODE must be either disabled or paddle")),
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct PaddleBillingConfig {
-    pub environment: String,
-    pub api_key: String,
-    pub webhook_secret: String,
-    pub monthly_price_id: String,
-    pub client_token: String,
-    pub cardless_trial_price_id: Option<String>,
-    pub trials_enabled: bool,
-}
-
 pub trait EnvironmentProvider {
     fn get_var(&self, key: &str) -> Option<String>;
 }
@@ -74,8 +47,6 @@ pub struct Config {
     auth_cookie_same_site: AuthCookieSameSite,
     clear_sessions_on_boot: bool,
     app_origins: Vec<String>,
-    billing_mode: BillingMode,
-    paddle_billing: Option<PaddleBillingConfig>,
     enabled_financial_providers: Option<Vec<String>>,
 }
 
@@ -94,16 +65,12 @@ impl Config {
             .map(|value| value.eq_ignore_ascii_case("true"))
             .unwrap_or(false);
         let app_origins = parse_app_origins(env)?;
-        let billing_mode = parse_billing_mode(env)?;
-        let paddle_billing = parse_paddle_billing_config(env, billing_mode)?;
         let enabled_financial_providers = parse_enabled_financial_providers(env)?;
 
         Ok(Self {
             auth_cookie_same_site,
             clear_sessions_on_boot,
             app_origins,
-            billing_mode,
-            paddle_billing,
             enabled_financial_providers,
         })
     }
@@ -128,106 +95,12 @@ impl Config {
         &self.app_origins
     }
 
-    pub fn billing_mode(&self) -> BillingMode {
-        self.billing_mode
-    }
-
-    pub fn is_billing_enabled(&self) -> bool {
-        self.billing_mode == BillingMode::Paddle
-    }
-
-    pub fn is_trials_enabled(&self) -> bool {
-        self.paddle_billing
-            .as_ref()
-            .map(|paddle| paddle.trials_enabled)
-            .unwrap_or(false)
-    }
-
-    pub fn paddle_billing(&self) -> Option<&PaddleBillingConfig> {
-        self.paddle_billing.as_ref()
-    }
-
-    pub fn enabled_financial_providers(&self) -> Option<&[String]> {
-        self.enabled_financial_providers.as_deref()
-    }
-
     pub fn is_financial_provider_enabled(&self, provider: &str) -> bool {
         let provider = provider.trim().to_lowercase();
         match &self.enabled_financial_providers {
             Some(providers) => providers.iter().any(|enabled| enabled == &provider),
             None => true,
         }
-    }
-}
-
-fn parse_billing_mode(env: &dyn EnvironmentProvider) -> Result<BillingMode> {
-    match env.get_var("BILLING_MODE") {
-        Some(value) => BillingMode::parse(value.trim()),
-        None => Ok(BillingMode::Disabled),
-    }
-}
-
-fn parse_required_trimmed(env: &dyn EnvironmentProvider, key: &str) -> Result<String> {
-    let value = env
-        .get_var(key)
-        .ok_or_else(|| anyhow!("{key} must be set when BILLING_MODE=paddle"))?;
-    let trimmed = value.trim();
-    if trimmed.is_empty() {
-        return Err(anyhow!("{key} must not be empty when BILLING_MODE=paddle"));
-    }
-    Ok(trimmed.to_string())
-}
-
-fn parse_paddle_billing_config(
-    env: &dyn EnvironmentProvider,
-    billing_mode: BillingMode,
-) -> Result<Option<PaddleBillingConfig>> {
-    if billing_mode != BillingMode::Paddle {
-        return Ok(None);
-    }
-
-    let trials_enabled = parse_bool_flag(env, "BILLING_TRIALS_ENABLED", false)?;
-    let cardless_trial_price_id = if trials_enabled {
-        Some(parse_required_trimmed(
-            env,
-            "PADDLE_CARDLESS_TRIAL_PRICE_ID",
-        )?)
-    } else {
-        match env.get_var("PADDLE_CARDLESS_TRIAL_PRICE_ID") {
-            Some(value) if !value.trim().is_empty() => Some(value.trim().to_string()),
-            _ => None,
-        }
-    };
-
-    Ok(Some(PaddleBillingConfig {
-        environment: parse_paddle_environment(env)?,
-        api_key: parse_required_trimmed(env, "PADDLE_API_KEY")?,
-        webhook_secret: parse_required_trimmed(env, "PADDLE_WEBHOOK_SECRET")?,
-        monthly_price_id: parse_required_trimmed(env, "PADDLE_MONTHLY_PRICE_ID")?,
-        client_token: parse_required_trimmed(env, "PADDLE_CLIENT_TOKEN")?,
-        cardless_trial_price_id,
-        trials_enabled,
-    }))
-}
-
-fn parse_paddle_environment(env: &dyn EnvironmentProvider) -> Result<String> {
-    let environment = parse_required_trimmed(env, "PADDLE_ENVIRONMENT")?;
-    match environment.as_str() {
-        "sandbox" | "production" => Ok(environment),
-        _ => Err(anyhow!(
-            "PADDLE_ENVIRONMENT must be either sandbox or production"
-        )),
-    }
-}
-
-fn parse_bool_flag(env: &dyn EnvironmentProvider, key: &str, default: bool) -> Result<bool> {
-    match env.get_var(key) {
-        None => Ok(default),
-        Some(value) => match value.trim().to_ascii_lowercase().as_str() {
-            "true" | "1" | "yes" => Ok(true),
-            "false" | "0" | "no" => Ok(false),
-            _ => Err(anyhow!("{key} must be a boolean")),
-        },
     }
 }
 

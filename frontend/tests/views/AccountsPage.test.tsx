@@ -576,12 +576,12 @@ describe('AccountsPage', () => {
     expect(plaidButton.querySelector('svg.lucide-link')).toBeTruthy();
   });
 
-  it('opens pricing from the demo-mode Upgrade to Connect button', async () => {
+  it('opens the onboarding path from the demo-mode Upgrade to Connect button', async () => {
     const user = userEvent.setup();
     const handler = jest.fn();
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
-    window.addEventListener(events.OPEN_PRICING_EVENT, handler);
+    window.addEventListener(events.OPEN_ONBOARDING_PATH_EVENT, handler);
 
     renderAccountsPage({ demoModeActive: true });
 
@@ -589,7 +589,7 @@ describe('AccountsPage', () => {
     await user.click(screen.getAllByRole('button', { name: /^upgrade to connect$/i })[0]);
 
     expect(handler).toHaveBeenCalledTimes(1);
-    window.removeEventListener(events.OPEN_PRICING_EVENT, handler);
+    window.removeEventListener(events.OPEN_ONBOARDING_PATH_EVENT, handler);
   });
 
   it('renders Teller current balances on the accounts page', async () => {

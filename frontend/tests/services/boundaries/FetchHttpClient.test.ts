@@ -3,7 +3,6 @@ import {
   ConflictError,
   FetchHttpClient,
   ForbiddenError,
-  PaymentRequiredError,
   ServerError,
   ValidationError,
 } from '@/services/boundaries';
@@ -131,36 +130,6 @@ describe('FetchHttpClient', () => {
     );
   });
 
-  it('preserves the backend code and body for payment-required responses', async () => {
-    const body = {
-      error: 'PAYMENT_REQUIRED',
-      message: 'Paid access is required',
-      code: 'PAID_ACCESS_REQUIRED',
-    };
-    globalThis.fetch = jest.fn().mockResolvedValue(
-      new Response(JSON.stringify(body), {
-        status: 402,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    ) as unknown as typeof fetch;
-
-    const client = new FetchHttpClient('http://example.com/api');
-    let caught: unknown;
-
-    try {
-      await client.post('/providers/select', { provider: 'plaid' });
-    } catch (error) {
-      caught = error;
-    }
-
-    expect(caught).toBeInstanceOf(PaymentRequiredError);
-    const paymentError = caught as PaymentRequiredError;
-    expect(paymentError.name).toBe('PaymentRequiredError');
-    expect(paymentError.status).toBe(402);
-    expect(paymentError.code).toBe('PAID_ACCESS_REQUIRED');
-    expect(paymentError.body).toEqual(body);
-  });
-
   it('preserves the backend code and body for conflict responses', async () => {
     const body = {
       error: 'CONFLICT',
@@ -178,7 +147,7 @@ describe('FetchHttpClient', () => {
     let caught: unknown;
 
     try {
-      await client.post('/billing/trials/start', {});
+      await client.post('/test', {});
     } catch (error) {
       caught = error;
     }

@@ -158,7 +158,7 @@ describe('OnboardingProviderPicker', () => {
     });
   });
 
-  it('does not expose demo mode after pricing', () => {
+  it('does not expose demo mode in the provider picker', () => {
     render(
       <ThemeTestProvider>
         <OnboardingProviderPicker onComplete={jest.fn()} />

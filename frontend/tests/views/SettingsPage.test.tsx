@@ -12,10 +12,6 @@ jest.mock('@/features/settings/PasskeySecuritySection', () => ({
   PasskeySecuritySection: () => <div data-testid="passkey-security-section" />,
 }));
 
-jest.mock('@/features/settings/PlanSection', () => ({
-  PlanSection: () => <section data-testid="plan-section">Plan section</section>,
-}));
-
 describe('SettingsPage', () => {
   it('renders appearance inside account settings and updates theme preference', () => {
     const setPreference = jest.fn();
@@ -60,7 +56,7 @@ describe('SettingsPage', () => {
     expect(setPreference).toHaveBeenCalledWith('light');
   });
 
-  it('renders the plan section between preferences and account deletion', () => {
+  it('renders the passkey security section between preferences and account deletion', () => {
     jest.mocked(useTheme).mockReturnValue({
       preference: 'system',
       mode: 'dark',
@@ -78,13 +74,9 @@ describe('SettingsPage', () => {
       </QueryClientProvider>
     );
 
-    const planSection = screen.getByTestId('plan-section');
     const passkeySection = screen.getByTestId('passkey-security-section');
     const dangerHeading = screen.getByRole('heading', { name: 'Retire from service' });
 
-    expect(planSection.compareDocumentPosition(passkeySection)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING
-    );
     expect(passkeySection.compareDocumentPosition(dangerHeading)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
