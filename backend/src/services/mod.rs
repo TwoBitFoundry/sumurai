@@ -1,5 +1,6 @@
 pub mod analytics_orchestrator;
 pub mod analytics_service;
+pub mod auth_orchestrator;
 pub mod auth_service;
 pub mod authorization_service;
 pub mod auto_categorization;

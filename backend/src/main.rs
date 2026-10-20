@@ -750,6 +750,27 @@ fn auth_cookie_headers(cookie: String) -> HeaderMap {
     headers
 }
 
+fn authenticated_session_response(
+    config: &Config,
+    session: services::auth_orchestrator::AuthenticatedSession,
+) -> (HeaderMap, Json<auth_models::AuthResponse>) {
+    (
+        auth_cookie_headers(build_auth_cookie(
+            &session.auth_token.token,
+            session.auth_token.expires_at,
+            config,
+        )),
+        Json(auth_models::AuthResponse {
+            user_id: session.user_id,
+            email: session.email,
+            expires_at: session.auth_token.expires_at.to_rfc3339(),
+            onboarding_completed: session.onboarding_completed,
+            demo_mode_active: session.demo_mode_active,
+            requires_passkey_enrollment: session.requires_passkey_enrollment,
+        }),
+    )
+}
+
 fn extract_auth_cookie_token(headers: &HeaderMap) -> Option<String> {
     let cookie_header = headers.get(COOKIE)?.to_str().ok()?;
     extract_auth_cookie(Some(cookie_header), "auth_token")
@@ -1077,83 +1098,9 @@ async fn register_user_with_password(
     email: String,
     password: String,
 ) -> Result<(HeaderMap, Json<auth_models::AuthResponse>), (StatusCode, Json<ApiErrorResponse>)> {
-    if let Ok(Some(_)) = state.db_repository.get_user_by_email(&email).await {
-        return Err(ApiErrorResponse::conflict(
-            "Email address is already registered",
-        ));
-    }
+    let session = state.auth().register_with_password(email, password).await?;
 
-    let password_hash = state.auth_service.hash_password(&password).map_err(|e| {
-        tracing::error!("Password hashing failed: {}", e);
-        ApiErrorResponse::internal_server_error("Failed to process password")
-    })?;
-
-    let user_id = Uuid::new_v4();
-    let user = User {
-        id: user_id,
-        email: email.clone(),
-        password_hash: Some(password_hash),
-        provider: String::new(),
-        created_at: Utc::now(),
-        updated_at: Utc::now(),
-        onboarding_completed: false,
-        demo_mode_active: true,
-    };
-
-    if let Err(e) = state.db_repository.create_user(&user).await {
-        tracing::warn!(
-            auth_operation = "register",
-            auth_result = "failure",
-            failure_reason = "user_creation_failed",
-            user_id = %user_id,
-            error = %e,
-            "User creation failed"
-        );
-        return Err(ApiErrorResponse::conflict(
-            "Email address is already registered",
-        ));
-    }
-
-    let auth_token = state.auth_service.generate_token(user_id).map_err(|e| {
-        tracing::error!("Token generation failed for user {}: {}", user_id, e);
-        ApiErrorResponse::internal_server_error("Failed to generate authentication token")
-    })?;
-
-    let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
-    if ttl > 0 {
-        if let Err(e) = state
-            .cache_service
-            .set_session_valid(&auth_token.jwt_id, ttl)
-            .await
-        {
-            tracing::warn!("Failed to set session validity in cache: {}", e);
-        }
-        if let Err(e) = state
-            .cache_service
-            .set_jwt_token(&auth_token.jwt_id, &auth_token.token, ttl)
-            .await
-        {
-            tracing::warn!("Failed to cache JWT token: {}", e);
-        }
-    }
-
-    tracing::info!("User {} registered with password in development", user_id);
-
-    Ok((
-        auth_cookie_headers(build_auth_cookie(
-            &auth_token.token,
-            auth_token.expires_at,
-            &state.config,
-        )),
-        Json(auth_models::AuthResponse {
-            user_id: user_id.to_string(),
-            email,
-            expires_at: auth_token.expires_at.to_rfc3339(),
-            onboarding_completed: false,
-            demo_mode_active: true,
-            requires_passkey_enrollment: false,
-        }),
-    ))
+    Ok(authenticated_session_response(&state.config, session))
 }
 
 #[utoipa::path(
@@ -1173,30 +1120,13 @@ async fn logout_user(
 ) -> Result<(HeaderMap, Json<LogoutResponse>), StatusCode> {
     let auth_header = extract_auth_cookie_token(&headers).ok_or(StatusCode::UNAUTHORIZED)?;
 
-    let claims = state
-        .auth_service
-        .validate_token(&auth_header)
-        .map_err(|_| StatusCode::UNAUTHORIZED)?;
-
-    if let Err(e) = state.cache_service.invalidate_session(&claims.jti).await {
-        tracing::warn!("Failed to invalidate session during logout: {}", e);
-    }
-
-    if let Err(e) = state.cache_service.clear_jwt_scoped_data(&claims.jti).await {
-        tracing::warn!("Failed to clear JWT-scoped data during logout: {}", e);
-    }
-
-    if let Err(e) = state.cache_service.clear_transactions(&claims.jti).await {
-        tracing::warn!("Failed to clear transaction cache during logout: {}", e);
-    }
-
-    tracing::info!("User logged out successfully");
+    let cleared_session = state.auth().logout(&auth_header).await?;
 
     Ok((
         auth_cookie_headers(build_clearing_auth_cookie(&state.config)),
         Json(LogoutResponse {
             message: "Logged out successfully".to_string(),
-            cleared_session: claims.jti,
+            cleared_session,
         }),
     ))
 }
@@ -1219,75 +1149,9 @@ async fn refresh_user_session(
 ) -> Result<(HeaderMap, Json<auth_models::AuthResponse>), StatusCode> {
     let auth_header = extract_auth_cookie_token(&headers).ok_or(StatusCode::UNAUTHORIZED)?;
 
-    let claims = state
-        .auth_service
-        .validate_token_for_refresh(&auth_header)
-        .map_err(|_| StatusCode::UNAUTHORIZED)?;
+    let session = state.auth().refresh_session(&auth_header).await?;
 
-    match state.cache_service.is_session_valid(&claims.jti).await {
-        Ok(true) => {}
-        Ok(false) => {
-            tracing::warn!("Refresh rejected: Session not found in cache (app may have restarted)");
-            return Err(StatusCode::UNAUTHORIZED);
-        }
-        Err(e) => {
-            tracing::error!("Cache error during refresh session validation: {}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    let user_id = Uuid::parse_str(&claims.user_id()).map_err(|_| StatusCode::BAD_REQUEST)?;
-
-    // Get user from database to fetch onboarding status
-    let user = state
-        .db_repository
-        .get_user_by_id(&user_id)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::UNAUTHORIZED)?;
-
-    let auth_token = state
-        .auth_service
-        .generate_token(user_id)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    // Cache refreshed JWT in Redis with TTL
-    let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
-    if ttl > 0 {
-        if let Err(e) = state
-            .cache_service
-            .set_session_valid(&auth_token.jwt_id, ttl)
-            .await
-        {
-            tracing::warn!("Failed to set refreshed session validity in cache: {}", e);
-        }
-
-        if let Err(e) = state
-            .cache_service
-            .set_jwt_token(&auth_token.jwt_id, &auth_token.token, ttl)
-            .await
-        {
-            tracing::warn!("Failed to cache refreshed JWT token: {}", e);
-        }
-    }
-
-    tracing::info!("User session refreshed");
-
-    Ok((
-        auth_cookie_headers(build_auth_cookie(
-            &auth_token.token,
-            auth_token.expires_at,
-            &state.config,
-        )),
-        Json(auth_models::AuthResponse {
-            user_id: claims.user_id(),
-            email: user.email.clone(),
-            expires_at: auth_token.expires_at.to_rfc3339(),
-            onboarding_completed: user.onboarding_completed,
-            demo_mode_active: user.demo_mode_active,
-            requires_passkey_enrollment: false,
-        }),
-    ))
+    Ok(authenticated_session_response(&state.config, session))
 }
 
 #[utoipa::path(
@@ -1306,28 +1170,12 @@ async fn complete_user_onboarding(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<OnboardingCompleteResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    let user_id = auth_context.user_id;
-
-    match state.db_repository.mark_onboarding_complete(&user_id).await {
-        Ok(_) => {
-            tracing::info!("User {} completed onboarding", user_id);
-            Ok(Json(OnboardingCompleteResponse {
-                message: "Onboarding completed successfully".to_string(),
-                onboarding_completed: true,
-                demo_mode_active: false,
-            }))
-        }
-        Err(e) => {
-            tracing::error!(
-                "Failed to mark onboarding complete for user {}: {}",
-                user_id,
-                e
-            );
-            Err(ApiErrorResponse::internal_server_error(
-                "Failed to update onboarding status",
-            ))
-        }
-    }
+    state
+        .auth()
+        .complete_onboarding(auth_context.user_id)
+        .await
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -1346,35 +1194,12 @@ async fn activate_demo_mode_onboarding(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<OnboardingCompleteResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    let user_id = auth_context.user_id;
-
-    let user = state
-        .db_repository
-        .get_user_by_id(&user_id)
+    state
+        .auth()
+        .activate_demo_mode(auth_context.user_id)
         .await
-        .map_err(|e| {
-            tracing::error!("Failed to load user {} for demo onboarding: {}", user_id, e);
-            ApiErrorResponse::internal_server_error("Failed to load user")
-        })?
-        .ok_or_else(|| ApiErrorResponse::internal_server_error("Failed to load user"))?;
-
-    services::DemoModeService::activate_demo_workspace_for_user(
-        &state.db_repository,
-        &state.cache_service,
-        &user,
-        true,
-    )
-    .await
-    .map_err(|e| {
-        tracing::error!("Failed to activate demo mode for user {}: {}", user_id, e);
-        ApiErrorResponse::internal_server_error("Failed to activate demo mode")
-    })?;
-
-    Ok(Json(OnboardingCompleteResponse {
-        message: "Demo mode activated successfully".to_string(),
-        onboarding_completed: true,
-        demo_mode_active: true,
-    }))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -3017,95 +2842,12 @@ async fn delete_user_account(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<auth_models::DeleteAccountResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    let user_id = auth_context.user_id;
-
-    let connections = state
-        .db_repository
-        .get_all_provider_connections_by_user(&user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to get connections for user {}: {}", user_id, e);
-            ApiErrorResponse::internal_server_error("Failed to retrieve user connections")
-        })?;
-
-    let mut deleted_connections = 0;
-    let mut deleted_transactions = 0;
-    let mut deleted_accounts = 0;
-
-    for connection in connections {
-        match state
-            .connection_service
-            .disconnect_connection_by_id(&connection.id, &user_id, &auth_context.jwt_id)
-            .await
-        {
-            Ok(result) => {
-                if result.success {
-                    deleted_connections += 1;
-                    deleted_transactions += result.data_cleared.transactions;
-                    deleted_accounts += result.data_cleared.accounts;
-                }
-            }
-            Err(e) => {
-                tracing::warn!(
-                    "Failed to disconnect connection {} for user {}: {}",
-                    connection.id,
-                    user_id,
-                    e
-                );
-            }
-        }
-    }
-
-    let budgets = state
-        .db_repository
-        .get_budgets_for_user(user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to get budgets for user {}: {}", user_id, e);
-            ApiErrorResponse::internal_server_error("Failed to retrieve user budgets")
-        })?;
-
-    let deleted_budgets = budgets.len() as i32;
-
     state
-        .db_repository
-        .delete_user(&user_id)
+        .auth()
+        .delete_account(auth_context.user_id, &auth_context.jwt_id)
         .await
-        .map_err(|e| {
-            tracing::error!("Failed to delete user {}: {}", user_id, e);
-            ApiErrorResponse::internal_server_error("Failed to delete user account")
-        })?;
-
-    if let Err(e) = state
-        .cache_service
-        .invalidate_pattern(&format!("{}_*", auth_context.jwt_id))
-        .await
-    {
-        tracing::warn!(
-            "Failed to invalidate cache for deleted user {}: {}",
-            user_id,
-            e
-        );
-    }
-
-    tracing::info!(
-        "User {} account deleted. Connections: {}, Transactions: {}, Accounts: {}, Budgets: {}",
-        user_id,
-        deleted_connections,
-        deleted_transactions,
-        deleted_accounts,
-        deleted_budgets
-    );
-
-    Ok(Json(auth_models::DeleteAccountResponse {
-        message: "Account deleted successfully".to_string(),
-        deleted_items: auth_models::DeletedItemsSummary {
-            connections: deleted_connections,
-            transactions: deleted_transactions,
-            accounts: deleted_accounts,
-            budgets: deleted_budgets,
-        },
-    }))
+        .map(Json)
+        .map_err(Into::into)
 }
 
 #[utoipa::path(
@@ -3718,102 +3460,12 @@ async fn login_with_password(
     State(state): State<AppState>,
     Json(req): Json<auth_models::PasswordLoginRequest>,
 ) -> Result<(HeaderMap, Json<auth_models::AuthResponse>), (StatusCode, Json<ApiErrorResponse>)> {
-    const INVALID_CREDENTIALS: &str = "Invalid email or password";
+    let session = state
+        .auth()
+        .login_with_password(&req.email, &req.password)
+        .await?;
 
-    let user = match state.db_repository.get_user_by_email(&req.email).await {
-        Ok(Some(user)) => user,
-        Ok(None) => {
-            return Err(ApiErrorResponse::unauthorized(INVALID_CREDENTIALS));
-        }
-        Err(e) => {
-            tracing::error!(
-                "Failed to look up user by email during password login: {}",
-                e
-            );
-            return Err(ApiErrorResponse::internal_server_error(
-                "Authentication service error",
-            ));
-        }
-    };
-
-    let passkeys = state
-        .db_repository
-        .list_webauthn_credentials_for_user(&user.id)
-        .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to list passkeys for user {} during password login: {}",
-                user.id,
-                e
-            );
-            ApiErrorResponse::internal_server_error("Authentication service error")
-        })?;
-
-    if has_usable_passkey(&passkeys) && !dev_password_auth_enabled() {
-        return Err(ApiErrorResponse::unauthorized(INVALID_CREDENTIALS));
-    }
-
-    let password_hash = match user.password_hash.as_deref() {
-        Some(hash) if !hash.is_empty() => hash,
-        _ => return Err(ApiErrorResponse::unauthorized(INVALID_CREDENTIALS)),
-    };
-
-    let password_valid = state
-        .auth_service
-        .verify_password(&req.password, password_hash)
-        .map_err(|e| {
-            tracing::error!("Password verification error for user {}: {}", user.id, e);
-            ApiErrorResponse::internal_server_error("Authentication service error")
-        })?;
-
-    if !password_valid {
-        return Err(ApiErrorResponse::unauthorized(INVALID_CREDENTIALS));
-    }
-
-    let user_id = user.id;
-    let auth_token = state.auth_service.generate_token(user_id).map_err(|e| {
-        tracing::error!("Token generation failed for user {}: {}", user_id, e);
-        ApiErrorResponse::internal_server_error("Failed to generate authentication token")
-    })?;
-
-    let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
-    if ttl > 0 {
-        if let Err(e) = state
-            .cache_service
-            .set_session_valid(&auth_token.jwt_id, ttl)
-            .await
-        {
-            tracing::warn!("Failed to set session validity in cache: {}", e);
-        }
-        if let Err(e) = state
-            .cache_service
-            .set_jwt_token(&auth_token.jwt_id, &auth_token.token, ttl)
-            .await
-        {
-            tracing::warn!("Failed to cache JWT token: {}", e);
-        }
-    }
-
-    tracing::info!(
-        "User {} authenticated via legacy password login (migration)",
-        user_id
-    );
-
-    Ok((
-        auth_cookie_headers(build_auth_cookie(
-            &auth_token.token,
-            auth_token.expires_at,
-            &state.config,
-        )),
-        Json(auth_models::AuthResponse {
-            user_id: user_id.to_string(),
-            email: user.email.clone(),
-            expires_at: auth_token.expires_at.to_rfc3339(),
-            onboarding_completed: user.onboarding_completed,
-            demo_mode_active: user.demo_mode_active,
-            requires_passkey_enrollment: !dev_password_auth_enabled(),
-        }),
-    ))
+    Ok(authenticated_session_response(&state.config, session))
 }
 
 #[utoipa::path(

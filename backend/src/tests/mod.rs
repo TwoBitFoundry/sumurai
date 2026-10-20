@@ -4,6 +4,7 @@ mod analytics_service_tests;
 mod auth_cookie_tests;
 mod auth_handlers_integration_tests;
 mod auth_middleware_tests;
+mod auth_orchestrator_tests;
 mod auth_rate_limit_tests;
 mod auth_redaction_tests;
 mod auth_service_tests;
