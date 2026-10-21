@@ -9,30 +9,26 @@ use crate::models::auth::{
     AuthToken, AuthenticatedSession, DeleteAccountResponse, DeletedItemsSummary,
     OnboardingCompleteResponse,
 };
+use crate::models::domain_error::DomainError;
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::{AuthService, CacheService, ConnectionService, DemoModeService};
 use crate::utils::seed_password_fallback::dev_password_auth_enabled;
 use crate::utils::webauthn_credentials::has_usable_passkey;
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum AuthOrchestrationError {
-    #[cfg(feature = "dev-seed")]
-    EmailAlreadyRegistered,
-    #[cfg(feature = "dev-seed")]
-    PasswordProcessingFailed,
-    InvalidCredentials,
-    AuthenticationServiceError,
-    TokenGenerationFailed,
-    Unauthorized,
-    InvalidUserId,
-    SessionCheckFailed,
-    UserLookupFailed,
-    OnboardingUpdateFailed,
-    DemoUserLoadFailed,
-    DemoActivationFailed,
-    LoadConnectionsFailed,
-    LoadBudgetsFailed,
-    DeleteUserFailed,
+fn invalid_credentials() -> DomainError {
+    DomainError::unauthorized("Invalid email or password").with_code("AUTH_REQUIRED")
+}
+
+fn authentication_required() -> DomainError {
+    DomainError::unauthorized("Authentication required").with_code("AUTH_REQUIRED")
+}
+
+fn authentication_service_error() -> DomainError {
+    DomainError::internal("Authentication service error")
+}
+
+fn token_generation_failed() -> DomainError {
+    DomainError::internal("Failed to generate authentication token")
 }
 
 pub struct AuthOrchestrator {
@@ -62,14 +58,14 @@ impl AuthOrchestrator {
         &self,
         email: String,
         password: String,
-    ) -> Result<AuthenticatedSession, AuthOrchestrationError> {
+    ) -> Result<AuthenticatedSession, DomainError> {
         if let Ok(Some(_)) = self.repository.get_user_by_email(&email).await {
-            return Err(AuthOrchestrationError::EmailAlreadyRegistered);
+            return Err(DomainError::conflict("Email address is already registered"));
         }
 
         let password_hash = self.auth_service.hash_password(&password).map_err(|e| {
             tracing::error!("Password hashing failed: {}", e);
-            AuthOrchestrationError::PasswordProcessingFailed
+            DomainError::internal("Failed to process password")
         })?;
 
         let user_id = Uuid::new_v4();
@@ -93,12 +89,12 @@ impl AuthOrchestrator {
                 error = %e,
                 "User creation failed"
             );
-            return Err(AuthOrchestrationError::EmailAlreadyRegistered);
+            return Err(DomainError::conflict("Email address is already registered"));
         }
 
         let auth_token = self.auth_service.generate_token(user_id).map_err(|e| {
             tracing::error!("Token generation failed for user {}: {}", user_id, e);
-            AuthOrchestrationError::TokenGenerationFailed
+            token_generation_failed()
         })?;
 
         self.cache_session(
@@ -124,18 +120,18 @@ impl AuthOrchestrator {
         &self,
         email: &str,
         password: &str,
-    ) -> Result<AuthenticatedSession, AuthOrchestrationError> {
+    ) -> Result<AuthenticatedSession, DomainError> {
         let user = match self.repository.get_user_by_email(email).await {
             Ok(Some(user)) => user,
             Ok(None) => {
-                return Err(AuthOrchestrationError::InvalidCredentials);
+                return Err(invalid_credentials());
             }
             Err(e) => {
                 tracing::error!(
                     "Failed to look up user by email during password login: {}",
                     e
                 );
-                return Err(AuthOrchestrationError::AuthenticationServiceError);
+                return Err(authentication_service_error());
             }
         };
 
@@ -149,16 +145,16 @@ impl AuthOrchestrator {
                     user.id,
                     e
                 );
-                AuthOrchestrationError::AuthenticationServiceError
+                authentication_service_error()
             })?;
 
         if has_usable_passkey(&passkeys) && !dev_password_auth_enabled() {
-            return Err(AuthOrchestrationError::InvalidCredentials);
+            return Err(invalid_credentials());
         }
 
         let password_hash = match user.password_hash.as_deref() {
             Some(hash) if !hash.is_empty() => hash,
-            _ => return Err(AuthOrchestrationError::InvalidCredentials),
+            _ => return Err(invalid_credentials()),
         };
 
         let password_valid = self
@@ -166,17 +162,17 @@ impl AuthOrchestrator {
             .verify_password(password, password_hash)
             .map_err(|e| {
                 tracing::error!("Password verification error for user {}: {}", user.id, e);
-                AuthOrchestrationError::AuthenticationServiceError
+                authentication_service_error()
             })?;
 
         if !password_valid {
-            return Err(AuthOrchestrationError::InvalidCredentials);
+            return Err(invalid_credentials());
         }
 
         let user_id = user.id;
         let auth_token = self.auth_service.generate_token(user_id).map_err(|e| {
             tracing::error!("Token generation failed for user {}: {}", user_id, e);
-            AuthOrchestrationError::TokenGenerationFailed
+            token_generation_failed()
         })?;
 
         self.cache_session(
@@ -201,11 +197,11 @@ impl AuthOrchestrator {
         })
     }
 
-    pub async fn logout(&self, token: &str) -> Result<String, AuthOrchestrationError> {
+    pub async fn logout(&self, token: &str) -> Result<String, DomainError> {
         let claims = self
             .auth_service
             .validate_token(token)
-            .map_err(|_| AuthOrchestrationError::Unauthorized)?;
+            .map_err(|_| authentication_required())?;
 
         if let Err(e) = self.cache.invalidate_session(&claims.jti).await {
             tracing::warn!("Failed to invalidate session during logout: {}", e);
@@ -224,14 +220,11 @@ impl AuthOrchestrator {
         Ok(claims.jti)
     }
 
-    pub async fn refresh_session(
-        &self,
-        token: &str,
-    ) -> Result<AuthenticatedSession, AuthOrchestrationError> {
+    pub async fn refresh_session(&self, token: &str) -> Result<AuthenticatedSession, DomainError> {
         let claims = self
             .auth_service
             .validate_token_for_refresh(token)
-            .map_err(|_| AuthOrchestrationError::Unauthorized)?;
+            .map_err(|_| authentication_required())?;
 
         match self.cache.is_session_valid(&claims.jti).await {
             Ok(true) => {}
@@ -239,28 +232,28 @@ impl AuthOrchestrator {
                 tracing::warn!(
                     "Refresh rejected: Session not found in cache (app may have restarted)"
                 );
-                return Err(AuthOrchestrationError::Unauthorized);
+                return Err(authentication_required());
             }
             Err(e) => {
                 tracing::error!("Cache error during refresh session validation: {}", e);
-                return Err(AuthOrchestrationError::SessionCheckFailed);
+                return Err(authentication_service_error());
             }
         }
 
         let user_id = Uuid::parse_str(&claims.user_id())
-            .map_err(|_| AuthOrchestrationError::InvalidUserId)?;
+            .map_err(|_| DomainError::bad_request("Invalid user ID"))?;
 
         let user = self
             .repository
             .get_user_by_id(&user_id)
             .await
-            .map_err(|_| AuthOrchestrationError::UserLookupFailed)?
-            .ok_or(AuthOrchestrationError::Unauthorized)?;
+            .map_err(|_| authentication_service_error())?
+            .ok_or(authentication_required())?;
 
         let auth_token = self
             .auth_service
             .generate_token(user_id)
-            .map_err(|_| AuthOrchestrationError::TokenGenerationFailed)?;
+            .map_err(|_| token_generation_failed())?;
 
         self.cache_session(
             &auth_token,
@@ -284,7 +277,7 @@ impl AuthOrchestrator {
     pub async fn complete_onboarding(
         &self,
         user_id: Uuid,
-    ) -> Result<OnboardingCompleteResponse, AuthOrchestrationError> {
+    ) -> Result<OnboardingCompleteResponse, DomainError> {
         match self.repository.mark_onboarding_complete(&user_id).await {
             Ok(_) => {
                 tracing::info!("User {} completed onboarding", user_id);
@@ -300,7 +293,7 @@ impl AuthOrchestrator {
                     user_id,
                     e
                 );
-                Err(AuthOrchestrationError::OnboardingUpdateFailed)
+                Err(DomainError::internal("Failed to update onboarding status"))
             }
         }
     }
@@ -308,16 +301,16 @@ impl AuthOrchestrator {
     pub async fn activate_demo_mode(
         &self,
         user_id: Uuid,
-    ) -> Result<OnboardingCompleteResponse, AuthOrchestrationError> {
+    ) -> Result<OnboardingCompleteResponse, DomainError> {
         let user = self
             .repository
             .get_user_by_id(&user_id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to load user {} for demo onboarding: {}", user_id, e);
-                AuthOrchestrationError::DemoUserLoadFailed
+                DomainError::internal("Failed to load user")
             })?
-            .ok_or(AuthOrchestrationError::DemoUserLoadFailed)?;
+            .ok_or(DomainError::internal("Failed to load user"))?;
 
         DemoModeService::activate_demo_workspace_for_user(
             &self.repository,
@@ -328,7 +321,7 @@ impl AuthOrchestrator {
         .await
         .map_err(|e| {
             tracing::error!("Failed to activate demo mode for user {}: {}", user_id, e);
-            AuthOrchestrationError::DemoActivationFailed
+            DomainError::internal("Failed to activate demo mode")
         })?;
 
         Ok(OnboardingCompleteResponse {
@@ -342,14 +335,14 @@ impl AuthOrchestrator {
         &self,
         user_id: Uuid,
         jwt_id: &str,
-    ) -> Result<DeleteAccountResponse, AuthOrchestrationError> {
+    ) -> Result<DeleteAccountResponse, DomainError> {
         let connections = self
             .repository
             .get_all_provider_connections_by_user(&user_id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to get connections for user {}: {}", user_id, e);
-                AuthOrchestrationError::LoadConnectionsFailed
+                DomainError::internal("Failed to retrieve user connections")
             })?;
 
         let mut deleted_connections = 0;
@@ -386,14 +379,14 @@ impl AuthOrchestrator {
             .await
             .map_err(|e| {
                 tracing::error!("Failed to get budgets for user {}: {}", user_id, e);
-                AuthOrchestrationError::LoadBudgetsFailed
+                DomainError::internal("Failed to retrieve user budgets")
             })?;
 
         let deleted_budgets = budgets.len() as i32;
 
         self.repository.delete_user(&user_id).await.map_err(|e| {
             tracing::error!("Failed to delete user {}: {}", user_id, e);
-            AuthOrchestrationError::DeleteUserFailed
+            DomainError::internal("Failed to delete user account")
         })?;
 
         if let Err(e) = self

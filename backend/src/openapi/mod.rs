@@ -130,12 +130,12 @@ use utoipa::OpenApi;
         ("auth_cookie" = [])
     ),
     paths(
-        crate::register_user,
-        crate::refresh_user_session,
-        crate::logout_user,
-        crate::delete_user_account,
-        crate::complete_user_onboarding,
-        crate::activate_demo_mode_onboarding,
+        crate::handlers::auth::register_user,
+        crate::handlers::auth::refresh_user_session,
+        crate::handlers::auth::logout_user,
+        crate::handlers::auth::delete_user_account,
+        crate::handlers::auth::complete_user_onboarding,
+        crate::handlers::auth::activate_demo_mode_onboarding,
         crate::health_check,
         crate::handlers::category::list_categories,
         crate::handlers::category::create_custom_category,
@@ -188,7 +188,7 @@ use utoipa::OpenApi;
         crate::finish_passkey_registration,
         crate::list_user_passkeys,
         crate::delete_user_passkey,
-        crate::login_with_password,
+        crate::handlers::auth::login_with_password,
         crate::begin_passkey_login,
         crate::finish_passkey_login,
     )

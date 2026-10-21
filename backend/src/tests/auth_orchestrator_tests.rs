@@ -5,9 +5,10 @@ use chrono::Utc;
 use uuid::Uuid;
 
 use crate::models::auth::User;
+use crate::models::domain_error::DomainError;
 use crate::models::plaid::ProviderConnection;
 use crate::providers::ProviderRegistry;
-use crate::services::auth_orchestrator::{AuthOrchestrationError, AuthOrchestrator};
+use crate::services::auth_orchestrator::AuthOrchestrator;
 use crate::services::cache_service::{CacheService, MockCacheService};
 use crate::services::repository_service::{DatabaseRepository, MockDatabaseRepository};
 use crate::services::{AuthService, ConnectionService};
@@ -96,7 +97,7 @@ async fn given_unknown_email_when_logging_in_then_reports_invalid_credentials() 
 
     assert_eq!(
         result.err(),
-        Some(AuthOrchestrationError::InvalidCredentials)
+        Some(DomainError::unauthorized("Invalid email or password").with_code("AUTH_REQUIRED"))
     );
 }
 
@@ -113,7 +114,7 @@ async fn given_wrong_password_when_logging_in_then_reports_invalid_credentials()
 
     assert_eq!(
         result.err(),
-        Some(AuthOrchestrationError::InvalidCredentials)
+        Some(DomainError::unauthorized("Invalid email or password").with_code("AUTH_REQUIRED"))
     );
 }
 
@@ -130,7 +131,7 @@ async fn given_user_without_password_hash_when_logging_in_then_reports_invalid_c
 
     assert_eq!(
         result.err(),
-        Some(AuthOrchestrationError::InvalidCredentials)
+        Some(DomainError::unauthorized("Invalid email or password").with_code("AUTH_REQUIRED"))
     );
 }
 
@@ -147,7 +148,7 @@ async fn given_user_lookup_failure_when_logging_in_then_reports_service_error() 
 
     assert_eq!(
         result.err(),
-        Some(AuthOrchestrationError::AuthenticationServiceError)
+        Some(DomainError::internal("Authentication service error"))
     );
 }
 
@@ -169,7 +170,7 @@ async fn given_passkey_listing_failure_when_logging_in_then_reports_service_erro
 
     assert_eq!(
         result.err(),
-        Some(AuthOrchestrationError::AuthenticationServiceError)
+        Some(DomainError::internal("Authentication service error"))
     );
 }
 
@@ -245,7 +246,10 @@ async fn given_invalid_token_when_logging_out_then_reports_unauthorized() {
         .logout("not-a-token")
         .await;
 
-    assert_eq!(result, Err(AuthOrchestrationError::Unauthorized));
+    assert_eq!(
+        result,
+        Err(DomainError::unauthorized("Authentication required").with_code("AUTH_REQUIRED"))
+    );
 }
 
 #[tokio::test]
@@ -254,7 +258,10 @@ async fn given_invalid_token_when_refreshing_then_reports_unauthorized() {
         .refresh_session("not-a-token")
         .await;
 
-    assert_eq!(result.err(), Some(AuthOrchestrationError::Unauthorized));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::unauthorized("Authentication required").with_code("AUTH_REQUIRED"))
+    );
 }
 
 #[tokio::test]
@@ -269,7 +276,10 @@ async fn given_missing_cached_session_when_refreshing_then_reports_unauthorized(
         .refresh_session(&token.token)
         .await;
 
-    assert_eq!(result.err(), Some(AuthOrchestrationError::Unauthorized));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::unauthorized("Authentication required").with_code("AUTH_REQUIRED"))
+    );
 }
 
 #[tokio::test]
@@ -286,7 +296,7 @@ async fn given_session_cache_failure_when_refreshing_then_reports_session_check_
 
     assert_eq!(
         result.err(),
-        Some(AuthOrchestrationError::SessionCheckFailed)
+        Some(DomainError::internal("Authentication service error"))
     );
 }
 
@@ -306,7 +316,10 @@ async fn given_deleted_user_when_refreshing_then_reports_unauthorized() {
         .refresh_session(&token.token)
         .await;
 
-    assert_eq!(result.err(), Some(AuthOrchestrationError::Unauthorized));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::unauthorized("Authentication required").with_code("AUTH_REQUIRED"))
+    );
 }
 
 #[tokio::test]
@@ -325,7 +338,10 @@ async fn given_user_lookup_failure_when_refreshing_then_reports_user_lookup_fail
         .refresh_session(&token.token)
         .await;
 
-    assert_eq!(result.err(), Some(AuthOrchestrationError::UserLookupFailed));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Authentication service error"))
+    );
 }
 
 #[tokio::test]
@@ -387,7 +403,7 @@ async fn given_repository_failure_when_completing_onboarding_then_reports_update
 
     assert_eq!(
         result.err(),
-        Some(AuthOrchestrationError::OnboardingUpdateFailed)
+        Some(DomainError::internal("Failed to update onboarding status"))
     );
 }
 
@@ -404,7 +420,7 @@ async fn given_missing_user_when_activating_demo_mode_then_reports_user_load_fai
 
     assert_eq!(
         result.err(),
-        Some(AuthOrchestrationError::DemoUserLoadFailed)
+        Some(DomainError::internal("Failed to load user"))
     );
 }
 
@@ -421,7 +437,7 @@ async fn given_user_lookup_failure_when_activating_demo_mode_then_reports_user_l
 
     assert_eq!(
         result.err(),
-        Some(AuthOrchestrationError::DemoUserLoadFailed)
+        Some(DomainError::internal("Failed to load user"))
     );
 }
 
@@ -439,7 +455,7 @@ async fn given_connection_listing_failure_when_deleting_account_then_reports_loa
 
     assert_eq!(
         result.err(),
-        Some(AuthOrchestrationError::LoadConnectionsFailed)
+        Some(DomainError::internal("Failed to retrieve user connections"))
     );
 }
 
@@ -459,7 +475,7 @@ async fn given_budget_listing_failure_when_deleting_account_then_reports_load_bu
 
     assert_eq!(
         result.err(),
-        Some(AuthOrchestrationError::LoadBudgetsFailed)
+        Some(DomainError::internal("Failed to retrieve user budgets"))
     );
 }
 
@@ -480,7 +496,10 @@ async fn given_user_deletion_failure_when_deleting_account_then_reports_delete_f
         .delete_account(Uuid::new_v4(), "jwt")
         .await;
 
-    assert_eq!(result.err(), Some(AuthOrchestrationError::DeleteUserFailed));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to delete user account"))
+    );
 }
 
 #[tokio::test]
@@ -563,7 +582,7 @@ async fn given_existing_email_when_registering_with_password_then_reports_alread
 
     assert_eq!(
         result.err(),
-        Some(AuthOrchestrationError::EmailAlreadyRegistered)
+        Some(DomainError::conflict("Email address is already registered"))
     );
 }
 
@@ -585,6 +604,6 @@ async fn given_user_creation_failure_when_registering_with_password_then_reports
 
     assert_eq!(
         result.err(),
-        Some(AuthOrchestrationError::EmailAlreadyRegistered)
+        Some(DomainError::conflict("Email address is already registered"))
     );
 }
