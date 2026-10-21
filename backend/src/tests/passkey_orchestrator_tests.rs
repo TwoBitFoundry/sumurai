@@ -14,8 +14,9 @@ use crate::models::auth::{
     AuthenticatedEnrollmentChallengePayload, LoginChallengePayload, RegistrationChallengePayload,
     User, WebAuthnCredential,
 };
+use crate::models::domain_error::DomainError;
 use crate::services::cache_service::{CacheService, MockCacheService};
-use crate::services::passkey_orchestrator::{PasskeyOrchestrationError, PasskeyOrchestrator};
+use crate::services::passkey_orchestrator::PasskeyOrchestrator;
 use crate::services::repository_service::{DatabaseRepository, MockDatabaseRepository};
 use crate::services::webauthn_service::WebAuthnService;
 use crate::services::AuthService;
@@ -193,7 +194,7 @@ async fn given_lookup_failure_when_beginning_login_then_reports_authentication_s
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::AuthenticationServiceError)
+        Some(DomainError::internal("Authentication service error"))
     );
 }
 
@@ -293,7 +294,9 @@ async fn given_cache_failure_when_storing_login_challenge_then_reports_store_fai
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::StoreAuthenticationChallengeFailed)
+        Some(DomainError::internal(
+            "Failed to store authentication challenge"
+        ))
     );
 }
 
@@ -328,7 +331,7 @@ async fn given_missing_user_when_beginning_enrollment_then_reports_authenticatio
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::AuthenticationFailed)
+        Some(DomainError::unauthorized("Authentication failed").with_code("AUTH_REQUIRED"))
     );
 }
 
@@ -345,7 +348,7 @@ async fn given_user_lookup_failure_when_beginning_enrollment_then_reports_begin_
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::BeginEnrollmentFailed)
+        Some(DomainError::internal("Failed to begin passkey enrollment"))
     );
 }
 
@@ -367,7 +370,9 @@ async fn given_password_when_beginning_registration_then_rejects_password_regist
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::PasswordRegistrationUnsupported)
+        Some(DomainError::bad_request(
+            "Password registration is no longer supported; enroll a passkey instead"
+        ))
     );
 }
 
@@ -382,7 +387,9 @@ async fn given_authenticated_session_when_beginning_registration_then_requires_e
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::AuthenticatedEnrollmentRequired)
+        Some(DomainError::bad_request(
+            "Authenticated passkey enrollment must use /api/auth/passkey/enroll/finish"
+        ))
     );
 }
 
@@ -398,7 +405,7 @@ async fn given_registered_email_when_beginning_registration_then_reports_conflic
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::EmailAlreadyRegistered)
+        Some(DomainError::conflict("Email address is already registered"))
     );
 }
 
@@ -436,7 +443,7 @@ async fn given_cache_failure_when_taking_challenge_then_reports_retrieve_failure
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::RetrieveChallengeFailed)
+        Some(DomainError::internal("Failed to retrieve challenge"))
     );
 }
 
@@ -448,7 +455,9 @@ async fn given_consumed_challenge_when_finishing_enrollment_then_reports_challen
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::ChallengeNotFound)
+        Some(DomainError::bad_request(
+            "Challenge not found or already used"
+        ))
     );
 }
 
@@ -463,7 +472,7 @@ async fn given_malformed_payload_when_finishing_enrollment_then_reports_invalid_
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::InvalidEnrollmentChallenge)
+        Some(DomainError::bad_request("Invalid enrollment challenge"))
     );
 }
 
@@ -477,7 +486,10 @@ async fn given_other_users_challenge_when_finishing_enrollment_then_reports_mism
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::ChallengeUserMismatch)
+        Some(
+            DomainError::unauthorized("Challenge does not belong to the authenticated user")
+                .with_code("AUTH_REQUIRED")
+        )
     );
 }
 
@@ -492,7 +504,7 @@ async fn given_invalid_state_when_finishing_enrollment_then_reports_invalid_stat
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::InvalidChallengeState)
+        Some(DomainError::bad_request("Invalid challenge state"))
     );
 }
 
@@ -511,7 +523,7 @@ async fn given_invalid_credential_response_when_finishing_enrollment_then_report
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::InvalidCredentialResponse)
+        Some(DomainError::bad_request("Invalid credential response"))
     );
 }
 
@@ -529,7 +541,9 @@ async fn given_authenticated_session_when_finishing_registration_then_consumes_c
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::AuthenticatedEnrollmentRequired)
+        Some(DomainError::bad_request(
+            "Authenticated passkey enrollment must use /api/auth/passkey/enroll/finish"
+        ))
     );
 }
 
@@ -544,7 +558,7 @@ async fn given_malformed_payload_when_finishing_registration_then_reports_invali
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::InvalidRegistrationChallenge)
+        Some(DomainError::bad_request("Invalid registration challenge"))
     );
 }
 
@@ -562,7 +576,9 @@ async fn given_recovery_for_account_with_usable_passkey_when_finishing_registrat
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::PasskeyAlreadyAvailable)
+        Some(DomainError::bad_request(
+            "Passkey sign-in is already available for this account"
+        ))
     );
 }
 
@@ -580,7 +596,7 @@ async fn given_recovery_for_missing_account_when_finishing_registration_then_rep
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::AccountNotFound)
+        Some(DomainError::bad_request("Account not found"))
     );
 }
 
@@ -600,7 +616,9 @@ async fn given_recovery_for_account_with_password_when_finishing_registration_th
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::PasswordSignInAvailable)
+        Some(DomainError::bad_request(
+            "Password sign-in is available for this account"
+        ))
     );
 }
 
@@ -612,7 +630,9 @@ async fn given_consumed_challenge_when_finishing_login_then_reports_challenge_no
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::ChallengeNotFound)
+        Some(DomainError::bad_request(
+            "Challenge not found or already used"
+        ))
     );
 }
 
@@ -627,7 +647,7 @@ async fn given_malformed_payload_when_finishing_login_then_reports_invalid_state
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::InvalidChallengeState)
+        Some(DomainError::bad_request("Invalid challenge state"))
     );
 }
 
@@ -645,7 +665,7 @@ async fn given_nil_user_challenge_when_finishing_login_then_reports_authenticati
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::AuthenticationFailed)
+        Some(DomainError::unauthorized("Authentication failed").with_code("AUTH_REQUIRED"))
     );
 }
 
@@ -663,7 +683,7 @@ async fn given_invalid_authentication_state_when_finishing_login_then_reports_in
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::InvalidAuthenticationState)
+        Some(DomainError::bad_request("Invalid authentication state"))
     );
 }
 
@@ -699,7 +719,7 @@ async fn given_storage_failure_when_listing_passkeys_then_reports_load_failure()
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::LoadPasskeysFailed)
+        Some(DomainError::internal("Failed to retrieve passkeys"))
     );
 }
 
@@ -716,7 +736,7 @@ async fn given_unknown_id_when_deleting_passkey_then_reports_not_found() {
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::PasskeyNotFound)
+        Some(DomainError::not_found("Passkey not found"))
     );
 }
 
@@ -733,7 +753,12 @@ async fn given_only_usable_passkey_when_deleting_it_then_reports_last_passkey() 
     .delete_passkey(user_id, only_id)
     .await;
 
-    assert_eq!(result.err(), Some(PasskeyOrchestrationError::LastPasskey));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::conflict(
+            "Cannot remove the last enrolled passkey"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -749,7 +774,12 @@ async fn given_broken_credential_and_no_usable_passkey_when_deleting_then_report
     .delete_passkey(user_id, broken_id)
     .await;
 
-    assert_eq!(result.err(), Some(PasskeyOrchestrationError::LastPasskey));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::conflict(
+            "Cannot remove the last enrolled passkey"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -791,7 +821,7 @@ async fn given_delete_reporting_nothing_removed_when_deleting_then_reports_not_f
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::PasskeyNotFound)
+        Some(DomainError::not_found("Passkey not found"))
     );
 }
 
@@ -812,7 +842,7 @@ async fn given_delete_failure_when_deleting_passkey_then_reports_delete_failure(
 
     assert_eq!(
         result.err(),
-        Some(PasskeyOrchestrationError::DeletePasskeyFailed)
+        Some(DomainError::internal("Failed to delete passkey"))
     );
 }
 

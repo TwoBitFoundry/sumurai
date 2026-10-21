@@ -183,14 +183,14 @@ use utoipa::OpenApi;
         crate::handlers::plaid::exchange_authenticated_public_token,
         crate::handlers::plaid::get_authenticated_plaid_accounts,
         crate::handlers::plaid::clear_authenticated_synced_data,
-        crate::begin_passkey_enroll,
-        crate::finish_passkey_enroll,
-        crate::finish_passkey_registration,
-        crate::list_user_passkeys,
-        crate::delete_user_passkey,
+        crate::handlers::passkey::begin_passkey_enroll,
+        crate::handlers::passkey::finish_passkey_enroll,
+        crate::handlers::passkey::finish_passkey_registration,
+        crate::handlers::passkey::list_user_passkeys,
+        crate::handlers::passkey::delete_user_passkey,
         crate::handlers::auth::login_with_password,
-        crate::begin_passkey_login,
-        crate::finish_passkey_login,
+        crate::handlers::passkey::begin_passkey_login,
+        crate::handlers::passkey::finish_passkey_login,
     )
 )]
 pub struct ApiDoc;

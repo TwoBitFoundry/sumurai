@@ -87,7 +87,7 @@ pub async fn register_user(
 
     #[cfg(not(feature = "dev-seed"))]
     {
-        crate::register_user_with_passkey(state, headers, req).await
+        crate::handlers::passkey::register_user_with_passkey(state, headers, req).await
     }
 }
 

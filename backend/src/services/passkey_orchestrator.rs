@@ -13,6 +13,7 @@ use crate::models::auth::{
 };
 #[cfg(not(feature = "dev-seed"))]
 use crate::models::auth::{RegisterBeginResponse, RegisterRequest};
+use crate::models::domain_error::DomainError;
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::webauthn_service::WebAuthnService;
 use crate::services::{AuthService, CacheService};
@@ -21,44 +22,86 @@ use crate::utils::webauthn_credentials::{
     count_usable_credentials, has_usable_passkey, is_usable_credential, usable_passkeys,
 };
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum PasskeyOrchestrationError {
-    #[cfg(not(feature = "dev-seed"))]
-    PasswordRegistrationUnsupported,
-    AuthenticatedEnrollmentRequired,
-    EmailAlreadyRegistered,
-    AuthenticationFailed,
-    AuthenticationServiceError,
-    BeginRegistrationFailed,
-    BeginEnrollmentFailed,
-    BeginAuthenticationFailed,
-    LoadExistingCredentialsFailed,
-    SerializeRegistrationStateFailed,
-    SerializeAuthenticationStateFailed,
-    StoreRegistrationChallengeFailed,
-    StoreAuthenticationChallengeFailed,
-    SerializeChallengeFailed,
-    RetrieveChallengeFailed,
-    ChallengeNotFound,
-    InvalidEnrollmentChallenge,
-    InvalidRegistrationChallenge,
-    InvalidChallengeState,
-    InvalidAuthenticationState,
-    InvalidCredentialResponse,
-    ChallengeUserMismatch,
-    PasskeyVerificationFailed,
-    SerializePasskeyFailed,
-    SavePasskeyFailed,
-    CompleteEnrollmentFailed,
-    UserNotFound,
-    PasskeyAlreadyAvailable,
-    AccountNotFound,
-    PasswordSignInAvailable,
-    TokenGenerationFailed,
-    LoadPasskeysFailed,
-    PasskeyNotFound,
-    LastPasskey,
-    DeletePasskeyFailed,
+fn authenticated_enrollment_required() -> DomainError {
+    DomainError::bad_request(
+        "Authenticated passkey enrollment must use /api/auth/passkey/enroll/finish",
+    )
+}
+
+fn email_already_registered() -> DomainError {
+    DomainError::conflict("Email address is already registered")
+}
+
+fn begin_registration_failed() -> DomainError {
+    DomainError::internal("Failed to begin passkey registration")
+}
+
+fn serialize_registration_state_failed() -> DomainError {
+    DomainError::internal("Failed to serialize registration state")
+}
+
+fn store_registration_challenge_failed() -> DomainError {
+    DomainError::internal("Failed to store registration challenge")
+}
+
+fn serialize_challenge_failed() -> DomainError {
+    DomainError::internal("Failed to serialize challenge")
+}
+
+fn begin_enrollment_failed() -> DomainError {
+    DomainError::internal("Failed to begin passkey enrollment")
+}
+
+fn authentication_failed() -> DomainError {
+    DomainError::unauthorized("Authentication failed").with_code("AUTH_REQUIRED")
+}
+
+fn invalid_challenge_state() -> DomainError {
+    DomainError::bad_request("Invalid challenge state")
+}
+
+fn invalid_credential_response() -> DomainError {
+    DomainError::bad_request("Invalid credential response")
+}
+
+fn passkey_verification_failed() -> DomainError {
+    DomainError::bad_request("Passkey verification failed")
+}
+
+fn serialize_passkey_failed() -> DomainError {
+    DomainError::internal("Failed to serialize passkey")
+}
+
+fn save_passkey_failed() -> DomainError {
+    DomainError::internal("Failed to save passkey")
+}
+
+fn complete_enrollment_failed() -> DomainError {
+    DomainError::internal("Failed to complete passkey enrollment")
+}
+
+fn token_generation_failed() -> DomainError {
+    DomainError::internal("Failed to generate authentication token")
+}
+
+fn load_passkeys_failed() -> DomainError {
+    DomainError::internal("Failed to retrieve passkeys")
+}
+
+fn passkey_not_found() -> DomainError {
+    DomainError::not_found("Passkey not found")
+}
+
+fn last_passkey() -> DomainError {
+    DomainError::conflict("Cannot remove the last enrolled passkey")
+}
+
+fn authentication_service_error() -> DomainError {
+    DomainError::internal("Authentication service error")
+}
+
+fn store_authentication_challenge_failed() -> DomainError {
+    DomainError::internal("Failed to store authentication challenge")
 }
 
 pub struct PasskeyOrchestrator {
@@ -88,20 +131,22 @@ impl PasskeyOrchestrator {
         &self,
         request: &RegisterRequest,
         session_token: Option<&str>,
-    ) -> Result<RegisterBeginResponse, PasskeyOrchestrationError> {
+    ) -> Result<RegisterBeginResponse, DomainError> {
         if request.password.is_some() {
-            return Err(PasskeyOrchestrationError::PasswordRegistrationUnsupported);
+            return Err(DomainError::bad_request(
+                "Password registration is no longer supported; enroll a passkey instead",
+            ));
         }
 
         if self.is_authenticated(session_token) {
-            return Err(PasskeyOrchestrationError::AuthenticatedEnrollmentRequired);
+            return Err(authenticated_enrollment_required());
         }
 
         let email = request.email.trim().to_lowercase();
         let display_name = request.name.trim().to_string();
 
         if let Ok(Some(_)) = self.repository.get_user_by_email(&email).await {
-            return Err(PasskeyOrchestrationError::EmailAlreadyRegistered);
+            return Err(email_already_registered());
         }
 
         let user_id = Uuid::new_v4();
@@ -111,12 +156,12 @@ impl PasskeyOrchestrator {
             .begin_registration(user_id, &email, &display_name, &[])
             .map_err(|e| {
                 tracing::error!("begin_registration failed for user {}: {}", user_id, e);
-                PasskeyOrchestrationError::BeginRegistrationFailed
+                begin_registration_failed()
             })?;
 
         let state_value = serde_json::to_value(&reg_state).map_err(|e| {
             tracing::error!("Failed to serialize registration state: {}", e);
-            PasskeyOrchestrationError::SerializeRegistrationStateFailed
+            serialize_registration_state_failed()
         })?;
 
         let payload = serde_json::to_string(&RegistrationChallengePayload {
@@ -128,18 +173,18 @@ impl PasskeyOrchestrator {
         })
         .map_err(|e| {
             tracing::error!("Failed to serialize registration challenge payload: {}", e);
-            PasskeyOrchestrationError::StoreRegistrationChallengeFailed
+            store_registration_challenge_failed()
         })?;
 
         let session_id = Uuid::new_v4().to_string();
 
         self.store_challenge(&session_id, &payload)
             .await
-            .map_err(|_| PasskeyOrchestrationError::StoreRegistrationChallengeFailed)?;
+            .map_err(|_| store_registration_challenge_failed())?;
 
         let challenge_json = serde_json::to_value(&challenge).map_err(|e| {
             tracing::error!("Failed to serialize challenge: {}", e);
-            PasskeyOrchestrationError::SerializeChallengeFailed
+            serialize_challenge_failed()
         })?;
 
         tracing::info!(
@@ -156,7 +201,7 @@ impl PasskeyOrchestrator {
     pub async fn begin_enrollment(
         &self,
         user_id: Uuid,
-    ) -> Result<PasskeyRegisterBeginResponse, PasskeyOrchestrationError> {
+    ) -> Result<PasskeyRegisterBeginResponse, DomainError> {
         let user = self
             .repository
             .get_user_by_id(&user_id)
@@ -167,9 +212,9 @@ impl PasskeyOrchestrator {
                     user_id,
                     e
                 );
-                PasskeyOrchestrationError::BeginEnrollmentFailed
+                begin_enrollment_failed()
             })?
-            .ok_or(PasskeyOrchestrationError::AuthenticationFailed)?;
+            .ok_or(authentication_failed())?;
 
         let existing = self
             .repository
@@ -177,7 +222,7 @@ impl PasskeyOrchestrator {
             .await
             .map_err(|e| {
                 tracing::error!("Failed to list credentials for user {}: {}", user_id, e);
-                PasskeyOrchestrationError::LoadExistingCredentialsFailed
+                DomainError::internal("Failed to retrieve existing credentials")
             })?;
 
         let existing_ids: Vec<Vec<u8>> = existing.iter().map(|c| c.credential_id.clone()).collect();
@@ -187,12 +232,12 @@ impl PasskeyOrchestrator {
             .begin_registration(user_id, &user.email, &user.email, &existing_ids)
             .map_err(|e| {
                 tracing::error!("begin_registration failed for user {}: {}", user_id, e);
-                PasskeyOrchestrationError::BeginEnrollmentFailed
+                begin_enrollment_failed()
             })?;
 
         let state_value = serde_json::to_value(&reg_state).map_err(|e| {
             tracing::error!("Failed to serialize registration state: {}", e);
-            PasskeyOrchestrationError::SerializeRegistrationStateFailed
+            serialize_registration_state_failed()
         })?;
 
         let challenge_payload = serde_json::to_string(&AuthenticatedEnrollmentChallengePayload {
@@ -201,18 +246,18 @@ impl PasskeyOrchestrator {
         })
         .map_err(|e| {
             tracing::error!("Failed to serialize enrollment challenge payload: {}", e);
-            PasskeyOrchestrationError::SerializeRegistrationStateFailed
+            serialize_registration_state_failed()
         })?;
 
         let session_id = Uuid::new_v4().to_string();
 
         self.store_challenge(&session_id, &challenge_payload)
             .await
-            .map_err(|_| PasskeyOrchestrationError::StoreRegistrationChallengeFailed)?;
+            .map_err(|_| store_registration_challenge_failed())?;
 
         let challenge_json = serde_json::to_value(&challenge).map_err(|e| {
             tracing::error!("Failed to serialize challenge: {}", e);
-            PasskeyOrchestrationError::SerializeChallengeFailed
+            serialize_challenge_failed()
         })?;
 
         Ok(PasskeyRegisterBeginResponse {
@@ -227,30 +272,33 @@ impl PasskeyOrchestrator {
         session_id: &str,
         response: serde_json::Value,
         name: &str,
-    ) -> Result<PasskeyItem, PasskeyOrchestrationError> {
+    ) -> Result<PasskeyItem, DomainError> {
         let challenge_json = self.take_challenge(session_id).await?;
 
         let payload =
             serde_json::from_str::<AuthenticatedEnrollmentChallengePayload>(&challenge_json)
                 .map_err(|e| {
                     tracing::error!("Failed to deserialize enrollment challenge payload: {}", e);
-                    PasskeyOrchestrationError::InvalidEnrollmentChallenge
+                    DomainError::bad_request("Invalid enrollment challenge")
                 })?;
 
         if payload.user_id != user_id {
-            return Err(PasskeyOrchestrationError::ChallengeUserMismatch);
+            return Err(DomainError::unauthorized(
+                "Challenge does not belong to the authenticated user",
+            )
+            .with_code("AUTH_REQUIRED"));
         }
 
         let reg_state: PasskeyRegistration =
             serde_json::from_value(payload.state).map_err(|e| {
                 tracing::error!("Failed to deserialize registration state: {}", e);
-                PasskeyOrchestrationError::InvalidChallengeState
+                invalid_challenge_state()
             })?;
 
         let credential_response: RegisterPublicKeyCredential = serde_json::from_value(response)
             .map_err(|e| {
                 tracing::error!("Failed to deserialize credential response: {}", e);
-                PasskeyOrchestrationError::InvalidCredentialResponse
+                invalid_credential_response()
             })?;
 
         let passkey = self
@@ -258,13 +306,13 @@ impl PasskeyOrchestrator {
             .finish_registration(&reg_state, &credential_response)
             .map_err(|e| {
                 tracing::warn!("finish_registration failed for user {}: {}", user_id, e);
-                PasskeyOrchestrationError::PasskeyVerificationFailed
+                passkey_verification_failed()
             })?;
 
         let credential_id = passkey.cred_id().to_vec();
         let passkey_json = serde_json::to_value(&passkey).map_err(|e| {
             tracing::error!("Failed to serialize passkey: {}", e);
-            PasskeyOrchestrationError::SerializePasskeyFailed
+            serialize_passkey_failed()
         })?;
 
         let credential = self
@@ -273,7 +321,7 @@ impl PasskeyOrchestrator {
             .await
             .map_err(|e| {
                 tracing::error!("Failed to insert credential for user {}: {}", user_id, e);
-                PasskeyOrchestrationError::SavePasskeyFailed
+                save_passkey_failed()
             })?;
 
         self.clear_legacy_password(user_id).await?;
@@ -289,11 +337,11 @@ impl PasskeyOrchestrator {
         response: serde_json::Value,
         name: &str,
         session_token: Option<&str>,
-    ) -> Result<AuthenticatedSession, PasskeyOrchestrationError> {
+    ) -> Result<AuthenticatedSession, DomainError> {
         let challenge_json = self.take_challenge(session_id).await?;
 
         if self.is_authenticated(session_token) {
-            return Err(PasskeyOrchestrationError::AuthenticatedEnrollmentRequired);
+            return Err(authenticated_enrollment_required());
         }
 
         let payload = serde_json::from_str::<RegistrationChallengePayload>(&challenge_json)
@@ -302,13 +350,13 @@ impl PasskeyOrchestrator {
                     "Failed to deserialize registration challenge payload: {}",
                     e
                 );
-                PasskeyOrchestrationError::InvalidRegistrationChallenge
+                DomainError::bad_request("Invalid registration challenge")
             })?;
 
         let reg_state: PasskeyRegistration =
             serde_json::from_value(payload.state).map_err(|e| {
                 tracing::error!("Failed to deserialize registration state: {}", e);
-                PasskeyOrchestrationError::InvalidChallengeState
+                invalid_challenge_state()
             })?;
 
         let user_id = payload.user_id;
@@ -326,11 +374,13 @@ impl PasskeyOrchestrator {
                         user_id,
                         e
                     );
-                    PasskeyOrchestrationError::CompleteEnrollmentFailed
+                    complete_enrollment_failed()
                 })?;
 
             if has_usable_passkey(&passkeys) {
-                return Err(PasskeyOrchestrationError::PasskeyAlreadyAvailable);
+                return Err(DomainError::bad_request(
+                    "Passkey sign-in is already available for this account",
+                ));
             }
         }
 
@@ -345,23 +395,25 @@ impl PasskeyOrchestrator {
                         user_id,
                         e
                     );
-                    PasskeyOrchestrationError::CompleteEnrollmentFailed
+                    complete_enrollment_failed()
                 })?
-                .ok_or(PasskeyOrchestrationError::AccountNotFound)?;
+                .ok_or(DomainError::bad_request("Account not found"))?;
 
             if user
                 .password_hash
                 .as_ref()
                 .is_some_and(|hash| !hash.is_empty())
             {
-                return Err(PasskeyOrchestrationError::PasswordSignInAvailable);
+                return Err(DomainError::bad_request(
+                    "Password sign-in is available for this account",
+                ));
             }
         }
 
         let credential_response: RegisterPublicKeyCredential = serde_json::from_value(response)
             .map_err(|e| {
                 tracing::error!("Failed to deserialize credential response: {}", e);
-                PasskeyOrchestrationError::InvalidCredentialResponse
+                invalid_credential_response()
             })?;
 
         let passkey = self
@@ -369,13 +421,13 @@ impl PasskeyOrchestrator {
             .finish_registration(&reg_state, &credential_response)
             .map_err(|e| {
                 tracing::warn!("finish_registration failed for user {}: {}", user_id, e);
-                PasskeyOrchestrationError::PasskeyVerificationFailed
+                passkey_verification_failed()
             })?;
 
         let credential_id = passkey.cred_id().to_vec();
         let passkey_json = serde_json::to_value(&passkey).map_err(|e| {
             tracing::error!("Failed to serialize passkey: {}", e);
-            PasskeyOrchestrationError::SerializePasskeyFailed
+            serialize_passkey_failed()
         })?;
 
         if complete_signup {
@@ -398,7 +450,7 @@ impl PasskeyOrchestrator {
                     error = %e,
                     "User creation failed during passkey finish"
                 );
-                return Err(PasskeyOrchestrationError::EmailAlreadyRegistered);
+                return Err(email_already_registered());
             }
         }
 
@@ -419,7 +471,7 @@ impl PasskeyOrchestrator {
                         );
                     }
                 }
-                return Err(PasskeyOrchestrationError::SavePasskeyFailed);
+                return Err(save_passkey_failed());
             }
         };
 
@@ -427,7 +479,7 @@ impl PasskeyOrchestrator {
 
         let auth_token = self.auth_service.generate_token(user_id).map_err(|e| {
             tracing::error!("Token generation failed for user {}: {}", user_id, e);
-            PasskeyOrchestrationError::TokenGenerationFailed
+            token_generation_failed()
         })?;
 
         self.cache_session(&auth_token).await;
@@ -448,17 +500,14 @@ impl PasskeyOrchestrator {
         })
     }
 
-    pub async fn list_passkeys(
-        &self,
-        user_id: Uuid,
-    ) -> Result<Vec<PasskeyItem>, PasskeyOrchestrationError> {
+    pub async fn list_passkeys(&self, user_id: Uuid) -> Result<Vec<PasskeyItem>, DomainError> {
         let credentials = self
             .repository
             .list_webauthn_credentials_for_user(&user_id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to list passkeys for user {}: {}", user_id, e);
-                PasskeyOrchestrationError::LoadPasskeysFailed
+                load_passkeys_failed()
             })?;
 
         Ok(credentials
@@ -468,24 +517,20 @@ impl PasskeyOrchestrator {
             .collect())
     }
 
-    pub async fn delete_passkey(
-        &self,
-        user_id: Uuid,
-        id: Uuid,
-    ) -> Result<(), PasskeyOrchestrationError> {
+    pub async fn delete_passkey(&self, user_id: Uuid, id: Uuid) -> Result<(), DomainError> {
         let existing = self
             .repository
             .list_webauthn_credentials_for_user(&user_id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to list passkeys for user {}: {}", user_id, e);
-                PasskeyOrchestrationError::LoadPasskeysFailed
+                load_passkeys_failed()
             })?;
 
         let target = existing
             .iter()
             .find(|credential| credential.id == id)
-            .ok_or(PasskeyOrchestrationError::PasskeyNotFound)?;
+            .ok_or(passkey_not_found())?;
 
         if is_usable_credential(target) {
             let remaining_usable = existing
@@ -494,10 +539,10 @@ impl PasskeyOrchestrator {
                 .count();
 
             if remaining_usable == 0 {
-                return Err(PasskeyOrchestrationError::LastPasskey);
+                return Err(last_passkey());
             }
         } else if count_usable_credentials(&existing) == 0 {
-            return Err(PasskeyOrchestrationError::LastPasskey);
+            return Err(last_passkey());
         }
 
         let deleted = self
@@ -511,20 +556,17 @@ impl PasskeyOrchestrator {
                     user_id,
                     e
                 );
-                PasskeyOrchestrationError::DeletePasskeyFailed
+                DomainError::internal("Failed to delete passkey")
             })?;
 
         if deleted {
             Ok(())
         } else {
-            Err(PasskeyOrchestrationError::PasskeyNotFound)
+            Err(passkey_not_found())
         }
     }
 
-    pub async fn begin_login(
-        &self,
-        email: &str,
-    ) -> Result<PasskeyLoginBeginResponse, PasskeyOrchestrationError> {
+    pub async fn begin_login(&self, email: &str) -> Result<PasskeyLoginBeginResponse, DomainError> {
         let email = email.trim().to_lowercase();
 
         let user_lookup = match self.repository.get_user_by_email(&email).await {
@@ -534,7 +576,7 @@ impl PasskeyOrchestrator {
                     "Failed to look up user by email during passkey login begin: {}",
                     e
                 );
-                return Err(PasskeyOrchestrationError::AuthenticationServiceError);
+                return Err(authentication_service_error());
             }
         };
 
@@ -554,7 +596,7 @@ impl PasskeyOrchestrator {
             .await
             .map_err(|e| {
                 tracing::error!("Failed to list credentials for user {}: {}", user.id, e);
-                PasskeyOrchestrationError::AuthenticationServiceError
+                authentication_service_error()
             })?;
 
         if dev_password_auth_enabled() && user_has_password(&user) {
@@ -590,12 +632,12 @@ impl PasskeyOrchestrator {
             .begin_authentication(&passkeys)
             .map_err(|e| {
                 tracing::error!("begin_authentication failed: {}", e);
-                PasskeyOrchestrationError::BeginAuthenticationFailed
+                DomainError::internal("Failed to begin authentication")
             })?;
 
         let state_value = serde_json::to_value(&auth_state).map_err(|e| {
             tracing::error!("Failed to serialize auth state: {}", e);
-            PasskeyOrchestrationError::SerializeAuthenticationStateFailed
+            DomainError::internal("Failed to serialize authentication state")
         })?;
 
         let payload = serde_json::to_string(&LoginChallengePayload {
@@ -604,18 +646,18 @@ impl PasskeyOrchestrator {
         })
         .map_err(|e| {
             tracing::error!("Failed to serialize challenge payload: {}", e);
-            PasskeyOrchestrationError::StoreAuthenticationChallengeFailed
+            store_authentication_challenge_failed()
         })?;
 
         let session_id = Uuid::new_v4().to_string();
 
         self.store_challenge(&session_id, &payload)
             .await
-            .map_err(|_| PasskeyOrchestrationError::StoreAuthenticationChallengeFailed)?;
+            .map_err(|_| store_authentication_challenge_failed())?;
 
         let challenge_json = serde_json::to_value(&challenge).map_err(|e| {
             tracing::error!("Failed to serialize challenge: {}", e);
-            PasskeyOrchestrationError::SerializeChallengeFailed
+            serialize_challenge_failed()
         })?;
 
         Ok(PasskeyLoginBeginResponse {
@@ -631,17 +673,17 @@ impl PasskeyOrchestrator {
         &self,
         session_id: &str,
         response: serde_json::Value,
-    ) -> Result<AuthenticatedSession, PasskeyOrchestrationError> {
+    ) -> Result<AuthenticatedSession, DomainError> {
         let challenge_json = self.take_challenge(session_id).await?;
 
         let payload: LoginChallengePayload =
             serde_json::from_str(&challenge_json).map_err(|e| {
                 tracing::error!("Failed to deserialize challenge payload: {}", e);
-                PasskeyOrchestrationError::InvalidChallengeState
+                invalid_challenge_state()
             })?;
 
         if payload.user_id == Uuid::nil() {
-            return Err(PasskeyOrchestrationError::AuthenticationFailed);
+            return Err(authentication_failed());
         }
 
         let user_id = payload.user_id;
@@ -649,13 +691,13 @@ impl PasskeyOrchestrator {
         let auth_state: PasskeyAuthentication =
             serde_json::from_value(payload.state).map_err(|e| {
                 tracing::error!("Failed to deserialize authentication state: {}", e);
-                PasskeyOrchestrationError::InvalidAuthenticationState
+                DomainError::bad_request("Invalid authentication state")
             })?;
 
         let credential_response: PublicKeyCredential =
             serde_json::from_value(response).map_err(|e| {
                 tracing::error!("Failed to deserialize credential response: {}", e);
-                PasskeyOrchestrationError::InvalidCredentialResponse
+                invalid_credential_response()
             })?;
 
         let auth_result = self
@@ -663,7 +705,7 @@ impl PasskeyOrchestrator {
             .finish_authentication(&auth_state, &credential_response)
             .map_err(|e| {
                 tracing::warn!("finish_authentication failed for user {}: {}", user_id, e);
-                PasskeyOrchestrationError::AuthenticationFailed
+                authentication_failed()
             })?;
 
         let cred_id_bytes: Vec<u8> = auth_result.cred_id().to_vec();
@@ -679,7 +721,7 @@ impl PasskeyOrchestrator {
                     user_id,
                     e
                 );
-                PasskeyOrchestrationError::AuthenticationServiceError
+                authentication_service_error()
             })?;
 
         if let Some(credential) = matching.first() {
@@ -710,13 +752,13 @@ impl PasskeyOrchestrator {
                     user_id,
                     e
                 );
-                PasskeyOrchestrationError::AuthenticationServiceError
+                authentication_service_error()
             })?
-            .ok_or(PasskeyOrchestrationError::AuthenticationFailed)?;
+            .ok_or(authentication_failed())?;
 
         let auth_token = self.auth_service.generate_token(user_id).map_err(|e| {
             tracing::error!("Token generation failed for user {}: {}", user_id, e);
-            PasskeyOrchestrationError::TokenGenerationFailed
+            token_generation_failed()
         })?;
 
         self.cache_session(&auth_token).await;
@@ -737,7 +779,7 @@ impl PasskeyOrchestrator {
         &self,
         user: &User,
         creds: &[WebAuthnCredential],
-    ) -> Result<PasskeyLoginBeginResponse, PasskeyOrchestrationError> {
+    ) -> Result<PasskeyLoginBeginResponse, DomainError> {
         let existing_ids: Vec<Vec<u8>> = creds.iter().map(|c| c.credential_id.clone()).collect();
 
         let (challenge, reg_state) = self
@@ -745,12 +787,12 @@ impl PasskeyOrchestrator {
             .begin_registration(user.id, &user.email, &user.email, &existing_ids)
             .map_err(|e| {
                 tracing::error!("begin_registration failed for user {}: {}", user.id, e);
-                PasskeyOrchestrationError::BeginRegistrationFailed
+                begin_registration_failed()
             })?;
 
         let state_value = serde_json::to_value(&reg_state).map_err(|e| {
             tracing::error!("Failed to serialize registration state: {}", e);
-            PasskeyOrchestrationError::SerializeRegistrationStateFailed
+            serialize_registration_state_failed()
         })?;
 
         let payload = serde_json::to_string(&RegistrationChallengePayload {
@@ -762,18 +804,18 @@ impl PasskeyOrchestrator {
         })
         .map_err(|e| {
             tracing::error!("Failed to serialize registration challenge payload: {}", e);
-            PasskeyOrchestrationError::StoreRegistrationChallengeFailed
+            store_registration_challenge_failed()
         })?;
 
         let session_id = Uuid::new_v4().to_string();
 
         self.store_challenge(&session_id, &payload)
             .await
-            .map_err(|_| PasskeyOrchestrationError::StoreRegistrationChallengeFailed)?;
+            .map_err(|_| store_registration_challenge_failed())?;
 
         let challenge_json = serde_json::to_value(&challenge).map_err(|e| {
             tracing::error!("Failed to serialize challenge: {}", e);
-            PasskeyOrchestrationError::SerializeChallengeFailed
+            serialize_challenge_failed()
         })?;
 
         Ok(PasskeyLoginBeginResponse {
@@ -805,7 +847,7 @@ impl PasskeyOrchestrator {
             })
     }
 
-    async fn take_challenge(&self, session_id: &str) -> Result<String, PasskeyOrchestrationError> {
+    async fn take_challenge(&self, session_id: &str) -> Result<String, DomainError> {
         self.cache
             .take_webauthn_challenge(session_id)
             .await
@@ -815,24 +857,23 @@ impl PasskeyOrchestrator {
                     session_id,
                     e
                 );
-                PasskeyOrchestrationError::RetrieveChallengeFailed
+                DomainError::internal("Failed to retrieve challenge")
             })?
-            .ok_or(PasskeyOrchestrationError::ChallengeNotFound)
+            .ok_or(DomainError::bad_request(
+                "Challenge not found or already used",
+            ))
     }
 
-    async fn clear_legacy_password(
-        &self,
-        user_id: Uuid,
-    ) -> Result<User, PasskeyOrchestrationError> {
+    async fn clear_legacy_password(&self, user_id: Uuid) -> Result<User, DomainError> {
         let enrolled_user = self
             .repository
             .get_user_by_id(&user_id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to fetch user {} after enrollment: {}", user_id, e);
-                PasskeyOrchestrationError::CompleteEnrollmentFailed
+                complete_enrollment_failed()
             })?
-            .ok_or(PasskeyOrchestrationError::UserNotFound)?;
+            .ok_or(DomainError::internal("User not found"))?;
 
         if enrolled_user.password_hash.is_some() {
             self.repository
@@ -844,7 +885,7 @@ impl PasskeyOrchestrator {
                         user_id,
                         e
                     );
-                    PasskeyOrchestrationError::CompleteEnrollmentFailed
+                    complete_enrollment_failed()
                 })?;
         }
 
