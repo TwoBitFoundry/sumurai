@@ -167,10 +167,9 @@ export function CollapsibleSection({
       <AnimatePresence initial={false}>
         {expanded ? (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.24, ease: [0.22, 0.61, 0.36, 1] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.16, ease: [0.22, 0.61, 0.36, 1] }}
             className={cn('space-y-4', 'border-t', ...uiBorderRecipes.elevatedGlass, 'pt-4')}
           >
             {children}

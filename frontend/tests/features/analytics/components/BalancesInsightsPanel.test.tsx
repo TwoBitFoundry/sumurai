@@ -39,15 +39,14 @@ describe('BalancesInsightsPanel', () => {
     window.sessionStorage.clear();
   });
 
-  it('renders net in the shell collapsed by default', () => {
+  it('renders net in the shell expanded by default', () => {
     render(<BalancesInsightsPanel overall={sampleOverall} />);
 
     const shell = screen.getByTestId('balances-insights-shell');
     expect(shell).toBeInTheDocument();
     expect(screen.getByText('Balance insights')).toBeInTheDocument();
     expect(screen.getByTestId('overall-net')).toHaveClass(heroAccents.azure.icon);
-    expect(shell).toHaveClass('sticky');
-    expect(shell).toHaveClass('z-30');
+    expect(shell).not.toHaveClass('sticky');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
     expect(shell.firstElementChild?.className).toContain('var(--color-brand-fog)');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
@@ -55,9 +54,9 @@ describe('BalancesInsightsPanel', () => {
     expect(screen.getByTestId('overall-net')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /balance insights/i })).toHaveAttribute(
       'aria-expanded',
-      'false'
+      'true'
     );
-    expect(screen.queryByText('Cash')).not.toBeInTheDocument();
+    expect(screen.getByText('Cash')).toBeInTheDocument();
   });
 
   it('keeps the mobile net label and amount on one wrapping row', () => {
@@ -80,19 +79,19 @@ describe('BalancesInsightsPanel', () => {
     render(<BalancesInsightsPanel overall={sampleOverall} />);
 
     const summaryButton = screen.getByRole('button', { name: /balance insights/i });
-    expect(screen.queryByText('Cash')).not.toBeInTheDocument();
-
-    await userEvent.click(summaryButton);
-
-    expect(summaryButton).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText('Cash')).toBeInTheDocument();
-    expect(screen.getByTestId('overall-net')).toBeInTheDocument();
-    expect(getSessionCollapsibleExpanded('balances-insights')).toBe(true);
 
     await userEvent.click(summaryButton);
 
     expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('Cash')).not.toBeInTheDocument();
+    expect(screen.getByTestId('overall-net')).toBeInTheDocument();
     expect(getSessionCollapsibleExpanded('balances-insights')).toBe(false);
+
+    await userEvent.click(summaryButton);
+
+    expect(summaryButton).toHaveAttribute('aria-expanded', 'true');
+    expect(getSessionCollapsibleExpanded('balances-insights')).toBe(true);
   });
 
   it('supports keyboard activation from the summary button', async () => {
@@ -106,20 +105,20 @@ describe('BalancesInsightsPanel', () => {
     await user.keyboard('{Enter}');
     expect(
       screen.getByRole('button', { name: /balance insights/i }).getAttribute('aria-expanded')
-    ).toBe('true');
+    ).toBe('false');
   });
 
-  it('restores expanded state from session storage', () => {
-    setSessionCollapsibleExpanded('balances-insights', true);
+  it('restores collapsed state from session storage', () => {
+    setSessionCollapsibleExpanded('balances-insights', false);
 
     render(<BalancesInsightsPanel overall={sampleOverall} />);
 
     expect(screen.getByRole('button', { name: /balance insights/i })).toHaveAttribute(
       'aria-expanded',
-      'true'
+      'false'
     );
-    expect(screen.getByText('Cash')).toBeInTheDocument();
-    expect(getSessionCollapsibleExpanded('balances-insights')).toBe(true);
+    expect(screen.queryByText('Cash')).not.toBeInTheDocument();
+    expect(getSessionCollapsibleExpanded('balances-insights')).toBe(false);
   });
 
   it('renders sub-categories without outlines', () => {
@@ -272,12 +271,8 @@ describe('BalancesInsightsPanel', () => {
     expect(cashValue).not.toHaveClass('font-card-title');
   });
 
-  it('shows the balances chart at the end of the expanded panel', async () => {
+  it('shows the balances chart at the end of the expanded panel', () => {
     render(<BalancesInsightsPanel overall={sampleOverall} />);
-
-    expect(screen.queryByTestId('balances-insights-chart')).not.toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('button', { name: /balance insights/i }));
 
     expect(screen.getByTestId('balances-insights-chart')).toBeInTheDocument();
     expect(screen.getByTestId('balances-chart')).toBeInTheDocument();

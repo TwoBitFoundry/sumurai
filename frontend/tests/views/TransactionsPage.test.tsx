@@ -141,7 +141,7 @@ describe('TransactionsPage', () => {
       />
     );
 
-    const pageLayout = screen.getByTestId('page-layout-sticky-scope').parentElement;
+    const pageLayout = screen.getByTestId('page-layout-content').parentElement;
     expect(pageLayout?.className).toContain('max-md:pb-6');
   });
 
@@ -161,7 +161,7 @@ describe('TransactionsPage', () => {
     expect(panel).toBeInTheDocument();
     expect(panel).toHaveAttribute('data-state', 'a');
     expect(panel).toHaveAttribute('data-loading', 'false');
-    expect(screen.getByTestId('page-layout-sticky-scope')).toContainElement(panel);
+    expect(screen.getByTestId('page-layout-content')).not.toContainElement(panel);
   });
 
   it('reports insights load failures through the toast stack instead of inline hero errors', () => {

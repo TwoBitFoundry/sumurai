@@ -8,10 +8,9 @@ import { NAVIGATE_TO_ACCOUNTS_EVENT, NAVIGATE_TO_SETTINGS_EVENT } from '@/utils/
 const motionSectionProps: Record<
   string,
   {
-    custom?: number;
-    initial?: { opacity: number; x: number };
-    animate?: { opacity: number; x: number };
-    exit?: { opacity: number; x: number };
+    initial?: { opacity: number };
+    animate?: { opacity: number };
+    exit?: unknown;
   }
 > = {};
 
@@ -24,14 +23,14 @@ jest.mock('framer-motion', () => {
       section: ({
         children,
         'data-testid': testId,
-        custom,
         initial,
         animate,
         exit,
+        transition: _transition,
         ...props
       }: any) => {
         if (testId) {
-          motionSectionProps[testId] = { custom, initial, animate, exit };
+          motionSectionProps[testId] = { initial, animate, exit };
         }
         return R.createElement('div', { 'data-testid': testId, ...props }, children);
       },
@@ -241,7 +240,7 @@ describe('AuthenticatedApp', () => {
     expect(screen.getByText('Accounts')).toBeInTheDocument();
   });
 
-  it('animates the page body in the direction of tab travel', () => {
+  it('fades the page body in without a slide or an exit phase', () => {
     render(
       <AuthenticatedApp
         onLogout={jest.fn()}
@@ -251,35 +250,16 @@ describe('AuthenticatedApp', () => {
       />
     );
 
-    expect(motionSectionProps['tab-transition-panel']).toMatchObject({
-      custom: 0,
-      initial: { opacity: 0, x: 0 },
-      animate: { opacity: 1, x: 0 },
-      exit: { opacity: 0, x: 0 },
-    });
-
     const { onTabChange } = appLayoutMock.mock.calls[0][0];
 
     act(() => {
       onTabChange('transactions');
     });
 
-    expect(motionSectionProps['tab-transition-panel']).toMatchObject({
-      custom: 1,
-      initial: { opacity: 0, x: 24 },
-      animate: { opacity: 1, x: 0 },
-      exit: { opacity: 0, x: -24 },
-    });
-
-    act(() => {
-      appLayoutMock.mock.lastCall[0].onTabChange('dashboard');
-    });
-
-    expect(motionSectionProps['tab-transition-panel']).toMatchObject({
-      custom: -1,
-      initial: { opacity: 0, x: -24 },
-      animate: { opacity: 1, x: 0 },
-      exit: { opacity: 0, x: 24 },
+    expect(motionSectionProps['tab-transition-panel']).toEqual({
+      initial: { opacity: 0 },
+      animate: { opacity: 1 },
+      exit: undefined,
     });
   });
 

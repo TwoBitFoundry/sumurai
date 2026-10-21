@@ -1,5 +1,5 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import { BottomContextualBar } from '@/components/BottomContextualBar';
 import {
   DateRangeLabelPill,
@@ -43,14 +43,6 @@ import { ErrorBoundary } from './ErrorBoundary';
 
 export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
-const TAB_INDEX = new Map<TabKey, number>([
-  ['dashboard', 0],
-  ['transactions', 1],
-  ['budgets', 2],
-  ['accounts', 3],
-  ['settings', 4],
-]);
-
 interface AuthenticatedAppProps {
   onLogout: () => void;
   initialTab?: TabKey;
@@ -82,7 +74,6 @@ export function AuthenticatedApp({
   demoModeActive,
 }: AuthenticatedAppProps) {
   const [tab, setTab] = useState<TabKey>(initialTab ?? 'dashboard');
-  const [tabTransitionDirection, setTabTransitionDirection] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRangeState] = useState<DateRange>(
     () => resolveInitialDashboardDateState().dateRange
@@ -121,15 +112,9 @@ export function AuthenticatedApp({
   }, []);
 
   const handleTabChange = (next: TabKey) => {
-    const currentIndex = TAB_INDEX.get(tab) ?? 0;
-    const nextIndex = TAB_INDEX.get(next) ?? currentIndex;
-    setTabTransitionDirection(nextIndex === currentIndex ? 0 : nextIndex > currentIndex ? 1 : -1);
     setTab(next);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
-
-  const tabRef = useRef(tab);
-  tabRef.current = tab;
 
   useEffect(() => {
     const handler = (event: Event) => {
@@ -139,9 +124,6 @@ export function AuthenticatedApp({
       if (detail.accountIds) {
         setSelectedAccountIds(detail.accountIds);
       }
-      const currentIndex = TAB_INDEX.get(tabRef.current) ?? 0;
-      const nextIndex = TAB_INDEX.get('transactions') ?? 1;
-      setTabTransitionDirection(nextIndex === currentIndex ? 0 : nextIndex > currentIndex ? 1 : -1);
       setTab('transactions');
       window.scrollTo({ top: 0, behavior: 'instant' });
     };
@@ -151,9 +133,6 @@ export function AuthenticatedApp({
 
   useEffect(() => {
     const handler = () => {
-      const currentIndex = TAB_INDEX.get(tabRef.current) ?? 0;
-      const nextIndex = TAB_INDEX.get('settings') ?? 4;
-      setTabTransitionDirection(nextIndex === currentIndex ? 0 : nextIndex > currentIndex ? 1 : -1);
       setTab('settings');
       window.scrollTo({ top: 0, behavior: 'instant' });
     };
@@ -163,9 +142,6 @@ export function AuthenticatedApp({
 
   useEffect(() => {
     const handler = () => {
-      const currentIndex = TAB_INDEX.get(tabRef.current) ?? 0;
-      const nextIndex = TAB_INDEX.get('accounts') ?? 3;
-      setTabTransitionDirection(nextIndex === currentIndex ? 0 : nextIndex > currentIndex ? 1 : -1);
       setTab('accounts');
       window.scrollTo({ top: 0, behavior: 'instant' });
     };
@@ -260,37 +236,27 @@ export function AuthenticatedApp({
               </Alert>
             )}
 
-            <AnimatePresence initial={false} mode="wait" custom={tabTransitionDirection}>
-              <motion.section
-                key={tab}
-                data-testid="tab-transition-panel"
-                custom={tabTransitionDirection}
-                initial={{
-                  opacity: 0,
-                  x: tabTransitionDirection === 0 ? 0 : tabTransitionDirection > 0 ? 24 : -24,
-                }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{
-                  opacity: 0,
-                  x: tabTransitionDirection === 0 ? 0 : tabTransitionDirection > 0 ? -24 : 24,
-                }}
-                transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
-              >
-                {tab === 'dashboard' && (
-                  <DashboardPage
-                    dateRange={dateRange}
-                    customDateRange={customDateRange}
-                    setDateRange={setDateRange}
-                  />
-                )}
-                {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
-                {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}
-                {tab === 'accounts' && (
-                  <AccountsPage onError={setError} demoModeActive={demoModeActive} />
-                )}
-                {tab === 'settings' && <SettingsPage onLogout={onLogout} />}
-              </motion.section>
-            </AnimatePresence>
+            <motion.section
+              key={tab}
+              data-testid="tab-transition-panel"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.12, ease: 'easeOut' }}
+            >
+              {tab === 'dashboard' && (
+                <DashboardPage
+                  dateRange={dateRange}
+                  customDateRange={customDateRange}
+                  setDateRange={setDateRange}
+                />
+              )}
+              {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
+              {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}
+              {tab === 'accounts' && (
+                <AccountsPage onError={setError} demoModeActive={demoModeActive} />
+              )}
+              {tab === 'settings' && <SettingsPage onLogout={onLogout} />}
+            </motion.section>
           </AppLayout>
         </motion.div>
       </GradientShell>

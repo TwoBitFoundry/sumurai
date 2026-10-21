@@ -10,7 +10,7 @@ function expectGlassInsightsSurface(surface: Element | null | undefined) {
 }
 
 describe('InsightsPanelShell', () => {
-  it('renders a sticky wrapper with a glass clipped inner shell', () => {
+  it('renders a non-sticky wrapper with a glass clipped inner shell', () => {
     render(
       <InsightsPanelShell testId="insights-shell" accent="ocean">
         <div data-testid="insights-content">Content</div>
@@ -19,11 +19,7 @@ describe('InsightsPanelShell', () => {
 
     const shell = screen.getByTestId('insights-shell');
 
-    expect(shell).toHaveClass('sticky');
-    expect(shell).toHaveClass('z-30');
-    expect(shell.className).toContain('top-[calc(');
-    expect(shell.className).toContain('md:top-[calc(');
-    expect(shell.className).toContain('lg:top-[calc(');
+    expect(shell).not.toHaveClass('sticky');
     expect(shell).not.toHaveClass('overflow-hidden');
 
     expectGlassInsightsSurface(shell.firstElementChild);

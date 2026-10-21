@@ -6,7 +6,6 @@ jest.mock('@/features/transactions/hooks/useTransactionListLauncher', () => ({
 }));
 
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { Target } from 'lucide-react';
 import { AccountRow } from '@/components/AccountRow';
 import { BankCard } from '@/components/BankCard';
@@ -88,8 +87,7 @@ describe('shared responsive layout surfaces', () => {
     expect(searchWrapper).not.toHaveClass('sm:w-64');
   });
 
-  it('lays out account summary stats in the insights panel format on desktop', async () => {
-    const user = userEvent.setup();
+  it('lays out account summary stats in the insights panel format on desktop', () => {
     const { container } = render(
       <AccountsSummaryStats
         summary={{
@@ -104,7 +102,7 @@ describe('shared responsive layout surfaces', () => {
 
     const shell = screen.getByTestId('accounts-summary-shell');
     expect(shell).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /expand account insights/i }));
+    expect(screen.getByRole('button', { name: /collapse account insights/i })).toBeInTheDocument();
     expect(container.querySelector('.flex.flex-row')).toBeTruthy();
   });
 

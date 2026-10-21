@@ -34,7 +34,7 @@ export function BalancesInsightsPanel({
   expensesYtd,
 }: BalancesInsightsPanelProps) {
   const [lastResetKey, setLastResetKey] = useState(resetKey);
-  const { expanded, toggleExpanded } = useSessionCollapsible('balances-insights');
+  const { expanded, toggleExpanded } = useSessionCollapsible('balances-insights', true);
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
   const { isMobile } = useViewportBreakpoint();
 

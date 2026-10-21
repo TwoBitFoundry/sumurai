@@ -31,7 +31,7 @@ interface Props {
   listScrollAccessRef?: React.RefObject<TransactionListScrollAccess | null>;
 }
 
-const OVERSCAN = 10;
+const OVERSCAN = 4;
 
 const virtualItemShellStyle: React.CSSProperties = {
   position: 'absolute',
