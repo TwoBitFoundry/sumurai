@@ -6,11 +6,12 @@ use rust_decimal_macros::dec;
 use uuid::Uuid;
 
 use crate::models::account::Account;
+use crate::models::domain_error::DomainError;
 use crate::models::plaid::ProviderConnection;
 use crate::providers::{FinancialDataProvider, MockFinancialDataProvider, ProviderRegistry};
 use crate::services::cache_service::{CacheService, MockCacheService};
 use crate::services::connection_service::ConnectionService;
-use crate::services::plaid_orchestrator::{PlaidOrchestrationError, PlaidOrchestrator};
+use crate::services::plaid_orchestrator::PlaidOrchestrator;
 use crate::services::repository_service::{DatabaseRepository, MockDatabaseRepository};
 use crate::test_fixtures::{build_credential_resolvers, noop_categorizer};
 
@@ -83,7 +84,7 @@ async fn given_no_plaid_provider_when_creating_link_token_then_reports_unsupport
 
     assert_eq!(
         result.err(),
-        Some(PlaidOrchestrationError::UnsupportedProvider)
+        Some(DomainError::bad_request("Unsupported provider"))
     );
 }
 
@@ -104,7 +105,10 @@ async fn given_provider_failure_when_creating_link_token_then_reports_request_fa
 
     assert_eq!(
         result.err(),
-        Some(PlaidOrchestrationError::LinkTokenRequestFailed)
+        Some(
+            DomainError::failed_dependency("Provider request failed")
+                .with_code("PROVIDER_REQUEST_FAILED")
+        )
     );
 }
 
@@ -120,7 +124,7 @@ async fn given_no_plaid_provider_when_exchanging_token_then_reports_unsupported_
 
     assert_eq!(
         result.err(),
-        Some(PlaidOrchestrationError::UnsupportedProvider)
+        Some(DomainError::bad_request("Unsupported provider"))
     );
 }
 
@@ -142,7 +146,10 @@ async fn given_provider_exchange_failure_when_exchanging_token_then_reports_exch
 
     assert_eq!(
         result.err(),
-        Some(PlaidOrchestrationError::TokenExchangeFailed)
+        Some(
+            DomainError::failed_dependency("Token exchange failed with provider")
+                .with_code("PROVIDER_REQUEST_FAILED")
+        )
     );
 }
 
@@ -207,7 +214,7 @@ async fn given_account_lookup_failure_when_listing_then_reports_load_failed() {
 
     assert_eq!(
         result.err(),
-        Some(PlaidOrchestrationError::LoadAccountsFailed)
+        Some(DomainError::internal("Internal server error"))
     );
 }
 
@@ -227,7 +234,7 @@ async fn given_transaction_count_failure_when_listing_then_reports_load_failed()
 
     assert_eq!(
         result.err(),
-        Some(PlaidOrchestrationError::LoadAccountsFailed)
+        Some(DomainError::internal("Internal server error"))
     );
 }
 
@@ -250,7 +257,7 @@ async fn given_connection_lookup_failure_when_listing_then_reports_load_failed()
 
     assert_eq!(
         result.err(),
-        Some(PlaidOrchestrationError::LoadAccountsFailed)
+        Some(DomainError::internal("Internal server error"))
     );
 }
 
@@ -294,6 +301,6 @@ async fn given_cache_failure_when_clearing_synced_data_then_reports_clear_failed
 
     assert_eq!(
         result.err(),
-        Some(PlaidOrchestrationError::ClearSyncedDataFailed)
+        Some(DomainError::internal("Internal server error"))
     );
 }

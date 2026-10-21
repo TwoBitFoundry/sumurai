@@ -53,14 +53,12 @@ use crate::models::analytics::{
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, AuthMiddlewareState};
 use crate::models::{
-    account::AccountResponse,
     analytics::DateRangeQuery,
     auth as auth_models,
     plaid::{
-        ClearSyncedDataResponse, DisconnectRequest, DisconnectResult, ExchangeTokenRequest,
-        ExchangeTokenResponse, LinkTokenRequest, LinkTokenResponse, ProviderConnectResponse,
-        ProviderInfoResponse, ProviderSelectRequest, ProviderSelectResponse,
-        ProviderStatusResponse, SyncTransactionsRequest,
+        DisconnectRequest, DisconnectResult, ProviderConnectResponse, ProviderInfoResponse,
+        ProviderSelectRequest, ProviderSelectResponse, ProviderStatusResponse,
+        SyncTransactionsRequest,
     },
     provider_connect::ProviderConnectRequest,
     transaction::SyncTransactionsResponse,
@@ -521,17 +519,20 @@ pub fn create_app(state: AppState) -> Router {
         )
         .route(
             "/api/providers/accounts",
-            get(get_authenticated_plaid_accounts),
+            get(handlers::plaid::get_authenticated_plaid_accounts),
         )
         .route(
             "/api/plaid/link-token",
-            post(create_authenticated_link_token),
+            post(handlers::plaid::create_authenticated_link_token),
         )
         .route(
             "/api/plaid/exchange-token",
-            post(exchange_authenticated_public_token),
+            post(handlers::plaid::exchange_authenticated_public_token),
         )
-        .route("/api/plaid/accounts", get(get_authenticated_plaid_accounts))
+        .route(
+            "/api/plaid/accounts",
+            get(handlers::plaid::get_authenticated_plaid_accounts),
+        )
         .route(
             "/api/providers/sync-transactions",
             post(sync_authenticated_provider_transactions),
@@ -547,7 +548,7 @@ pub fn create_app(state: AppState) -> Router {
         )
         .route(
             "/api/plaid/clear-synced-data",
-            post(clear_authenticated_synced_data),
+            post(handlers::plaid::clear_authenticated_synced_data),
         )
         .route(
             "/api/analytics/spending/current-month",
@@ -1087,99 +1088,6 @@ async fn activate_demo_mode_onboarding(
 
 #[utoipa::path(
     post,
-    path = "/api/plaid/link-token",
-    description = "Generates a provider-specific link token for Plaid flows.",
-    request_body = LinkTokenRequest,
-    responses(
-        (status = 200, description = "Link token created successfully", body = LinkTokenResponse),
-        (status = 400, description = "Unsupported provider"),
-        (status = 401, description = "Unauthorized"),
-        (status = 424, description = "Provider request failed", body = ApiErrorResponse),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Plaid"
-)]
-async fn create_authenticated_link_token(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    Json(_req): Json<LinkTokenRequest>,
-) -> Result<Json<LinkTokenResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    let provider = "plaid";
-    if !state.config.is_financial_provider_enabled(provider) {
-        return Err(provider_disabled_response(provider));
-    }
-
-    state
-        .plaid()
-        .create_link_token(auth_context.user_id)
-        .await
-        .map(|link_token| Json(LinkTokenResponse { link_token }))
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    post,
-    path = "/api/plaid/exchange-token",
-    description = "Exchanges a Plaid public token for a persisted access token.",
-    request_body = ExchangeTokenRequest,
-    responses(
-        (status = 200, description = "Token exchanged successfully", body = ExchangeTokenResponse),
-        (status = 400, description = "Unsupported provider"),
-        (status = 401, description = "Unauthorized"),
-        (status = 424, description = "Token exchange failed with provider"),
-        (status = 500, description = "Internal server error"),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Plaid"
-)]
-async fn exchange_authenticated_public_token(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    Json(req): Json<ExchangeTokenRequest>,
-) -> Result<Json<ExchangeTokenResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    let provider = "plaid";
-    if !state.config.is_financial_provider_enabled(provider) {
-        return Err(provider_disabled_response(provider));
-    }
-
-    state
-        .plaid()
-        .exchange_public_token(
-            auth_context.user_id,
-            &auth_context.jwt_id,
-            &req.public_token,
-        )
-        .await
-        .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    get,
-    path = "/api/plaid/accounts",
-    description = "Lists linked accounts with transaction counts for the user.",
-    responses(
-        (status = 200, description = "List of user accounts with transaction counts", body = Vec<AccountResponse>),
-        (status = 401, description = "Unauthorized"),
-        (status = 500, description = "Internal server error"),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Plaid"
-)]
-async fn get_authenticated_plaid_accounts(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-) -> Result<Json<Vec<AccountResponse>>, StatusCode> {
-    state
-        .plaid()
-        .list_accounts(auth_context.user_id)
-        .await
-        .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    post,
     path = "/api/providers/sync-transactions",
     description = "Kicks off a provider sync to pull the latest transactions.",
     request_body = SyncTransactionsRequest,
@@ -1287,30 +1195,6 @@ async fn get_authenticated_daily_spending(
     state
         .analytics()
         .daily_spending(auth_context.user_id, year, month)
-        .await
-        .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    post,
-    path = "/api/plaid/clear-synced-data",
-    description = "Clears cached transactions for the calling user's session.",
-    responses(
-        (status = 200, description = "Synced data cleared successfully", body = ClearSyncedDataResponse),
-        (status = 401, description = "Unauthorized"),
-        (status = 500, description = "Internal server error"),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Plaid"
-)]
-async fn clear_authenticated_synced_data(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-) -> Result<Json<ClearSyncedDataResponse>, StatusCode> {
-    state
-        .plaid()
-        .clear_synced_data(auth_context.user_id, &auth_context.jwt_id)
         .await
         .map(Json)
         .map_err(Into::into)

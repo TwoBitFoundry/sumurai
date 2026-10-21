@@ -4,6 +4,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::models::account::AccountResponse;
+use crate::models::domain_error::DomainError;
 use crate::models::plaid::{ClearSyncedDataResponse, ExchangeTokenResponse};
 use crate::services::connection_service::{ConnectionService, ExchangeTokenError, LinkTokenError};
 use crate::services::provider_credential_log::{
@@ -13,15 +14,6 @@ use crate::services::repository_service::DatabaseRepository;
 use crate::services::CacheService;
 
 pub const PLAID_PROVIDER: &str = "plaid";
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum PlaidOrchestrationError {
-    UnsupportedProvider,
-    LinkTokenRequestFailed,
-    TokenExchangeFailed,
-    LoadAccountsFailed,
-    ClearSyncedDataFailed,
-}
 
 pub struct PlaidOrchestrator {
     connection_service: Arc<ConnectionService>,
@@ -42,10 +34,7 @@ impl PlaidOrchestrator {
         }
     }
 
-    pub async fn create_link_token(
-        &self,
-        user_id: Uuid,
-    ) -> Result<String, PlaidOrchestrationError> {
+    pub async fn create_link_token(&self, user_id: Uuid) -> Result<String, DomainError> {
         match self
             .connection_service
             .create_link_token(PLAID_PROVIDER, &user_id)
@@ -58,7 +47,7 @@ impl PlaidOrchestrator {
                     p,
                     user_id
                 );
-                Err(PlaidOrchestrationError::UnsupportedProvider)
+                Err(DomainError::bad_request("Unsupported provider"))
             }
             Err(LinkTokenError::ProviderRequest(e)) => {
                 tracing::error!(
@@ -67,7 +56,8 @@ impl PlaidOrchestrator {
                     user_id,
                     e
                 );
-                Err(PlaidOrchestrationError::LinkTokenRequestFailed)
+                Err(DomainError::failed_dependency("Provider request failed")
+                    .with_code("PROVIDER_REQUEST_FAILED"))
             }
         }
     }
@@ -77,7 +67,7 @@ impl PlaidOrchestrator {
         user_id: Uuid,
         jwt_id: &str,
         public_token: &str,
-    ) -> Result<ExchangeTokenResponse, PlaidOrchestrationError> {
+    ) -> Result<ExchangeTokenResponse, DomainError> {
         match self
             .connection_service
             .exchange_public_token(PLAID_PROVIDER, &user_id, jwt_id, public_token)
@@ -94,7 +84,7 @@ impl PlaidOrchestrator {
                     p,
                     user_id
                 );
-                Err(PlaidOrchestrationError::UnsupportedProvider)
+                Err(DomainError::bad_request("Unsupported provider"))
             }
             Err(ExchangeTokenError::ExchangeFailed(e)) => {
                 log_provider_credential_outcome(
@@ -108,20 +98,20 @@ impl PlaidOrchestrator {
                     user_id,
                     e
                 );
-                Err(PlaidOrchestrationError::TokenExchangeFailed)
+                Err(
+                    DomainError::failed_dependency("Token exchange failed with provider")
+                        .with_code("PROVIDER_REQUEST_FAILED"),
+                )
             }
         }
     }
 
-    pub async fn list_accounts(
-        &self,
-        user_id: Uuid,
-    ) -> Result<Vec<AccountResponse>, PlaidOrchestrationError> {
+    pub async fn list_accounts(&self, user_id: Uuid) -> Result<Vec<AccountResponse>, DomainError> {
         let db_accounts = match self.repository.get_accounts_for_user(&user_id).await {
             Ok(accounts) => accounts,
             Err(e) => {
                 tracing::error!("Failed to get accounts for user {}: {}", user_id, e);
-                return Err(PlaidOrchestrationError::LoadAccountsFailed);
+                return Err(DomainError::internal("Internal server error"));
             }
         };
 
@@ -135,7 +125,7 @@ impl PlaidOrchestrator {
                     user_id,
                     e
                 );
-                PlaidOrchestrationError::LoadAccountsFailed
+                DomainError::internal("Internal server error")
             })?;
 
         let provider_by_connection_id = self
@@ -148,7 +138,7 @@ impl PlaidOrchestrator {
                     user_id,
                     e
                 );
-                PlaidOrchestrationError::LoadAccountsFailed
+                DomainError::internal("Internal server error")
             })?
             .into_iter()
             .map(|connection| (connection.id, connection.provider))
@@ -189,7 +179,7 @@ impl PlaidOrchestrator {
         &self,
         user_id: Uuid,
         jwt_id: &str,
-    ) -> Result<ClearSyncedDataResponse, PlaidOrchestrationError> {
+    ) -> Result<ClearSyncedDataResponse, DomainError> {
         match self.cache.clear_transactions(jwt_id).await {
             Ok(_) => Ok(ClearSyncedDataResponse {
                 cleared: true,
@@ -197,7 +187,7 @@ impl PlaidOrchestrator {
             }),
             Err(e) => {
                 tracing::error!("Failed to clear synced data for user {}: {}", user_id, e);
-                Err(PlaidOrchestrationError::ClearSyncedDataFailed)
+                Err(DomainError::internal("Internal server error"))
             }
         }
     }
