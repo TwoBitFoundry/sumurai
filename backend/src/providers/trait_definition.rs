@@ -14,6 +14,10 @@ use crate::models::{
 pub trait FinancialDataProvider: Send + Sync {
     fn provider_name(&self) -> &str;
 
+    fn supports_transaction_sync(&self) -> bool {
+        false
+    }
+
     async fn create_link_token(&self, user_id: &Uuid) -> Result<String>;
 
     async fn exchange_public_token(&self, public_token: &str) -> Result<ProviderCredentials>;

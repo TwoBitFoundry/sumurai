@@ -13,26 +13,13 @@ export const dispatchNavigateToTransactions = (detail: NavigateToTransactionsDet
   window.dispatchEvent(new CustomEvent(NAVIGATE_TO_TRANSACTIONS_EVENT, { detail }));
 };
 
-export const dispatchNavigateToSettings = () => {
-  window.dispatchEvent(new CustomEvent(NAVIGATE_TO_SETTINGS_EVENT));
-};
-
-export const dispatchNavigateToAccounts = () => {
-  window.dispatchEvent(new CustomEvent(NAVIGATE_TO_ACCOUNTS_EVENT));
-};
-
 export const dispatchOpenOnboardingPath = () => {
   window.dispatchEvent(new CustomEvent(OPEN_ONBOARDING_PATH_EVENT));
 };
 
 export const FINANCIAL_STATE_CHANGED_EVENT = 'sumurai:financial-state-changed';
 
-export type FinancialStateRefreshTab =
-  | 'dashboard'
-  | 'transactions'
-  | 'budgets'
-  | 'accounts'
-  | 'settings';
+type FinancialStateRefreshTab = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
 export interface FinancialStateChangedDetail {
   mode: 'accounts' | 'app';
@@ -57,7 +44,3 @@ export const dispatchFinancialAppRefresh = (detail: Omit<FinancialStateChangedDe
 };
 
 export const dispatchAccountsChanged = dispatchFinancialAccountsRefresh;
-
-export const dispatchProviderConnected = () => {
-  dispatchFinancialAppRefresh({ tab: 'accounts', refreshSession: true });
-};

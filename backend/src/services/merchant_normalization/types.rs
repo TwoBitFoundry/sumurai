@@ -2,17 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum MatchSource {
-    Enriched,
-    EarlyContains,
-    EarlyExact,
-    Contains,
-    Exact,
-    Structural,
-    Fallback,
-}
-
-#[derive(Debug, Clone, PartialEq)]
 pub enum MerchantSource {
     Enriched,
     Raw,
@@ -21,12 +10,7 @@ pub enum MerchantSource {
 #[derive(Debug, Clone)]
 pub struct NormalizedMerchant {
     pub display: String,
-    #[allow(dead_code)]
     pub canonical_key: Option<String>,
-    #[allow(dead_code)]
-    pub source: MatchSource,
-    #[allow(dead_code)]
-    pub confidence: f32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -5,7 +5,7 @@ export const PWA_THEME_COLOR = generatedTokens.color.primary.$value.hex;
 
 export const PWA_BACKGROUND_COLOR = generatedTokens.color['surface-app-shell-dark'].$value.hex;
 
-export const PWA_APP_ICON = {
+const PWA_APP_ICON = {
   w180: '/app-icon-180.webp',
   w192: '/app-icon-192.webp',
   w512: '/app-icon-512.webp',

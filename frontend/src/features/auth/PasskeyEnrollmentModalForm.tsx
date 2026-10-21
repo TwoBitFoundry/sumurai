@@ -2,7 +2,7 @@ import type React from 'react';
 import { Alert, Badge, Button, cn, FormLabel, Input } from '@/ui/primitives';
 import { authLayout, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
-export type PasskeyEnrollmentModalSecondaryAction = {
+type PasskeyEnrollmentModalSecondaryAction = {
   label: string;
   onClick: () => void;
   variant: 'danger' | 'ghost';

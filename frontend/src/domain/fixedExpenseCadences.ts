@@ -1,5 +1,4 @@
 import { listScheduledChargeDatesInMonth } from '@/domain/FixedExpenseCalculator';
-import type { HeroAccent } from '@/ui/tokens';
 
 export const FIXED_EXPENSE_CADENCE_LABELS = {
   weekly: 'Weekly',
@@ -19,14 +18,6 @@ export const FIXED_EXPENSE_CADENCE_ORDER: FixedExpenseCadenceKey[] = [
   'annual',
 ];
 
-export const FIXED_EXPENSE_CADENCE_ACCENT = {
-  weekly: 'azure',
-  biweekly: 'azure',
-  monthly: 'azure',
-  quarterly: 'azure',
-  annual: 'azure',
-} as const satisfies Record<FixedExpenseCadenceKey, HeroAccent>;
-
 export function normalizeFixedExpenseCadence(cadence: string): FixedExpenseCadenceKey | null {
   const key = cadence.trim().toLowerCase();
 
@@ -45,7 +36,7 @@ export function normalizeFixedExpenseCadence(cadence: string): FixedExpenseCaden
   return null;
 }
 
-export function compareFixedExpensesByFirstDueDateInMonth<
+function compareFixedExpensesByFirstDueDateInMonth<
   T extends { cadence: string; first_charged: string; merchant: string },
 >(month: Date, left: T, right: T): number {
   const leftDue = listScheduledChargeDatesInMonth(left, month)[0] ?? '9999-12-31';

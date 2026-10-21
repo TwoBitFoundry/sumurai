@@ -18,7 +18,7 @@ Provide a repeatable process for responding to security events.
 
 ## 3️⃣ Containment
 - Disable affected credentials or IAM roles.  
-- Revoke Teller/Plaid tokens if necessary.  
+- Revoke Plaid tokens if necessary.  
 - Block offending IPs at WAF/firewall level.
 
 ## 4️⃣ Eradication

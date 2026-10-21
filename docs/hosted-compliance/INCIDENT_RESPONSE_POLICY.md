@@ -12,6 +12,6 @@ Define how we detect, respond to, and recover from security incidents.
 
 **Notification**
 - Notify impacted users within 72 hours of confirmed breach.  
-- Notify partners (e.g., Teller, Plaid) immediately if data exposure involves their API.
+- Notify partners (e.g., Plaid) immediately if data exposure involves their API.
 
 **Testing:** Table-top drill annually.

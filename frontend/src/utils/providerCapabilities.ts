@@ -1,7 +1,7 @@
 import type { FinancialProvider } from '@/types/api';
 import type { ProviderCatalogue } from '@/types/providerCatalog';
 
-const AGGREGATORS: ReadonlySet<FinancialProvider> = new Set(['plaid', 'teller', 'simplefin']);
+const AGGREGATORS: ReadonlySet<FinancialProvider> = new Set(['plaid', 'simplefin']);
 
 function isAggregator(provider: FinancialProvider): boolean {
   return AGGREGATORS.has(provider);
@@ -27,10 +27,6 @@ export function isProviderConnectable(
     return false;
   }
 
-  if (provider === 'teller') {
-    return false;
-  }
-
   if (provider !== 'diy' && !isProviderListed(provider, catalogue)) {
     return false;
   }
@@ -42,20 +38,12 @@ export function isPickerEnabled(
   provider: FinancialProvider,
   catalogue: ProviderCatalogue | null
 ): boolean {
-  if (provider === 'teller') {
-    return false;
-  }
-
   if (provider === 'diy' || provider === 'simplefin') {
     return true;
   }
 
   const connectedAggregator = getConnectedAggregator(catalogue);
-  if (
-    connectedAggregator &&
-    (provider === 'plaid' || provider === 'teller') &&
-    connectedAggregator !== provider
-  ) {
+  if (connectedAggregator && provider === 'plaid' && connectedAggregator !== provider) {
     return false;
   }
 
@@ -66,20 +54,12 @@ export function getConnectBlockedReason(
   provider: FinancialProvider,
   catalogue: ProviderCatalogue | null
 ): string | null {
-  if (provider === 'teller') {
-    return 'Teller is no longer supported';
-  }
-
   if (provider === 'diy' || provider === 'simplefin') {
     return null;
   }
 
   const connectedAggregator = getConnectedAggregator(catalogue);
-  if (
-    connectedAggregator &&
-    (provider === 'plaid' || provider === 'teller') &&
-    connectedAggregator !== provider
-  ) {
+  if (connectedAggregator && provider === 'plaid' && connectedAggregator !== provider) {
     return `Disconnect ${connectedAggregator} first`;
   }
 
@@ -110,14 +90,7 @@ export function resolveConnectProvider(
   preferred: FinancialProvider
 ): FinancialProvider {
   if (!catalogue) {
-    return preferred === 'teller' ? 'simplefin' : preferred;
-  }
-
-  if (preferred === 'teller') {
-    const fallback = catalogue.available_providers.find((provider) =>
-      isProviderConnectable(provider, catalogue)
-    );
-    return fallback ?? 'simplefin';
+    return preferred;
   }
 
   if (isProviderConnectable(preferred, catalogue)) {

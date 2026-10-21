@@ -50,10 +50,6 @@ async fn given_authenticated_user_when_get_connection_status_then_returns_array(
         });
 
     mock_db
-        .expect_get_transactions_with_account_for_user()
-        .returning(move |_| Box::pin(async { Ok(vec![]) }));
-
-    mock_db
         .expect_get_transactions_for_user()
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
@@ -744,7 +740,7 @@ async fn given_authenticated_user_when_get_transaction_insights_with_foreign_acc
         .returning(move |_| {
             let mut connection = ProviderConnection::new(user_id, "item_1");
             connection.id = connection_id;
-            connection.provider = "teller".to_string();
+            connection.provider = "plaid".to_string();
             connection.mark_connected("Test Bank");
             Box::pin(async move { Ok(vec![connection]) })
         });
@@ -1730,7 +1726,7 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
     let mut mock_db = MockDatabaseRepository::new();
     let (user, token) = TestFixtures::create_authenticated_user_with_token();
     let user_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
-    let teller_conn_id = Uuid::new_v4();
+    let plaid_conn_id = Uuid::new_v4();
     let account_id_1 = Uuid::new_v4();
     let account_id_2 = Uuid::new_v4();
 
@@ -1747,7 +1743,7 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
                     id: Uuid::new_v4(),
                     account_id: account_id_1,
                     user_id: Some(user_id),
-                    provider_account_id: Some("teller_acc_1".to_string()),
+                    provider_account_id: Some("plaid_acc_1".to_string()),
                     provider_transaction_id: Some("txn_001".to_string()),
                     amount: dec!(-50.00),
                     date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
@@ -1766,7 +1762,7 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
                     id: Uuid::new_v4(),
                     account_id: account_id_2,
                     user_id: Some(user_id),
-                    provider_account_id: Some("teller_acc_2".to_string()),
+                    provider_account_id: Some("plaid_acc_2".to_string()),
                     provider_transaction_id: Some("txn_002".to_string()),
                     amount: dec!(-100.00),
                     date: NaiveDate::from_ymd_opt(2024, 1, 16).unwrap(),
@@ -1791,9 +1787,9 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
             Account {
                 id: account_id_1,
                 user_id: Some(user_id),
-                provider_account_id: Some("teller_acc_1".to_string()),
-                provider_connection_id: Some(teller_conn_id),
-                name: "Teller Checking".to_string(),
+                provider_account_id: Some("plaid_acc_1".to_string()),
+                provider_connection_id: Some(plaid_conn_id),
+                name: "Plaid Checking".to_string(),
                 account_type: "depository".to_string(),
                 balance_current: None,
                 mask: None,
@@ -1803,9 +1799,9 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
             Account {
                 id: account_id_2,
                 user_id: Some(user_id),
-                provider_account_id: Some("teller_acc_2".to_string()),
-                provider_connection_id: Some(teller_conn_id),
-                name: "Teller Savings".to_string(),
+                provider_account_id: Some("plaid_acc_2".to_string()),
+                provider_connection_id: Some(plaid_conn_id),
+                name: "Plaid Savings".to_string(),
                 account_type: "depository".to_string(),
                 balance_current: None,
                 mask: None,
@@ -1820,10 +1816,10 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
         .expect_get_all_provider_connections_by_user()
         .returning(move |_| {
             let conn =
-                crate::models::plaid::ProviderConnection::new(Uuid::new_v4(), "teller_item_1");
+                crate::models::plaid::ProviderConnection::new(Uuid::new_v4(), "plaid_item_1");
             let mut c = conn;
-            c.id = teller_conn_id;
-            c.provider = "teller".to_string();
+            c.id = plaid_conn_id;
+            c.provider = "plaid".to_string();
             Box::pin(async move { Ok(vec![c]) })
         });
 

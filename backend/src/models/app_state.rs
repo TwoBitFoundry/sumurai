@@ -2,15 +2,25 @@ use std::sync::Arc;
 
 use crate::config::Config;
 use crate::providers::ProviderRegistry;
+use crate::services::analytics_orchestrator::AnalyticsOrchestrator;
+use crate::services::auth_orchestrator::AuthOrchestrator;
+use crate::services::budget_orchestrator::BudgetOrchestrator;
 use crate::services::categorization::categorization_service::Categorizer;
 use crate::services::category_management::service::CategoryManagementService;
+use crate::services::category_orchestrator::CategoryOrchestrator;
+use crate::services::diy_orchestrator::DiyOrchestrator;
 use crate::services::diy_service::DiyService;
+use crate::services::import_orchestrator::ImportOrchestrator;
 use crate::services::otel_traces_relay::OtlpTracesRelay;
-use crate::services::plaid_service::{PlaidService, RealPlaidClient};
+use crate::services::passkey_orchestrator::PasskeyOrchestrator;
+use crate::services::plaid_orchestrator::PlaidOrchestrator;
+use crate::services::plaid_service::RealPlaidClient;
+use crate::services::provider_orchestrator::{
+    ProviderAvailability, ProviderOrchestrator, SyncDependencies,
+};
 use crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService;
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::sync_service::SyncService;
-use crate::services::sync_service_factory::SyncServiceFactory;
 use crate::services::webauthn_service::WebAuthnService;
 use crate::services::{
     AuthService, AuthorizationService, AutoCategorizationService, BudgetService, CacheService,
@@ -18,10 +28,8 @@ use crate::services::{
 };
 
 pub struct AppState {
-    pub(crate) plaid_service: Arc<PlaidService>,
     pub(crate) plaid_client: Arc<RealPlaidClient>,
     pub(crate) sync_service: Arc<SyncService>,
-    pub(crate) sync_service_factory: Arc<SyncServiceFactory>,
     pub(crate) analytics_service: Arc<crate::services::AnalyticsService>,
     pub(crate) budget_service: Arc<BudgetService>,
     pub(crate) authorization_service: Arc<AuthorizationService>,
@@ -35,7 +43,6 @@ pub struct AppState {
     pub(crate) provider_registry: Arc<ProviderRegistry>,
     pub(crate) otlp_traces_relay: Arc<OtlpTracesRelay>,
     pub(crate) category_management_service: Arc<CategoryManagementService>,
-    #[allow(dead_code)]
     pub(crate) auto_categorization_service: Arc<AutoCategorizationService>,
     pub(crate) webauthn_service: Arc<WebAuthnService>,
     pub(crate) diy_service: Arc<DiyService>,
@@ -44,10 +51,8 @@ pub struct AppState {
 impl Clone for AppState {
     fn clone(&self) -> Self {
         Self {
-            plaid_service: self.plaid_service.clone(),
             plaid_client: self.plaid_client.clone(),
             sync_service: self.sync_service.clone(),
-            sync_service_factory: self.sync_service_factory.clone(),
             analytics_service: self.analytics_service.clone(),
             budget_service: self.budget_service.clone(),
             authorization_service: self.authorization_service.clone(),
@@ -65,5 +70,86 @@ impl Clone for AppState {
             webauthn_service: self.webauthn_service.clone(),
             diy_service: self.diy_service.clone(),
         }
+    }
+}
+
+impl AppState {
+    pub fn analytics(&self) -> AnalyticsOrchestrator {
+        AnalyticsOrchestrator::new(
+            self.analytics_service.clone(),
+            self.db_repository.clone(),
+            self.cache_service.clone(),
+            self.auth_service.clone(),
+        )
+    }
+
+    pub fn auth(&self) -> AuthOrchestrator {
+        AuthOrchestrator::new(
+            self.auth_service.clone(),
+            self.db_repository.clone(),
+            self.cache_service.clone(),
+            self.connection_service.clone(),
+        )
+    }
+
+    pub fn budgets(&self) -> BudgetOrchestrator {
+        BudgetOrchestrator::new(
+            self.budget_service.clone(),
+            self.db_repository.clone(),
+            self.cache_service.clone(),
+        )
+    }
+
+    pub fn diy(&self) -> DiyOrchestrator {
+        DiyOrchestrator::new(self.diy_service.clone(), self.connection_service.clone())
+    }
+
+    pub fn imports(&self) -> ImportOrchestrator {
+        ImportOrchestrator::new(
+            self.authorization_service.clone(),
+            self.db_repository.clone(),
+            self.cache_service.clone(),
+        )
+    }
+
+    pub fn passkeys(&self) -> PasskeyOrchestrator {
+        PasskeyOrchestrator::new(
+            self.auth_service.clone(),
+            self.db_repository.clone(),
+            self.cache_service.clone(),
+            self.webauthn_service.clone(),
+        )
+    }
+
+    pub fn plaid(&self) -> PlaidOrchestrator {
+        PlaidOrchestrator::new(
+            self.connection_service.clone(),
+            self.db_repository.clone(),
+            self.cache_service.clone(),
+        )
+    }
+
+    pub fn providers(&self) -> ProviderOrchestrator {
+        ProviderOrchestrator::new(
+            self.connection_service.clone(),
+            self.db_repository.clone(),
+            self.cache_service.clone(),
+            SyncDependencies {
+                rate_limit_service: self.provider_sync_rate_limit_service.clone(),
+                sync_service: self.sync_service.clone(),
+            },
+            ProviderAvailability {
+                registry: self.provider_registry.clone(),
+                config: self.config.clone(),
+            },
+        )
+    }
+
+    pub fn categories(&self) -> CategoryOrchestrator {
+        CategoryOrchestrator::new(
+            self.category_management_service.clone(),
+            self.db_repository.clone(),
+            self.cache_service.clone(),
+        )
     }
 }

@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BalancesInsightsPanel } from '@/features/analytics/components/BalancesInsightsPanel';
 import type { Totals } from '@/types/analytics';
-import { text as semanticTextRecipes, status as uiStatusRecipes } from '@/ui/recipes';
+import { text as semanticTextRecipes } from '@/ui/recipes';
 import { heroAccents } from '@/ui/tokens';
 import {
   getSessionCollapsibleExpanded,

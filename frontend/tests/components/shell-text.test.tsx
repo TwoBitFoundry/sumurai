@@ -1,11 +1,7 @@
-import '../mocks/rechartsStub';
 import { render, screen } from '@testing-library/react';
 import { Footer } from '@/components/Footer';
-import { NetWorthOverTimeWidget } from '@/components/NetWorthOverTimeWidget';
 import { PasswordChecker } from '@/components/PasswordChecker';
 import { Toast } from '@/components/Toast';
-import { ThemeProvider } from '@/context/ThemeContext';
-import { BudgetToolbar } from '@/features/budgets/components/BudgetToolbar';
 import { SessionExpiryModal } from '@/SessionManager';
 import { appLayout, text as uiTextRecipes } from '@/ui/recipes';
 
@@ -71,28 +67,5 @@ describe('shared shell text surfaces', () => {
     );
     expect(screen.getByRole('link', { name: 'Contact' })).toHaveClass(uiTextRecipes.accent);
     expect(screen.getByRole('link', { name: 'Support' })).toHaveClass(uiTextRecipes.accent);
-  });
-
-  it('uses semantic text roles in the budget toolbar and net worth widget', () => {
-    const { container } = render(
-      <ThemeProvider>
-        <BudgetToolbar
-          loading
-          isPickerOpen={false}
-          addButtonRef={{ current: null }}
-          onAddBudget={jest.fn()}
-          isEditing={false}
-          canEdit
-          onStartEdit={jest.fn()}
-          onSaveEdit={jest.fn()}
-        />
-        <NetWorthOverTimeWidget />
-      </ThemeProvider>
-    );
-
-    expect(screen.getByText('Updating')).toHaveClass(uiTextRecipes.subtle);
-    expect(screen.getByText('Net Worth Over Time')).toHaveClass(uiTextRecipes.muted);
-    expect(container.querySelector('[data-accessibility-layer="false"]')).toBeTruthy();
-    expect(container.querySelector('[data-cursor="false"]')).toBeTruthy();
   });
 });

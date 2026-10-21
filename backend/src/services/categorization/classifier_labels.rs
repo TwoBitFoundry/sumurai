@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use crate::models::predicted_category::{Confidence, PredictedCategory};
 use crate::models::transaction::Transaction;
 use crate::services::merchant_normalization::engine::canonical_key;

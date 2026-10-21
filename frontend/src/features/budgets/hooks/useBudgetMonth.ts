@@ -4,13 +4,11 @@
 
 import { useCallback, useMemo, useState } from 'react';
 
-export const LONGEST_BUDGET_MONTH_LABEL = 'September 9999';
-
-export function normalizeBudgetMonth(date: Date): Date {
+function normalizeBudgetMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
-export function getBudgetMonthRange(date: Date): { start: string; end: string } {
+function getBudgetMonthRange(date: Date): { start: string; end: string } {
   const start = new Date(date.getFullYear(), date.getMonth(), 1);
   const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
   const fmt = (d: Date) => d.toISOString().slice(0, 10);

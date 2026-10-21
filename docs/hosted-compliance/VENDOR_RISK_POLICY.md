@@ -7,7 +7,6 @@ Ensure third-party vendors maintain equivalent security standards.
 | Vendor | Purpose | Compliance |
 |---------|----------|------------|
 | AWS | Cloud infrastructure | SOC 2 Type II / ISO 27001 |
-| Teller | Bank data aggregation | SOC 2 Type II |
 | Plaid | Bank data aggregation | SOC 2 Type II |
 | GitHub | Source control | SOC 2 Type II |
 

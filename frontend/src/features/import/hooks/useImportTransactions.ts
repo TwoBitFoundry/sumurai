@@ -7,7 +7,7 @@ import {
 import type { CsvColumnMapping, ImportResponse, ValidateResponse } from '@/models/import';
 import { ImportService } from '@/services/ImportService';
 
-export type ImportWorkflowStatus =
+type ImportWorkflowStatus =
   | 'idle'
   | 'validating'
   | 'preview'

@@ -6,7 +6,7 @@ Authoritative reference for runtime architecture, data flow, API surface, cachin
 
 ## Overview
 
-Sumurai is a personal finance aggregator. Users connect one financial provider (Plaid, SimpleFIN, or DIY/self-managed); the app syncs accounts and transactions, and provides analytics and budgets. Legacy Teller connections may still appear in the UI (with icon); sync fails, and disconnect still works. Demo mode seeds SimpleFIN sample data.
+Sumurai is a personal finance aggregator. Users connect one financial provider (Plaid, SimpleFIN, or DIY/self-managed); the app syncs accounts and transactions, and provides analytics and budgets. Demo mode seeds SimpleFIN sample data.
 
 ```mermaid
 flowchart LR
@@ -35,7 +35,7 @@ flowchart LR
 
 - **Frontend** — Next.js static export served by Nginx on port 8080.
 - **Backend** — Rust/Axum API on port 3000 (internal), behind Nginx proxy.
-- **Providers** — Plaid, SimpleFIN, and DIY via a shared provider registry. Teller is not connectable (API sunset); legacy rows may still display.
+- **Providers** — Plaid, SimpleFIN, and DIY via a shared provider registry.
 - **Persistence** — PostgreSQL with row-level security; Redis for sessions, caching, and rate-limiting.
 - **Observability** — OpenTelemetry end-to-end; export target (`none` / `console` / OTLP to Seq) set by `OTEL_TRACES_EXPORTER`.
 
@@ -220,7 +220,7 @@ flowchart TD
 
 ## Backend
 
-Handlers → services → `repository_service` (SeaORM entities via `with_tenant`) / `cache_service` (Redis) / providers. Domain types in `models/`. Tests in `backend/src/tests/`.
+`main.rs` holds bootstrap and the route table (`create_app`), so every endpoint is listed in one place. Handlers in `handlers/<domain>.rs` extract input, call the domain, and map the result to HTTP. Domains with real orchestration use `services/<domain>_orchestrator.rs` (reached through `AppState::<domain>()`); simple domains call a service or repository directly. Failures are a shared `DomainError` mapped once in `handlers/error.rs`, with a small per-domain enum only for outcomes that carry data. Below that: services → `repository_service` (SeaORM entities via `with_tenant`) / `cache_service` (Redis) / providers. Domain types in `models/`. Tests in `backend/src/tests/`.
 
 ```mermaid
 flowchart TD
@@ -314,8 +314,6 @@ flowchart LR
         S3 --> S4["sync materializes\nprovider_connections rows"]
     end
 ```
-
-Legacy Teller connections are display-only: the UI may still show them with a provider icon, sync fails, and disconnect remains available.
 
 ### SimpleFIN specifics
 

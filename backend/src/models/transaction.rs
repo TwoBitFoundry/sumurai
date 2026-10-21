@@ -12,9 +12,6 @@ use crate::utils::merchant_name::normalize_merchant_display_case;
 use csv::StringRecord;
 use sha2::{Digest, Sha256};
 
-#[allow(unused_imports)]
-use serde_json::json;
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 #[schema(example = json!({
     "id": "33333333-4444-5555-6666-777777777777",
@@ -659,4 +656,14 @@ impl Transaction {
             normalization_source,
         }
     }
+}
+
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct TransactionFilter {
+    pub search: Option<String>,
+    pub merchant: Option<String>,
+    pub category_primary: Option<String>,
+    pub account_ids: Option<Vec<Uuid>>,
+    pub start_date: Option<NaiveDate>,
+    pub end_date: Option<NaiveDate>,
 }

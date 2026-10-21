@@ -1,7 +1,5 @@
 import { compareInstitutionNames } from '@/domain/institutionSort';
 
-export { compareInstitutionNames as compareBankNames } from '@/domain/institutionSort';
-
 export function sortBanksAlphabetically<T extends { bankName: string }>(banks: readonly T[]): T[] {
   return [...banks].sort((left, right) => compareInstitutionNames(left.bankName, right.bankName));
 }

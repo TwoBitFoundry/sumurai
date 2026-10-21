@@ -2,8 +2,6 @@ import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { PlaidService } from '@/services/PlaidService';
 import type { PlaidSyncResponse } from '@/types/api';
 
-let fetchMock: ReturnType<typeof installFetchRoutes>;
-
 describe('Plaid Sync Integration Tests (Boundary-Only Mocking)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -15,7 +13,7 @@ describe('Plaid Sync Integration Tests (Boundary-Only Mocking)', () => {
   });
 
   it('given_incremental_sync_when_calling_api_then_returns_correct_date_range', async () => {
-    fetchMock = installFetchRoutes({
+    installFetchRoutes({
       'POST /api/providers/sync-transactions': {
         transactions: [
           {
@@ -49,7 +47,7 @@ describe('Plaid Sync Integration Tests (Boundary-Only Mocking)', () => {
   });
 
   it('given_first_time_sync_when_calling_api_then_returns_90_day_window', async () => {
-    fetchMock = installFetchRoutes({
+    installFetchRoutes({
       'POST /api/providers/sync-transactions': {
         transactions: [],
         metadata: {
@@ -72,7 +70,7 @@ describe('Plaid Sync Integration Tests (Boundary-Only Mocking)', () => {
   });
 
   it('given_old_connection_when_calling_api_then_caps_at_5_year_window', async () => {
-    fetchMock = installFetchRoutes({
+    installFetchRoutes({
       'POST /api/providers/sync-transactions': {
         transactions: [],
         metadata: {
@@ -94,7 +92,7 @@ describe('Plaid Sync Integration Tests (Boundary-Only Mocking)', () => {
   });
 
   it('given_sync_error_when_calling_api_then_throws_error', async () => {
-    fetchMock = installFetchRoutes({
+    installFetchRoutes({
       'POST /api/providers/sync-transactions': new Response('Server error', { status: 500 }),
     });
 

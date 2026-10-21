@@ -10,7 +10,6 @@ import {
   effect as uiEffectRecipes,
   status as uiStatusRecipes,
   surface as uiSurfaceRecipes,
-  text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import type { ProviderCardSection } from '@/utils/providerCards';

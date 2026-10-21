@@ -2,7 +2,7 @@ import { Info } from 'lucide-react';
 import { cn } from '@/ui/primitives';
 import { controlIconWell, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
-export const insightQuestionRecipes = {
+const insightQuestionRecipes = {
   row: 'flex items-center gap-2',
   icon: cn(...controlIconWell.sm, uiTextRecipes.subtle, '[&_svg]:stroke-[2]'),
   text: cn(uiTypographyRecipes.label, uiTextRecipes.subtle, 'min-w-0'),

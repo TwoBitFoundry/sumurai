@@ -89,9 +89,9 @@ describe('usePlaidConnections', () => {
         provider: '',
         connections: [
           {
-            provider: 'teller',
-            connection_id: 'conn_teller',
-            institution_name: 'Teller Bank',
+            provider: 'simplefin',
+            connection_id: 'conn_simplefin',
+            institution_name: 'SimpleFIN Bank',
             last_sync_at: '2026-06-18T12:00:00Z',
             transaction_count: 10,
             account_count: 1,

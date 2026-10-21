@@ -21,7 +21,6 @@ pub struct SyncService {
     providers: Arc<ProviderRegistry>,
 }
 
-#[allow(dead_code)]
 impl SyncService {
     pub fn new(providers: Arc<ProviderRegistry>) -> Self {
         Self { providers }
@@ -116,53 +115,6 @@ impl SyncService {
             .collect()
     }
 
-    pub async fn sync_recent_transactions(
-        &self,
-        credentials: &ProviderCredentials,
-        existing_transactions: &[Transaction],
-        last_sync_at: Option<DateTime<Utc>>,
-        reference_date: Option<NaiveDate>,
-    ) -> Result<Vec<Transaction>> {
-        let (start_date, end_date) = self.calculate_sync_date_range(last_sync_at, reference_date);
-
-        let provider = self.resolve_provider(Some(&credentials.provider))?;
-        let provider_transactions = provider
-            .get_transactions(credentials, start_date, end_date)
-            .await?;
-
-        let new_transactions =
-            self.detect_duplicates(existing_transactions, &provider_transactions.transactions);
-
-        Ok(new_transactions)
-    }
-
-    fn detect_duplicates(&self, existing: &[Transaction], new: &[Transaction]) -> Vec<Transaction> {
-        let existing_plaid_ids: HashMap<String, bool> = existing
-            .iter()
-            .filter_map(|t| t.provider_transaction_id.as_ref())
-            .map(|id| (id.clone(), true))
-            .collect();
-
-        new.iter()
-            .filter(|t| {
-                if let Some(plaid_id) = &t.provider_transaction_id {
-                    !existing_plaid_ids.contains_key(plaid_id)
-                } else {
-                    true
-                }
-            })
-            .cloned()
-            .collect()
-    }
-
-    pub fn filter_duplicate_transactions(
-        &self,
-        existing: &[Transaction],
-        new: &[Transaction],
-    ) -> Vec<Transaction> {
-        self.detect_duplicates(existing, new)
-    }
-
     pub fn filter_duplicate_transactions_by_provider_ids(
         &self,
         existing_provider_transaction_ids: &[String],
@@ -229,19 +181,5 @@ impl SyncService {
                     .map(|plaid_id| (plaid_id.clone(), acc.id))
             })
             .collect()
-    }
-
-    pub fn map_transactions_to_accounts(
-        &self,
-        transactions: &mut [Transaction],
-        account_mapping: &HashMap<String, Uuid>,
-    ) {
-        for transaction in transactions {
-            if let Some(_plaid_id) = &transaction.provider_transaction_id {
-                if let Some(&account_uuid) = account_mapping.values().next() {
-                    transaction.account_id = account_uuid;
-                }
-            }
-        }
     }
 }

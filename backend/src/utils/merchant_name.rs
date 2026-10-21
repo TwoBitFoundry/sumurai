@@ -1,4 +1,4 @@
-#[allow(dead_code)]
+#[cfg(test)]
 pub fn normalize_merchant_for_match(raw: &str) -> String {
     raw.chars()
         .filter(|c| c.is_ascii_alphabetic())
@@ -6,7 +6,6 @@ pub fn normalize_merchant_for_match(raw: &str) -> String {
         .collect()
 }
 
-#[allow(dead_code)]
 pub fn category_lookup_key(raw: &str) -> String {
     raw.split_whitespace()
         .map(|word| {
@@ -17,7 +16,6 @@ pub fn category_lookup_key(raw: &str) -> String {
         .join(" ")
 }
 
-#[allow(dead_code)]
 pub fn format_custom_category_display(raw: &str) -> String {
     raw.split_whitespace()
         .map(title_case_segment)

@@ -192,11 +192,11 @@ fn is_demo_seed_item_id_matches_known_demo_item_ids() {
     ));
     assert!(seed::is_demo_seed_item_id(
         user_id,
-        &seed::demo_teller_item_id(user_id)
+        &seed::demo_plaid_item_id(user_id)
     ));
     assert!(seed::is_demo_seed_item_id(
         user_id,
-        seed::LEGACY_UNSCOPED_DEMO_TELLER_ITEM_ID
+        seed::LEGACY_UNSCOPED_DEMO_PLAID_ITEM_ID
     ));
     assert!(!seed::is_demo_seed_item_id(
         user_id,
@@ -321,13 +321,13 @@ async fn maybe_seed_demo_dev_workspace_reseeds_when_only_legacy_demo_connections
 
     let user = demo_user();
     let user_id = user.id;
-    let teller_item_id = seed::demo_teller_item_id(user_id);
+    let plaid_item_id = seed::demo_plaid_item_id(user_id);
     let diy_item_id = seed::demo_diy_item_id(user_id);
-    let mut teller_connection =
-        crate::models::plaid::ProviderConnection::new(user_id, &teller_item_id);
-    teller_connection.id = seed::demo_entity_id(user_id, "connection:sumurai_demo");
-    teller_connection.provider = "teller".to_string();
-    teller_connection.mark_connected("Sumurai Demo Bank");
+    let mut plaid_connection =
+        crate::models::plaid::ProviderConnection::new(user_id, &plaid_item_id);
+    plaid_connection.id = seed::demo_entity_id(user_id, "connection:sumurai_demo");
+    plaid_connection.provider = "plaid".to_string();
+    plaid_connection.mark_connected("Sumurai Demo Bank");
     let mut diy_connection = crate::models::plaid::ProviderConnection::new(user_id, &diy_item_id);
     diy_connection.id = seed::demo_entity_id(user_id, "connection:sumurai_demo_diy");
     diy_connection.provider = "diy".to_string();
@@ -350,19 +350,19 @@ async fn maybe_seed_demo_dev_workspace_reseeds_when_only_legacy_demo_connections
         .with(mockall::predicate::eq(user_id))
         .times(2)
         .returning({
-            let teller_connection = teller_connection.clone();
+            let plaid_connection = plaid_connection.clone();
             let diy_connection = diy_connection.clone();
             move |_| {
-                let teller_connection = teller_connection.clone();
+                let plaid_connection = plaid_connection.clone();
                 let diy_connection = diy_connection.clone();
-                Box::pin(async move { Ok(vec![teller_connection, diy_connection]) })
+                Box::pin(async move { Ok(vec![plaid_connection, diy_connection]) })
             }
         });
     mock_db
         .expect_disconnect_provider_connection_cascade()
         .with(
             mockall::predicate::eq(user_id),
-            mockall::predicate::eq(teller_item_id),
+            mockall::predicate::eq(plaid_item_id),
         )
         .times(1)
         .returning(|_, _| Box::pin(async { Ok((10, 5)) }));
@@ -445,13 +445,13 @@ async fn maybe_seed_demo_dev_workspace_reseeds_when_only_legacy_demo_connections
 async fn seeds_demo_dataset_clears_demo_connections_and_keeps_non_demo() {
     let user = demo_user();
     let user_id = user.id;
-    let teller_item_id = seed::demo_teller_item_id(user_id);
+    let plaid_item_id = seed::demo_plaid_item_id(user_id);
     let diy_item_id = seed::demo_diy_item_id(user_id);
-    let mut teller_connection =
-        crate::models::plaid::ProviderConnection::new(user_id, &teller_item_id);
-    teller_connection.id = seed::demo_entity_id(user_id, "connection:sumurai_demo");
-    teller_connection.provider = "teller".to_string();
-    teller_connection.mark_connected("Sumurai Demo Bank");
+    let mut plaid_connection =
+        crate::models::plaid::ProviderConnection::new(user_id, &plaid_item_id);
+    plaid_connection.id = seed::demo_entity_id(user_id, "connection:sumurai_demo");
+    plaid_connection.provider = "plaid".to_string();
+    plaid_connection.mark_connected("Sumurai Demo Bank");
     let mut diy_connection = crate::models::plaid::ProviderConnection::new(user_id, &diy_item_id);
     diy_connection.id = seed::demo_entity_id(user_id, "connection:sumurai_demo_diy");
     diy_connection.provider = "diy".to_string();
@@ -469,23 +469,21 @@ async fn seeds_demo_dataset_clears_demo_connections_and_keeps_non_demo() {
         .with(mockall::predicate::eq(user_id))
         .times(1)
         .returning({
-            let teller_connection = teller_connection.clone();
+            let plaid_connection = plaid_connection.clone();
             let diy_connection = diy_connection.clone();
             let real_connection = real_connection.clone();
             move |_| {
-                let teller_connection = teller_connection.clone();
+                let plaid_connection = plaid_connection.clone();
                 let diy_connection = diy_connection.clone();
                 let real_connection = real_connection.clone();
-                Box::pin(
-                    async move { Ok(vec![teller_connection, diy_connection, real_connection]) },
-                )
+                Box::pin(async move { Ok(vec![plaid_connection, diy_connection, real_connection]) })
             }
         });
     mock_db
         .expect_disconnect_provider_connection_cascade()
         .with(
             mockall::predicate::eq(user_id),
-            mockall::predicate::eq(teller_item_id),
+            mockall::predicate::eq(plaid_item_id),
         )
         .times(1)
         .returning(|_, _| Box::pin(async { Ok((10, 5)) }));
@@ -563,14 +561,14 @@ async fn seeds_demo_dataset_clears_demo_connections_and_keeps_non_demo() {
 }
 
 #[tokio::test]
-async fn seeds_demo_dataset_clears_unscoped_legacy_teller_connection_before_insert() {
+async fn seeds_demo_dataset_clears_unscoped_legacy_plaid_connection_before_insert() {
     let user = demo_user();
     let user_id = user.id;
-    let unscoped_item_id = seed::LEGACY_UNSCOPED_DEMO_TELLER_ITEM_ID.to_string();
+    let unscoped_item_id = seed::LEGACY_UNSCOPED_DEMO_PLAID_ITEM_ID.to_string();
     let mut legacy_connection =
         crate::models::plaid::ProviderConnection::new(user_id, &unscoped_item_id);
     legacy_connection.id = seed::demo_entity_id(user_id, "connection:sumurai_demo");
-    legacy_connection.provider = "teller".to_string();
+    legacy_connection.provider = "plaid".to_string();
     legacy_connection.mark_connected("Sumurai Demo Bank");
 
     let (mut mock_db, mut mock_cache) = (MockDatabaseRepository::new(), MockCacheService::new());

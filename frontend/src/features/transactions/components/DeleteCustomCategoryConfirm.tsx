@@ -21,7 +21,7 @@ import {
 } from '@/utils/anchoredPopoverPosition';
 import { useDeleteCustomCategory } from '../hooks/useDeleteCustomCategory';
 
-export const DELETE_CUSTOM_CATEGORY_CONFIRM_SELECTOR = '[data-delete-custom-category-confirm]';
+const DELETE_CUSTOM_CATEGORY_CONFIRM_SELECTOR = '[data-delete-custom-category-confirm]';
 
 export function isDeleteCustomCategoryConfirmTarget(target: EventTarget | null): boolean {
   return (

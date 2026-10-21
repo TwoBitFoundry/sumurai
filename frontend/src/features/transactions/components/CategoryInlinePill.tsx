@@ -9,7 +9,7 @@ type CategoryInlinePillProps = {
   className?: string;
 };
 
-export function CategoryInlinePill({
+function CategoryInlinePill({
   categoryKey,
   label,
   accentIndexByName,

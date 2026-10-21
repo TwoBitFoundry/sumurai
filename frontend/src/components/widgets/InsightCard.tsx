@@ -34,7 +34,7 @@ const tileAlignRecipes: Record<
   },
 };
 
-export const insightCardRecipes = {
+const insightCardRecipes = {
   frontRow: 'flex w-full min-w-0 items-center justify-between gap-x-1.5 whitespace-nowrap',
   tileRow: 'flex w-full min-w-0 flex-col gap-1.5 whitespace-normal',
   leading: 'flex min-w-0 flex-1 items-center gap-x-1.5',

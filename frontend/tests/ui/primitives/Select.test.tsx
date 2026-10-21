@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { Button } from '@/ui/primitives/Button';
 import { Select } from '@/ui/primitives/Select';
 import { control, radius as uiRadiusRecipes } from '@/ui/recipes';

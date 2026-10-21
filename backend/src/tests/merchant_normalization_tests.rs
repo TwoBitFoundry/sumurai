@@ -1,6 +1,6 @@
 use crate::services::merchant_normalization::{
     engine::normalize,
-    types::{AliasIndex, AliasRow, MatchSource, MerchantSource},
+    types::{AliasIndex, AliasRow, MerchantSource},
 };
 
 fn alias_index_from_seed() -> AliasIndex {
@@ -171,14 +171,6 @@ fn given_pos_costco_whse_when_normalize_then_costco() {
         &idx(),
     );
     assert_eq!(result.display, "Costco");
-    assert!(
-        matches!(
-            result.source,
-            MatchSource::EarlyContains | MatchSource::Contains
-        ),
-        "expected Contains/EarlyContains, got {:?}",
-        result.source
-    );
 }
 
 #[test]
@@ -189,31 +181,12 @@ fn given_winco_foods_when_normalize_then_winco() {
         &idx(),
     );
     assert_eq!(result.display, "WinCo");
-    assert!(
-        matches!(
-            result.source,
-            MatchSource::EarlyContains | MatchSource::Contains
-        ),
-        "expected Contains/EarlyContains, got {:?}",
-        result.source
-    );
 }
 
 #[test]
 fn given_bokf_when_normalize_then_bokf_exact() {
     let result = normalize("BOKF", MerchantSource::Raw, &idx());
     assert_eq!(result.display, "BOKF");
-    assert!(
-        matches!(
-            result.source,
-            MatchSource::EarlyExact
-                | MatchSource::Exact
-                | MatchSource::EarlyContains
-                | MatchSource::Contains
-        ),
-        "expected Exact/Contains, got {:?}",
-        result.source
-    );
 }
 
 #[test]
@@ -250,28 +223,12 @@ fn given_applecard_payment_when_normalize_then_apple_card() {
 fn given_instacart_aldi_when_normalize_then_instacart() {
     let result = normalize("INSTACART*ALDI 5432", MerchantSource::Raw, &idx());
     assert_eq!(result.display, "Instacart");
-    assert!(
-        matches!(
-            result.source,
-            MatchSource::EarlyContains | MatchSource::Contains
-        ),
-        "expected Contains/EarlyContains, got {:?}",
-        result.source
-    );
 }
 
 #[test]
 fn given_tesla_motors_inc_when_normalize_then_tesla_motors() {
     let result = normalize("TESLA MOTORS INC", MerchantSource::Raw, &idx());
     assert_eq!(result.display, "Tesla Motors");
-    assert!(
-        matches!(
-            result.source,
-            MatchSource::EarlyContains | MatchSource::Contains
-        ),
-        "expected Contains/EarlyContains, got {:?}",
-        result.source
-    );
 }
 
 #[test]
@@ -282,21 +239,12 @@ fn given_city_of_tulsa_util_when_normalize_then_city_of_tulsa() {
         &idx(),
     );
     assert_eq!(result.display, "City of Tulsa");
-    assert!(
-        matches!(
-            result.source,
-            MatchSource::EarlyContains | MatchSource::Contains
-        ),
-        "expected Contains/EarlyContains, got {:?}",
-        result.source
-    );
 }
 
 #[test]
 fn given_7eleven_store_when_normalize_then_7eleven() {
     let result = normalize("7-ELEVEN 35420", MerchantSource::Raw, &idx());
     assert_eq!(result.display, "7-Eleven");
-    assert_eq!(result.source, MatchSource::EarlyContains);
 }
 
 #[test]
@@ -309,14 +257,6 @@ fn given_sq_blue_bottle_when_normalize_then_blue_bottle() {
 fn given_doordash_when_normalize_then_doordash() {
     let result = normalize("DD *DOORDASH CHIPTL", MerchantSource::Raw, &idx());
     assert_eq!(result.display, "DoorDash");
-    assert!(
-        matches!(
-            result.source,
-            MatchSource::EarlyContains | MatchSource::Contains
-        ),
-        "expected Contains/EarlyContains, got {:?}",
-        result.source
-    );
 }
 
 #[test]
@@ -329,21 +269,18 @@ fn given_www_netflix_com_when_normalize_then_netflix() {
 fn given_enriched_source_when_normalize_then_light_path() {
     let result = normalize("Costco Wholesale", MerchantSource::Enriched, &idx());
     assert_eq!(result.display, "Costco Wholesale");
-    assert_eq!(result.source, MatchSource::Enriched);
 }
 
 #[test]
 fn given_t_mobile_when_normalize_then_t_mobile() {
     let result = normalize("T-MOBILE PAYMENT 12345", MerchantSource::Raw, &idx());
     assert_eq!(result.display, "T-Mobile");
-    assert_eq!(result.source, MatchSource::EarlyContains);
 }
 
 #[test]
 fn given_heb_when_normalize_then_heb() {
     let result = normalize("H-E-B #213 DEBIT", MerchantSource::Raw, &idx());
     assert_eq!(result.display, "H-E-B");
-    assert_eq!(result.source, MatchSource::EarlyContains);
 }
 
 #[test]
@@ -356,14 +293,12 @@ fn given_pure_noise_when_normalize_then_never_blank() {
 fn given_atm_withdrawal_when_normalize_then_structural_label() {
     let result = normalize("ATM WITHDRAWAL 0034", MerchantSource::Raw, &idx());
     assert_eq!(result.display, "ATM Withdrawal");
-    assert_eq!(result.source, MatchSource::Structural);
 }
 
 #[test]
 fn given_check_number_when_normalize_then_check_label() {
     let result = normalize("CHECK 1042", MerchantSource::Raw, &idx());
     assert_eq!(result.display, "Check #1042");
-    assert_eq!(result.source, MatchSource::Structural);
 }
 
 #[test]
@@ -381,14 +316,12 @@ fn given_multibyte_name_past_sixty_four_bytes_when_normalize_then_truncates_on_c
 fn given_zelle_payment_when_normalize_then_zelle() {
     let result = normalize("ZELLE PAYMENT TO JOHN", MerchantSource::Raw, &idx());
     assert_eq!(result.display, "Zelle");
-    assert_eq!(result.source, MatchSource::Structural);
 }
 
 #[test]
 fn given_interest_income_when_normalize_then_interest() {
     let result = normalize("INTEREST INCOME", MerchantSource::Raw, &idx());
     assert_eq!(result.display, "Interest");
-    assert_eq!(result.source, MatchSource::Structural);
 }
 
 #[test]
@@ -439,11 +372,7 @@ fn given_already_normalized_when_normalize_again_then_idempotent() {
 #[test]
 fn given_direct_deposit_when_normalize_then_structural_transfer() {
     let result = normalize("DIRECT DEPOSIT PAYROLL", MerchantSource::Raw, &idx());
-    assert!(
-        result.source == MatchSource::Structural,
-        "expected Structural, got {:?}",
-        result.source
-    );
+    assert_eq!(result.display, "Payroll");
 }
 
 #[test]

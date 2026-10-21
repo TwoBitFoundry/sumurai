@@ -12,7 +12,7 @@ import type { SyncProvider } from '@/utils/queryInvalidation';
 
 const connectionFlowRef = { current: null as UseFinancialConnectionReturn | null };
 
-function FinancialConnectionMount({ provider }: { provider: 'plaid' | 'simplefin' | 'teller' }) {
+function FinancialConnectionMount({ provider }: { provider: 'plaid' | 'simplefin' }) {
   const flow = useFinancialConnection({
     provider,
     isOnline: true,
@@ -139,21 +139,6 @@ describe('useFinancialConnection', () => {
     expect(result.current.error).toBe(null);
   });
 
-  it('given legacy teller provider when initialized then starts disconnected without connect readiness', () => {
-    const { result } = renderHook(
-      () =>
-        useFinancialConnection({
-          provider: 'teller',
-          isOnline: true,
-        }),
-      { wrapper }
-    );
-
-    expect(result.current.isConnected).toBe(false);
-    expect(result.current.connectionInProgress).toBe(false);
-    expect(result.current.error).toBe(null);
-  });
-
   it('given plaid connection when connect is called then fetches link token and opens Plaid', async () => {
     postSpy.mockResolvedValueOnce({ link_token: 'link-token-123' });
 
@@ -178,24 +163,6 @@ describe('useFinancialConnection', () => {
     });
     await waitFor(() => {
       expect(plaidOpen).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  it('given legacy teller provider when connect is called then surfaces sunset message', async () => {
-    render(
-      React.createElement(
-        QueryClientProvider,
-        { client: queryClient },
-        React.createElement(FinancialConnectionMount, { provider: 'teller' as any })
-      )
-    );
-
-    await act(async () => {
-      await connectionFlowRef.current?.initiateConnection();
-    });
-
-    await waitFor(() => {
-      expect(connectionFlowRef.current?.error).toMatch(/no longer supported/i);
     });
   });
 

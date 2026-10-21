@@ -65,18 +65,6 @@ export const ErrorState: Story = {
   },
 };
 
-export const TellerDisabled: Story = {
-  args: {
-    availableProviders: ['plaid', 'simplefin'] as FinancialProvider[],
-  },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.queryByText('Teller')).toBeNull();
-    await userEvent.click(getStoryProviderPickerButton(canvas, 'simplefin'));
-    await expect(args.onSelectProvider).toHaveBeenCalledWith('simplefin');
-  },
-};
-
 export const ZeroCreds: Story = {
   args: {
     availableProviders: [] as FinancialProvider[],
@@ -85,7 +73,6 @@ export const ZeroCreds: Story = {
     const canvas = within(canvasElement);
     await expect(getStoryProviderPickerButton(canvas, 'diy')).toBeEnabled();
     await expect(getStoryProviderPickerButton(canvas, 'simplefin')).toBeEnabled();
-    await expect(canvas.queryByText('Teller')).toBeNull();
     await expect(getStoryProviderPickerButton(canvas, 'plaid')).toBeDisabled();
   },
 };

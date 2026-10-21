@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 pub const AMOUNT_CV_MAX: f64 = 0.15;
 pub const MIN_OCCURRENCES_SHORT: usize = 3;
 pub const MIN_OCCURRENCES_LONG: usize = 2;

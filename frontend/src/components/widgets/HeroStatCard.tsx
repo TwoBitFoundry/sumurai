@@ -19,7 +19,7 @@ import { heroStatSemanticThemes } from './heroStatSemanticThemes';
 type Accent = 'teal' | 'azure' | 'ocean' | 'amber' | 'slate' | 'crimson';
 type Tone = 'success' | 'info' | 'warning' | 'danger';
 
-export type HeroPill = {
+type HeroPill = {
   label: string;
   type?: 'category' | 'semantic' | 'default';
   tone?: Tone;
@@ -40,33 +40,6 @@ export type HeroStatCardProps = {
   footerScrollClassName?: string;
   layout?: 'stack' | 'row' | 'row-tablet';
 };
-
-export function SubscriptionCostsMetric({
-  monthly,
-  yearly,
-}: {
-  monthly: React.ReactNode;
-  yearly: React.ReactNode;
-}) {
-  return (
-    <div className={cn('flex', 'flex-wrap', 'items-baseline', 'gap-x-3', 'gap-y-1')}>
-      <span
-        className={cn('inline-flex', 'shrink-0', 'items-baseline', 'gap-1.5', 'whitespace-nowrap')}
-      >
-        <span>{monthly}</span>
-        <span className={cn(heroStatCardRecipes.suffix)}>/ mo</span>
-      </span>
-      <span
-        className={cn('inline-flex', 'shrink-0', 'items-baseline', 'gap-1.5', 'whitespace-nowrap')}
-      >
-        <span>{yearly}</span>
-        <span className={cn(heroStatCardRecipes.suffix)}>/ year</span>
-      </span>
-    </div>
-  );
-}
-
-export { heroStatSemanticThemes };
 
 const heroFooterPillRecipes = {
   base: `inline-flex w-max max-w-none flex-shrink-0 flex-nowrap items-center gap-1.5 rounded-full px-2 py-0.5 ${uiTypographyRecipes.badge}`,

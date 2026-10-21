@@ -1,4 +1,4 @@
-use crate::models::{account::Account, transaction::Transaction};
+use crate::models::account::Account;
 use crate::providers::{PlaidProvider, ProviderRegistry};
 
 use crate::services::{plaid_service::RealPlaidClient, sync_service::SyncService};
@@ -98,52 +98,6 @@ fn test_calculate_account_mapping_handles_accounts_without_plaid_ids() {
 }
 
 #[test]
-fn test_map_transactions_to_accounts_updates_account_ids() {
-    let sync_service = create_test_sync_service();
-    let account_id = Uuid::new_v4();
-    let mut account_mapping = std::collections::HashMap::new();
-    account_mapping.insert("plaid_acc_1".to_string(), account_id);
-
-    let mut transactions = vec![Transaction {
-        id: Uuid::new_v4(),
-        account_id: Uuid::new_v4(),
-        user_id: None,
-        provider_account_id: None,
-        provider_transaction_id: Some("plaid_txn_1".to_string()),
-        amount: dec!(100.00),
-        date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-        merchant_name: Some("Store A".to_string()),
-        category_primary: "Food".to_string(),
-        category_detailed: "Restaurants".to_string(),
-        category_confidence: "HIGH".to_string(),
-        payment_channel: Some("in_store".to_string()),
-        pending: false,
-        created_at: Some(Utc::now()),
-        original_merchant_name: None,
-        normalized_merchant: None,
-        normalization_source: None,
-    }];
-
-    sync_service.map_transactions_to_accounts(&mut transactions, &account_mapping);
-    assert_eq!(transactions[0].account_id, account_id);
-}
-
-#[test]
-fn test_filter_duplicate_transactions_filters_existing_transactions() {
-    let sync_service = create_test_sync_service();
-    let (existing, new_with_duplicates) = TestFixtures::duplicate_test_transactions();
-
-    let unique_transactions =
-        sync_service.filter_duplicate_transactions(&existing, &new_with_duplicates);
-
-    assert_eq!(unique_transactions.len(), 1);
-    assert_eq!(
-        unique_transactions[0].provider_transaction_id.as_deref(),
-        Some("new_txn_001")
-    );
-}
-
-#[test]
 fn test_filter_duplicate_transactions_by_provider_ids_filters_existing_ids() {
     let sync_service = create_test_sync_service();
     let existing_provider_transaction_ids = vec!["duplicate_txn_001".to_string()];
@@ -159,31 +113,6 @@ fn test_filter_duplicate_transactions_by_provider_ids_filters_existing_ids() {
         unique_transactions[0].provider_transaction_id.as_deref(),
         Some("new_txn_001")
     );
-}
-
-#[test]
-fn test_filter_duplicate_transactions_handles_empty_collections() {
-    let sync_service = create_test_sync_service();
-    let existing = TestFixtures::empty_transactions();
-    let new_transactions = TestFixtures::empty_transactions();
-
-    let unique_transactions =
-        sync_service.filter_duplicate_transactions(&existing, &new_transactions);
-    assert_eq!(unique_transactions.len(), 0);
-}
-
-#[test]
-fn test_filter_duplicate_transactions_handles_transactions_without_ids() {
-    let sync_service = create_test_sync_service();
-    let existing = TestFixtures::empty_transactions();
-    let mut new_transaction = TestFixtures::sample_transactions()[0].clone();
-    new_transaction.provider_transaction_id = None;
-    let new_transactions = vec![new_transaction.clone()];
-
-    let unique_transactions =
-        sync_service.filter_duplicate_transactions(&existing, &new_transactions);
-    assert_eq!(unique_transactions.len(), 1);
-    assert_eq!(unique_transactions[0].amount, new_transaction.amount);
 }
 
 mod date_range_calculation_tests {

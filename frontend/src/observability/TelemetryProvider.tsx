@@ -2,13 +2,13 @@ import type { Span } from '@opentelemetry/api';
 import React, { useEffect, useRef, useState } from 'react';
 import type { ITelemetryService } from './TelemetryService';
 
-export interface TelemetryContextValue {
+interface TelemetryContextValue {
   service: ITelemetryService;
   activeSpan: Span | undefined;
   setActiveSpan: (span: Span | undefined) => void;
 }
 
-export const TelemetryContext = React.createContext<TelemetryContextValue | null>(null);
+const TelemetryContext = React.createContext<TelemetryContextValue | null>(null);
 
 interface TelemetryProviderProps {
   children: React.ReactNode;

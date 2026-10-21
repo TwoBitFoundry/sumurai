@@ -6,7 +6,6 @@ import { useSyncAllOrchestrator } from '@/features/sync/hooks/useSyncAllOrchestr
 import { RateLimitError } from '@/services/ApiClient';
 import { PlaidService } from '@/services/PlaidService';
 import { SimpleFinService } from '@/services/SimpleFinService';
-import { TellerService } from '@/services/TellerService';
 import * as events from '@/utils/events';
 
 jest.mock('@/services/PlaidService', () => ({
@@ -21,23 +20,16 @@ jest.mock('@/services/SimpleFinService', () => ({
   },
 }));
 
-jest.mock('@/services/TellerService', () => ({
-  TellerService: {
-    syncTransactions: jest.fn(),
-  },
-}));
-
 jest.mock('@/utils/formatUserFacingApiError', () => ({
   formatUserFacingApiError: jest.fn((_error: unknown, fallback: string) => fallback),
 }));
 
 const plaidSyncTransactions = jest.mocked(PlaidService.syncTransactions);
 const simpleFinSyncBridge = jest.mocked(SimpleFinService.syncBridge);
-const tellerSyncTransactions = jest.mocked(TellerService.syncTransactions);
 
 const makeBank = (
   id: string,
-  provider: 'plaid' | 'teller' | 'simplefin',
+  provider: 'plaid' | 'simplefin',
   connectionId: string,
   accounts: BankConnectionViewModel['accounts'] = []
 ): BankConnectionViewModel => ({
@@ -293,15 +285,15 @@ describe('useSyncAllOrchestrator', () => {
     expect(events.dispatchFinancialAccountsRefresh).not.toHaveBeenCalled();
   });
 
-  it('syncs Teller banks sequentially and closes the modal after success', async () => {
+  it('syncs Plaid banks sequentially and closes the modal after success', async () => {
     jest.useFakeTimers();
-    tellerSyncTransactions.mockResolvedValue({ transactions: [] } as any);
+    plaidSyncTransactions.mockResolvedValue({ transactions: [] } as any);
 
     const { result } = renderHook(
       () =>
         useSyncAllOrchestrator({
-          banks: [makeBank('bank-1', 'teller', 'conn-1'), makeBank('bank-2', 'teller', 'conn-2')],
-          primaryProvider: 'teller',
+          banks: [makeBank('bank-1', 'plaid', 'conn-1'), makeBank('bank-2', 'plaid', 'conn-2')],
+          primaryProvider: 'plaid',
           isOnline: true,
           onError: jest.fn(),
         }),
@@ -312,9 +304,9 @@ describe('useSyncAllOrchestrator', () => {
       await result.current.syncAll();
     });
 
-    expect(tellerSyncTransactions).toHaveBeenCalledTimes(2);
-    expect(tellerSyncTransactions).toHaveBeenNthCalledWith(1, 'conn-1');
-    expect(tellerSyncTransactions).toHaveBeenNthCalledWith(2, 'conn-2');
+    expect(plaidSyncTransactions).toHaveBeenCalledTimes(2);
+    expect(plaidSyncTransactions).toHaveBeenNthCalledWith(1, 'conn-1');
+    expect(plaidSyncTransactions).toHaveBeenNthCalledWith(2, 'conn-2');
     expect(result.current.syncAllRows).toMatchObject([{ status: 'synced' }, { status: 'synced' }]);
     expect(result.current.syncAllModalOpen).toBe(true);
     expect(events.dispatchFinancialAppRefresh).toHaveBeenCalledWith({ tab: 'accounts' });

@@ -87,7 +87,7 @@ async fn given_mixed_account_scope_when_getting_sankey_then_excludes_loan_and_in
                 id: connection_id,
                 user_id,
                 item_id: "item-1".to_string(),
-                provider: "teller".to_string(),
+                provider: "simplefin".to_string(),
                 is_connected: true,
                 last_sync_at: None,
                 connected_at: None,

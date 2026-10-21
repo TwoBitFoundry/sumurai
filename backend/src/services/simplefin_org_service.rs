@@ -36,23 +36,6 @@ impl SimpleFinOrganizationService {
         self.db_repository.list_simplefin_hidden_orgs(user_id).await
     }
 
-    #[allow(dead_code)]
-    pub async fn restore_org(&self, user_id: &Uuid, org_conn_id: &str) -> Result<bool> {
-        self.db_repository
-            .remove_simplefin_hidden_org(user_id, org_conn_id)
-            .await
-    }
-
-    #[allow(dead_code)]
-    pub async fn list_ignored_institutions(
-        &self,
-        user_id: &Uuid,
-    ) -> Result<Vec<crate::models::simplefin::SimpleFinIgnoredInstitution>> {
-        self.db_repository
-            .list_simplefin_ignored_institutions(user_id)
-            .await
-    }
-
     #[allow(clippy::too_many_arguments)]
     pub async fn persist_org_connection(
         &self,

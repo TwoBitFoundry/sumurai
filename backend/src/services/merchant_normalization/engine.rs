@@ -23,8 +23,6 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
         return NormalizedMerchant {
             canonical_key: Some(canonical_key(&display)),
             display,
-            source: MatchSource::Enriched,
-            confidence: 1.0,
         };
     }
 
@@ -39,8 +37,6 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
         return NormalizedMerchant {
             canonical_key: Some(canonical_key(&display)),
             display,
-            source: MatchSource::Structural,
-            confidence: 0.85,
         };
     }
 
@@ -49,16 +45,12 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
         return NormalizedMerchant {
             display: canonical.clone(),
             canonical_key: Some(canonical_key(&canonical)),
-            source: MatchSource::EarlyContains,
-            confidence: 0.95,
         };
     }
     if let Some(canonical) = index.exact.get(&work) {
         return NormalizedMerchant {
             display: canonical.clone(),
             canonical_key: Some(canonical_key(canonical)),
-            source: MatchSource::EarlyExact,
-            confidence: 1.0,
         };
     }
 
@@ -88,16 +80,12 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
         return NormalizedMerchant {
             display: canonical.clone(),
             canonical_key: Some(canonical_key(&canonical)),
-            source: MatchSource::Contains,
-            confidence: 0.9,
         };
     }
     if let Some(canonical) = index.exact.get(work.trim()) {
         return NormalizedMerchant {
             display: canonical.clone(),
             canonical_key: Some(canonical_key(canonical)),
-            source: MatchSource::Exact,
-            confidence: 1.0,
         };
     }
 
@@ -106,8 +94,6 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
         return NormalizedMerchant {
             canonical_key: Some(canonical_key(&display)),
             display,
-            source: MatchSource::Structural,
-            confidence: 0.85,
         };
     }
 
@@ -120,8 +106,6 @@ pub fn normalize(raw: &str, src: MerchantSource, index: &AliasIndex) -> Normaliz
     NormalizedMerchant {
         canonical_key: Some(canonical_key(&display)),
         display,
-        source: MatchSource::Fallback,
-        confidence: 0.5,
     }
 }
 

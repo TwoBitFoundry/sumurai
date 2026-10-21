@@ -2,7 +2,6 @@ import {
   AuthenticationError,
   ConflictError,
   FetchHttpClient,
-  ForbiddenError,
   ServerError,
   ValidationError,
 } from '@/services/boundaries';

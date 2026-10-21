@@ -6,7 +6,7 @@ import { Button } from '@/ui/primitives/Button';
 import { cn } from '@/ui/primitives/utils';
 import { text as uiTextRecipes } from '@/ui/recipes';
 
-export const THEME_MODE_SELECTOR_ACTIVE_PILL_LAYOUT_ID = 'theme-mode-selector-pill-active';
+const THEME_MODE_SELECTOR_ACTIVE_PILL_LAYOUT_ID = 'theme-mode-selector-pill-active';
 
 const themeModes: Array<{ value: ThemePreference; label: string; icon: LucideIcon }> = [
   { value: 'system', label: 'System', icon: Monitor },

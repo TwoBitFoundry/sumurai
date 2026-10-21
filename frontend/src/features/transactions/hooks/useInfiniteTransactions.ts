@@ -5,7 +5,7 @@ import type { Transaction } from '../../../types/api';
 import type { TransactionWindowFilters } from '../models/transactionWindow';
 import { useTransactionFilters } from './useTransactionFilters';
 
-export const TRANSACTION_PAGE_LIMIT = 40;
+const TRANSACTION_PAGE_LIMIT = 40;
 export const PREFETCH_THRESHOLD = 5;
 
 export interface UseInfiniteTransactionsResult {

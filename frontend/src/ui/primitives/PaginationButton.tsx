@@ -1,4 +1,3 @@
-import type React from 'react';
 import { Button, type ButtonProps } from './Button';
 import { cn } from './utils';
 

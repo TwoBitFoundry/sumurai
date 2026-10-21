@@ -3,7 +3,7 @@ import type { SyncAllRow } from '../types/syncAllStatus';
 export interface SyncAllBank {
   id: string;
   name: string;
-  provider: 'plaid' | 'teller' | 'simplefin';
+  provider: 'plaid' | 'simplefin';
   connectionId: string | null;
 }
 

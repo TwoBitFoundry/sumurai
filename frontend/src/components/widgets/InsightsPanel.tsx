@@ -5,7 +5,7 @@ import { text as semanticTextRecipes, font as uiTypographyRecipes } from '@/ui/r
 import type { HeroAccent } from '@/ui/tokens';
 import { InsightsPanelShell } from './InsightsPanelShell';
 
-export interface InsightsPanelProps {
+interface InsightsPanelProps {
   testId: string;
   accent: HeroAccent;
   headerLabel?: ReactNode;
@@ -30,7 +30,7 @@ export function InsightsPanelHeader({ label, isLoading = false }: InsightsPanelH
   );
 }
 
-export function InsightsPanel({
+function InsightsPanel({
   testId,
   accent,
   headerLabel,

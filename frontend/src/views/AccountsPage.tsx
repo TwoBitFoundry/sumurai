@@ -35,7 +35,6 @@ import { PageLayout } from '../layouts/PageLayout';
 import { DiyService } from '../services/DiyService';
 import { PlaidService } from '../services/PlaidService';
 import { SimpleFinService } from '../services/SimpleFinService';
-import { TellerService } from '../services/TellerService';
 import type { FinancialProvider } from '../types/api';
 import type { ProviderCatalogue } from '../types/providerCatalog';
 import {
@@ -121,31 +120,13 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
   const plaidConnections = usePlaidConnections({
     enabled: isOnline && providerCatalog.canConnectWith('plaid'),
   });
-  const hasTellerConnections = useMemo(() => {
-    if (providerCatalog.userProvider === 'teller') {
-      return true;
-    }
-    return Object.values(accountFilter.accountsByBank)
-      .flat()
-      .some((account) => account.provider === 'teller');
-  }, [accountFilter.accountsByBank, providerCatalog.userProvider]);
-  const tellerStatusQuery = useQuery({
-    queryKey: ['teller', 'connections'],
-    queryFn: () => TellerService.getStatus(),
-    enabled: isOnline && hasTellerConnections,
-    staleTime: 5 * 60 * 1000,
-  });
-
   const providerByConnectionId = useMemo(() => {
     const providers = new Map<string, FinancialProvider>();
     for (const connection of plaidConnections.connections) {
       providers.set(connection.connectionId, 'plaid');
     }
-    for (const status of tellerStatusQuery.data ?? []) {
-      providers.set(status.connection_id, 'teller');
-    }
     return providers;
-  }, [plaidConnections.connections, tellerStatusQuery.data]);
+  }, [plaidConnections.connections]);
 
   const connectedAggregators = useMemo(() => {
     const providers = new Set<SyncProvider>();
@@ -242,22 +223,10 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
 
   const existingInstitutionNames = useMemo(() => banks.map((bank) => bank.name), [banks]);
 
-  const providersForSync = useMemo(() => {
-    const providers = new Set<SyncProvider>();
-    if (isSyncProvider(primaryProvider)) providers.add(primaryProvider);
-    for (const bank of banks) {
-      if (isSyncProvider(bank.provider)) providers.add(bank.provider);
-    }
-    return providers;
-  }, [banks, primaryProvider]);
-
   const banksWithSync = useMemo(() => {
     const syncByConnectionId = new Map<string, string | null>();
     for (const connection of plaidConnections.connections) {
       syncByConnectionId.set(connection.connectionId, connection.lastSyncAt);
-    }
-    for (const status of tellerStatusQuery.data ?? []) {
-      syncByConnectionId.set(status.connection_id, status.last_sync_at);
     }
     return banks.map((bank) => {
       const connectionId = bank.connectionId;
@@ -274,7 +243,7 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
         status: bankStatuses[bank.id] ?? bank.status,
       };
     });
-  }, [bankStatuses, banks, plaidConnections.connections, tellerStatusQuery.data]);
+  }, [bankStatuses, banks, plaidConnections.connections]);
 
   const { pushToast: pushAccountsToast, ...accountsToastStack } = useAccountsToastStack(null);
   const [syncInstitutionRow, setSyncInstitutionRow] = useState<SyncAllRow | null>(null);
@@ -435,7 +404,7 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
           return;
         }
 
-        if (provider === 'teller' || !isSyncProvider(provider)) {
+        if (!isSyncProvider(provider)) {
           return;
         }
 
@@ -642,9 +611,6 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
           }
 
           count = countNewTransactions(result.transactions);
-        } else if (bank.provider === 'teller') {
-          const result = await TellerService.syncTransactions(bank.connectionId);
-          count = result.transactions.length;
         } else {
           const result = await PlaidService.syncTransactions(bank.connectionId);
           count = result.transactions.length;
@@ -690,8 +656,6 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
       try {
         if (bank.provider === 'diy') {
           await DiyService.disconnectInstitution(connectionId);
-        } else if (bank.provider === 'teller') {
-          await TellerService.disconnect(connectionId);
         } else {
           await PlaidService.disconnect(connectionId);
         }
@@ -700,12 +664,10 @@ const AccountsPage = ({ onError, demoModeActive = false }: AccountsPageProps) =>
 
         if (isSyncProvider(bank.provider)) {
           await refreshBankData(bank.provider, { resetTransactions: 'remove' });
-        } else if (bank.provider === 'diy') {
+        } else {
           await refreshFinancialDataAfterProviderChange(queryClient, [], {
             resetTransactions: 'remove',
           });
-        } else {
-          return;
         }
 
         dispatchFinancialAppRefresh({ tab: 'accounts' });

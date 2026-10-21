@@ -9,7 +9,7 @@ import {
 } from '@/ui/recipes';
 import { ChartTooltipShell } from './ChartGlassTooltip';
 
-export type BalancesBankTooltipDatum = {
+type BalancesBankTooltipDatum = {
   bank: string;
   cash: number | null;
   investments: number | null;

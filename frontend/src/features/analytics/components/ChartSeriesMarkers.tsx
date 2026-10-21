@@ -1,6 +1,6 @@
 import type { ActiveDotProps, DotItemDotProps } from 'recharts';
 
-export const chartSeriesDotRadius = {
+const chartSeriesDotRadius = {
   default: 5,
   active: 7,
   hit: 10,

@@ -1,4 +1,4 @@
-export type FinancialProvider = 'plaid' | 'teller' | 'simplefin' | 'diy';
+export type FinancialProvider = 'plaid' | 'simplefin' | 'diy';
 export type ExportFormat = 'csv' | 'ofx';
 
 export interface TransactionLocation {
@@ -120,10 +120,6 @@ export interface BudgetsOverviewResponse {
 // Historically budgets included a `month`. Budgets are now
 // persistent containers not tied to months. Keep `month` only
 // for backward compatibility with older backend responses.
-export interface LegacyBudgetWithMonth extends Budget {
-  month?: string;
-}
-
 export interface Account {
   id: string;
   name: string;
@@ -145,10 +141,6 @@ export interface Account {
 
 export interface PlaidLinkTokenResponse {
   link_token: string;
-}
-
-export interface PlaidExchangeTokenRequest {
-  public_token: string;
 }
 
 export interface PlaidExchangeTokenResponse {
@@ -373,16 +365,6 @@ export function isAutoCategorizationJobActive(status: AutoCategorizationJobStatu
   return status === 'running' || status === 'cancelling';
 }
 
-export interface ApiError {
-  error: string;
-  message: string;
-}
-
-export interface ApiResponse<T> {
-  data?: T;
-  error?: ApiError;
-}
-
 export interface AuthResponse {
   user_id: string;
   email?: string;
@@ -464,5 +446,3 @@ export interface FixedExpenseSummary {
   account_ids: string[];
   category?: string;
 }
-
-export type SubscriptionSummary = FixedExpenseSummary;

@@ -7,7 +7,7 @@ jest.mock('@/features/transactions/hooks/useTransactionListLauncher', () => ({
   }),
 }));
 
-import { render, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type React from 'react';
 import { BankCard } from '@/components/BankCard';

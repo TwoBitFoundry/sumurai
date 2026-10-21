@@ -1,12 +1,8 @@
-#![allow(dead_code)]
-
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-
-#[allow(unused_imports)]
-use serde_json::json;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, ToSchema)]
 pub enum ImportFileFormat {
@@ -68,4 +64,12 @@ pub struct ImportMultipartRequest {
     pub file: String,
     pub account_id: String,
     pub csv_mapping: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ImportUpload {
+    pub file_name: String,
+    pub file_bytes: Vec<u8>,
+    pub account_id: Uuid,
+    pub csv_mapping: Option<CsvColumnMapping>,
 }

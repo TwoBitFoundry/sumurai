@@ -10,12 +10,6 @@ describe('providerCards', () => {
     expect(PROVIDER_PRICE_ORDER).toEqual(['diy', 'simplefin', 'plaid']);
   });
 
-  it('PROVIDER_CARD_CONFIG keeps teller for legacy bank logos', () => {
-    expect(PROVIDER_CARD_CONFIG.teller).toBeDefined();
-    expect(PROVIDER_CARD_CONFIG.teller.logoSrc).toBe('/teller.webp');
-    expect(PROVIDER_CARD_CONFIG.teller.title).toBe('Teller');
-  });
-
   it('PROVIDER_CARD_CONFIG has a diy entry with expected top-level fields', () => {
     expect(PROVIDER_CARD_CONFIG.diy).toBeDefined();
     expect(PROVIDER_CARD_CONFIG.diy.title).toBe('Self-Managed');
@@ -32,7 +26,7 @@ describe('providerCards', () => {
   });
 
   it('aggregator Sync sections are marked synced with Yes value', () => {
-    for (const provider of ['teller', 'simplefin', 'plaid'] as const) {
+    for (const provider of ['simplefin', 'plaid'] as const) {
       const syncSection = PROVIDER_CARD_CONFIG[provider].sections.find((s) => s.label === 'Sync');
       expect(syncSection?.synced).toBe(true);
       expect(syncSection?.value).toBe('Yes');
@@ -55,13 +49,11 @@ describe('providerCards', () => {
   });
 
   it('resolvePickerVisibleProviders returns diy and the active aggregator only', () => {
-    expect(resolvePickerVisibleProviders('teller')).toEqual(['diy']);
     expect(resolvePickerVisibleProviders('plaid')).toEqual(['diy', 'plaid']);
     expect(resolvePickerVisibleProviders('simplefin')).toEqual(['diy', 'simplefin']);
   });
 
   it('resolvePickerVisibleProviders returns all pickable providers in demo mode even with an active aggregator', () => {
-    expect(resolvePickerVisibleProviders('teller', true)).toEqual(PROVIDER_PRICE_ORDER);
     expect(resolvePickerVisibleProviders('plaid', true)).toEqual(PROVIDER_PRICE_ORDER);
     expect(resolvePickerVisibleProviders(null, true)).toEqual(PROVIDER_PRICE_ORDER);
   });

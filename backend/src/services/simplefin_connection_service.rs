@@ -22,7 +22,6 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use uuid::Uuid;
 
-#[allow(dead_code)]
 pub struct SimpleFinConnectionService {
     db_repository: Arc<dyn DatabaseRepository>,
     cache_service: Arc<dyn CacheService>,
@@ -194,15 +193,13 @@ impl SimpleFinConnectionService {
         request: &ProviderConnectRequest,
     ) -> Result<ProviderConnectResponse, SimpleFinConnectError> {
         if request.provider.as_str() != "simplefin" {
-            return Err(SimpleFinConnectError::InvalidProvider(
-                request.provider.clone(),
-            ));
+            return Err(SimpleFinConnectError::InvalidProvider);
         }
 
         let provider = self
             .provider_registry
             .get("simplefin")
-            .ok_or_else(|| SimpleFinConnectError::InvalidProvider("simplefin".to_string()))?;
+            .ok_or(SimpleFinConnectError::InvalidProvider)?;
 
         let credentials = self
             .resolve_simplefin_credentials_for_connect(

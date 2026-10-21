@@ -111,10 +111,6 @@ pub fn is_transfer_category(category: &str) -> bool {
         || category.starts_with("TRANSFER_OUT_")
 }
 
-pub fn is_excluded_analytics_category(category: &str) -> bool {
-    EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES.contains(&category) || is_transfer_category(category)
-}
-
 fn sql_effective_category_expr() -> &'static str {
     "COALESCE(o.category_name, t.category_primary)"
 }
@@ -127,7 +123,6 @@ fn sql_not_transfer_category_condition(category_expr: &str) -> String {
 
 #[async_trait]
 #[cfg_attr(test, mockall::automock)]
-#[allow(dead_code)]
 pub trait DatabaseRepository: Send + Sync {
     async fn create_user(&self, user: &User) -> Result<()>;
     async fn get_user_by_email(&self, email: &str) -> Result<Option<User>>;
@@ -147,10 +142,6 @@ pub trait DatabaseRepository: Send + Sync {
         user_id: &Uuid,
         account_ids: Option<&[Uuid]>,
     ) -> Result<Option<NaiveDate>>;
-    async fn get_transactions_with_account_for_user(
-        &self,
-        user_id: &Uuid,
-    ) -> Result<Vec<TransactionWithAccount>>;
     async fn get_transactions_for_export(
         &self,
         user_id: &Uuid,
@@ -286,10 +277,6 @@ pub trait DatabaseRepository: Send + Sync {
         connection_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<Option<ProviderConnection>>;
-    async fn delete_provider_transactions(&self, item_id: &str) -> Result<i32>;
-    async fn delete_provider_accounts(&self, item_id: &str) -> Result<i32>;
-    async fn delete_provider_connection(&self, user_id: &Uuid, item_id: &str) -> Result<()>;
-    async fn delete_provider_credentials(&self, item_id: &str) -> Result<()>;
     async fn disconnect_provider_connection_cascade(
         &self,
         user_id: &Uuid,
@@ -316,8 +303,6 @@ pub trait DatabaseRepository: Send + Sync {
         &self,
         user_id: &Uuid,
     ) -> Result<Vec<LatestAccountBalance>>;
-
-    async fn update_user_password(&self, user_id: &Uuid, new_password_hash: &str) -> Result<()>;
 
     async fn clear_user_password_hash(&self, user_id: &Uuid) -> Result<()>;
 
@@ -350,8 +335,6 @@ pub trait DatabaseRepository: Send + Sync {
     ) -> Result<()>;
 
     async fn delete_webauthn_credential(&self, user_id: &Uuid, id: &Uuid) -> Result<bool>;
-
-    async fn delete_all_webauthn_credentials_for_user(&self, user_id: &Uuid) -> Result<u64>;
 
     async fn create_custom_category(
         &self,
@@ -405,13 +388,6 @@ pub trait DatabaseRepository: Send + Sync {
         &self,
         user_id: &Uuid,
     ) -> Result<Vec<crate::models::simplefin::SimpleFinIgnoredInstitution>>;
-
-    async fn insert_simplefin_hidden_org(
-        &self,
-        user_id: &Uuid,
-        conn_id: &str,
-        institution_name: Option<&str>,
-    ) -> Result<()>;
 
     async fn remove_simplefin_hidden_org(&self, user_id: &Uuid, org_conn_id: &str) -> Result<bool>;
 
@@ -1587,80 +1563,6 @@ impl DatabaseRepository for PostgresRepository {
         .await
     }
 
-    async fn delete_provider_transactions(&self, item_id: &str) -> Result<i32> {
-        let db = self.conn();
-        let Some(connection) = provider_connections::Entity::find()
-            .filter(provider_connections::Column::ItemId.eq(item_id))
-            .one(&db)
-            .await?
-        else {
-            return Ok(0);
-        };
-
-        let account_ids = accounts::Entity::find()
-            .filter(accounts::Column::ProviderConnectionId.eq(connection.id))
-            .all(&db)
-            .await?
-            .into_iter()
-            .map(|account| account.id)
-            .collect::<Vec<_>>();
-
-        if account_ids.is_empty() {
-            return Ok(0);
-        }
-
-        let result = transactions::Entity::delete_many()
-            .filter(transactions::Column::AccountId.is_in(account_ids))
-            .exec(&db)
-            .await?;
-
-        Ok(result.rows_affected as i32)
-    }
-
-    async fn delete_provider_accounts(&self, item_id: &str) -> Result<i32> {
-        let db = self.conn();
-        let Some(connection) = provider_connections::Entity::find()
-            .filter(provider_connections::Column::ItemId.eq(item_id))
-            .one(&db)
-            .await?
-        else {
-            return Ok(0);
-        };
-
-        let result = accounts::Entity::delete_many()
-            .filter(accounts::Column::ProviderConnectionId.eq(connection.id))
-            .exec(&db)
-            .await?;
-
-        Ok(result.rows_affected as i32)
-    }
-
-    async fn delete_provider_connection(&self, user_id: &Uuid, item_id: &str) -> Result<()> {
-        let user_id = *user_id;
-        let item_id = item_id.to_string();
-        self.with_tenant(&user_id, move |txn| {
-            Box::pin(async move {
-                provider_connections::Entity::delete_many()
-                    .filter(provider_connections::Column::UserId.eq(user_id))
-                    .filter(provider_connections::Column::ItemId.eq(item_id))
-                    .exec(txn)
-                    .await?;
-                Ok(())
-            })
-        })
-        .await
-    }
-
-    async fn delete_provider_credentials(&self, item_id: &str) -> Result<()> {
-        let db = self.conn();
-        provider_credentials::Entity::delete_many()
-            .filter(provider_credentials::Column::ItemId.eq(item_id))
-            .exec(&db)
-            .await?;
-
-        Ok(())
-    }
-
     async fn disconnect_provider_connection_cascade(
         &self,
         user_id: &Uuid,
@@ -1780,42 +1682,6 @@ impl DatabaseRepository for PostgresRepository {
         Ok(rows
             .into_iter()
             .map(Self::map_effective_category_transaction_row)
-            .collect())
-    }
-
-    async fn get_transactions_with_account_for_user(
-        &self,
-        user_id: &Uuid,
-    ) -> Result<Vec<TransactionWithAccount>> {
-        let user_id = *user_id;
-        let rows = self
-            .with_tenant(&user_id, move |txn| {
-                Box::pin(async move {
-                    Ok(
-                        Self::transaction_with_account_select(Self::apply_transaction_filters(
-                            Self::transactions_with_account_joins(),
-                            &user_id,
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                        ))
-                        .order_by_desc(transactions::Column::Date)
-                        .order_by_desc(transactions::Column::CreatedAt)
-                        .limit(1000)
-                        .into_model::<TransactionWithAccountRow>()
-                        .all(txn)
-                        .await?,
-                    )
-                })
-            })
-            .await?;
-
-        Ok(rows
-            .into_iter()
-            .map(Self::map_transaction_with_account_row)
             .collect())
     }
 
@@ -2936,26 +2802,6 @@ impl DatabaseRepository for PostgresRepository {
             .collect())
     }
 
-    async fn update_user_password(&self, user_id: &Uuid, new_password_hash: &str) -> Result<()> {
-        let user_id = *user_id;
-        let new_password_hash = new_password_hash.to_string();
-        self.with_tenant(&user_id, move |txn| {
-            Box::pin(async move {
-                users::Entity::update_many()
-                    .col_expr(users::Column::PasswordHash, Expr::value(new_password_hash))
-                    .col_expr(
-                        users::Column::UpdatedAt,
-                        Expr::value(Self::to_db_time(chrono::Utc::now())),
-                    )
-                    .filter(users::Column::Id.eq(user_id))
-                    .exec(txn)
-                    .await?;
-                Ok(())
-            })
-        })
-        .await
-    }
-
     async fn clear_user_password_hash(&self, user_id: &Uuid) -> Result<()> {
         let user_id = *user_id;
         self.with_tenant(&user_id, move |txn| {
@@ -3095,20 +2941,6 @@ impl DatabaseRepository for PostgresRepository {
                     .exec(txn)
                     .await?;
                 Ok(result.rows_affected > 0)
-            })
-        })
-        .await
-    }
-
-    async fn delete_all_webauthn_credentials_for_user(&self, user_id: &Uuid) -> Result<u64> {
-        let user_id = *user_id;
-        self.with_tenant(&user_id, move |txn| {
-            Box::pin(async move {
-                let result = webauthn_credentials::Entity::delete_many()
-                    .filter(webauthn_credentials::Column::UserId.eq(user_id))
-                    .exec(txn)
-                    .await?;
-                Ok(result.rows_affected)
             })
         })
         .await
@@ -3385,43 +3217,6 @@ impl DatabaseRepository for PostgresRepository {
                 },
             )
             .collect())
-    }
-
-    async fn insert_simplefin_hidden_org(
-        &self,
-        user_id: &Uuid,
-        conn_id: &str,
-        institution_name: Option<&str>,
-    ) -> Result<()> {
-        let conn_id = conn_id.to_string();
-        let institution_name = institution_name.map(str::to_string);
-        let user_id = *user_id;
-
-        self.with_tenant(&user_id, move |txn| {
-            Box::pin(async move {
-                simplefin_hidden_orgs::Entity::insert(simplefin_hidden_orgs::ActiveModel {
-                    user_id: Set(user_id),
-                    org_conn_id: Set(conn_id),
-                    hidden_at: Set(Self::to_db_time(chrono::Utc::now())),
-                    institution_name: Set(institution_name),
-                })
-                .on_conflict(
-                    OnConflict::columns([
-                        simplefin_hidden_orgs::Column::UserId,
-                        simplefin_hidden_orgs::Column::OrgConnId,
-                    ])
-                    .update_columns([
-                        simplefin_hidden_orgs::Column::InstitutionName,
-                        simplefin_hidden_orgs::Column::HiddenAt,
-                    ])
-                    .to_owned(),
-                )
-                .exec(txn)
-                .await?;
-                Ok(())
-            })
-        })
-        .await
     }
 
     async fn remove_simplefin_hidden_org(&self, user_id: &Uuid, org_conn_id: &str) -> Result<bool> {

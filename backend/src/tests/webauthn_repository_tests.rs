@@ -36,7 +36,7 @@ async fn create_test_user(repo: &PostgresRepository) -> User {
         id: Uuid::new_v4(),
         email: format!("webauthn_test_{}@example.com", Uuid::new_v4()),
         password_hash: None,
-        provider: "teller".to_string(),
+        provider: "simplefin".to_string(),
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: false,
@@ -182,36 +182,6 @@ async fn given_inserted_credential_when_delete_then_gone() {
         .await
         .unwrap();
     assert!(deleted);
-
-    let remaining = repo
-        .list_webauthn_credentials_for_user(&user.id)
-        .await
-        .unwrap();
-    assert!(remaining.is_empty());
-
-    repo.delete_user(&user.id).await.unwrap();
-}
-
-#[tokio::test]
-async fn given_delete_all_when_called_then_all_credentials_removed() {
-    let Some(pool) = connect_pool().await else {
-        return;
-    };
-    let repo = open_repository(pool);
-    let user = create_test_user(&repo).await;
-
-    repo.insert_webauthn_credential(&user.id, fake_credential_id(), fake_passkey_json(), "Key A")
-        .await
-        .unwrap();
-    repo.insert_webauthn_credential(&user.id, fake_credential_id(), fake_passkey_json(), "Key B")
-        .await
-        .unwrap();
-
-    let count = repo
-        .delete_all_webauthn_credentials_for_user(&user.id)
-        .await
-        .unwrap();
-    assert_eq!(count, 2);
 
     let remaining = repo
         .list_webauthn_credentials_for_user(&user.id)

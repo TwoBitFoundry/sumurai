@@ -63,17 +63,6 @@ const monthControl = {
   goToCurrentMonth: jest.fn(),
 };
 
-const makeSubscription = (merchant: string) => ({
-  merchant,
-  normalized_merchant: merchant.toLowerCase(),
-  monthly_cost: '9.99',
-  cadence: 'Monthly',
-  last_charged: '2026-05-01',
-  first_charged: '2026-05-01',
-  occurrence_count: 3,
-  account_ids: [],
-});
-
 const baseUseBudgetsMock = {
   isLoading: false,
   transactionsLoading: false,

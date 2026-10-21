@@ -9,7 +9,6 @@ const brandTeal = generatedTokens.color['brand-teal'].$value.hex;
 const brandMint = generatedTokens.color['brand-mint'].$value.hex;
 const brandOcean = generatedTokens.color['brand-ocean'].$value.hex;
 const brandNavy = generatedTokens.color['brand-navy'].$value.hex;
-const brandIce = generatedTokens.color['brand-ice'].$value.hex;
 const brandCrimson = generatedTokens.color['brand-crimson'].$value.hex;
 const brandSignalRed = generatedTokens.color['brand-signal-red'].$value.hex;
 const brandAmber = generatedTokens.color['brand-amber'].$value.hex;
@@ -559,39 +558,6 @@ export function getCategoryAccent(name?: string | null, index?: number): Categor
   return rotatableCategoryAccents[hashString(key) % rotatableCategoryAccents.length];
 }
 
-export function getHeroAccentForCategoryKey(categoryKey: string): HeroAccent {
-  const map: Record<string, HeroAccent> = {
-    sky: 'azure',
-    emerald: 'teal',
-    cyan: 'azure',
-    violet: 'ocean',
-    amber: 'amber',
-    rose: 'crimson',
-    indigo: 'ocean',
-    fuchsia: 'azure',
-    teal: 'teal',
-    lime: 'teal',
-    orange: 'amber',
-    pink: 'crimson',
-    slate: 'slate',
-    coral: 'crimson',
-    mint: 'teal',
-  };
-  return map[categoryKey] ?? 'teal';
-}
-
 export function getHeroAccentTheme(accent: HeroAccent): HeroAccentTheme {
   return heroAccents[accent];
 }
-
-export const _categoryChipClasses = [
-  ...categoryPill.surface,
-  ...categoryPill.border,
-  ...categoryPill.chipSurface,
-  ...categoryPill.chipSurfaceSelected,
-  ...categoryPill.text,
-  ...categoryPill.dot,
-  ...categoryPill.ring,
-  '--category-accent',
-  '--category-accent-bright',
-] as const;

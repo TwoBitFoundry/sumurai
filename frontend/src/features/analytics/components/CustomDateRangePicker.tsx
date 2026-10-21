@@ -157,7 +157,6 @@ export function CustomDateRangePicker({
     }
     return validateCustomDateRange(startDate, endDate, bounds);
   }, [bounds, endDate, hasInteracted, startDate]);
-  const isValid = validationMessage === null;
   const sliderValue = useMemo<[number, number]>(() => {
     if (!bounds) {
       return [0, 0];

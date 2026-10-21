@@ -5,9 +5,7 @@ import { AuthService } from '@/services/authService';
 import type { FinancialProvider } from '@/types/api';
 import { ThemeTestProvider } from '../../utils/ThemeTestProvider';
 
-const chooseProviderMock = jest.fn(
-  async (_provider: 'plaid' | 'teller' | 'simplefin' | 'diy') => undefined
-);
+const chooseProviderMock = jest.fn(async (_provider: 'plaid' | 'simplefin' | 'diy') => undefined);
 const plaidInitiateConnectionMock = jest.fn(async (_setupToken?: string) => undefined);
 
 jest.mock('@/hooks/useProviderCatalog', () => {
@@ -37,7 +35,7 @@ jest.mock('@/hooks/useProviderCatalog', () => {
 });
 
 jest.mock('@/hooks/useFinancialConnection', () => ({
-  useFinancialConnection: ({ provider }: { provider: 'plaid' | 'teller' | 'simplefin' }) => ({
+  useFinancialConnection: ({ provider }: { provider: 'plaid' | 'simplefin' }) => ({
     isReady: true,
     isConnected: false,
     connectionInProgress: false,
@@ -76,10 +74,10 @@ jest.mock('@/components/onboarding/OnboardingProviderConnectModal', () => ({
     onClose,
     onConnected,
   }: {
-    provider: 'plaid' | 'teller' | 'simplefin' | null;
+    provider: 'plaid' | 'simplefin' | null;
     isOpen: boolean;
     onClose: () => void;
-    onConnected: (provider: 'plaid' | 'teller' | 'simplefin') => Promise<void> | void;
+    onConnected: (provider: 'plaid' | 'simplefin') => Promise<void> | void;
   }) =>
     isOpen && provider ? (
       <div data-testid="provider-connect-modal">
@@ -99,7 +97,7 @@ jest.mock('@/features/plaid/components/ProviderSelectionPanel', () => ({
     onSelectProvider,
     heroAction,
   }: {
-    onSelectProvider: (provider: 'plaid' | 'teller' | 'simplefin' | 'diy') => void;
+    onSelectProvider: (provider: 'plaid' | 'simplefin' | 'diy') => void;
     heroAction?: React.ReactNode;
   }) => (
     <div>
@@ -112,9 +110,6 @@ jest.mock('@/features/plaid/components/ProviderSelectionPanel', () => ({
       </button>
       <button type="button" onClick={() => onSelectProvider('diy')}>
         Pick DIY
-      </button>
-      <button type="button" onClick={() => onSelectProvider('teller')}>
-        Pick Teller
       </button>
     </div>
   ),
@@ -182,22 +177,6 @@ describe('OnboardingProviderPicker', () => {
 
     expect(screen.queryByTestId('provider-connect-modal')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /pick simplefin/i })).toBeVisible();
-  });
-
-  it('ignores teller selection without starting a connect flow', async () => {
-    const user = userEvent.setup();
-
-    render(
-      <ThemeTestProvider>
-        <OnboardingProviderPicker onComplete={jest.fn()} />
-      </ThemeTestProvider>
-    );
-
-    await user.click(screen.getByRole('button', { name: /pick teller/i }));
-
-    expect(plaidInitiateConnectionMock).not.toHaveBeenCalled();
-    expect(screen.queryByTestId('provider-connect-modal')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('teller-connection-mount')).not.toBeInTheDocument();
   });
 
   it('starts Plaid connect from the picker click', async () => {

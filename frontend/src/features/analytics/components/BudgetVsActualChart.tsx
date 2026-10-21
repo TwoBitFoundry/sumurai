@@ -11,7 +11,7 @@ import { ChartGlassTooltip, chartTooltipRechartsProps } from './ChartGlassToolti
 import { ChartGlowLineCurve, ChartGlowLineFilter } from './ChartGlowLineCurve';
 import { renderChartSeriesActiveDot, renderChartSeriesDot } from './ChartSeriesMarkers';
 
-export interface BudgetVsActualChartData {
+interface BudgetVsActualChartData {
   month: string;
   expenses: number;
 }

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { AppTitleBar } from '@/ui/primitives/AppTitleBar';
 import { ControlTooltipProvider } from '@/ui/primitives/ControlHoverLabel';
-import { chromeBar, control } from '@/ui/recipes';
+import { control } from '@/ui/recipes';
 
 function renderAppTitleBar(ui: React.ReactElement) {
   return render(<ControlTooltipProvider>{ui}</ControlTooltipProvider>);

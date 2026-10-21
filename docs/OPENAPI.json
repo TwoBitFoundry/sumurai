@@ -5296,11 +5296,11 @@
         "properties": {
           "provider": {
             "type": "string",
-            "example": "teller"
+            "example": "simplefin"
           }
         },
         "example": {
-          "provider": "teller"
+          "provider": "simplefin"
         }
       },
       "ProviderSelectResponse": {
@@ -5346,7 +5346,7 @@
               "transaction_count": 120
             }
           ],
-          "provider": "teller"
+          "provider": "simplefin"
         }
       },
       "RegisterBeginResponse": {

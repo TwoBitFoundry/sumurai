@@ -54,7 +54,7 @@ import {
 import type { UseImportTransactionsResult } from '../hooks/useImportTransactions';
 import { useImportTransactions } from '../hooks/useImportTransactions';
 
-export interface ImportModalAccount {
+interface ImportModalAccount {
   id: string;
   name: string;
   mask: string;

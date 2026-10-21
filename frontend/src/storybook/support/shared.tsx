@@ -157,11 +157,6 @@ export const storyPlaidEmptyProviderInfo = {
   user_provider: 'plaid' as const,
 };
 
-export const storyTellerEmptyProviderInfo = {
-  ...storyFullProviderCatalogInfo,
-  user_provider: 'teller' as const,
-};
-
 const storyPlaidLinkTokenHandler = route('POST', '/plaid/link-token', () =>
   jsonResponse({ link_token: 'story-link-token' })
 );
@@ -177,20 +172,6 @@ export function buildStoryPlaidPickerEmptyHandlers(): StoryApiRoute[] {
     ),
     route('GET', '/providers/accounts', () => jsonResponse([])),
     storyPlaidLinkTokenHandler,
-    ...storyAutoCategorizeHandlers,
-  ];
-}
-
-export function buildStoryTellerPickerEmptyHandlers(): StoryApiRoute[] {
-  return [
-    route('GET', '/providers/info', () => jsonResponse(storyTellerEmptyProviderInfo)),
-    route('GET', '/providers/status', () =>
-      jsonResponse({
-        provider: 'teller',
-        connections: [],
-      })
-    ),
-    route('GET', '/providers/accounts', () => jsonResponse([])),
     ...storyAutoCategorizeHandlers,
   ];
 }

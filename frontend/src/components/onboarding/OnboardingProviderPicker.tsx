@@ -49,10 +49,6 @@ export function OnboardingProviderPicker({
         return;
       }
 
-      if (provider === 'teller') {
-        return;
-      }
-
       setConnectingProvider(provider);
       if (provider === 'plaid') {
         await plaidConnectionFlow.initiateConnection();

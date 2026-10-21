@@ -28,6 +28,10 @@ impl FinancialDataProvider for PlaidProvider {
         "plaid"
     }
 
+    fn supports_transaction_sync(&self) -> bool {
+        true
+    }
+
     async fn create_link_token(&self, user_id: &Uuid) -> Result<String> {
         self.client.create_link_token(&user_id.to_string()).await
     }

@@ -1,14 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import {
-  isProviderReconnectRequiredError,
-  isTellerNoLongerSupportedError,
-} from '@/features/sync/utils/isProviderReconnectRequiredError';
-import {
-  ApiError,
-  AuthenticationError,
-  NotFoundError,
-  ValidationError,
-} from '@/services/ApiClient';
+import { isProviderReconnectRequiredError } from '@/features/sync/utils/isProviderReconnectRequiredError';
+import { ApiError, AuthenticationError, NotFoundError } from '@/services/ApiClient';
 
 describe('isProviderReconnectRequiredError', () => {
   it('returns true when the API exposes a provider credentials error code', () => {
@@ -41,15 +33,5 @@ describe('isProviderReconnectRequiredError', () => {
         )
       )
     ).toBe(false);
-  });
-
-  it('returns false for Teller sunset responses', () => {
-    const error = new ValidationError(
-      'Teller is no longer supported because the provider no longer offers API access.',
-      { code: 'TELLER_NO_LONGER_SUPPORTED' },
-      'TELLER_NO_LONGER_SUPPORTED'
-    );
-    expect(isTellerNoLongerSupportedError(error)).toBe(true);
-    expect(isProviderReconnectRequiredError(error)).toBe(false);
   });
 });

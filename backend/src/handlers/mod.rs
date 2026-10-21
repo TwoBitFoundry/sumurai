@@ -1,2 +1,14 @@
+pub mod analytics;
+pub mod auth;
+pub mod auto_categorization;
+pub mod budget;
+pub mod category;
+pub mod diy;
+pub mod error;
 pub mod export;
+pub mod import;
 pub mod otel_browser;
+pub mod passkey;
+pub mod plaid;
+pub mod provider;
+pub mod transaction;

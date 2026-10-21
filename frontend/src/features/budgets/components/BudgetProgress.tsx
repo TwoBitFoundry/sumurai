@@ -2,7 +2,7 @@ import { cn } from '@/ui/primitives';
 import { budgetProgress as budgetProgressRecipes, status, text } from '@/ui/recipes';
 import { fmtUSD } from '../../../utils/format';
 
-export function getBudgetProgressMetrics(amount: number, spent: number) {
+function getBudgetProgressMetrics(amount: number, spent: number) {
   const percent = amount > 0 ? (spent / amount) * 100 : spent > 0 ? 100 : 0;
   const isOver = spent > amount;
   const remaining = Math.max(0, amount - spent);

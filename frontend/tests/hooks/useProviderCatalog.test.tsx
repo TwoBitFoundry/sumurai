@@ -44,18 +44,6 @@ describe('useProviderCatalog', () => {
     expect(gateway.fetchInfo).toHaveBeenCalledTimes(1);
   });
 
-  it('reports teller as never connectable', async () => {
-    const gateway = createGateway();
-    const wrapper = createWrapper();
-    const { result } = renderHook(() => useProviderCatalog({ gateway }), { wrapper });
-
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    expect(result.current.canConnectWith('plaid')).toBe(true);
-    expect(result.current.canConnectWith('teller')).toBe(false);
-    expect(result.current.getConnectBlockedReason('teller')).toBe('Teller is no longer supported');
-  });
-
   it('keeps the selected provider in the shared query cache across remounts', async () => {
     const gateway = createGateway();
     const wrapper = createWrapper();

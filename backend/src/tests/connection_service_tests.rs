@@ -1,7 +1,6 @@
 use crate::models::{
     account::Account,
     plaid::ProviderConnection,
-    provider_connect::ProviderConnectRequest,
     transaction::{ProviderTransactionsResult, Transaction},
 };
 use crate::providers::{FinancialDataProvider, MockFinancialDataProvider, ProviderRegistry};
@@ -45,21 +44,9 @@ fn build_provider_mock(
     transactions: Vec<Transaction>,
 ) -> Arc<dyn FinancialDataProvider> {
     let access_token = "mock_access_token".to_string();
-    let item_id = if provider_name == "teller" {
-        "teller_enroll_123".to_string()
-    } else {
-        "item_123".to_string()
-    };
-    let institution_id = if provider_name == "teller" {
-        "teller".to_string()
-    } else {
-        "ins_123".to_string()
-    };
-    let institution_name = if provider_name == "teller" {
-        "Teller Demo Bank".to_string()
-    } else {
-        "Test Bank".to_string()
-    };
+    let item_id = "item_123".to_string();
+    let institution_id = "ins_123".to_string();
+    let institution_name = "Test Bank".to_string();
 
     let mut provider = MockFinancialDataProvider::new();
     provider
@@ -472,37 +459,4 @@ async fn given_provider_sync_with_raw_only_merchant_when_persisting_then_normali
         .await;
 
     assert!(result.is_ok());
-}
-
-#[tokio::test]
-async fn given_teller_connect_request_when_connecting_then_returns_no_longer_supported() {
-    use crate::services::connection_service::TellerConnectError;
-
-    let user_id = Uuid::new_v4();
-    let provider_registry = Arc::new(ProviderRegistry::new());
-    let db_repository = Arc::new(MockDatabaseRepository::new());
-    let credential_resolvers = build_credential_resolvers(db_repository.clone());
-    let connection_service = ConnectionService::new(
-        db_repository,
-        Arc::new(MockCacheService::new()),
-        provider_registry,
-        noop_categorizer(),
-        credential_resolvers,
-    );
-
-    let result = connection_service
-        .connect_teller_provider(
-            &user_id,
-            "jwt_123",
-            &ProviderConnectRequest {
-                provider: "teller".to_string(),
-                access_token: "access-sandbox-xyz".to_string(),
-                enrollment_id: "enroll-123".to_string(),
-                institution_name: Some("Teller Demo Bank".to_string()),
-                simplefin: Default::default(),
-            },
-        )
-        .await;
-
-    assert!(matches!(result, Err(TellerConnectError::NoLongerSupported)));
 }

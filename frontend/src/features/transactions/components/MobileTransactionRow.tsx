@@ -46,7 +46,7 @@ interface Props {
   onAccountFilter?: (accountId: string) => void;
 }
 
-export const MobileTransactionRow: React.FC<Props> = ({
+const MobileTransactionRow: React.FC<Props> = ({
   transaction,
   index,
   style,

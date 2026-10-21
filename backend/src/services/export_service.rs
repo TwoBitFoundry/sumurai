@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
@@ -9,9 +7,13 @@ use csv::WriterBuilder;
 use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
 use quick_xml::writer::Writer;
 use rust_decimal::Decimal;
+use uuid::Uuid;
 
 use crate::models::account::Account;
+use crate::models::domain_error::DomainError;
+use crate::models::export::{ExportFile, ExportFormat};
 use crate::models::transaction::TransactionWithAccount;
+use crate::services::repository_service::DatabaseRepository;
 
 pub struct ExportService;
 
@@ -260,6 +262,66 @@ impl ExportService {
             String::from_utf8(writer.into_inner().into_inner()).expect("OFX export is valid UTF-8");
         output.push_str(&body);
         output
+    }
+
+    pub async fn export_for_user(
+        repository: &dyn DatabaseRepository,
+        user_id: Uuid,
+        format: ExportFormat,
+        connection_id: Option<Uuid>,
+    ) -> Result<ExportFile, DomainError> {
+        let mut accounts = repository
+            .get_accounts_for_user(&user_id)
+            .await
+            .map_err(|_| DomainError::internal("Failed to load accounts for export"))?;
+
+        if let Some(connection_id) = connection_id {
+            accounts.retain(|account| account.provider_connection_id == Some(connection_id));
+        }
+
+        let account_ids = if accounts.is_empty() {
+            Some(Vec::new())
+        } else {
+            Some(accounts.iter().map(|account| account.id).collect())
+        };
+
+        let transactions = repository
+            .get_transactions_for_export(&user_id, account_ids.as_deref())
+            .await
+            .map_err(|_| DomainError::internal("Failed to load transactions for export"))?;
+
+        let date_range = transactions
+            .iter()
+            .map(|transaction| transaction.date)
+            .min()
+            .zip(
+                transactions
+                    .iter()
+                    .map(|transaction| transaction.date)
+                    .max(),
+            );
+
+        let scope = if connection_id.is_some() {
+            accounts
+                .first()
+                .and_then(|account| account.institution_name.as_deref())
+                .unwrap_or("institution")
+        } else {
+            "all"
+        };
+
+        let body = match format {
+            ExportFormat::Csv => Self::to_csv(&accounts, &transactions),
+            ExportFormat::Ofx => Self::to_ofx(&accounts, &transactions),
+        };
+
+        let filename = format.filename_for_scope(scope, date_range);
+
+        Ok(ExportFile {
+            format,
+            filename,
+            body,
+        })
     }
 }
 

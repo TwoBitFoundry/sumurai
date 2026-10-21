@@ -34,7 +34,7 @@ export function normalizeSubscriptionCadence(cadence: string): SubscriptionCaden
   return null;
 }
 
-export function compareSubscriptionsBySinceDateThenMerchant<
+function compareSubscriptionsBySinceDateThenMerchant<
   T extends { first_charged: string; merchant: string },
 >(left: T, right: T): number {
   const dateCompare = left.first_charged.localeCompare(right.first_charged);

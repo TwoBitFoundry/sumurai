@@ -28,7 +28,7 @@ interface Props {
   onAccountFilter?: (accountId: string) => void;
 }
 
-export const DesktopTransactionRow: React.FC<Props> = ({
+const DesktopTransactionRow: React.FC<Props> = ({
   transaction: r,
   index,
   style,

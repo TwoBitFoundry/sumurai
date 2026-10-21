@@ -3,9 +3,6 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[allow(unused_imports)]
-use serde_json::json;
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 #[schema(example = json!({
     "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",

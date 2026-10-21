@@ -96,17 +96,17 @@ mod tests {
     async fn given_no_provider_when_active_connections_exist_then_excludes_aggregator_accounts() {
         let user = user_with_provider("");
         let user_id = user.id;
-        let teller_conn_id = Uuid::new_v4();
+        let simplefin_conn_id = Uuid::new_v4();
         let plaid_conn_id = Uuid::new_v4();
-        let teller_account_id = Uuid::new_v4();
+        let simplefin_account_id = Uuid::new_v4();
         let plaid_account_id = Uuid::new_v4();
 
         let connections = vec![
-            connection(teller_conn_id, user_id, "teller"),
+            connection(simplefin_conn_id, user_id, "simplefin"),
             connection(plaid_conn_id, user_id, "plaid"),
         ];
         let accounts = vec![
-            account(teller_account_id, user_id, teller_conn_id),
+            account(simplefin_account_id, user_id, simplefin_conn_id),
             account(plaid_account_id, user_id, plaid_conn_id),
         ];
 

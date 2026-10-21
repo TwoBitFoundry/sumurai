@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -34,4 +35,10 @@ pub struct ProviderConnectRequest {
     pub institution_name: Option<String>,
     #[serde(default)]
     pub simplefin: SimpleFinConnectRequest,
+}
+
+pub struct ProviderSyncRequest {
+    pub client_date: String,
+    pub client_timezone: String,
+    pub reference_date: NaiveDate,
 }
