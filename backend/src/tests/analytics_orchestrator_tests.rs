@@ -10,9 +10,10 @@ use crate::models::analytics::{
     AnalyticsFilter, AnalyticsRange, BalancesOverviewResponse, MonthlyCashFlowAggregate,
     NetWorthOverTimeResponse,
 };
+use crate::models::domain_error::DomainError;
 use crate::models::plaid::LatestAccountBalance;
 use crate::models::transaction::Transaction;
-use crate::services::analytics_orchestrator::{AnalyticsOrchestrationError, AnalyticsOrchestrator};
+use crate::services::analytics_orchestrator::AnalyticsOrchestrator;
 use crate::services::cache_service::MockCacheService;
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::{AnalyticsService, AuthService};
@@ -90,7 +91,7 @@ async fn given_out_of_range_month_when_requesting_daily_spending_then_reports_in
 
     assert_eq!(
         result.err(),
-        Some(AnalyticsOrchestrationError::InvalidMonth)
+        Some(DomainError::bad_request("Invalid month"))
     );
 }
 
@@ -108,7 +109,9 @@ async fn given_repository_failure_when_loading_current_month_spending_then_repor
 
     assert_eq!(
         result,
-        Err(AnalyticsOrchestrationError::LoadSpendingTransactions)
+        Err(DomainError::internal(
+            "Failed to load spending transactions"
+        ))
     );
 }
 
@@ -172,10 +175,12 @@ async fn given_aggregate_failure_when_loading_income_expense_totals_then_reports
         .income_expense_totals(Uuid::new_v4(), AnalyticsFilter::default())
         .await;
 
-    assert!(matches!(
-        result,
-        Err(AnalyticsOrchestrationError::LoadIncomeExpenseTotals)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal(
+            "Failed to load income and expense totals"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -190,10 +195,10 @@ async fn given_aggregate_failure_when_loading_budget_summary_then_reports_summar
         .budget_summary(Uuid::new_v4(), AnalyticsFilter::default())
         .await;
 
-    assert!(matches!(
-        result,
-        Err(AnalyticsOrchestrationError::LoadBudgetSummary)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to load budget summary"))
+    );
 }
 
 #[tokio::test]
@@ -208,10 +213,10 @@ async fn given_aggregate_failure_when_loading_category_spending_then_reports_cat
         .category_spending(Uuid::new_v4(), AnalyticsFilter::default())
         .await;
 
-    assert!(matches!(
-        result,
-        Err(AnalyticsOrchestrationError::LoadCategorySpending)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to load category spending"))
+    );
 }
 
 #[tokio::test]
@@ -246,10 +251,12 @@ async fn given_repository_failure_when_loading_date_bounds_then_reports_bounds_f
         .date_bounds(Uuid::new_v4(), None)
         .await;
 
-    assert!(matches!(
-        result,
-        Err(AnalyticsOrchestrationError::LoadDateBounds)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal(
+            "Failed to load analytics date bounds"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -312,10 +319,10 @@ async fn given_aggregate_failure_when_loading_cash_flow_then_reports_cash_flow_f
         )
         .await;
 
-    assert!(matches!(
-        result,
-        Err(AnalyticsOrchestrationError::LoadCashFlow)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to load cash flow"))
+    );
 }
 
 #[tokio::test]
@@ -357,7 +364,9 @@ async fn given_repository_failure_when_loading_top_merchants_then_reports_load_f
 
     assert_eq!(
         result.err(),
-        Some(AnalyticsOrchestrationError::LoadSpendingTransactions)
+        Some(DomainError::internal(
+            "Failed to load spending transactions"
+        ))
     );
 }
 
@@ -377,10 +386,10 @@ async fn given_account_lookup_failure_when_building_sankey_then_reports_accounts
         )
         .await;
 
-    assert!(matches!(
-        result,
-        Err(AnalyticsOrchestrationError::LoadAccounts)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to load accounts"))
+    );
 }
 
 #[tokio::test]
@@ -624,10 +633,10 @@ async fn given_balance_query_failure_when_loading_balances_then_reports_balances
         .balances_overview(Uuid::new_v4(), "jwt", None)
         .await;
 
-    assert!(matches!(
-        result,
-        Err(AnalyticsOrchestrationError::LoadBalances)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to load account balances"))
+    );
 }
 
 #[tokio::test]
@@ -685,10 +694,10 @@ async fn given_ledger_failure_when_loading_net_worth_then_reports_ledger_failure
         )
         .await;
 
-    assert!(matches!(
-        result,
-        Err(AnalyticsOrchestrationError::LoadLedgerTransactions)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to load ledger transactions"))
+    );
 }
 
 #[tokio::test]

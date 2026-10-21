@@ -11,6 +11,7 @@ use crate::models::analytics::{
     IncomeExpenseTotals, MonthlySpending, NetWorthOverTimeResponse, NetWorthSeriesPoint,
     SankeyResponse, TopMerchant,
 };
+use crate::models::domain_error::DomainError;
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::{AnalyticsService, AuthService, CacheService, SpendingTransactionQuery};
 use crate::utils::cache_keys::generate_cache_key_with_account_filter;
@@ -19,22 +20,6 @@ const TOP_MERCHANTS_LIMIT: usize = 10;
 const SANKEY_CACHE_TTL_SECONDS: u64 = 1800;
 const FALLBACK_CACHE_TTL_SECONDS: u64 = 1800;
 const REPORTING_CURRENCY: &str = "USD";
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum AnalyticsOrchestrationError {
-    InvalidMonth,
-    LoadSpendingTransactions,
-    LoadIncomeExpenseTotals,
-    LoadBudgetSummary,
-    LoadCategorySpending,
-    LoadDateBounds,
-    LoadCashFlow,
-    LoadAccounts,
-    LoadSankeyIncome,
-    LoadSankeyTransactions,
-    LoadBalances,
-    LoadLedgerTransactions,
-}
 
 pub struct AnalyticsOrchestrator {
     analytics_service: Arc<AnalyticsService>,
@@ -58,10 +43,7 @@ impl AnalyticsOrchestrator {
         }
     }
 
-    pub async fn current_month_spending(
-        &self,
-        user_id: Uuid,
-    ) -> Result<Decimal, AnalyticsOrchestrationError> {
+    pub async fn current_month_spending(&self, user_id: Uuid) -> Result<Decimal, DomainError> {
         let (start_date, end_date) = self.analytics_service.current_month_date_range();
         let transactions = self
             .load_spending_transactions(user_id, Some(start_date), Some(end_date), None)
@@ -76,11 +58,11 @@ impl AnalyticsOrchestrator {
         user_id: Uuid,
         year: i32,
         month: u32,
-    ) -> Result<Vec<DailySpending>, AnalyticsOrchestrationError> {
+    ) -> Result<Vec<DailySpending>, DomainError> {
         let (start_date, end_date) = self
             .analytics_service
             .month_date_range(year, month)
-            .ok_or(AnalyticsOrchestrationError::InvalidMonth)?;
+            .ok_or_else(|| DomainError::bad_request("Invalid month"))?;
         let transactions = self
             .load_spending_transactions(user_id, Some(start_date), Some(end_date), None)
             .await?;
@@ -93,7 +75,7 @@ impl AnalyticsOrchestrator {
         &self,
         user_id: Uuid,
         filter: AnalyticsFilter,
-    ) -> Result<IncomeExpenseTotals, AnalyticsOrchestrationError> {
+    ) -> Result<IncomeExpenseTotals, DomainError> {
         let account_ids = account_id_vec(filter.account_ids.as_ref());
         self.analytics_service
             .get_income_expense_totals(
@@ -112,7 +94,7 @@ impl AnalyticsOrchestrator {
                     user_id,
                     e
                 );
-                AnalyticsOrchestrationError::LoadIncomeExpenseTotals
+                DomainError::internal("Failed to load income and expense totals")
             })
     }
 
@@ -120,7 +102,7 @@ impl AnalyticsOrchestrator {
         &self,
         user_id: Uuid,
         filter: AnalyticsFilter,
-    ) -> Result<BudgetSummary, AnalyticsOrchestrationError> {
+    ) -> Result<BudgetSummary, DomainError> {
         let account_ids = account_id_vec(filter.account_ids.as_ref());
         self.analytics_service
             .get_budget_summary(
@@ -135,7 +117,7 @@ impl AnalyticsOrchestrator {
             .await
             .map_err(|e| {
                 tracing::error!("Failed to get budget summary for user {}: {}", user_id, e);
-                AnalyticsOrchestrationError::LoadBudgetSummary
+                DomainError::internal("Failed to load budget summary")
             })
     }
 
@@ -143,7 +125,7 @@ impl AnalyticsOrchestrator {
         &self,
         user_id: Uuid,
         filter: AnalyticsFilter,
-    ) -> Result<Decimal, AnalyticsOrchestrationError> {
+    ) -> Result<Decimal, DomainError> {
         let account_ids = account_id_vec(filter.account_ids.as_ref());
         let transactions = self
             .load_spending_transactions(
@@ -164,7 +146,7 @@ impl AnalyticsOrchestrator {
         &self,
         user_id: Uuid,
         filter: AnalyticsFilter,
-    ) -> Result<Vec<CategorySpending>, AnalyticsOrchestrationError> {
+    ) -> Result<Vec<CategorySpending>, DomainError> {
         let account_ids = account_id_vec(filter.account_ids.as_ref());
         self.analytics_service
             .get_category_spending(
@@ -183,7 +165,7 @@ impl AnalyticsOrchestrator {
                     user_id,
                     e
                 );
-                AnalyticsOrchestrationError::LoadCategorySpending
+                DomainError::internal("Failed to load category spending")
             })
     }
 
@@ -191,7 +173,7 @@ impl AnalyticsOrchestrator {
         &self,
         user_id: Uuid,
         range: AnalyticsRange,
-    ) -> Result<Vec<MonthlySpending>, AnalyticsOrchestrationError> {
+    ) -> Result<Vec<MonthlySpending>, DomainError> {
         let AnalyticsRange {
             start_date,
             end_date,
@@ -217,7 +199,7 @@ impl AnalyticsOrchestrator {
         &self,
         user_id: Uuid,
         account_ids: Option<HashSet<Uuid>>,
-    ) -> Result<DateBoundsResponse, AnalyticsOrchestrationError> {
+    ) -> Result<DateBoundsResponse, DomainError> {
         let account_ids = account_id_vec(account_ids.as_ref());
         self.analytics_service
             .get_date_bounds(self.repository.as_ref(), &user_id, account_ids.as_deref())
@@ -228,7 +210,7 @@ impl AnalyticsOrchestrator {
                     user_id,
                     error
                 );
-                AnalyticsOrchestrationError::LoadDateBounds
+                DomainError::internal("Failed to load analytics date bounds")
             })
     }
 
@@ -236,7 +218,7 @@ impl AnalyticsOrchestrator {
         &self,
         user_id: Uuid,
         range: AnalyticsRange,
-    ) -> Result<CashFlowResponse, AnalyticsOrchestrationError> {
+    ) -> Result<CashFlowResponse, DomainError> {
         let AnalyticsRange {
             start_date,
             end_date,
@@ -268,7 +250,7 @@ impl AnalyticsOrchestrator {
                     end_date,
                     e
                 );
-                AnalyticsOrchestrationError::LoadCashFlow
+                DomainError::internal("Failed to load cash flow")
             })?;
 
         let series = self.analytics_service.cash_flow_from_monthly_aggregates(
@@ -287,7 +269,7 @@ impl AnalyticsOrchestrator {
         user_id: Uuid,
         jwt_id: &str,
         range: AnalyticsRange,
-    ) -> Result<SankeyResponse, AnalyticsOrchestrationError> {
+    ) -> Result<SankeyResponse, DomainError> {
         let AnalyticsRange {
             start_date,
             end_date,
@@ -299,7 +281,7 @@ impl AnalyticsOrchestrator {
             .await
             .map_err(|e| {
                 tracing::error!("Failed to fetch accounts for sankey: {}", e);
-                AnalyticsOrchestrationError::LoadAccounts
+                DomainError::internal("Failed to load accounts")
             })?;
 
         let mut allowed_account_ids: HashSet<Uuid> = HashSet::new();
@@ -352,7 +334,7 @@ impl AnalyticsOrchestrator {
             .await
             .map_err(|e| {
                 tracing::error!("Failed to get sankey income aggregates: {}", e);
-                AnalyticsOrchestrationError::LoadSankeyIncome
+                DomainError::internal("Failed to load sankey income")
             })?;
         let income: Decimal = aggregates.iter().map(|aggregate| aggregate.income).sum();
 
@@ -370,7 +352,7 @@ impl AnalyticsOrchestrator {
             .await
             .map_err(|e| {
                 tracing::error!("Failed to get sankey spending transactions: {}", e);
-                AnalyticsOrchestrationError::LoadSankeyTransactions
+                DomainError::internal("Failed to load sankey transactions")
             })?;
         let categories = self.analytics_service.group_by_category_with_date_range(
             &transactions,
@@ -396,7 +378,7 @@ impl AnalyticsOrchestrator {
         &self,
         user_id: Uuid,
         filter: AnalyticsFilter,
-    ) -> Result<Vec<TopMerchant>, AnalyticsOrchestrationError> {
+    ) -> Result<Vec<TopMerchant>, DomainError> {
         let account_ids = account_id_vec(filter.account_ids.as_ref());
         let transactions = self
             .load_spending_transactions(
@@ -416,7 +398,7 @@ impl AnalyticsOrchestrator {
         user_id: Uuid,
         jwt_id: &str,
         authorized_account_ids: Option<HashSet<Uuid>>,
-    ) -> Result<BalancesOverviewResponse, AnalyticsOrchestrationError> {
+    ) -> Result<BalancesOverviewResponse, DomainError> {
         let base_cache_key = format!("{}_balances_overview", jwt_id);
         let cache_key = generate_cache_key_with_account_filter(
             &base_cache_key,
@@ -434,7 +416,7 @@ impl AnalyticsOrchestrator {
             .await
             .map_err(|e| {
                 tracing::error!("Failed to fetch latest account balances: {}", e);
-                AnalyticsOrchestrationError::LoadBalances
+                DomainError::internal("Failed to load account balances")
             })?;
 
         type LatestMapValue = (String, Option<String>, String, Decimal);
@@ -471,7 +453,7 @@ impl AnalyticsOrchestrator {
                 .await
                 .map_err(|e| {
                     tracing::error!("Failed to fetch accounts for fallback: {}", e);
-                    AnalyticsOrchestrationError::LoadAccounts
+                    DomainError::internal("Failed to load accounts")
                 })?;
             for acc in accounts.into_iter() {
                 if let Some(ref filter_ids) = authorized_account_ids {
@@ -572,7 +554,7 @@ impl AnalyticsOrchestrator {
         user_id: Uuid,
         jwt_id: &str,
         range: AnalyticsRange,
-    ) -> Result<NetWorthOverTimeResponse, AnalyticsOrchestrationError> {
+    ) -> Result<NetWorthOverTimeResponse, DomainError> {
         let AnalyticsRange {
             start_date,
             end_date,
@@ -595,7 +577,7 @@ impl AnalyticsOrchestrator {
             .await
             .map_err(|e| {
                 tracing::error!("Failed to fetch accounts: {}", e);
-                AnalyticsOrchestrationError::LoadAccounts
+                DomainError::internal("Failed to load accounts")
             })?;
 
         let mut depository_ids: HashSet<Uuid> = HashSet::new();
@@ -630,7 +612,7 @@ impl AnalyticsOrchestrator {
             .await
             .map_err(|e| {
                 tracing::error!("Failed to fetch transactions for ledger: {}", e);
-                AnalyticsOrchestrationError::LoadLedgerTransactions
+                DomainError::internal("Failed to load ledger transactions")
             })?;
 
         let mut flows_by_account: HashMap<Uuid, BTreeMap<NaiveDate, Decimal>> = HashMap::new();
@@ -714,7 +696,7 @@ impl AnalyticsOrchestrator {
         start_date: Option<NaiveDate>,
         end_date: Option<NaiveDate>,
         account_ids: Option<&[Uuid]>,
-    ) -> Result<Vec<crate::models::transaction::Transaction>, AnalyticsOrchestrationError> {
+    ) -> Result<Vec<crate::models::transaction::Transaction>, DomainError> {
         self.analytics_service
             .load_spending_transactions(
                 self.repository.as_ref(),
@@ -732,7 +714,7 @@ impl AnalyticsOrchestrator {
                     user_id,
                     e
                 );
-                AnalyticsOrchestrationError::LoadSpendingTransactions
+                DomainError::internal("Failed to load spending transactions")
             })
     }
 
