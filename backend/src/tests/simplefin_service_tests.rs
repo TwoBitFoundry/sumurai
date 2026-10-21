@@ -222,6 +222,33 @@ type SimpleFinConnectHarness = (
 
 type SimpleFinConnectNormalizationHarness = (ConnectionService, Arc<Mutex<Vec<Transaction>>>);
 
+fn simplefin_connection_service_for(
+    db_repository: &Arc<dyn crate::services::repository_service::DatabaseRepository>,
+    cache_service: &Arc<dyn CacheService>,
+    provider_registry: &Arc<ProviderRegistry>,
+    credential_resolvers: &std::collections::HashMap<
+        String,
+        Arc<dyn crate::providers::ProviderCredentialResolver>,
+    >,
+) -> Arc<SimpleFinConnectionService> {
+    let merchant_normalization_service = Arc::new(MerchantNormalizationService::new(
+        Arc::clone(db_repository),
+        Arc::clone(cache_service),
+    ));
+    let org_service = Arc::new(SimpleFinOrganizationService::new(
+        Arc::clone(db_repository),
+        Arc::clone(cache_service),
+        merchant_normalization_service,
+    ));
+    Arc::new(SimpleFinConnectionService::new(
+        Arc::clone(db_repository),
+        Arc::clone(cache_service),
+        Arc::clone(provider_registry),
+        credential_resolvers.clone(),
+        org_service,
+    ))
+}
+
 fn build_simplefin_connection_service(
     snapshot: SimpleFinAccountsResponse,
     hidden_orgs: HashSet<String>,
@@ -315,14 +342,22 @@ fn build_simplefin_connection_service(
     let db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository> =
         Arc::new(mock_db);
     let credential_resolvers = build_credential_resolvers(Arc::clone(&db_repository));
+    let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
+    let simplefin_connection_service = simplefin_connection_service_for(
+        &db_repository,
+        &cache_service,
+        &provider_registry,
+        &credential_resolvers,
+    );
 
     let connection_service = ConnectionService::new(
         db_repository,
-        Arc::new(mock_cache),
+        cache_service,
         provider_registry,
         noop_categorizer(),
         credential_resolvers,
-    );
+    )
+    .with_simplefin_connection_service(simplefin_connection_service);
 
     (connection_service, saved_item_ids, upserted_account_ids)
 }
@@ -956,13 +991,22 @@ async fn build_simplefin_handler_app(
     let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
     let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
     let credential_resolvers = build_credential_resolvers(db_repository.clone());
-    let connection_service = Arc::new(ConnectionService::new(
-        db_repository.clone(),
-        cache_service.clone(),
-        provider_registry.clone(),
-        noop_categorizer(),
-        credential_resolvers,
-    ));
+    let simplefin_connection_service = simplefin_connection_service_for(
+        &db_repository,
+        &cache_service,
+        &provider_registry,
+        &credential_resolvers,
+    );
+    let connection_service = Arc::new(
+        ConnectionService::new(
+            db_repository.clone(),
+            cache_service.clone(),
+            provider_registry.clone(),
+            noop_categorizer(),
+            credential_resolvers,
+        )
+        .with_simplefin_connection_service(simplefin_connection_service),
+    );
     let auth_service = Arc::new(
         AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap(),
     );
