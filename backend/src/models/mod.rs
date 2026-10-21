@@ -9,6 +9,7 @@ pub mod cache;
 pub mod conversions;
 pub mod custom_category;
 pub mod diy;
+pub mod domain_error;
 pub mod export;
 pub mod import;
 pub mod ip_ban;
