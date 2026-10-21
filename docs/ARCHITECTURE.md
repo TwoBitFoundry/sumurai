@@ -220,7 +220,7 @@ flowchart TD
 
 ## Backend
 
-Thin route handlers in `main.rs` (which keeps the route table in one place) → per-domain orchestrators in `services/<domain>_orchestrator.rs` (reached through `AppState::<domain>()`, returning typed `<Domain>OrchestrationError`s that `handlers/<domain>.rs` maps to HTTP) → services → `repository_service` (SeaORM entities via `with_tenant`) / `cache_service` (Redis) / providers. Domain types in `models/`. Tests in `backend/src/tests/`.
+`main.rs` holds bootstrap and the route table (`create_app`), so every endpoint is listed in one place. Handlers in `handlers/<domain>.rs` extract input, call the domain, and map the result to HTTP. Domains with real orchestration use `services/<domain>_orchestrator.rs` (reached through `AppState::<domain>()`); simple domains call a service or repository directly. Failures are a shared `DomainError` mapped once in `handlers/error.rs`, with a small per-domain enum only for outcomes that carry data. Below that: services → `repository_service` (SeaORM entities via `with_tenant`) / `cache_service` (Redis) / providers. Domain types in `models/`. Tests in `backend/src/tests/`.
 
 ```mermaid
 flowchart TD
