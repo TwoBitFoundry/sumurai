@@ -220,7 +220,7 @@ flowchart TD
 
 ## Backend
 
-Handlers → services → `repository_service` (SeaORM entities via `with_tenant`) / `cache_service` (Redis) / providers. Domain types in `models/`. Tests in `backend/src/tests/`.
+Thin route handlers in `main.rs` (which keeps the route table in one place) → per-domain orchestrators in `services/<domain>_orchestrator.rs` (reached through `AppState::<domain>()`, returning typed `<Domain>OrchestrationError`s that `handlers/<domain>.rs` maps to HTTP) → services → `repository_service` (SeaORM entities via `with_tenant`) / `cache_service` (Redis) / providers. Domain types in `models/`. Tests in `backend/src/tests/`.
 
 ```mermaid
 flowchart TD
