@@ -4,7 +4,8 @@ use rust_decimal_macros::dec;
 use uuid::Uuid;
 
 use crate::models::budget::Budget;
-use crate::services::budget_orchestrator::{BudgetOrchestrationError, BudgetOrchestrator};
+use crate::models::domain_error::DomainError;
+use crate::services::budget_orchestrator::BudgetOrchestrator;
 use crate::services::cache_service::MockCacheService;
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::BudgetService;
@@ -79,7 +80,12 @@ async fn given_non_positive_amount_when_updating_then_rejects_before_repository(
         .update(Uuid::new_v4(), "jwt", Uuid::new_v4(), dec!(0))
         .await;
 
-    assert_eq!(result, Err(BudgetOrchestrationError::InvalidAmount));
+    assert_eq!(
+        result,
+        Err(DomainError::bad_request(
+            "Budget amount must be greater than zero"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -103,7 +109,10 @@ async fn given_duplicate_category_when_creating_then_reports_already_exists() {
         .create(user_id, "jwt", "food_and_drink".to_string(), dec!(50))
         .await;
 
-    assert_eq!(result, Err(BudgetOrchestrationError::AlreadyExists));
+    assert_eq!(
+        result,
+        Err(DomainError::conflict("Budget category already exists"))
+    );
 }
 
 #[tokio::test]
@@ -112,7 +121,12 @@ async fn given_income_category_when_creating_then_reports_ineligible() {
         .create(Uuid::new_v4(), "jwt", "INCOME".to_string(), dec!(50))
         .await;
 
-    assert_eq!(result, Err(BudgetOrchestrationError::IneligibleCategory));
+    assert_eq!(
+        result,
+        Err(DomainError::bad_request(
+            "Budgets cannot be created for income or transfer categories"
+        ))
+    );
 }
 
 #[tokio::test]

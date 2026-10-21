@@ -57,10 +57,6 @@ use crate::models::{
     account::AccountResponse,
     analytics::DateRangeQuery,
     auth as auth_models,
-    budget::{
-        Budget, BudgetsOverviewResponse, CreateBudgetRequest, DeleteBudgetResponse,
-        UpdateBudgetRequest,
-    },
     export::{ExportFormat, ExportQuery},
     import::{CsvColumnMapping, ImportMultipartRequest, ImportResponse, ValidateResponse},
     plaid::{
@@ -116,9 +112,7 @@ use middleware::auth_ip_ban::auth_ip_ban_middleware;
 use middleware::passkey_enrollment::{
     passkey_enrollment_middleware, PasskeyEnrollmentMiddlewareState,
 };
-use middleware::resource_authorization::{
-    AuthorizedBudgetId, AuthorizedConnectionRequest, AuthorizedQuery,
-};
+use middleware::resource_authorization::{AuthorizedConnectionRequest, AuthorizedQuery};
 use middleware::telemetry_middleware::{self, request_tracing_middleware, TelemetryConfig};
 use migration::MigratorTrait;
 use models::import::ImportUpload;
@@ -618,14 +612,26 @@ pub fn create_app(state: AppState) -> Router {
             "/api/analytics/net-worth-over-time",
             get(get_authenticated_net_worth_over_time),
         )
-        .route("/api/budgets", get(get_authenticated_budgets))
+        .route(
+            "/api/budgets",
+            get(handlers::budget::get_authenticated_budgets),
+        )
         .route(
             "/api/budgets/overview",
-            get(get_authenticated_budgets_overview),
+            get(handlers::budget::get_authenticated_budgets_overview),
         )
-        .route("/api/budgets", post(create_authenticated_budget))
-        .route("/api/budgets/{id}", put(update_authenticated_budget))
-        .route("/api/budgets/{id}", delete(delete_authenticated_budget))
+        .route(
+            "/api/budgets",
+            post(handlers::budget::create_authenticated_budget),
+        )
+        .route(
+            "/api/budgets/{id}",
+            put(handlers::budget::update_authenticated_budget),
+        )
+        .route(
+            "/api/budgets/{id}",
+            delete(handlers::budget::delete_authenticated_budget),
+        )
         .route("/api/auth/account", delete(delete_user_account))
         .route("/api/auth/passkey/enroll/begin", post(begin_passkey_enroll))
         .route(
@@ -2290,153 +2296,6 @@ async fn restore_authenticated_simplefin_ignored_institution(
         .await
         .map(|restored| {
             Json(crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse { restored })
-        })
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    get,
-    path = "/api/budgets",
-    description = "Retrieves all budgets for the authenticated user, leveraging Redis caching when available.",
-    responses(
-        (status = 200, description = "List of user budgets", body = Vec<Budget>),
-        (status = 401, description = "Unauthorized"),
-        (status = 500, description = "Internal server error", body = ApiErrorResponse),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Budgets"
-)]
-async fn get_authenticated_budgets(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-) -> Result<Json<Vec<crate::models::budget::Budget>>, (StatusCode, Json<ApiErrorResponse>)> {
-    state
-        .budgets()
-        .list(auth_context.user_id, &auth_context.jwt_id)
-        .await
-        .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    get,
-    path = "/api/budgets/overview",
-    description = "Returns budgets (cached when available) and live subscription summaries for the authenticated user.",
-    responses(
-        (status = 200, description = "Budgets and subscription overview", body = BudgetsOverviewResponse),
-        (status = 401, description = "Unauthorized"),
-        (status = 500, description = "Internal server error", body = ApiErrorResponse),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Budgets"
-)]
-async fn get_authenticated_budgets_overview(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-) -> Result<Json<BudgetsOverviewResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    state
-        .budgets()
-        .overview(auth_context.user_id, &auth_context.jwt_id)
-        .await
-        .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    post,
-    path = "/api/budgets",
-    description = "Creates a new budget entry for the user with category and amount.",
-    request_body = CreateBudgetRequest,
-    responses(
-        (status = 200, description = "Budget created", body = crate::models::budget::Budget),
-        (status = 400, description = "Invalid budget data", body = ApiErrorResponse),
-        (status = 401, description = "Unauthorized"),
-        (status = 409, description = "Budget category already exists", body = ApiErrorResponse),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Budgets"
-)]
-async fn create_authenticated_budget(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    Json(req): Json<CreateBudgetRequest>,
-) -> Result<Json<crate::models::budget::Budget>, (StatusCode, Json<ApiErrorResponse>)> {
-    state
-        .budgets()
-        .create(
-            auth_context.user_id,
-            &auth_context.jwt_id,
-            req.category,
-            req.amount,
-        )
-        .await
-        .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    put,
-    path = "/api/budgets/{id}",
-    description = "Updates the amount of an existing budget owned by the authenticated user.",
-    params(("id" = String, Path, description = "Budget ID")),
-    request_body = UpdateBudgetRequest,
-    responses(
-        (status = 200, description = "Budget updated successfully", body = Budget),
-        (status = 400, description = "Invalid budget amount"),
-        (status = 401, description = "Unauthorized"),
-        (status = 404, description = "Budget not found", body = ApiErrorResponse),
-        (status = 500, description = "Internal server error", body = ApiErrorResponse),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Budgets"
-)]
-async fn update_authenticated_budget(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    AuthorizedBudgetId { budget_id }: AuthorizedBudgetId,
-    Json(req): Json<UpdateBudgetRequest>,
-) -> Result<Json<crate::models::budget::Budget>, (StatusCode, Json<ApiErrorResponse>)> {
-    state
-        .budgets()
-        .update(
-            auth_context.user_id,
-            &auth_context.jwt_id,
-            budget_id,
-            req.amount,
-        )
-        .await
-        .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    delete,
-    path = "/api/budgets/{id}",
-    description = "Deletes a budget and invalidates cached budget data.",
-    params(("id" = String, Path, description = "Budget ID")),
-    responses(
-        (status = 200, description = "Budget deleted successfully", body = DeleteBudgetResponse),
-        (status = 401, description = "Unauthorized"),
-        (status = 404, description = "Budget not found", body = ApiErrorResponse),
-        (status = 500, description = "Internal server error", body = ApiErrorResponse),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Budgets"
-)]
-async fn delete_authenticated_budget(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    AuthorizedBudgetId { budget_id }: AuthorizedBudgetId,
-) -> Result<Json<DeleteBudgetResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    state
-        .budgets()
-        .delete(auth_context.user_id, &auth_context.jwt_id, budget_id)
-        .await
-        .map(|()| {
-            Json(DeleteBudgetResponse {
-                deleted: true,
-                budget_id: budget_id.to_string(),
-            })
         })
         .map_err(Into::into)
 }

@@ -4,21 +4,9 @@ use rust_decimal::Decimal;
 use uuid::Uuid;
 
 use crate::models::budget::{Budget, BudgetsOverviewResponse};
+use crate::models::domain_error::DomainError;
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::{BudgetService, CacheService};
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum BudgetOrchestrationError {
-    InvalidAmount,
-    IneligibleCategory,
-    AlreadyExists,
-    NotFound,
-    LoadBudgetsFailed,
-    LoadFixedExpensesFailed,
-    CreateFailed,
-    UpdateFailed,
-    DeleteFailed,
-}
 
 pub struct BudgetOrchestrator {
     budget_service: Arc<BudgetService>,
@@ -39,11 +27,7 @@ impl BudgetOrchestrator {
         }
     }
 
-    pub async fn list(
-        &self,
-        user_id: Uuid,
-        jwt_id: &str,
-    ) -> Result<Vec<Budget>, BudgetOrchestrationError> {
+    pub async fn list(&self, user_id: Uuid, jwt_id: &str) -> Result<Vec<Budget>, DomainError> {
         if let Some(cached) = self.cached_budgets(jwt_id).await {
             return Ok(cached);
         }
@@ -54,7 +38,7 @@ impl BudgetOrchestrator {
             .await
             .map_err(|e| {
                 tracing::error!("Failed to get budgets for user {}: {}", user_id, e);
-                BudgetOrchestrationError::LoadBudgetsFailed
+                DomainError::internal("Failed to fetch budgets")
             })?;
 
         self.store_budgets(jwt_id, &budgets).await;
@@ -65,7 +49,7 @@ impl BudgetOrchestrator {
         &self,
         user_id: Uuid,
         jwt_id: &str,
-    ) -> Result<BudgetsOverviewResponse, BudgetOrchestrationError> {
+    ) -> Result<BudgetsOverviewResponse, DomainError> {
         if let Some(budgets) = self.cached_budgets(jwt_id).await {
             let fixed_expenses = self
                 .repository
@@ -86,7 +70,7 @@ impl BudgetOrchestrator {
 
         let budgets = budgets_result.map_err(|e| {
             tracing::error!("Failed to get budgets for user {}: {}", user_id, e);
-            BudgetOrchestrationError::LoadBudgetsFailed
+            DomainError::internal("Failed to fetch budgets")
         })?;
         let fixed_expenses =
             fixed_expenses_result.map_err(|e| Self::fixed_expenses_failure(user_id, e))?;
@@ -105,7 +89,7 @@ impl BudgetOrchestrator {
         jwt_id: &str,
         category: String,
         amount: Decimal,
-    ) -> Result<Budget, BudgetOrchestrationError> {
+    ) -> Result<Budget, DomainError> {
         let created = self
             .budget_service
             .create_budget_for_user(&*self.repository, user_id, category, amount)
@@ -113,13 +97,15 @@ impl BudgetOrchestrator {
             .map_err(|e| {
                 tracing::error!("Failed to create budget for user {}: {}", user_id, e);
                 if e.contains("greater than zero") {
-                    BudgetOrchestrationError::InvalidAmount
+                    DomainError::bad_request("Budget amount must be greater than zero")
                 } else if e.contains("income or transfer") {
-                    BudgetOrchestrationError::IneligibleCategory
+                    DomainError::bad_request(
+                        "Budgets cannot be created for income or transfer categories",
+                    )
                 } else if e.contains("already exists") {
-                    BudgetOrchestrationError::AlreadyExists
+                    DomainError::conflict("Budget category already exists")
                 } else {
-                    BudgetOrchestrationError::CreateFailed
+                    DomainError::internal("Failed to create budget")
                 }
             })?;
 
@@ -133,9 +119,11 @@ impl BudgetOrchestrator {
         jwt_id: &str,
         budget_id: Uuid,
         amount: Decimal,
-    ) -> Result<Budget, BudgetOrchestrationError> {
+    ) -> Result<Budget, DomainError> {
         if amount <= Decimal::ZERO {
-            return Err(BudgetOrchestrationError::InvalidAmount);
+            return Err(DomainError::bad_request(
+                "Budget amount must be greater than zero",
+            ));
         }
 
         let updated = self
@@ -150,11 +138,11 @@ impl BudgetOrchestrator {
                     e
                 );
                 if e.contains("greater than zero") {
-                    BudgetOrchestrationError::InvalidAmount
+                    DomainError::bad_request("Budget amount must be greater than zero")
                 } else if e.contains("not found") || e.contains("access denied") {
-                    BudgetOrchestrationError::NotFound
+                    DomainError::not_found("Budget not found")
                 } else {
-                    BudgetOrchestrationError::UpdateFailed
+                    DomainError::internal("Failed to update budget")
                 }
             })?;
 
@@ -167,7 +155,7 @@ impl BudgetOrchestrator {
         user_id: Uuid,
         jwt_id: &str,
         budget_id: Uuid,
-    ) -> Result<(), BudgetOrchestrationError> {
+    ) -> Result<(), DomainError> {
         self.budget_service
             .delete_budget_for_user(&*self.repository, budget_id, user_id)
             .await
@@ -179,9 +167,9 @@ impl BudgetOrchestrator {
                     e
                 );
                 if e.contains("not found") || e.contains("access denied") {
-                    BudgetOrchestrationError::NotFound
+                    DomainError::not_found("Budget not found")
                 } else {
-                    BudgetOrchestrationError::DeleteFailed
+                    DomainError::internal("Failed to delete budget")
                 }
             })?;
 
@@ -189,13 +177,13 @@ impl BudgetOrchestrator {
         Ok(())
     }
 
-    fn fixed_expenses_failure(user_id: Uuid, error: anyhow::Error) -> BudgetOrchestrationError {
+    fn fixed_expenses_failure(user_id: Uuid, error: anyhow::Error) -> DomainError {
         tracing::error!(
             "Failed to get fixed expense summary for user {}: {}",
             user_id,
             error
         );
-        BudgetOrchestrationError::LoadFixedExpensesFailed
+        DomainError::internal("Failed to fetch fixed expenses")
     }
 
     async fn cached_budgets(&self, jwt_id: &str) -> Option<Vec<Budget>> {
