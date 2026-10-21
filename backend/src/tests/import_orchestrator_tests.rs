@@ -4,10 +4,11 @@ use anyhow::anyhow;
 use uuid::Uuid;
 
 use crate::models::account::Account;
+use crate::models::domain_error::DomainError;
 use crate::models::import::{CsvColumnMapping, ImportUpload};
 use crate::services::authorization_service::AuthorizationService;
 use crate::services::cache_service::MockCacheService;
-use crate::services::import_orchestrator::{ImportOrchestrationError, ImportOrchestrator};
+use crate::services::import_orchestrator::ImportOrchestrator;
 use crate::services::repository_service::MockDatabaseRepository;
 
 const CSV_CONTENT: &str = "Date,Description,Amount\n2024-01-05,Coffee,-4.50\n";
@@ -90,10 +91,12 @@ async fn given_foreign_account_when_validating_then_reports_account_not_owned() 
         )
         .await;
 
-    assert!(matches!(
-        result,
-        Err(ImportOrchestrationError::AccountNotOwned)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::forbidden(
+            "Account does not belong to the authenticated user"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -115,10 +118,12 @@ async fn given_repository_failure_when_validating_then_reports_ownership_check_f
         )
         .await;
 
-    assert!(matches!(
-        result,
-        Err(ImportOrchestrationError::AccountOwnershipCheckFailed)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal(
+            "Failed to validate account ownership"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -134,7 +139,12 @@ async fn given_non_utf8_bytes_when_validating_then_reports_invalid_utf8() {
         )
         .await;
 
-    assert!(matches!(result, Err(ImportOrchestrationError::InvalidUtf8)));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::bad_request(
+            "Uploaded file must be valid UTF-8"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -151,9 +161,9 @@ async fn given_unsupported_extension_when_validating_then_reports_unsupported_ex
         .await;
 
     assert_eq!(
-        result,
-        Err(ImportOrchestrationError::UnsupportedFileExtension(
-            "statement.pdf".to_string()
+        result.err(),
+        Some(DomainError::bad_request(
+            "Unsupported file extension for 'statement.pdf'"
         ))
     );
 }
@@ -177,10 +187,12 @@ async fn given_empty_csv_mapping_when_importing_then_reports_each_missing_column
         )
         .await;
 
-    assert!(matches!(
-        result,
-        Err(ImportOrchestrationError::InvalidCsvMapping(ref errors)) if errors.len() == 3
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::bad_request(
+            "Unable to detect a CSV date column; Unable to detect a CSV description column; Unable to detect a CSV amount, debit, or credit column"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -203,10 +215,12 @@ async fn given_data_row_as_csv_header_when_importing_without_mapping_then_report
         )
         .await;
 
-    assert!(matches!(
-        result,
-        Err(ImportOrchestrationError::InvalidCsvHeaders(_))
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::bad_request(
+            "CSV files must include a header row with column names. The first row looks like transaction data instead."
+        ))
+    );
 }
 
 #[tokio::test]
@@ -223,8 +237,61 @@ async fn given_file_without_transactions_when_importing_then_reports_no_valid_tr
         )
         .await;
 
-    assert!(matches!(
-        result,
-        Err(ImportOrchestrationError::NoValidTransactions(_))
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::bad_request(
+            "No OFX transactions were found in the file"
+        ))
+    );
+}
+
+#[tokio::test]
+async fn given_header_only_csv_when_importing_then_reports_default_no_transactions_message() {
+    let user_id = Uuid::new_v4();
+    let account_id = Uuid::new_v4();
+    let repository = repository_with_accounts(vec![owned_account(user_id, account_id)]);
+
+    let result = orchestrator(repository)
+        .import(
+            user_id,
+            "jwt",
+            upload(
+                "transactions.csv",
+                b"Date,Description,Amount\n",
+                account_id,
+                None,
+            ),
+        )
+        .await;
+
+    assert_eq!(
+        result.err(),
+        Some(DomainError::bad_request(
+            "No valid transactions were found in the uploaded file"
+        ))
+    );
+}
+
+#[tokio::test]
+async fn given_rows_with_parse_errors_when_importing_then_joins_row_errors_in_message() {
+    let user_id = Uuid::new_v4();
+    let account_id = Uuid::new_v4();
+    let repository = repository_with_accounts(vec![owned_account(user_id, account_id)]);
+
+    let result = orchestrator(repository)
+        .import(
+            user_id,
+            "jwt",
+            upload(
+                "transactions.csv",
+                b"Date,Description,Amount\nnot-a-date,Coffee,-4.50\nalso-bad,Lunch,-12.00\n",
+                account_id,
+                None,
+            ),
+        )
+        .await;
+
+    let error = result.err().unwrap();
+    assert!(error.message.starts_with("Row 2: "));
+    assert!(error.message.contains("; Row 3: "));
 }

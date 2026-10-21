@@ -3,6 +3,7 @@ use std::sync::Arc;
 use csv::StringRecord;
 use uuid::Uuid;
 
+use crate::models::domain_error::DomainError;
 use crate::models::import::{
     CsvColumnMapping, ImportFileFormat, ImportResponse, ImportUpload, ValidateResponse,
 };
@@ -13,21 +14,6 @@ use crate::services::merchant_normalization::service::MerchantNormalizationServi
 use crate::services::repository_service::DatabaseRepository;
 
 const FORBIDDEN_STATUS_CODE: u16 = 403;
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum ImportOrchestrationError {
-    AccountNotOwned,
-    AccountOwnershipCheckFailed,
-    InvalidUtf8,
-    UnsupportedFileExtension(String),
-    InvalidCsvHeaders(String),
-    InvalidCsvMapping(Vec<String>),
-    NoValidTransactions(Vec<String>),
-    LoadTransactionCountsFailed,
-    NormalizeMerchantsFailed,
-    ImportFailed,
-    RefreshTransactionCountsFailed,
-}
 
 pub struct ImportOrchestrator {
     authorization_service: Arc<AuthorizationService>,
@@ -52,7 +38,7 @@ impl ImportOrchestrator {
         &self,
         user_id: Uuid,
         upload: ImportUpload,
-    ) -> Result<ValidateResponse, ImportOrchestrationError> {
+    ) -> Result<ValidateResponse, DomainError> {
         let ImportUpload {
             file_name,
             file_bytes,
@@ -65,9 +51,10 @@ impl ImportOrchestrator {
         let content = decode_utf8(file_bytes)?;
 
         if detect_import_format(&file_name).is_none() {
-            return Err(ImportOrchestrationError::UnsupportedFileExtension(
-                file_name,
-            ));
+            return Err(DomainError::bad_request(format!(
+                "Unsupported file extension for '{}'",
+                file_name
+            )));
         }
 
         Ok(ImportService::validate_file(
@@ -82,7 +69,7 @@ impl ImportOrchestrator {
         user_id: Uuid,
         jwt_id: &str,
         upload: ImportUpload,
-    ) -> Result<ImportResponse, ImportOrchestrationError> {
+    ) -> Result<ImportResponse, DomainError> {
         let ImportUpload {
             file_name,
             file_bytes,
@@ -93,9 +80,9 @@ impl ImportOrchestrator {
         self.ensure_account_owned(user_id, &account_id).await?;
 
         let content = decode_utf8(file_bytes)?;
-        let format = detect_import_format(&file_name).ok_or(
-            ImportOrchestrationError::UnsupportedFileExtension(file_name),
-        )?;
+        let format = detect_import_format(&file_name).ok_or_else(|| {
+            DomainError::bad_request(format!("Unsupported file extension for '{}'", file_name))
+        })?;
 
         let mut parsed = match format {
             ImportFileFormat::Ofx
@@ -110,7 +97,7 @@ impl ImportOrchestrator {
 
                 let mapping_errors = csv_mapping_errors(&mapping);
                 if !mapping_errors.is_empty() {
-                    return Err(ImportOrchestrationError::InvalidCsvMapping(mapping_errors));
+                    return Err(DomainError::bad_request(mapping_errors.join("; ")));
                 }
 
                 ImportService::parse_csv(&content, &mapping, &account_id)
@@ -118,7 +105,12 @@ impl ImportOrchestrator {
         };
 
         if parsed.transactions.is_empty() {
-            return Err(ImportOrchestrationError::NoValidTransactions(parsed.errors));
+            let message = if parsed.errors.is_empty() {
+                "No valid transactions were found in the uploaded file".to_string()
+            } else {
+                parsed.errors.join("; ")
+            };
+            return Err(DomainError::bad_request(message));
         }
 
         let mut transactions = std::mem::take(&mut parsed.transactions);
@@ -132,13 +124,13 @@ impl ImportOrchestrator {
         merchant_normalization_service
             .normalize_batch(&mut transactions)
             .await
-            .map_err(|_| ImportOrchestrationError::NormalizeMerchantsFailed)?;
+            .map_err(|_| DomainError::internal("Failed to normalize imported merchants"))?;
 
         let transaction_counts_before = self
             .repository
             .get_transaction_count_by_account_for_user(&user_id)
             .await
-            .map_err(|_| ImportOrchestrationError::LoadTransactionCountsFailed)?;
+            .map_err(|_| DomainError::internal("Failed to load existing transaction counts"))?;
         let before_count = transaction_counts_before
             .get(&account_id)
             .copied()
@@ -147,7 +139,7 @@ impl ImportOrchestrator {
         self.repository
             .upsert_transactions_batch(&transactions, &user_id)
             .await
-            .map_err(|_| ImportOrchestrationError::ImportFailed)?;
+            .map_err(|_| DomainError::internal("Failed to import transactions"))?;
 
         if let Err(e) = self.cache.clear_transactions(jwt_id).await {
             tracing::warn!(
@@ -161,7 +153,7 @@ impl ImportOrchestrator {
             .repository
             .get_transaction_count_by_account_for_user(&user_id)
             .await
-            .map_err(|_| ImportOrchestrationError::RefreshTransactionCountsFailed)?;
+            .map_err(|_| DomainError::internal("Failed to refresh transaction counts"))?;
         let after_count = transaction_counts_after
             .get(&account_id)
             .copied()
@@ -184,7 +176,7 @@ impl ImportOrchestrator {
         &self,
         user_id: Uuid,
         account_id: &Uuid,
-    ) -> Result<(), ImportOrchestrationError> {
+    ) -> Result<(), DomainError> {
         let account_ids = vec![account_id.to_string()];
         self.authorization_service
             .validate_account_ownership(&account_ids, &user_id, self.repository.as_ref())
@@ -192,22 +184,21 @@ impl ImportOrchestrator {
             .map(|_| ())
             .map_err(|status| {
                 if status.as_u16() == FORBIDDEN_STATUS_CODE {
-                    ImportOrchestrationError::AccountNotOwned
+                    DomainError::forbidden("Account does not belong to the authenticated user")
                 } else {
-                    ImportOrchestrationError::AccountOwnershipCheckFailed
+                    DomainError::internal("Failed to validate account ownership")
                 }
             })
     }
 }
 
-fn decode_utf8(file_bytes: Vec<u8>) -> Result<String, ImportOrchestrationError> {
-    String::from_utf8(file_bytes).map_err(|_| ImportOrchestrationError::InvalidUtf8)
+fn decode_utf8(file_bytes: Vec<u8>) -> Result<String, DomainError> {
+    String::from_utf8(file_bytes)
+        .map_err(|_| DomainError::bad_request("Uploaded file must be valid UTF-8"))
 }
 
-fn detect_csv_mapping_from_content(
-    content: &str,
-) -> Result<CsvColumnMapping, ImportOrchestrationError> {
-    let headers = read_csv_headers(content).map_err(ImportOrchestrationError::InvalidCsvHeaders)?;
+fn detect_csv_mapping_from_content(content: &str) -> Result<CsvColumnMapping, DomainError> {
+    let headers = read_csv_headers(content).map_err(DomainError::bad_request)?;
     Ok(ImportService::detect_csv_mapping(&StringRecord::from(
         headers,
     )))
