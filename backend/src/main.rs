@@ -522,14 +522,17 @@ pub fn create_app(state: AppState) -> Router {
         )
         .route("/api/providers/info", get(get_authenticated_provider_info))
         .route("/api/providers/select", post(select_authenticated_provider))
-        .route("/api/diy/institutions", post(create_diy_institution))
+        .route(
+            "/api/diy/institutions",
+            post(handlers::diy::create_diy_institution),
+        )
         .route(
             "/api/diy/institutions/{connection_id}",
-            delete(disconnect_diy_institution),
+            delete(handlers::diy::disconnect_diy_institution),
         )
         .route(
             "/api/diy/institutions/{connection_id}/accounts",
-            post(create_diy_account),
+            post(handlers::diy::create_diy_account),
         )
         .route(
             "/api/providers/connect",
@@ -2214,118 +2217,6 @@ async fn health_check() -> &'static str {
         "Health check invoked"
     );
     "OK"
-}
-
-#[utoipa::path(
-    post,
-    path = "/api/diy/institutions",
-    description = "Creates a new DIY institution (provider_connection with provider='diy') for the authenticated user.",
-    request_body = crate::models::diy::CreateDiyInstitutionRequest,
-    responses(
-        (status = 200, description = "Institution created successfully", body = crate::models::diy::CreateDiyInstitutionResponse),
-        (status = 400, description = "Invalid request body", body = ApiErrorResponse),
-        (status = 401, description = "Unauthorized"),
-        (status = 500, description = "Internal server error", body = ApiErrorResponse),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "DIY Provider"
-)]
-async fn create_diy_institution(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    Json(req): Json<crate::models::diy::CreateDiyInstitutionRequest>,
-) -> Result<
-    Json<crate::models::diy::CreateDiyInstitutionResponse>,
-    (StatusCode, Json<ApiErrorResponse>),
-> {
-    if !state.config.is_financial_provider_enabled("diy") {
-        return Err(provider_disabled_response("diy"));
-    }
-
-    state
-        .diy()
-        .create_institution(auth_context.user_id, &auth_context.jwt_id, &req.name)
-        .await
-        .map(|connection| {
-            Json(crate::models::diy::CreateDiyInstitutionResponse {
-                connection_id: connection.id,
-            })
-        })
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    post,
-    path = "/api/diy/institutions/{connection_id}/accounts",
-    description = "Creates a new account under a DIY institution owned by the authenticated user.",
-    params(
-        ("connection_id" = Uuid, Path, description = "DIY institution connection ID")
-    ),
-    request_body = crate::models::diy::CreateDiyAccountRequest,
-    responses(
-        (status = 200, description = "Account created successfully", body = crate::models::diy::CreateDiyAccountResponse),
-        (status = 400, description = "Invalid account type or empty name", body = ApiErrorResponse),
-        (status = 401, description = "Unauthorized"),
-        (status = 403, description = "Connection is not a DIY connection", body = ApiErrorResponse),
-        (status = 404, description = "Connection not found", body = ApiErrorResponse),
-        (status = 500, description = "Internal server error", body = ApiErrorResponse),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "DIY Provider"
-)]
-async fn create_diy_account(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    axum::extract::Path(connection_id): axum::extract::Path<uuid::Uuid>,
-    Json(req): Json<crate::models::diy::CreateDiyAccountRequest>,
-) -> Result<Json<crate::models::diy::CreateDiyAccountResponse>, (StatusCode, Json<ApiErrorResponse>)>
-{
-    if !state.config.is_financial_provider_enabled("diy") {
-        return Err(provider_disabled_response("diy"));
-    }
-
-    state
-        .diy()
-        .create_account(auth_context.user_id, connection_id, &req)
-        .await
-        .map(|account| {
-            Json(crate::models::diy::CreateDiyAccountResponse {
-                id: account.id,
-                name: account.name,
-                account_type: account.account_type,
-            })
-        })
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    delete,
-    path = "/api/diy/institutions/{connection_id}",
-    description = "Removes a DIY institution and cascades deletion of its accounts, transactions, and related cache entries.",
-    params(
-        ("connection_id" = Uuid, Path, description = "DIY institution connection ID")
-    ),
-    responses(
-        (status = 200, description = "Institution removed successfully", body = crate::models::plaid::DisconnectResult),
-        (status = 401, description = "Unauthorized"),
-        (status = 403, description = "Connection is not a DIY institution", body = ApiErrorResponse),
-        (status = 404, description = "Institution not found", body = ApiErrorResponse),
-        (status = 500, description = "Internal server error", body = ApiErrorResponse),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "DIY Provider"
-)]
-async fn disconnect_diy_institution(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    axum::extract::Path(connection_id): axum::extract::Path<uuid::Uuid>,
-) -> Result<Json<crate::models::plaid::DisconnectResult>, (StatusCode, Json<ApiErrorResponse>)> {
-    state
-        .diy()
-        .disconnect(auth_context.user_id, &auth_context.jwt_id, connection_id)
-        .await
-        .map(Json)
-        .map_err(Into::into)
 }
 
 #[utoipa::path(

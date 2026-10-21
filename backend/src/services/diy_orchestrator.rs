@@ -4,30 +4,12 @@ use uuid::Uuid;
 
 use crate::models::account::Account;
 use crate::models::diy::CreateDiyAccountRequest;
+use crate::models::domain_error::DomainError;
 use crate::models::plaid::{DisconnectResult, ProviderConnection};
 use crate::services::connection_service::ConnectionService;
 use crate::services::diy_service::DiyService;
 
 pub const DIY_VALID_ACCOUNT_TYPES: &[&str] = &["depository", "credit", "investment", "loan"];
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum DiyOrchestrationError {
-    EmptyInstitutionName,
-    InstitutionNameTaken,
-    CreateInstitutionFailed,
-    EmptyAccountName,
-    InvalidAccountType,
-    BalanceRequired,
-    ConnectionNotFound,
-    ConnectionNotDiy,
-    AccountNameTaken,
-    AccountMaskTaken,
-    CreateAccountFailed,
-    InstitutionNotFound,
-    NotDiyInstitution,
-    ResolveInstitutionFailed,
-    DisconnectFailed,
-}
 
 pub struct DiyOrchestrator {
     diy_service: Arc<DiyService>,
@@ -47,10 +29,10 @@ impl DiyOrchestrator {
         user_id: Uuid,
         jwt_id: &str,
         name: &str,
-    ) -> Result<ProviderConnection, DiyOrchestrationError> {
+    ) -> Result<ProviderConnection, DomainError> {
         let name = name.trim();
         if name.is_empty() {
-            return Err(DiyOrchestrationError::EmptyInstitutionName);
+            return Err(DomainError::bad_request("Institution name cannot be empty"));
         }
 
         self.diy_service
@@ -58,14 +40,14 @@ impl DiyOrchestrator {
             .await
             .map_err(|e| {
                 if e.to_string().contains("already exists") {
-                    DiyOrchestrationError::InstitutionNameTaken
+                    DomainError::conflict("Institution name already exists")
                 } else {
                     tracing::error!(
                         "Failed to create DIY institution for user {}: {}",
                         user_id,
                         e
                     );
-                    DiyOrchestrationError::CreateInstitutionFailed
+                    DomainError::internal("Failed to create institution")
                 }
             })
     }
@@ -75,17 +57,17 @@ impl DiyOrchestrator {
         user_id: Uuid,
         connection_id: Uuid,
         req: &CreateDiyAccountRequest,
-    ) -> Result<Account, DiyOrchestrationError> {
+    ) -> Result<Account, DomainError> {
         if req.name.trim().is_empty() {
-            return Err(DiyOrchestrationError::EmptyAccountName);
+            return Err(DomainError::bad_request("Account name cannot be empty"));
         }
 
         if !DIY_VALID_ACCOUNT_TYPES.contains(&req.account_type.as_str()) {
-            return Err(DiyOrchestrationError::InvalidAccountType);
+            return Err(Self::invalid_account_type());
         }
 
         if req.balance.is_none() {
-            return Err(DiyOrchestrationError::BalanceRequired);
+            return Err(DomainError::bad_request("Balance is required"));
         }
 
         self.diy_service
@@ -94,13 +76,13 @@ impl DiyOrchestrator {
             .map_err(|e| {
                 let message = e.to_string();
                 if message.contains("not found") {
-                    DiyOrchestrationError::ConnectionNotFound
+                    DomainError::not_found("Connection not found")
                 } else if message.contains("not diy") {
-                    DiyOrchestrationError::ConnectionNotDiy
+                    DomainError::forbidden("Connection is not a DIY connection")
                 } else if message.contains("account name already exists") {
-                    DiyOrchestrationError::AccountNameTaken
+                    DomainError::conflict("Account name already exists in this institution")
                 } else if message.contains("account mask already exists") {
-                    DiyOrchestrationError::AccountMaskTaken
+                    DomainError::conflict("Account mask already exists in this institution")
                 } else {
                     tracing::error!(
                         "Failed to create DIY account for user {} connection {}: {}",
@@ -108,7 +90,7 @@ impl DiyOrchestrator {
                         connection_id,
                         e
                     );
-                    DiyOrchestrationError::CreateAccountFailed
+                    DomainError::internal("Failed to create account")
                 }
             })
     }
@@ -118,7 +100,7 @@ impl DiyOrchestrator {
         user_id: Uuid,
         jwt_id: &str,
         connection_id: Uuid,
-    ) -> Result<DisconnectResult, DiyOrchestrationError> {
+    ) -> Result<DisconnectResult, DomainError> {
         let connection = match self
             .diy_service
             .require_diy_institution(user_id, connection_id)
@@ -126,10 +108,12 @@ impl DiyOrchestrator {
         {
             Ok(connection) => connection,
             Err(e) if e.to_string().contains("not found") => {
-                return Err(DiyOrchestrationError::InstitutionNotFound);
+                return Err(DomainError::not_found("Institution not found"));
             }
             Err(e) if e.to_string().contains("not diy") => {
-                return Err(DiyOrchestrationError::NotDiyInstitution);
+                return Err(DomainError::forbidden(
+                    "Connection is not a DIY institution",
+                ));
             }
             Err(e) => {
                 tracing::error!(
@@ -138,7 +122,7 @@ impl DiyOrchestrator {
                     user_id,
                     e
                 );
-                return Err(DiyOrchestrationError::ResolveInstitutionFailed);
+                return Err(DomainError::internal("Failed to disconnect institution"));
             }
         };
 
@@ -148,7 +132,7 @@ impl DiyOrchestrator {
             .await
         {
             Ok(result) if result.success => Ok(result),
-            Ok(_) => Err(DiyOrchestrationError::InstitutionNotFound),
+            Ok(_) => Err(DomainError::not_found("Institution not found")),
             Err(e) => {
                 tracing::error!(
                     "Failed to disconnect DIY institution {} for user {}: {}",
@@ -156,8 +140,15 @@ impl DiyOrchestrator {
                     user_id,
                     e
                 );
-                Err(DiyOrchestrationError::DisconnectFailed)
+                Err(DomainError::internal("Failed to disconnect institution"))
             }
         }
+    }
+
+    fn invalid_account_type() -> DomainError {
+        DomainError::bad_request(format!(
+            "account_type must be one of: {}",
+            DIY_VALID_ACCOUNT_TYPES.join(", ")
+        ))
     }
 }

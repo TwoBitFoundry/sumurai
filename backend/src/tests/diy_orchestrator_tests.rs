@@ -6,11 +6,12 @@ use uuid::Uuid;
 
 use crate::models::account::Account;
 use crate::models::diy::CreateDiyAccountRequest;
+use crate::models::domain_error::DomainError;
 use crate::models::plaid::ProviderConnection;
 use crate::providers::ProviderRegistry;
 use crate::services::cache_service::{CacheService, MockCacheService};
 use crate::services::connection_service::ConnectionService;
-use crate::services::diy_orchestrator::{DiyOrchestrationError, DiyOrchestrator};
+use crate::services::diy_orchestrator::DiyOrchestrator;
 use crate::services::diy_service::DiyService;
 use crate::services::repository_service::{DatabaseRepository, MockDatabaseRepository};
 use crate::test_fixtures::{build_credential_resolvers, noop_categorizer};
@@ -81,10 +82,10 @@ async fn given_blank_institution_name_when_creating_then_reports_empty_name() {
         .create_institution(Uuid::new_v4(), "jwt", "   ")
         .await;
 
-    assert!(matches!(
-        result,
-        Err(DiyOrchestrationError::EmptyInstitutionName)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::bad_request("Institution name cannot be empty"))
+    );
 }
 
 #[tokio::test]
@@ -97,10 +98,10 @@ async fn given_blank_account_name_when_creating_account_then_reports_empty_name(
         )
         .await;
 
-    assert!(matches!(
-        result,
-        Err(DiyOrchestrationError::EmptyAccountName)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::bad_request("Account name cannot be empty"))
+    );
 }
 
 #[tokio::test]
@@ -113,10 +114,12 @@ async fn given_unknown_account_type_when_creating_account_then_reports_invalid_t
         )
         .await;
 
-    assert!(matches!(
-        result,
-        Err(DiyOrchestrationError::InvalidAccountType)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::bad_request(
+            "account_type must be one of: depository, credit, investment, loan"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -129,10 +132,10 @@ async fn given_missing_balance_when_creating_account_then_reports_balance_requir
         )
         .await;
 
-    assert!(matches!(
-        result,
-        Err(DiyOrchestrationError::BalanceRequired)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::bad_request("Balance is required"))
+    );
 }
 
 #[tokio::test]
@@ -150,10 +153,10 @@ async fn given_unknown_connection_when_creating_account_then_reports_connection_
         )
         .await;
 
-    assert!(matches!(
-        result,
-        Err(DiyOrchestrationError::ConnectionNotFound)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::not_found("Connection not found"))
+    );
 }
 
 #[tokio::test]
@@ -169,10 +172,10 @@ async fn given_non_diy_connection_when_creating_account_then_reports_connection_
         )
         .await;
 
-    assert!(matches!(
-        result,
-        Err(DiyOrchestrationError::ConnectionNotDiy)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::forbidden("Connection is not a DIY connection"))
+    );
 }
 
 #[tokio::test]
@@ -196,10 +199,12 @@ async fn given_duplicate_account_name_when_creating_account_then_reports_name_ta
         )
         .await;
 
-    assert!(matches!(
-        result,
-        Err(DiyOrchestrationError::AccountNameTaken)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::conflict(
+            "Account name already exists in this institution"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -223,10 +228,12 @@ async fn given_duplicate_mask_when_creating_account_then_reports_mask_taken() {
         )
         .await;
 
-    assert!(matches!(
-        result,
-        Err(DiyOrchestrationError::AccountMaskTaken)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::conflict(
+            "Account mask already exists in this institution"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -268,10 +275,10 @@ async fn given_unknown_connection_when_disconnecting_then_reports_institution_no
         .disconnect(Uuid::new_v4(), "jwt", Uuid::new_v4())
         .await;
 
-    assert!(matches!(
-        result,
-        Err(DiyOrchestrationError::InstitutionNotFound)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::not_found("Institution not found"))
+    );
 }
 
 #[tokio::test]
@@ -283,10 +290,12 @@ async fn given_non_diy_connection_when_disconnecting_then_reports_not_diy_instit
         .disconnect(user_id, "jwt", Uuid::new_v4())
         .await;
 
-    assert!(matches!(
-        result,
-        Err(DiyOrchestrationError::NotDiyInstitution)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::forbidden(
+            "Connection is not a DIY institution"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -300,8 +309,25 @@ async fn given_repository_failure_when_disconnecting_then_reports_resolve_failed
         .disconnect(Uuid::new_v4(), "jwt", Uuid::new_v4())
         .await;
 
-    assert!(matches!(
-        result,
-        Err(DiyOrchestrationError::ResolveInstitutionFailed)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to disconnect institution"))
+    );
+}
+
+#[tokio::test]
+async fn given_service_failure_when_creating_institution_then_reports_internal_error() {
+    let mut repository = MockDatabaseRepository::new();
+    repository
+        .expect_get_user_by_id()
+        .returning(|_| Box::pin(async { Err(anyhow!("database down")) }));
+
+    let result = orchestrator(repository)
+        .create_institution(Uuid::new_v4(), "jwt", "Bank")
+        .await;
+
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to create institution"))
+    );
 }
