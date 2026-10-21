@@ -667,9 +667,3 @@ pub struct TransactionFilter {
     pub start_date: Option<NaiveDate>,
     pub end_date: Option<NaiveDate>,
 }
-
-#[derive(Debug, Clone, Default, PartialEq)]
-pub struct TransactionPage {
-    pub cursor: Option<String>,
-    pub limit: Option<i64>,
-}

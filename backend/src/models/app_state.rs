@@ -23,7 +23,6 @@ use crate::services::provider_orchestrator::{
 use crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService;
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::sync_service::SyncService;
-use crate::services::transaction_orchestrator::TransactionOrchestrator;
 use crate::services::webauthn_service::WebAuthnService;
 use crate::services::{
     AuthService, AuthorizationService, AutoCategorizationService, BudgetService, CacheService,
@@ -154,10 +153,6 @@ impl AppState {
                 config: self.config.clone(),
             },
         )
-    }
-
-    pub fn transactions(&self) -> TransactionOrchestrator {
-        TransactionOrchestrator::new(self.db_repository.clone())
     }
 
     pub fn categories(&self) -> CategoryOrchestrator {

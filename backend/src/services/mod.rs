@@ -34,7 +34,6 @@ pub mod simplefin_connection_service;
 pub mod simplefin_org_service;
 pub mod subscription_detection;
 pub mod sync_service;
-pub mod transaction_orchestrator;
 pub use analytics_service::{AnalyticsService, SpendingTransactionQuery};
 pub use auth_service::AuthService;
 pub use authorization_service::AuthorizationService;

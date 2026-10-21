@@ -65,10 +65,7 @@ use crate::models::{
         ProviderStatusResponse, SyncTransactionsRequest,
     },
     provider_connect::ProviderConnectRequest,
-    transaction::{
-        ContextualInsightsResponse, CursorTransactionsResponse, SyncTransactionsResponse,
-        TransactionsInsightsResponse, TransactionsQuery,
-    },
+    transaction::SyncTransactionsResponse,
 };
 use crate::models::{
     api_error::ApiErrorResponse,
@@ -106,7 +103,6 @@ use config::Config;
 use handlers::analytics::{lenient_analytics_filter, parse_analytics_range, parse_month_param};
 use handlers::export::build_authenticated_export_response;
 use handlers::provider::provider_disabled_response;
-use handlers::transaction::parse_transaction_filter;
 use middleware::auth_ip_ban::auth_ip_ban_middleware;
 use middleware::passkey_enrollment::{
     passkey_enrollment_middleware, PasskeyEnrollmentMiddlewareState,
@@ -115,7 +111,6 @@ use middleware::resource_authorization::{AuthorizedConnectionRequest, Authorized
 use middleware::telemetry_middleware::{self, request_tracing_middleware, TelemetryConfig};
 use migration::MigratorTrait;
 use models::provider_connect::ProviderSyncRequest;
-use models::transaction::TransactionPage;
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DbBackend, Statement};
 use services::auto_categorization_orchestrator::AutoCategorizationOrchestrationError;
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
@@ -505,18 +500,21 @@ pub fn create_app(state: AppState) -> Router {
         )
         .nest("/api/transactions/import", transaction_import_routes)
         .route("/api/export", get(get_authenticated_export))
-        .route("/api/transactions", get(get_authenticated_transactions))
+        .route(
+            "/api/transactions",
+            get(handlers::transaction::get_authenticated_transactions),
+        )
         .route(
             "/api/transactions/{id}/category",
             put(handlers::category::set_transaction_category),
         )
         .route(
             "/api/transactions/insights",
-            get(get_authenticated_transactions_insights),
+            get(handlers::transaction::get_authenticated_transactions_insights),
         )
         .route(
             "/api/transactions/contextual-insights",
-            get(get_authenticated_transactions_contextual_insights),
+            get(handlers::transaction::get_authenticated_transactions_contextual_insights),
         )
         .route(
             "/api/transactions/auto-categorize",
@@ -1107,180 +1105,6 @@ async fn activate_demo_mode_onboarding(
     state
         .auth()
         .activate_demo_mode(auth_context.user_id)
-        .await
-        .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    get,
-    path = "/api/transactions",
-    description = "Returns cursor-paginated transactions with optional filtering.",
-    params(("search" = Option<String>, Query, description = "Fuzzy search by merchant, category, or account"),
-           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs"),
-           ("cursor" = Option<String>, Query, description = "Opaque cursor from next_cursor; omit for first page"),
-           ("limit" = Option<i64>, Query, description = "Page size, default 40, clamped 1..=100"),
-           ("merchant" = Option<String>, Query, description = "Exact normalized-merchant match"),
-           ("start_date" = Option<String>, Query, description = "Start date in YYYY-MM-DD format"),
-           ("end_date" = Option<String>, Query, description = "End date in YYYY-MM-DD format"),
-           ("category_primary" = Option<String>, Query, description = "Filter by effective primary category"),
-           ("sort" = Option<String>, Query, description = "Reserved – not implemented; default date"),
-           ("order" = Option<String>, Query, description = "Reserved – not implemented; default desc")),
-    responses(
-        (status = 200, description = "Cursor-paginated transactions", body = CursorTransactionsResponse),
-        (status = 400, description = "Invalid date range or account filter"),
-        (status = 401, description = "Unauthorized"),
-        (status = 403, description = "Account filter references another user"),
-        (status = 500, description = "Internal server error"),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Transactions"
-)]
-async fn get_authenticated_transactions(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    AuthorizedQuery {
-        query,
-        authorized_account_ids,
-    }: AuthorizedQuery<TransactionsQuery>,
-) -> Result<Json<CursorTransactionsResponse>, StatusCode> {
-    let TransactionsQuery {
-        search,
-        account_ids: _,
-        cursor,
-        limit,
-        merchant,
-        start_date,
-        end_date,
-        category_primary,
-    } = query;
-
-    let mut filter = parse_transaction_filter(
-        search,
-        category_primary,
-        start_date.as_deref(),
-        end_date.as_deref(),
-        authorized_account_ids.as_ref(),
-    )?;
-    filter.merchant = merchant;
-
-    state
-        .transactions()
-        .list(
-            auth_context.user_id,
-            filter,
-            TransactionPage { cursor, limit },
-        )
-        .await
-        .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    get,
-    path = "/api/transactions/insights",
-    description = "Returns aggregated transaction insights for the current filters.",
-    params(("search" = Option<String>, Query, description = "Search transactions by merchant, category, or account"),
-           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs"),
-           ("start_date" = Option<String>, Query, description = "Start date in YYYY-MM-DD format"),
-           ("end_date" = Option<String>, Query, description = "End date in YYYY-MM-DD format"),
-           ("category_primary" = Option<String>, Query, description = "Filter by primary category")),
-    responses(
-        (status = 200, description = "Transaction insights", body = TransactionsInsightsResponse),
-        (status = 400, description = "Invalid account filter"),
-        (status = 401, description = "Unauthorized"),
-        (status = 403, description = "Account filter references another user"),
-        (status = 500, description = "Internal server error"),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Transactions"
-)]
-async fn get_authenticated_transactions_insights(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    AuthorizedQuery {
-        query,
-        authorized_account_ids,
-    }: AuthorizedQuery<TransactionsQuery>,
-) -> Result<Json<TransactionsInsightsResponse>, StatusCode> {
-    let TransactionsQuery {
-        search,
-        account_ids: _,
-        cursor: _,
-        limit: _,
-        merchant: _,
-        start_date,
-        end_date,
-        category_primary,
-    } = query;
-
-    let filter = parse_transaction_filter(
-        search,
-        category_primary,
-        start_date.as_deref(),
-        end_date.as_deref(),
-        authorized_account_ids.as_ref(),
-    )?;
-
-    state
-        .transactions()
-        .insights(auth_context.user_id, filter)
-        .await
-        .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    get,
-    path = "/api/transactions/contextual-insights",
-    description = "Returns contextual transaction insights driven by the active filter state.",
-    params(
-        ("search" = Option<String>, Query, description = "Search transactions by merchant, category, or account"),
-        ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs"),
-        ("start_date" = Option<String>, Query, description = "Start date in YYYY-MM-DD format"),
-        ("end_date" = Option<String>, Query, description = "End date in YYYY-MM-DD format"),
-        ("category_primary" = Option<String>, Query, description = "Filter by primary category")
-    ),
-    responses(
-        (status = 200, description = "Contextual transaction insights", body = ContextualInsightsResponse),
-        (status = 400, description = "Invalid date or account filter"),
-        (status = 401, description = "Unauthorized"),
-        (status = 403, description = "Account filter references another user"),
-        (status = 500, description = "Internal server error"),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Transactions"
-)]
-async fn get_authenticated_transactions_contextual_insights(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    AuthorizedQuery {
-        query,
-        authorized_account_ids,
-    }: AuthorizedQuery<TransactionsQuery>,
-) -> Result<Json<ContextualInsightsResponse>, StatusCode> {
-    let TransactionsQuery {
-        search,
-        account_ids: _,
-        cursor: _,
-        limit: _,
-        merchant: _,
-        start_date,
-        end_date,
-        category_primary,
-    } = query;
-
-    let filter = parse_transaction_filter(
-        search,
-        category_primary,
-        start_date.as_deref(),
-        end_date.as_deref(),
-        authorized_account_ids.as_ref(),
-    )?;
-
-    state
-        .transactions()
-        .contextual_insights(auth_context.user_id, filter)
         .await
         .map(Json)
         .map_err(Into::into)
