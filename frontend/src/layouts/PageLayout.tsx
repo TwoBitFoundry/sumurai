@@ -1,5 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { cn } from '@/ui/primitives/utils';
 import {
   border as semanticBorders,
@@ -51,16 +50,6 @@ export const pageLayoutRecipes = {
   titleInlineHeading: 'inline',
   subtitle: `${uiTypographyRecipes.body} ${semanticTextRecipes.body} transition-colors duration-300 ease-out`,
   settingsShell: ['mx-auto', 'w-full', 'max-w-3xl'],
-  stickyScope: ['flex', 'min-w-0', 'flex-col'],
-  stickyStatsOverlap: [
-    '-mt-[calc(var(--page-layout-stats-height,0px)+2.5rem)]',
-    'md:-mt-[calc(var(--page-layout-stats-height,0px)+4rem)]',
-  ],
-  stickyStatsInset: [
-    '[&_[data-page-layout-stats-host]>*]:mx-4',
-    'md:[&_[data-page-layout-stats-host]>*]:mx-8',
-  ],
-  stickyContentGap: ['mt-10', 'md:mt-16'],
   floatingChromeTail: ['max-md:pb-6'],
 } as const;
 
@@ -85,39 +74,8 @@ export function PageLayout({
   className,
   hideHero = false,
 }: PageLayoutProps) {
-  const statsHostRef = useRef<HTMLDivElement>(null);
-  const [statsHeight, setStatsHeight] = useState(0);
-  const layoutStyle = {
-    '--page-layout-stats-height': statsHeight > 0 ? `${statsHeight}px` : undefined,
-  } as CSSProperties;
-
-  useEffect(() => {
-    if (!stats) {
-      setStatsHeight(0);
-      return;
-    }
-
-    const statsElement = statsHostRef.current?.firstElementChild;
-    if (!statsElement) return;
-
-    const updateStatsHeight = () => {
-      setStatsHeight(statsElement.getBoundingClientRect().height);
-    };
-
-    updateStatsHeight();
-
-    if (typeof ResizeObserver === 'undefined') {
-      return;
-    }
-
-    const observer = new ResizeObserver(updateStatsHeight);
-    observer.observe(statsElement);
-
-    return () => observer.disconnect();
-  }, [stats]);
-
   return (
-    <div className={cn('flex', 'flex-col', 'gap-6', 'md:gap-8', className)} style={layoutStyle}>
+    <div className={cn('flex', 'flex-col', 'gap-6', 'md:gap-8', className)}>
       {!hideHero ? (
         <section className={cn(...pageLayoutRecipes.shell)}>
           <div className={cn(pageLayoutRecipes.shellSurface)}>
@@ -159,44 +117,14 @@ export function PageLayout({
               )}
             </div>
 
-            {stats ? (
-              <div
-                aria-hidden
-                data-testid="page-layout-stats-placeholder"
-                className={cn('pointer-events-none', 'invisible')}
-                style={{ height: 'var(--page-layout-stats-height, 0px)' }}
-              />
-            ) : null}
+            {stats}
           </div>
         </section>
       ) : null}
 
-      {(!hideHero && stats) || children ? (
-        <div
-          className={cn(
-            ...pageLayoutRecipes.stickyScope,
-            !hideHero && stats && pageLayoutRecipes.stickyStatsOverlap,
-            !hideHero && stats && pageLayoutRecipes.stickyStatsInset
-          )}
-          data-testid="page-layout-sticky-scope"
-        >
-          {!hideHero && stats ? (
-            <div ref={statsHostRef} className={cn('contents')} data-page-layout-stats-host>
-              {stats}
-            </div>
-          ) : null}
-          {children ? (
-            <div
-              className={cn(
-                'w-full',
-                'min-w-0',
-                'max-w-full',
-                !hideHero && stats && pageLayoutRecipes.stickyContentGap
-              )}
-            >
-              {children}
-            </div>
-          ) : null}
+      {children ? (
+        <div className={cn('w-full', 'min-w-0', 'max-w-full')} data-testid="page-layout-content">
+          {children}
         </div>
       ) : null}
     </div>

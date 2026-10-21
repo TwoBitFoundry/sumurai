@@ -32,10 +32,10 @@ function readCollapsibleExpandedMap(): Record<string, boolean> {
 
 export function hasSessionCollapsibleExpanded(sectionId: string): boolean {
   const map = readCollapsibleExpandedMap();
-  if (sectionId === 'fixed-expenses' && map[sectionId] !== true && map.subscriptions === true) {
+  if (Object.hasOwn(map, sectionId)) {
     return true;
   }
-  return Object.hasOwn(map, sectionId);
+  return sectionId === 'fixed-expenses' && map.subscriptions === true;
 }
 
 function writeCollapsibleExpandedMap(map: Record<string, boolean>): void {
@@ -218,21 +218,17 @@ export function setSessionBankExpanded(bankId: string, expanded: boolean): void 
 
 export function getSessionCollapsibleExpanded(sectionId: string): boolean {
   const map = readCollapsibleExpandedMap();
-  if (sectionId === 'fixed-expenses' && map[sectionId] !== true && map.subscriptions === true) {
-    return true;
+  if (Object.hasOwn(map, sectionId)) {
+    return map[sectionId] === true;
   }
 
-  return map[sectionId] === true;
+  return sectionId === 'fixed-expenses' && map.subscriptions === true;
 }
 
 export function setSessionCollapsibleExpanded(sectionId: string, expanded: boolean): void {
   const map = readBooleanRecord(SESSION_KEYS.collapsibleExpanded) ?? {};
 
-  if (expanded) {
-    map[sectionId] = true;
-  } else {
-    delete map[sectionId];
-  }
+  map[sectionId] = expanded;
 
   writeCollapsibleExpandedMap(map);
 }

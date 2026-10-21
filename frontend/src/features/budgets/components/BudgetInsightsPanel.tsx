@@ -41,7 +41,7 @@ export function BudgetInsightsPanel({
 }: BudgetInsightsPanelProps) {
   const resetKey = `${month.getFullYear()}-${month.getMonth()}-${filterKey}`;
   const [lastResetKey, setLastResetKey] = useState(resetKey);
-  const { expanded, toggleExpanded } = useSessionCollapsible('budget-insights');
+  const { expanded, toggleExpanded } = useSessionCollapsible('budget-insights', true);
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
   const { isMobile } = useViewportBreakpoint();
 

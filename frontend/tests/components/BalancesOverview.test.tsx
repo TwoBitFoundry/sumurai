@@ -114,19 +114,17 @@ describe('BalancesOverviewSummary', () => {
     });
   });
 
-  it('renders BalancesInsightsPanel directly for sticky hero placement', () => {
+  it('renders BalancesInsightsPanel directly inside the hero without sticky positioning', () => {
     render(
       <PageLayout title="Dashboard" stats={<BalancesOverviewSummary />}>
         <div data-testid="page-content">Charts</div>
       </PageLayout>
     );
 
-    const stickyScope = screen.getByTestId('page-layout-sticky-scope');
-    const statsHost = stickyScope.querySelector('[data-page-layout-stats-host]');
+    const content = screen.getByTestId('page-layout-content');
     const shell = screen.getByTestId('balances-insights-shell');
 
-    expect(statsHost).toContainElement(shell);
-    expect(stickyScope.contains(shell)).toBe(true);
-    expect(shell).toHaveClass('sticky');
+    expect(content.contains(shell)).toBe(false);
+    expect(shell).not.toHaveClass('sticky');
   });
 });

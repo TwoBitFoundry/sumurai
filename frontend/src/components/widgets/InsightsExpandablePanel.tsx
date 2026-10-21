@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/ui/primitives';
 import { insightsPanel as uiInsightsPanelRecipes } from '@/ui/recipes';
 
-const EXPAND_TRANSITION = { duration: 0.24, ease: [0.22, 0.61, 0.36, 1] } as const;
+const EXPAND_TRANSITION = { duration: 0.16, ease: [0.22, 0.61, 0.36, 1] } as const;
 
 export interface InsightsExpandablePanelProps {
   testId: string;
@@ -66,9 +66,8 @@ export function InsightsExpandablePanel({
           <motion.div
             id={bodyId}
             data-testid={bodyTestId}
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={EXPAND_TRANSITION}
             className={cn('relative', 'z-10')}
           >

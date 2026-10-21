@@ -22,10 +22,7 @@ export function InsightsPanelShell({
   } as CSSProperties;
 
   return (
-    <section
-      data-testid={testId}
-      className={cn('group', 'relative', ...uiInsightsPanelRecipes.stickyShell, className)}
-    >
+    <section data-testid={testId} className={cn('group', 'relative', className)}>
       <div className={cn(...uiInsightsPanelRecipes.glassShell)}>
         <div
           aria-hidden

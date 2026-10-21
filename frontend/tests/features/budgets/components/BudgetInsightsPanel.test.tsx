@@ -40,57 +40,54 @@ describe('BudgetInsightsPanel', () => {
     window.sessionStorage.clear();
   });
 
-  it('renders the combined shell collapsed by default', () => {
+  it('renders the combined shell expanded by default', () => {
     render(<BudgetInsightsPanel {...defaultProps} />);
 
     const shell = screen.getByTestId('budget-insights-shell');
     expect(shell).toBeInTheDocument();
     expect(screen.getByText('Budget insights')).toBeInTheDocument();
-    expect(shell).toHaveClass('sticky');
-    expect(shell).toHaveClass('z-30');
+    expect(shell).not.toHaveClass('sticky');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
     expect(shell.firstElementChild?.className).toContain('var(--color-brand-fog)');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
     expect(shell.querySelector('.hero-stat-card__inset-ring')).not.toBeNull();
     expect(screen.getByRole('button', { name: /budget insights/i })).toHaveAttribute(
       'aria-expanded',
-      'false'
+      'true'
     );
-    expect(screen.queryByText('Runway')).not.toBeInTheDocument();
-    expect(screen.queryByText('Free Spend')).not.toBeInTheDocument();
-    expect(screen.queryByText('Fixed Costs')).not.toBeInTheDocument();
+    expect(screen.getByText('Runway')).toBeInTheDocument();
   });
 
-  it('restores expanded state from session storage', () => {
-    setSessionCollapsibleExpanded('budget-insights', true);
+  it('restores collapsed state from session storage', () => {
+    setSessionCollapsibleExpanded('budget-insights', false);
 
     render(<BudgetInsightsPanel {...defaultProps} />);
 
     expect(screen.getByRole('button', { name: /budget insights/i })).toHaveAttribute(
       'aria-expanded',
-      'true'
+      'false'
     );
-    expect(screen.getByText('Runway')).toBeInTheDocument();
-    expect(getSessionCollapsibleExpanded('budget-insights')).toBe(true);
+    expect(screen.queryByText('Runway')).not.toBeInTheDocument();
+    expect(getSessionCollapsibleExpanded('budget-insights')).toBe(false);
   });
 
   it('toggles the shell open and closed from the summary', async () => {
     render(<BudgetInsightsPanel {...defaultProps} />);
 
     const summaryButton = screen.getByRole('button', { name: /budget insights/i });
+    expect(summaryButton).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Runway')).toBeInTheDocument();
+
+    await userEvent.click(summaryButton);
+
     expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByText('Runway')).not.toBeInTheDocument();
+    expect(getSessionCollapsibleExpanded('budget-insights')).toBe(false);
 
     await userEvent.click(summaryButton);
 
     expect(summaryButton).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('Runway')).toBeInTheDocument();
     expect(getSessionCollapsibleExpanded('budget-insights')).toBe(true);
-
-    await userEvent.click(summaryButton);
-
-    expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
-    expect(getSessionCollapsibleExpanded('budget-insights')).toBe(false);
   });
 
   it('supports keyboard activation from the summary button', async () => {
@@ -102,9 +99,9 @@ describe('BudgetInsightsPanel', () => {
     summaryButton.focus();
 
     await user.keyboard('{Enter}');
-    expect(summaryButton).toHaveAttribute('aria-expanded', 'true');
-    await user.keyboard('{Enter}');
     expect(summaryButton).toHaveAttribute('aria-expanded', 'false');
+    await user.keyboard('{Enter}');
+    expect(summaryButton).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('lays out the detail cards as three content-fit tiles on tablet and desktop', () => {

@@ -445,13 +445,6 @@ export const radius = {
 } as const;
 
 export const insightsPanel = {
-  stickyShell: [
-    'sticky',
-    'z-30',
-    'top-[calc(env(safe-area-inset-top)+3.5rem+0.75rem)]',
-    'md:top-[calc(env(safe-area-inset-top)+3.5rem+1.5rem)]',
-    'lg:top-[calc(env(safe-area-inset-top)+3.5rem+2rem)]',
-  ],
   glassShell: [
     'relative',
     'overflow-visible',

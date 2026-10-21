@@ -7,6 +7,7 @@ import {
   getSessionThemePreference,
   getSessionTransactionsCategory,
   getSessionTransactionsSearch,
+  hasSessionCollapsibleExpanded,
   setSessionBankExpanded,
   setSessionBudgetsSectionExpanded,
   setSessionCollapsibleExpanded,
@@ -92,6 +93,15 @@ describe('sessionPreferences', () => {
     expect(getSessionCollapsibleExpanded('balances-insights')).toBe(true);
 
     setSessionCollapsibleExpanded('balances-insights', false);
+    expect(getSessionCollapsibleExpanded('balances-insights')).toBe(false);
+  });
+
+  it('remembers an explicit collapse so it overrides an expanded default', () => {
+    expect(hasSessionCollapsibleExpanded('balances-insights')).toBe(false);
+
+    setSessionCollapsibleExpanded('balances-insights', false);
+
+    expect(hasSessionCollapsibleExpanded('balances-insights')).toBe(true);
     expect(getSessionCollapsibleExpanded('balances-insights')).toBe(false);
   });
 

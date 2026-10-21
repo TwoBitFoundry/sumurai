@@ -51,7 +51,7 @@ function setViewportWidth(width: number) {
 async function expandTransactionInsights(
   user: ReturnType<typeof userEvent.setup> = userEvent.setup()
 ) {
-  const toggle = screen.getByRole('button', { name: /expand transaction insights/i });
+  const toggle = screen.getByRole('button', { name: /(expand|collapse) transaction insights/i });
   if (toggle.getAttribute('aria-expanded') !== 'true') {
     await user.click(toggle);
   }
@@ -68,8 +68,7 @@ describe('TransactionInsightsPanel', () => {
     const shell = screen.getByTestId('transaction-insights-shell');
     expect(shell).toBeInTheDocument();
     expect(screen.getByText('Transaction insights')).toBeInTheDocument();
-    expect(shell).toHaveClass('sticky');
-    expect(shell).toHaveClass('z-30');
+    expect(shell).not.toHaveClass('sticky');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
     expect(shell.firstElementChild?.className).toContain('var(--color-brand-fog)');
     expect(shell.firstElementChild?.className).toContain('backdrop-blur-md');
@@ -82,21 +81,23 @@ describe('TransactionInsightsPanel', () => {
 
     renderPanel({ insights: makeInsights(), isLoading: false, resetKey: 'k1' });
 
-    const toggle = screen.getByRole('button', { name: /expand transaction insights/i });
-    expect(toggle).toHaveAttribute('aria-label', 'Expand transaction insights');
-    expect(screen.queryByTestId('transaction-insights-panel-body')).not.toBeInTheDocument();
-
-    await user.click(toggle);
-
+    const toggle = screen.getByRole('button', { name: /collapse transaction insights/i });
+    expect(toggle).toHaveAttribute('aria-label', 'Collapse transaction insights');
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByTestId('transaction-insights-panel-body')).toBeInTheDocument();
     expect(screen.getByText('Volume')).toBeInTheDocument();
 
     await user.click(toggle);
 
-    expect(
-      screen.getByRole('button', { name: /expand transaction insights/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /expand transaction insights/i })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    );
+    expect(screen.queryByTestId('transaction-insights-panel-body')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /expand transaction insights/i }));
+
+    expect(screen.getByTestId('transaction-insights-panel-body')).toBeInTheDocument();
   });
 
   it('shows Loading… indicator when isLoading is true', () => {

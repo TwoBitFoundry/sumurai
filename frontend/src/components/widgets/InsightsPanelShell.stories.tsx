@@ -7,15 +7,15 @@ import { InsightsPanelShell } from './InsightsPanelShell';
 
 const meta = {
   title: 'Widgets/Insights Panel Shell',
-  component: StickyPanelShellDemo,
+  component: PanelShellDemo,
   tags: ['autodocs', 'test'],
-} satisfies Meta<typeof StickyPanelShellDemo>;
+} satisfies Meta<typeof PanelShellDemo>;
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-function StickyPanelShellDemo() {
+function PanelShellDemo() {
   return (
     <div
       className={cn(
@@ -51,8 +51,8 @@ function StickyPanelShellDemo() {
   );
 }
 
-export const StickyPanelShell: Story = {
-  render: () => <StickyPanelShellDemo />,
+export const Default: Story = {
+  render: () => <PanelShellDemo />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByTestId('insights-shell-story')).toBeVisible();
