@@ -3,6 +3,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::config::Config;
+use crate::models::domain_error::DomainError;
 use crate::models::plaid::{
     DisconnectResult, ProviderConnectResponse, ProviderConnection, ProviderConnectionStatus,
     ProviderInfoResponse, ProviderSelectResponse, ProviderStatusResponse,
@@ -26,45 +27,34 @@ use crate::services::sync_service::SyncService;
 use crate::services::CacheService;
 
 #[derive(Debug)]
-pub enum ProviderOrchestrationError {
+pub enum ProviderSyncOrchestrationError {
     SyncQuotaLimited {
         retry_after_secs: u64,
     },
-    InvalidSyncClientInput,
-    SyncQuotaCheckFailed,
-    UnsupportedSyncProvider,
     SyncFailed {
         error: ProviderSyncError,
         user_id: Uuid,
         item_id: String,
     },
-    UnsupportedConnectProvider,
-    SetupTokenMissing,
-    SetupTokenMalformed,
-    SetupTokenAlreadyClaimed,
-    SetupTokenClaimFailed,
-    CredentialStorageFailed,
-    SnapshotFetchFailed,
-    ConnectionPersistenceFailed,
-    NoInstitutionsOnBridge,
-    AllInstitutionsHidden,
-    NoInstitutionsLinked,
+    Domain(DomainError),
+}
+
+impl From<DomainError> for ProviderSyncOrchestrationError {
+    fn from(error: DomainError) -> Self {
+        Self::Domain(error)
+    }
+}
+
+#[derive(Debug)]
+pub enum ProviderConnectOrchestrationError {
     InstitutionsRequireAuth(Vec<SimpleFinInstitutionAuthRequired>),
-    LoadUserFailed,
-    UserNotFound,
-    SelectionUserMissing,
-    LoadConnectionsFailed,
-    ProviderNotRegistered(String),
-    ProviderDisabled(String),
-    ActiveConnectionConflict {
-        conflicting_provider: String,
-    },
-    UpdateProviderFailed,
-    ConnectionNotFound,
-    DisconnectFailed,
-    InvalidOrgConnId,
-    ListIgnoredInstitutionsFailed,
-    RestoreIgnoredInstitutionFailed,
+    Domain(DomainError),
+}
+
+impl From<DomainError> for ProviderConnectOrchestrationError {
+    fn from(error: DomainError) -> Self {
+        Self::Domain(error)
+    }
 }
 
 pub struct SyncDependencies {
@@ -122,7 +112,7 @@ impl ProviderOrchestrator {
         jwt_id: &str,
         mut connection: ProviderConnection,
         request: ProviderSyncRequest,
-    ) -> Result<SyncTransactionsResponse, ProviderOrchestrationError> {
+    ) -> Result<SyncTransactionsResponse, ProviderSyncOrchestrationError> {
         let provider = connection.provider.clone();
 
         match self
@@ -133,11 +123,11 @@ impl ProviderOrchestrator {
         {
             Ok(SyncQuotaDecision::Allowed { .. }) => {}
             Ok(SyncQuotaDecision::Limited { retry_after_secs }) => {
-                return Err(ProviderOrchestrationError::SyncQuotaLimited { retry_after_secs });
+                return Err(ProviderSyncOrchestrationError::SyncQuotaLimited { retry_after_secs });
             }
             Err(ProviderSyncRateLimitError::InvalidClientDate)
             | Err(ProviderSyncRateLimitError::InvalidClientTimezone) => {
-                return Err(ProviderOrchestrationError::InvalidSyncClientInput);
+                return Err(DomainError::bad_request("Invalid client date or timezone").into());
             }
             Err(ProviderSyncRateLimitError::Cache(error)) => {
                 tracing::error!(
@@ -145,7 +135,7 @@ impl ProviderOrchestrator {
                     user_id = %user_id,
                     "Sync quota check failed"
                 );
-                return Err(ProviderOrchestrationError::SyncQuotaCheckFailed);
+                return Err(DomainError::internal("Failed to check sync quota").into());
             }
         }
 
@@ -165,7 +155,7 @@ impl ProviderOrchestrator {
                     connection.provider,
                     user_id
                 );
-                ProviderOrchestrationError::UnsupportedSyncProvider
+                DomainError::bad_request("Provider does not support transaction sync")
             })?;
 
         match self
@@ -201,7 +191,7 @@ impl ProviderOrchestrator {
 
                 Ok(response)
             }
-            Err(error) => Err(ProviderOrchestrationError::SyncFailed {
+            Err(error) => Err(ProviderSyncOrchestrationError::SyncFailed {
                 error,
                 user_id,
                 item_id: connection.item_id.clone(),
@@ -214,7 +204,7 @@ impl ProviderOrchestrator {
         user_id: Uuid,
         jwt_id: &str,
         req: &ProviderConnectRequest,
-    ) -> Result<ProviderConnectResponse, ProviderOrchestrationError> {
+    ) -> Result<ProviderConnectResponse, ProviderConnectOrchestrationError> {
         match req.provider.as_str() {
             "simplefin" => match self
                 .connection_service
@@ -231,7 +221,7 @@ impl ProviderOrchestrator {
                         STATUS_BAD_REQUEST,
                         "provider.connect",
                     );
-                    Err(ProviderOrchestrationError::UnsupportedConnectProvider)
+                    Err(DomainError::bad_request("Unsupported provider").into())
                 }
                 Err(SimpleFinConnectError::MissingSetupToken) => {
                     log_provider_credential_outcome(
@@ -239,7 +229,10 @@ impl ProviderOrchestrator {
                         STATUS_BAD_REQUEST,
                         "provider.connect",
                     );
-                    Err(ProviderOrchestrationError::SetupTokenMissing)
+                    Err(DomainError::bad_request(
+                        "Provide a SimpleFIN setup token to connect this account",
+                    )
+                    .into())
                 }
                 Err(SimpleFinConnectError::MalformedSetupToken) => {
                     log_provider_credential_outcome(
@@ -247,7 +240,7 @@ impl ProviderOrchestrator {
                         STATUS_BAD_REQUEST,
                         "provider.connect",
                     );
-                    Err(ProviderOrchestrationError::SetupTokenMalformed)
+                    Err(DomainError::bad_request("The SimpleFIN setup token is malformed").into())
                 }
                 Err(SimpleFinConnectError::SetupTokenAlreadyClaimed) => {
                     log_provider_credential_outcome(
@@ -255,7 +248,11 @@ impl ProviderOrchestrator {
                         STATUS_UNPROCESSABLE_ENTITY,
                         "provider.connect",
                     );
-                    Err(ProviderOrchestrationError::SetupTokenAlreadyClaimed)
+                    Err(DomainError::unprocessable(
+                        "This SimpleFIN setup token has already been used",
+                    )
+                    .with_error_name("SETUP_TOKEN_ALREADY_CLAIMED")
+                    .into())
                 }
                 Err(SimpleFinConnectError::ClaimFailed(e)) => {
                     log_provider_credential_outcome(
@@ -268,7 +265,11 @@ impl ProviderOrchestrator {
                         user_id,
                         e
                     );
-                    Err(ProviderOrchestrationError::SetupTokenClaimFailed)
+                    Err(
+                        DomainError::unprocessable("Could not claim the SimpleFIN setup token")
+                            .with_error_name("SETUP_TOKEN_CLAIM_FAILED")
+                            .into(),
+                    )
                 }
                 Err(SimpleFinConnectError::CredentialStorage(e)) => {
                     log_provider_credential_outcome(
@@ -281,7 +282,7 @@ impl ProviderOrchestrator {
                         user_id,
                         e
                     );
-                    Err(ProviderOrchestrationError::CredentialStorageFailed)
+                    Err(DomainError::internal("Failed to store credentials").into())
                 }
                 Err(SimpleFinConnectError::SnapshotFetch(e)) => {
                     log_provider_credential_outcome(
@@ -294,7 +295,7 @@ impl ProviderOrchestrator {
                         user_id,
                         e
                     );
-                    Err(ProviderOrchestrationError::SnapshotFetchFailed)
+                    Err(DomainError::failed_dependency("SimpleFIN provider request failed").into())
                 }
                 Err(SimpleFinConnectError::ConnectionPersistence(e)) => {
                     log_provider_credential_outcome(
@@ -307,7 +308,7 @@ impl ProviderOrchestrator {
                         user_id,
                         e
                     );
-                    Err(ProviderOrchestrationError::ConnectionPersistenceFailed)
+                    Err(DomainError::internal("Failed to save connection").into())
                 }
                 Err(SimpleFinConnectError::NoInstitutionsOnBridge) => {
                     log_provider_credential_outcome(
@@ -315,7 +316,11 @@ impl ProviderOrchestrator {
                         STATUS_UNPROCESSABLE_ENTITY,
                         "provider.connect",
                     );
-                    Err(ProviderOrchestrationError::NoInstitutionsOnBridge)
+                    Err(DomainError::unprocessable(
+                        "No institutions are available from your SimpleFIN bridge yet",
+                    )
+                    .with_error_name("NO_INSTITUTIONS")
+                    .into())
                 }
                 Err(SimpleFinConnectError::AllInstitutionsHidden) => {
                     log_provider_credential_outcome(
@@ -323,7 +328,10 @@ impl ProviderOrchestrator {
                         STATUS_UNPROCESSABLE_ENTITY,
                         "provider.connect",
                     );
-                    Err(ProviderOrchestrationError::AllInstitutionsHidden)
+                    Err(DomainError::unprocessable(
+                        "All SimpleFIN institutions are hidden in Sumurai. Restore one to start syncing.",
+                    )
+                    .with_error_name("ALL_INSTITUTIONS_HIDDEN").into())
                 }
                 Err(SimpleFinConnectError::NoInstitutionsLinked) => {
                     log_provider_credential_outcome(
@@ -331,7 +339,10 @@ impl ProviderOrchestrator {
                         STATUS_UNPROCESSABLE_ENTITY,
                         "provider.connect",
                     );
-                    Err(ProviderOrchestrationError::NoInstitutionsLinked)
+                    Err(DomainError::unprocessable(
+                        "No SimpleFIN institutions could be linked. Try again or check your bridge setup.",
+                    )
+                    .with_error_name("NO_INSTITUTIONS").into())
                 }
                 Err(SimpleFinConnectError::InstitutionsRequireAuth(notices)) => {
                     log_provider_credential_outcome(
@@ -339,7 +350,9 @@ impl ProviderOrchestrator {
                         STATUS_UNPROCESSABLE_ENTITY,
                         "provider.connect",
                     );
-                    Err(ProviderOrchestrationError::InstitutionsRequireAuth(notices))
+                    Err(ProviderConnectOrchestrationError::InstitutionsRequireAuth(
+                        notices,
+                    ))
                 }
             },
             _ => {
@@ -348,15 +361,12 @@ impl ProviderOrchestrator {
                     STATUS_BAD_REQUEST,
                     "provider.connect",
                 );
-                Err(ProviderOrchestrationError::UnsupportedConnectProvider)
+                Err(DomainError::bad_request("Unsupported provider").into())
             }
         }
     }
 
-    pub async fn status(
-        &self,
-        user_id: Uuid,
-    ) -> Result<ProviderStatusResponse, ProviderOrchestrationError> {
+    pub async fn status(&self, user_id: Uuid) -> Result<ProviderStatusResponse, DomainError> {
         let provider = match self.repository.get_user_by_id(&user_id).await {
             Ok(Some(user)) => {
                 if self.availability.is_available(&user.provider) {
@@ -368,7 +378,7 @@ impl ProviderOrchestrator {
             Ok(None) => String::new(),
             Err(e) => {
                 tracing::error!("Failed to load user {} for provider status: {}", user_id, e);
-                return Err(ProviderOrchestrationError::LoadUserFailed);
+                return Err(DomainError::internal("Failed to fetch user"));
             }
         };
 
@@ -380,21 +390,18 @@ impl ProviderOrchestrator {
         })
     }
 
-    pub async fn info(
-        &self,
-        user_id: Uuid,
-    ) -> Result<ProviderInfoResponse, ProviderOrchestrationError> {
+    pub async fn info(&self, user_id: Uuid) -> Result<ProviderInfoResponse, DomainError> {
         let user = self
             .repository
             .get_user_by_id(&user_id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to get user {}: {}", user_id, e);
-                ProviderOrchestrationError::LoadUserFailed
+                DomainError::internal("Failed to fetch user")
             })?
             .ok_or_else(|| {
                 tracing::error!("User {} not found", user_id);
-                ProviderOrchestrationError::UserNotFound
+                DomainError::not_found("User not found")
             })?;
 
         let mut available_providers = Vec::new();
@@ -425,28 +432,31 @@ impl ProviderOrchestrator {
         &self,
         user_id: Uuid,
         requested_provider: String,
-    ) -> Result<ProviderSelectResponse, ProviderOrchestrationError> {
+    ) -> Result<ProviderSelectResponse, DomainError> {
         if !self.availability.is_registered(&requested_provider) {
-            return Err(ProviderOrchestrationError::ProviderNotRegistered(
-                requested_provider,
-            ));
+            return Err(DomainError::bad_request(format!(
+                "Provider '{}' is not registered",
+                requested_provider
+            )));
         }
 
         if !self.availability.is_enabled(&requested_provider) {
-            return Err(ProviderOrchestrationError::ProviderDisabled(
-                requested_provider,
-            ));
+            return Err(DomainError::forbidden(format!(
+                "Provider '{}' is disabled in this deployment",
+                requested_provider
+            ))
+            .with_code("PROVIDER_DISABLED"));
         }
 
         let _user = match self.repository.get_user_by_id(&user_id).await {
             Ok(Some(user)) => user,
             Ok(None) => {
                 tracing::error!("User {} not found", user_id);
-                return Err(ProviderOrchestrationError::SelectionUserMissing);
+                return Err(DomainError::internal("User not found"));
             }
             Err(e) => {
                 tracing::error!("Failed to get user {}: {}", user_id, e);
-                return Err(ProviderOrchestrationError::LoadUserFailed);
+                return Err(DomainError::internal("Failed to fetch user"));
             }
         };
 
@@ -458,7 +468,7 @@ impl ProviderOrchestrator {
             Ok(conns) => conns,
             Err(e) => {
                 tracing::error!("Failed to get connections for user {}: {}", user_id, e);
-                return Err(ProviderOrchestrationError::LoadConnectionsFailed);
+                return Err(DomainError::internal("Failed to check active connections"));
             }
         };
 
@@ -469,9 +479,10 @@ impl ProviderOrchestrator {
                     && connection.provider != "diy")
                     .then_some(connection.provider.as_str())
             }) {
-                return Err(ProviderOrchestrationError::ActiveConnectionConflict {
-                    conflicting_provider: conflicting_provider.to_string(),
-                });
+                return Err(DomainError::conflict(format!(
+                    "Disconnect all {} accounts before switching",
+                    conflicting_provider
+                )));
             }
         }
 
@@ -488,7 +499,7 @@ impl ProviderOrchestrator {
             }
             Err(e) => {
                 tracing::error!("Failed to update provider for user {}: {}", user_id, e);
-                Err(ProviderOrchestrationError::UpdateProviderFailed)
+                Err(DomainError::internal("Failed to update provider selection"))
             }
         }
     }
@@ -498,17 +509,17 @@ impl ProviderOrchestrator {
         user_id: Uuid,
         jwt_id: &str,
         connection: &ProviderConnection,
-    ) -> Result<DisconnectResult, ProviderOrchestrationError> {
+    ) -> Result<DisconnectResult, DomainError> {
         match self
             .connection_service
             .disconnect_owned_connection(connection, &user_id, jwt_id)
             .await
         {
             Ok(result) if result.success => Ok(result),
-            Ok(_) => Err(ProviderOrchestrationError::ConnectionNotFound),
+            Ok(_) => Err(DomainError::not_found("Connection not found")),
             Err(e) => {
                 tracing::error!("Failed to disconnect: {}", e);
-                Err(ProviderOrchestrationError::DisconnectFailed)
+                Err(DomainError::internal("Failed to disconnect connection"))
             }
         }
     }
@@ -516,7 +527,7 @@ impl ProviderOrchestrator {
     pub async fn list_simplefin_ignored_institutions(
         &self,
         user_id: Uuid,
-    ) -> Result<Vec<SimpleFinIgnoredInstitution>, ProviderOrchestrationError> {
+    ) -> Result<Vec<SimpleFinIgnoredInstitution>, DomainError> {
         self.connection_service
             .list_simplefin_ignored_institutions(&user_id)
             .await
@@ -526,7 +537,7 @@ impl ProviderOrchestrator {
                     user_id,
                     e
                 );
-                ProviderOrchestrationError::ListIgnoredInstitutionsFailed
+                DomainError::internal("Failed to list ignored institutions")
             })
     }
 
@@ -534,10 +545,12 @@ impl ProviderOrchestrator {
         &self,
         user_id: Uuid,
         org_conn_id: &str,
-    ) -> Result<bool, ProviderOrchestrationError> {
+    ) -> Result<bool, DomainError> {
         let org_conn_id = org_conn_id.trim();
         if org_conn_id.is_empty() {
-            return Err(ProviderOrchestrationError::InvalidOrgConnId);
+            return Err(DomainError::bad_request(
+                "Invalid institution connection id",
+            ));
         }
 
         self.connection_service
@@ -549,21 +562,21 @@ impl ProviderOrchestrator {
                     user_id,
                     e
                 );
-                ProviderOrchestrationError::RestoreIgnoredInstitutionFailed
+                DomainError::internal("Failed to restore ignored institution")
             })
     }
 
     async fn load_connection_statuses(
         &self,
         user_id: &Uuid,
-    ) -> Result<Vec<ProviderConnectionStatus>, ProviderOrchestrationError> {
+    ) -> Result<Vec<ProviderConnectionStatus>, DomainError> {
         let connections = self
             .repository
             .get_all_provider_connections_by_user(user_id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to get connections for user {}: {}", user_id, e);
-                ProviderOrchestrationError::LoadConnectionsFailed
+                DomainError::internal("Failed to check active connections")
             })?;
 
         Ok(connections

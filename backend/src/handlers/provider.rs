@@ -1,15 +1,28 @@
 use axum::{
+    extract::State,
     http::{
         header::{CONTENT_TYPE, RETRY_AFTER},
         StatusCode,
     },
     response::{IntoResponse, Json, Response},
 };
+use chrono::NaiveDate;
 use uuid::Uuid;
 
+use crate::middleware::resource_authorization::AuthorizedConnectionRequest;
 use crate::models::api_error::ApiErrorResponse;
+use crate::models::app_state::AppState;
+use crate::models::auth::AuthContext;
+use crate::models::plaid::{
+    DisconnectRequest, DisconnectResult, ProviderConnectResponse, ProviderInfoResponse,
+    ProviderSelectRequest, ProviderSelectResponse, ProviderStatusResponse, SyncTransactionsRequest,
+};
+use crate::models::provider_connect::{ProviderConnectRequest, ProviderSyncRequest};
+use crate::models::transaction::SyncTransactionsResponse;
 use crate::services::connection_service::ProviderSyncError;
-use crate::services::provider_orchestrator::ProviderOrchestrationError;
+use crate::services::provider_orchestrator::{
+    ProviderConnectOrchestrationError, ProviderSyncOrchestrationError,
+};
 
 pub fn provider_disabled_response(provider: &str) -> (StatusCode, Json<ApiErrorResponse>) {
     ApiErrorResponse::with_code(
@@ -36,122 +49,28 @@ fn sync_quota_rate_limited_response(retry_after_secs: u64) -> Response {
         .unwrap_or_else(|_| Response::new(axum::body::Body::empty()))
 }
 
-impl From<ProviderOrchestrationError> for Response {
-    fn from(error: ProviderOrchestrationError) -> Self {
+impl From<ProviderSyncOrchestrationError> for Response {
+    fn from(error: ProviderSyncOrchestrationError) -> Self {
         match error {
-            ProviderOrchestrationError::SyncQuotaLimited { retry_after_secs } => {
+            ProviderSyncOrchestrationError::SyncQuotaLimited { retry_after_secs } => {
                 sync_quota_rate_limited_response(retry_after_secs)
             }
-            ProviderOrchestrationError::InvalidSyncClientInput
-            | ProviderOrchestrationError::UnsupportedSyncProvider => {
-                StatusCode::BAD_REQUEST.into_response()
-            }
-            ProviderOrchestrationError::SyncQuotaCheckFailed => {
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
-            ProviderOrchestrationError::SyncFailed {
+            ProviderSyncOrchestrationError::SyncFailed {
                 error,
                 user_id,
                 item_id,
             } => provider_sync_error_to_response(error, user_id, &item_id),
-            other => <(StatusCode, Json<ApiErrorResponse>)>::from(other).into_response(),
-        }
-    }
-}
-
-impl From<ProviderOrchestrationError> for StatusCode {
-    fn from(error: ProviderOrchestrationError) -> Self {
-        match error {
-            ProviderOrchestrationError::InvalidSyncClientInput
-            | ProviderOrchestrationError::UnsupportedSyncProvider
-            | ProviderOrchestrationError::UnsupportedConnectProvider
-            | ProviderOrchestrationError::SetupTokenMissing
-            | ProviderOrchestrationError::SetupTokenMalformed
-            | ProviderOrchestrationError::ProviderNotRegistered(_)
-            | ProviderOrchestrationError::InvalidOrgConnId => StatusCode::BAD_REQUEST,
-            ProviderOrchestrationError::ProviderDisabled(_) => StatusCode::FORBIDDEN,
-            ProviderOrchestrationError::UserNotFound
-            | ProviderOrchestrationError::ConnectionNotFound => StatusCode::NOT_FOUND,
-            ProviderOrchestrationError::ActiveConnectionConflict { .. } => StatusCode::CONFLICT,
-            ProviderOrchestrationError::SyncQuotaLimited { .. } => StatusCode::TOO_MANY_REQUESTS,
-            ProviderOrchestrationError::SetupTokenAlreadyClaimed
-            | ProviderOrchestrationError::SetupTokenClaimFailed
-            | ProviderOrchestrationError::NoInstitutionsOnBridge
-            | ProviderOrchestrationError::AllInstitutionsHidden
-            | ProviderOrchestrationError::NoInstitutionsLinked
-            | ProviderOrchestrationError::InstitutionsRequireAuth(_) => {
-                StatusCode::UNPROCESSABLE_ENTITY
-            }
-            ProviderOrchestrationError::SnapshotFetchFailed => StatusCode::FAILED_DEPENDENCY,
-            ProviderOrchestrationError::SyncQuotaCheckFailed
-            | ProviderOrchestrationError::SyncFailed { .. }
-            | ProviderOrchestrationError::CredentialStorageFailed
-            | ProviderOrchestrationError::ConnectionPersistenceFailed
-            | ProviderOrchestrationError::LoadUserFailed
-            | ProviderOrchestrationError::SelectionUserMissing
-            | ProviderOrchestrationError::LoadConnectionsFailed
-            | ProviderOrchestrationError::UpdateProviderFailed
-            | ProviderOrchestrationError::DisconnectFailed
-            | ProviderOrchestrationError::ListIgnoredInstitutionsFailed
-            | ProviderOrchestrationError::RestoreIgnoredInstitutionFailed => {
-                StatusCode::INTERNAL_SERVER_ERROR
+            ProviderSyncOrchestrationError::Domain(error) => {
+                StatusCode::from(error).into_response()
             }
         }
     }
 }
 
-impl From<ProviderOrchestrationError> for (StatusCode, Json<ApiErrorResponse>) {
-    fn from(error: ProviderOrchestrationError) -> Self {
+impl From<ProviderConnectOrchestrationError> for (StatusCode, Json<ApiErrorResponse>) {
+    fn from(error: ProviderConnectOrchestrationError) -> Self {
         match error {
-            ProviderOrchestrationError::UnsupportedConnectProvider => {
-                ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
-                    .into_response(StatusCode::BAD_REQUEST)
-            }
-            ProviderOrchestrationError::SetupTokenMissing => ApiErrorResponse::new(
-                "BAD_REQUEST",
-                "Provide a SimpleFIN setup token to connect this account",
-            )
-            .into_response(StatusCode::BAD_REQUEST),
-            ProviderOrchestrationError::SetupTokenMalformed => {
-                ApiErrorResponse::new("BAD_REQUEST", "The SimpleFIN setup token is malformed")
-                    .into_response(StatusCode::BAD_REQUEST)
-            }
-            ProviderOrchestrationError::SetupTokenAlreadyClaimed => ApiErrorResponse::new(
-                "SETUP_TOKEN_ALREADY_CLAIMED",
-                "This SimpleFIN setup token has already been used",
-            )
-            .into_response(StatusCode::UNPROCESSABLE_ENTITY),
-            ProviderOrchestrationError::SetupTokenClaimFailed => ApiErrorResponse::new(
-                "SETUP_TOKEN_CLAIM_FAILED",
-                "Could not claim the SimpleFIN setup token",
-            )
-            .into_response(StatusCode::UNPROCESSABLE_ENTITY),
-            ProviderOrchestrationError::CredentialStorageFailed => {
-                ApiErrorResponse::internal_server_error("Failed to store credentials")
-            }
-            ProviderOrchestrationError::SnapshotFetchFailed => {
-                ApiErrorResponse::new("FAILED_DEPENDENCY", "SimpleFIN provider request failed")
-                    .into_response(StatusCode::FAILED_DEPENDENCY)
-            }
-            ProviderOrchestrationError::ConnectionPersistenceFailed => {
-                ApiErrorResponse::internal_server_error("Failed to save connection")
-            }
-            ProviderOrchestrationError::NoInstitutionsOnBridge => ApiErrorResponse::new(
-                "NO_INSTITUTIONS",
-                "No institutions are available from your SimpleFIN bridge yet",
-            )
-            .into_response(StatusCode::UNPROCESSABLE_ENTITY),
-            ProviderOrchestrationError::AllInstitutionsHidden => ApiErrorResponse::new(
-                "ALL_INSTITUTIONS_HIDDEN",
-                "All SimpleFIN institutions are hidden in Sumurai. Restore one to start syncing.",
-            )
-            .into_response(StatusCode::UNPROCESSABLE_ENTITY),
-            ProviderOrchestrationError::NoInstitutionsLinked => ApiErrorResponse::new(
-                "NO_INSTITUTIONS",
-                "No SimpleFIN institutions could be linked. Try again or check your bridge setup.",
-            )
-            .into_response(StatusCode::UNPROCESSABLE_ENTITY),
-            ProviderOrchestrationError::InstitutionsRequireAuth(notices) => {
+            ProviderConnectOrchestrationError::InstitutionsRequireAuth(notices) => {
                 let message = if notices.len() == 1 {
                     format!(
                         "{} needs to be re-authenticated in your SimpleFIN dashboard before it can sync.",
@@ -171,41 +90,7 @@ impl From<ProviderOrchestrationError> for (StatusCode, Json<ApiErrorResponse>) {
                 }
                 .into_response(StatusCode::UNPROCESSABLE_ENTITY)
             }
-            ProviderOrchestrationError::ProviderNotRegistered(provider) => ApiErrorResponse::new(
-                "BAD_REQUEST",
-                &format!("Provider '{}' is not registered", provider),
-            )
-            .into_response(StatusCode::BAD_REQUEST),
-            ProviderOrchestrationError::ProviderDisabled(provider) => {
-                provider_disabled_response(&provider)
-            }
-            ProviderOrchestrationError::SelectionUserMissing => {
-                ApiErrorResponse::internal_server_error("User not found")
-            }
-            ProviderOrchestrationError::LoadUserFailed => {
-                ApiErrorResponse::internal_server_error("Failed to fetch user")
-            }
-            ProviderOrchestrationError::LoadConnectionsFailed => {
-                ApiErrorResponse::internal_server_error("Failed to check active connections")
-            }
-            ProviderOrchestrationError::ActiveConnectionConflict {
-                conflicting_provider,
-            } => ApiErrorResponse::new(
-                "CONFLICT",
-                &format!(
-                    "Disconnect all {} accounts before switching",
-                    conflicting_provider
-                ),
-            )
-            .into_response(StatusCode::CONFLICT),
-            ProviderOrchestrationError::UpdateProviderFailed => {
-                ApiErrorResponse::internal_server_error("Failed to update provider selection")
-            }
-            other => {
-                let status = StatusCode::from(other);
-                ApiErrorResponse::new("PROVIDER_ERROR", "Provider request failed")
-                    .into_response(status)
-            }
+            ProviderConnectOrchestrationError::Domain(error) => error.into(),
         }
     }
 }
@@ -354,4 +239,267 @@ fn provider_sync_error_to_response(
             )
         }
     }
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/providers/sync-transactions",
+    description = "Kicks off a provider sync to pull the latest transactions.",
+    request_body = SyncTransactionsRequest,
+    responses(
+        (status = 200, description = "Transactions synced successfully", body = SyncTransactionsResponse),
+        (status = 400, description = "Missing connection_id"),
+        (status = 401, description = "Unauthorized"),
+        (status = 415, description = "Unsupported media type"),
+        (status = 404, description = "Connection not found or credentials missing"),
+        (status = 424, description = "Provider request failed"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Financial Providers"
+)]
+pub async fn sync_authenticated_provider_transactions(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    req: AuthorizedConnectionRequest<SyncTransactionsRequest>,
+) -> Result<Json<SyncTransactionsResponse>, Response> {
+    let user_id = auth_context.user_id;
+    let AuthorizedConnectionRequest {
+        _body: request_body,
+        connection,
+    } = req;
+
+    tracing::info!(
+        user_id = %user_id,
+        connection_id = %connection.id,
+        item_id = %connection.item_id,
+        "Sync transactions requested"
+    );
+
+    let reference_date = NaiveDate::parse_from_str(&request_body.client_date, "%Y-%m-%d")
+        .map_err(|_| StatusCode::BAD_REQUEST.into_response())?;
+
+    let provider = connection.provider.clone();
+    if !state.config.is_financial_provider_enabled(&provider) {
+        return Err(provider_disabled_response(&provider).into_response());
+    }
+
+    state
+        .providers()
+        .sync_transactions(
+            user_id,
+            &auth_context.jwt_id,
+            connection,
+            ProviderSyncRequest {
+                client_date: request_body.client_date,
+                client_timezone: request_body.client_timezone,
+                reference_date,
+            },
+        )
+        .await
+        .map(Json)
+        .map_err(Into::into)
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/providers/connect",
+    description = "Completes provider connect enrollment and stores provider credentials for the user.",
+    request_body = ProviderConnectRequest,
+    responses(
+        (status = 200, description = "Provider connected successfully", body = ProviderConnectResponse),
+        (status = 400, description = "Unsupported provider"),
+        (status = 401, description = "Unauthorized"),
+        (status = 424, description = "Provider request failed", body = ApiErrorResponse),
+        (status = 500, description = "Failed to connect provider", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Financial Providers"
+)]
+pub async fn connect_authenticated_provider(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<ProviderConnectRequest>,
+) -> Result<Json<ProviderConnectResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    if state.provider_registry.get(&req.provider).is_some()
+        && !state.config.is_financial_provider_enabled(&req.provider)
+    {
+        return Err(provider_disabled_response(&req.provider));
+    }
+
+    state
+        .providers()
+        .connect(auth_context.user_id, &auth_context.jwt_id, &req)
+        .await
+        .map(Json)
+        .map_err(Into::into)
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/providers/status",
+    description = "Summarizes connection status, sync metrics, and active institutions for the selected provider.",
+    responses(
+        (status = 200, description = "Provider connection status and statistics", body = ProviderStatusResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Financial Providers"
+)]
+pub async fn get_authenticated_provider_status(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<ProviderStatusResponse>, StatusCode> {
+    state
+        .providers()
+        .status(auth_context.user_id)
+        .await
+        .map(Json)
+        .map_err(Into::into)
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/providers/info",
+    description = "Describes available providers and the caller's current selection.",
+    responses(
+        (status = 200, description = "Available providers and current user provider configuration", body = ProviderInfoResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "User not found"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Financial Providers"
+)]
+pub async fn get_authenticated_provider_info(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<ProviderInfoResponse>, StatusCode> {
+    state
+        .providers()
+        .info(auth_context.user_id)
+        .await
+        .map(Json)
+        .map_err(Into::into)
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/providers/select",
+    description = "Persists a provider switch for the authenticated user.",
+    request_body = ProviderSelectRequest,
+    responses(
+        (status = 200, description = "Provider selected successfully", body = ProviderSelectResponse),
+        (status = 400, description = "Invalid provider specified", body = ApiErrorResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 409, description = "Cannot switch while active connections exist", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Financial Providers"
+)]
+pub async fn select_authenticated_provider(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<ProviderSelectRequest>,
+) -> Result<Json<ProviderSelectResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    state
+        .providers()
+        .select(auth_context.user_id, req.provider)
+        .await
+        .map(Json)
+        .map_err(Into::into)
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/providers/disconnect",
+    description = "Disconnects a provider connection and clears related cached artifacts.",
+    request_body = DisconnectRequest,
+    responses(
+        (status = 200, description = "Provider connection disconnected", body = DisconnectResult),
+        (status = 400, description = "Invalid connection_id format"),
+        (status = 401, description = "Unauthorized"),
+        (status = 415, description = "Unsupported media type"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Financial Providers"
+)]
+pub async fn disconnect_authenticated_connection(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    req: AuthorizedConnectionRequest<DisconnectRequest>,
+) -> Result<Json<DisconnectResult>, StatusCode> {
+    state
+        .providers()
+        .disconnect(auth_context.user_id, &auth_context.jwt_id, &req.connection)
+        .await
+        .map(Json)
+        .map_err(Into::into)
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/providers/simplefin/ignored-institutions",
+    description = "Lists SimpleFIN bridge institutions the user has hidden in Sumurai.",
+    responses(
+        (status = 200, description = "Ignored institutions", body = crate::models::simplefin::SimpleFinIgnoredInstitutionsResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Financial Providers"
+)]
+pub async fn get_authenticated_simplefin_ignored_institutions(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<crate::models::simplefin::SimpleFinIgnoredInstitutionsResponse>, StatusCode> {
+    if !state.config.is_financial_provider_enabled("simplefin") {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
+    state
+        .providers()
+        .list_simplefin_ignored_institutions(auth_context.user_id)
+        .await
+        .map(|institutions| {
+            Json(crate::models::simplefin::SimpleFinIgnoredInstitutionsResponse { institutions })
+        })
+        .map_err(Into::into)
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/providers/simplefin/ignored-institutions",
+    description = "Removes a SimpleFIN institution from the ignore list so connect/sync can import it again. Idempotent: returns 200 even if the institution was not on the ignore list.",
+    request_body = crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionRequest,
+    responses(
+        (status = 200, description = "Institution restored (or was already not ignored)", body = crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse),
+        (status = 400, description = "Invalid request"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Financial Providers"
+)]
+pub async fn restore_authenticated_simplefin_ignored_institution(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionRequest>,
+) -> Result<Json<crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse>, StatusCode>
+{
+    if !state.config.is_financial_provider_enabled("simplefin") {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
+    state
+        .providers()
+        .restore_simplefin_ignored_institution(auth_context.user_id, &req.org_conn_id)
+        .await
+        .map(|restored| {
+            Json(crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse { restored })
+        })
+        .map_err(Into::into)
 }

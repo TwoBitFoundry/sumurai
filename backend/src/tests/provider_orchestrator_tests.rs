@@ -7,6 +7,7 @@ use uuid::Uuid;
 
 use crate::config::{Config, MockEnvironment};
 use crate::models::auth::User;
+use crate::models::domain_error::DomainError;
 use crate::models::plaid::ProviderConnection;
 use crate::models::provider_connect::{ProviderConnectRequest, ProviderSyncRequest};
 use crate::models::simplefin::SimpleFinIgnoredInstitution;
@@ -14,7 +15,8 @@ use crate::providers::{FinancialDataProvider, MockFinancialDataProvider, Provide
 use crate::services::cache_service::{CacheService, MockCacheService};
 use crate::services::connection_service::{ConnectionService, ProviderSyncError};
 use crate::services::provider_orchestrator::{
-    ProviderAvailability, ProviderOrchestrationError, ProviderOrchestrator, SyncDependencies,
+    ProviderAvailability, ProviderConnectOrchestrationError, ProviderOrchestrator,
+    ProviderSyncOrchestrationError, SyncDependencies,
 };
 use crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService;
 use crate::services::repository_service::{DatabaseRepository, MockDatabaseRepository};
@@ -173,7 +175,7 @@ async fn given_exhausted_quota_when_syncing_then_reports_quota_limited_with_retr
 
     assert!(matches!(
         result,
-        Err(ProviderOrchestrationError::SyncQuotaLimited { retry_after_secs }) if retry_after_secs >= 1
+        Err(ProviderSyncOrchestrationError::SyncQuotaLimited { retry_after_secs }) if retry_after_secs >= 1
     ));
 }
 
@@ -194,7 +196,7 @@ async fn given_invalid_timezone_when_syncing_then_reports_invalid_client_input()
 
     assert!(matches!(
         result,
-        Err(ProviderOrchestrationError::InvalidSyncClientInput)
+        Err(ProviderSyncOrchestrationError::Domain(error)) if error == DomainError::bad_request("Invalid client date or timezone")
     ));
 }
 
@@ -219,7 +221,7 @@ async fn given_quota_cache_failure_when_syncing_then_reports_quota_check_failed(
 
     assert!(matches!(
         result,
-        Err(ProviderOrchestrationError::SyncQuotaCheckFailed)
+        Err(ProviderSyncOrchestrationError::Domain(error)) if error == DomainError::internal("Failed to check sync quota")
     ));
 }
 
@@ -241,7 +243,7 @@ async fn given_provider_without_sync_support_when_syncing_then_reports_unsupport
 
     assert!(matches!(
         result,
-        Err(ProviderOrchestrationError::UnsupportedSyncProvider)
+        Err(ProviderSyncOrchestrationError::Domain(error)) if error == DomainError::bad_request("Provider does not support transaction sync")
     ));
 }
 
@@ -266,7 +268,7 @@ async fn given_missing_credentials_when_syncing_then_reports_sync_failed_with_it
         .await;
 
     match result {
-        Err(ProviderOrchestrationError::SyncFailed {
+        Err(ProviderSyncOrchestrationError::SyncFailed {
             error,
             user_id: failed_user,
             item_id,
@@ -298,7 +300,7 @@ async fn given_unknown_provider_when_connecting_then_reports_unsupported_provide
 
     assert!(matches!(
         result,
-        Err(ProviderOrchestrationError::UnsupportedConnectProvider)
+        Err(ProviderConnectOrchestrationError::Domain(error)) if error == DomainError::bad_request("Unsupported provider")
     ));
 }
 
@@ -363,10 +365,10 @@ async fn given_user_lookup_failure_when_reading_status_then_reports_load_user_fa
 
     let result = fixture.build().status(Uuid::new_v4()).await;
 
-    assert!(matches!(
-        result,
-        Err(ProviderOrchestrationError::LoadUserFailed)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to fetch user"))
+    );
 }
 
 #[tokio::test]
@@ -382,10 +384,10 @@ async fn given_connection_lookup_failure_when_reading_status_then_reports_load_c
 
     let result = fixture.build().status(user_id).await;
 
-    assert!(matches!(
-        result,
-        Err(ProviderOrchestrationError::LoadConnectionsFailed)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to check active connections"))
+    );
 }
 
 #[tokio::test]
@@ -424,10 +426,7 @@ async fn given_missing_user_when_reading_info_then_reports_user_not_found() {
 
     let result = fixture.build().info(Uuid::new_v4()).await;
 
-    assert!(matches!(
-        result,
-        Err(ProviderOrchestrationError::UserNotFound)
-    ));
+    assert_eq!(result.err(), Some(DomainError::not_found("User not found")));
 }
 
 #[tokio::test]
@@ -440,10 +439,10 @@ async fn given_user_lookup_failure_when_reading_info_then_reports_load_user_fail
 
     let result = fixture.build().info(Uuid::new_v4()).await;
 
-    assert!(matches!(
-        result,
-        Err(ProviderOrchestrationError::LoadUserFailed)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to fetch user"))
+    );
 }
 
 #[tokio::test]
@@ -456,10 +455,12 @@ async fn given_unregistered_provider_when_selecting_then_reports_not_registered(
         .select(Uuid::new_v4(), "simplefin".to_string())
         .await;
 
-    assert!(matches!(
-        result,
-        Err(ProviderOrchestrationError::ProviderNotRegistered(provider)) if provider == "simplefin"
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::bad_request(
+            "Provider 'simplefin' is not registered"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -472,10 +473,13 @@ async fn given_disabled_provider_when_selecting_then_reports_provider_disabled()
         .select(Uuid::new_v4(), "simplefin".to_string())
         .await;
 
-    assert!(matches!(
-        result,
-        Err(ProviderOrchestrationError::ProviderDisabled(provider)) if provider == "simplefin"
-    ));
+    assert_eq!(
+        result.err(),
+        Some(
+            DomainError::forbidden("Provider 'simplefin' is disabled in this deployment")
+                .with_code("PROVIDER_DISABLED")
+        )
+    );
 }
 
 #[tokio::test]
@@ -491,10 +495,7 @@ async fn given_missing_user_when_selecting_then_reports_selection_user_missing()
         .select(Uuid::new_v4(), "plaid".to_string())
         .await;
 
-    assert!(matches!(
-        result,
-        Err(ProviderOrchestrationError::SelectionUserMissing)
-    ));
+    assert_eq!(result.err(), Some(DomainError::internal("User not found")));
 }
 
 #[tokio::test]
@@ -510,10 +511,10 @@ async fn given_user_lookup_failure_when_selecting_then_reports_load_user_failed(
         .select(Uuid::new_v4(), "plaid".to_string())
         .await;
 
-    assert!(matches!(
-        result,
-        Err(ProviderOrchestrationError::LoadUserFailed)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to fetch user"))
+    );
 }
 
 #[tokio::test]
@@ -528,10 +529,10 @@ async fn given_connection_lookup_failure_when_selecting_then_reports_load_connec
 
     let result = fixture.build().select(user_id, "plaid".to_string()).await;
 
-    assert!(matches!(
-        result,
-        Err(ProviderOrchestrationError::LoadConnectionsFailed)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to check active connections"))
+    );
 }
 
 #[tokio::test]
@@ -549,11 +550,12 @@ async fn given_active_connection_on_other_provider_when_selecting_then_reports_c
         .select(user_id, "simplefin".to_string())
         .await;
 
-    assert!(matches!(
-        result,
-        Err(ProviderOrchestrationError::ActiveConnectionConflict { conflicting_provider })
-            if conflicting_provider == "plaid"
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::conflict(
+            "Disconnect all plaid accounts before switching"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -619,10 +621,10 @@ async fn given_update_failure_when_selecting_then_reports_update_failed() {
 
     let result = fixture.build().select(user_id, "plaid".to_string()).await;
 
-    assert!(matches!(
-        result,
-        Err(ProviderOrchestrationError::UpdateProviderFailed)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to update provider selection"))
+    );
 }
 
 #[tokio::test]
@@ -634,10 +636,10 @@ async fn given_connection_owned_by_other_user_when_disconnecting_then_reports_di
         .disconnect(Uuid::new_v4(), "jwt", &connection)
         .await;
 
-    assert!(matches!(
-        result,
-        Err(ProviderOrchestrationError::DisconnectFailed)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to disconnect connection"))
+    );
 }
 
 #[tokio::test]
@@ -681,10 +683,10 @@ async fn given_repository_failure_when_listing_ignored_institutions_then_reports
         .list_simplefin_ignored_institutions(Uuid::new_v4())
         .await;
 
-    assert!(matches!(
-        result,
-        Err(ProviderOrchestrationError::ListIgnoredInstitutionsFailed)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal("Failed to list ignored institutions"))
+    );
 }
 
 #[tokio::test]
@@ -694,10 +696,12 @@ async fn given_blank_org_conn_id_when_restoring_then_reports_invalid_org_conn_id
         .restore_simplefin_ignored_institution(Uuid::new_v4(), "   ")
         .await;
 
-    assert!(matches!(
-        result,
-        Err(ProviderOrchestrationError::InvalidOrgConnId)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::bad_request(
+            "Invalid institution connection id"
+        ))
+    );
 }
 
 #[tokio::test]
@@ -736,8 +740,10 @@ async fn given_repository_failure_when_restoring_then_reports_restore_failed() {
         .restore_simplefin_ignored_institution(Uuid::new_v4(), "org-1")
         .await;
 
-    assert!(matches!(
-        result,
-        Err(ProviderOrchestrationError::RestoreIgnoredInstitutionFailed)
-    ));
+    assert_eq!(
+        result.err(),
+        Some(DomainError::internal(
+            "Failed to restore ignored institution"
+        ))
+    );
 }
