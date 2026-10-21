@@ -4,7 +4,8 @@ use chrono::NaiveDate;
 use rust_decimal_macros::dec;
 use uuid::Uuid;
 
-use crate::models::custom_category::{CustomCategory, CustomCategoryError};
+use crate::models::custom_category::CustomCategory;
+use crate::models::domain_error::DomainError;
 use crate::models::transaction::Transaction;
 use crate::models::transaction_category_override::{
     SetTransactionCategoryRequest, TransactionCategoryOverride,
@@ -12,7 +13,7 @@ use crate::models::transaction_category_override::{
 use crate::services::cache_service::MockCacheService;
 use crate::services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
 use crate::services::category_management::service::CategoryManagementService;
-use crate::services::category_orchestrator::{CategoryOrchestrationError, CategoryOrchestrator};
+use crate::services::category_orchestrator::CategoryOrchestrator;
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::utils::merchant_name::normalize_merchant_for_match;
 
@@ -105,7 +106,7 @@ async fn given_repository_failure_when_listing_transaction_categories_then_repor
 
     assert_eq!(
         result,
-        Err(CategoryOrchestrationError::LoadTransactionCategoriesFailed)
+        Err(DomainError::internal("Failed to fetch categories"))
     );
 }
 
@@ -117,7 +118,9 @@ async fn given_name_with_digits_when_creating_custom_category_then_rejects_befor
 
     assert_eq!(
         result.unwrap_err(),
-        CategoryOrchestrationError::InvalidCustomCategory(CustomCategoryError::InvalidCharacters)
+        DomainError::bad_request("Invalid characters")
+            .with_code("invalid_characters")
+            .with_error_name("validation_error")
     );
 }
 
@@ -129,9 +132,9 @@ async fn given_system_category_name_when_creating_custom_category_then_reports_c
 
     assert_eq!(
         result.unwrap_err(),
-        CategoryOrchestrationError::InvalidCustomCategory(
-            CustomCategoryError::CollidesWithSystemCategory
-        )
+        DomainError::bad_request("Collides with system category")
+            .with_code("collides_with_system_category")
+            .with_error_name("validation_error")
     );
 }
 
@@ -177,7 +180,7 @@ async fn given_repository_failure_when_deleting_custom_category_then_reports_del
 
     assert_eq!(
         result,
-        Err(CategoryOrchestrationError::DeleteCustomCategoryFailed)
+        Err(DomainError::internal("Failed to delete custom category"))
     );
 }
 
@@ -201,7 +204,10 @@ async fn given_foreign_transaction_when_setting_category_then_reports_not_found(
         )
         .await;
 
-    assert_eq!(result, Err(CategoryOrchestrationError::TransactionNotFound));
+    assert_eq!(
+        result,
+        Err(DomainError::not_found("transaction_not_found").with_error_name("not_found"))
+    );
 }
 
 #[tokio::test]
@@ -234,7 +240,8 @@ async fn given_unknown_custom_category_when_setting_category_then_reports_custom
 
     assert_eq!(
         result,
-        Err(CategoryOrchestrationError::CustomCategoryNotFound)
+        Err(DomainError::bad_request("custom_category_not_found")
+            .with_error_name("validation_error"))
     );
 }
 
@@ -259,7 +266,7 @@ async fn given_repository_failure_when_setting_category_then_reports_set_failed(
 
     assert_eq!(
         result,
-        Err(CategoryOrchestrationError::SetTransactionCategoryFailed)
+        Err(DomainError::internal("internal_server_error").with_error_name("internal_error"))
     );
 }
 
@@ -343,4 +350,21 @@ async fn given_cache_invalidation_failure_when_setting_category_then_still_succe
         .await;
 
     assert_eq!(result, Ok(()));
+}
+
+#[tokio::test]
+async fn given_repository_failure_when_creating_custom_category_then_reports_internal_error() {
+    let mut repository = MockDatabaseRepository::new();
+    repository
+        .expect_list_custom_categories_for_user()
+        .returning(|_| Box::pin(async { Err(anyhow::anyhow!("db unavailable")) }));
+
+    let result = orchestrator(repository, MockCacheService::new())
+        .create_custom(Uuid::new_v4(), "Coffee Runs")
+        .await;
+
+    assert_eq!(
+        result.unwrap_err(),
+        DomainError::internal("internal_server_error").with_error_name("internal_error")
+    );
 }

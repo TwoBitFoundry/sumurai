@@ -1,76 +1,145 @@
-use axum::{http::StatusCode, response::Json};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::Json,
+};
+use uuid::Uuid;
 
 use crate::models::api_error::ApiErrorResponse;
-use crate::models::custom_category::CustomCategoryError;
-use crate::services::category_orchestrator::CategoryOrchestrationError;
+use crate::models::app_state::AppState;
+use crate::models::auth::AuthContext;
+use crate::models::custom_category::{
+    CategoryListResponse, CreateCustomCategoryRequest, CustomCategory,
+};
+use crate::models::transaction_category_override::SetTransactionCategoryRequest;
 
-impl From<CategoryOrchestrationError> for StatusCode {
-    fn from(error: CategoryOrchestrationError) -> Self {
-        match error {
-            CategoryOrchestrationError::LoadTransactionCategoriesFailed
-            | CategoryOrchestrationError::LoadCategoriesFailed
-            | CategoryOrchestrationError::CreateCustomCategoryFailed
-            | CategoryOrchestrationError::DeleteCustomCategoryFailed
-            | CategoryOrchestrationError::SetTransactionCategoryFailed => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
-            CategoryOrchestrationError::InvalidCustomCategory(_)
-            | CategoryOrchestrationError::CustomCategoryNotFound
-            | CategoryOrchestrationError::InvalidTransactionCategory => StatusCode::BAD_REQUEST,
-            CategoryOrchestrationError::TransactionNotFound => StatusCode::NOT_FOUND,
-        }
-    }
+#[utoipa::path(
+    get,
+    path = "/api/transactions/categories",
+    description = "Returns the user's transaction categories sorted and deduplicated.",
+    responses(
+        (status = 200, description = "List of categories", body = Vec<String>),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Transactions"
+)]
+pub async fn get_authenticated_transaction_categories(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<Vec<String>>, StatusCode> {
+    state
+        .categories()
+        .transaction_categories(auth_context.user_id)
+        .await
+        .map(Json)
+        .map_err(Into::into)
 }
 
-impl From<CategoryOrchestrationError> for (StatusCode, Json<ApiErrorResponse>) {
-    fn from(error: CategoryOrchestrationError) -> Self {
-        match error {
-            CategoryOrchestrationError::InvalidCustomCategory(validation) => {
-                let (message, code) = custom_category_validation_message(validation);
-                ApiErrorResponse::with_code("validation_error", message, code)
-                    .into_response(StatusCode::BAD_REQUEST)
-            }
-            CategoryOrchestrationError::CreateCustomCategoryFailed
-            | CategoryOrchestrationError::SetTransactionCategoryFailed => {
-                ApiErrorResponse::new("internal_error", "internal_server_error")
-                    .into_response(StatusCode::INTERNAL_SERVER_ERROR)
-            }
-            CategoryOrchestrationError::DeleteCustomCategoryFailed => {
-                ApiErrorResponse::internal_server_error("Failed to delete custom category")
-            }
-            CategoryOrchestrationError::TransactionNotFound => {
-                ApiErrorResponse::new("not_found", "transaction_not_found")
-                    .into_response(StatusCode::NOT_FOUND)
-            }
-            CategoryOrchestrationError::CustomCategoryNotFound => {
-                ApiErrorResponse::new("validation_error", "custom_category_not_found")
-                    .into_response(StatusCode::BAD_REQUEST)
-            }
-            CategoryOrchestrationError::InvalidTransactionCategory => {
-                ApiErrorResponse::new("validation_error", "validation_error")
-                    .into_response(StatusCode::BAD_REQUEST)
-            }
-            CategoryOrchestrationError::LoadTransactionCategoriesFailed
-            | CategoryOrchestrationError::LoadCategoriesFailed => {
-                ApiErrorResponse::internal_server_error("Failed to fetch categories")
-            }
-        }
-    }
+#[utoipa::path(
+    get,
+    path = "/api/categories",
+    responses(
+        (status = 200, description = "List of system and custom categories", body = CategoryListResponse),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Categories"
+)]
+pub async fn list_categories(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<CategoryListResponse>, StatusCode> {
+    state
+        .categories()
+        .list(auth_context.user_id)
+        .await
+        .map(Json)
+        .map_err(Into::into)
 }
 
-fn custom_category_validation_message(error: CustomCategoryError) -> (&'static str, &'static str) {
-    match error {
-        CustomCategoryError::NameTooLong => ("Name too long", "name_too_long"),
-        CustomCategoryError::TooManyWords => ("Too many words", "too_many_words"),
-        CustomCategoryError::EmptyName => ("Name is empty", "empty_name"),
-        CustomCategoryError::InvalidCharacters => ("Invalid characters", "invalid_characters"),
-        CustomCategoryError::CollidesWithSystemCategory => (
-            "Collides with system category",
-            "collides_with_system_category",
-        ),
-        CustomCategoryError::CollidesWithExistingCustom => (
-            "Collides with existing custom category",
-            "collides_with_existing_custom",
-        ),
-    }
+#[utoipa::path(
+    post,
+    path = "/api/categories/custom",
+    request_body = CreateCustomCategoryRequest,
+    responses(
+        (status = 200, description = "Custom category created", body = CustomCategory),
+        (status = 400, description = "Validation error with error code"),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Categories"
+)]
+pub async fn create_custom_category(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<CreateCustomCategoryRequest>,
+) -> Result<Json<CustomCategory>, (StatusCode, Json<ApiErrorResponse>)> {
+    state
+        .categories()
+        .create_custom(auth_context.user_id, &req.name)
+        .await
+        .map(Json)
+        .map_err(Into::into)
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/categories/custom/{id}",
+    params(
+        ("id" = Uuid, Path, description = "Custom category ID"),
+    ),
+    responses(
+        (status = 204, description = "Custom category deleted"),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Categories"
+)]
+pub async fn delete_custom_category(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Path(id): axum::extract::Path<Uuid>,
+) -> Result<StatusCode, (StatusCode, Json<ApiErrorResponse>)> {
+    state
+        .categories()
+        .delete_custom(auth_context.user_id, id)
+        .await
+        .map(|_| StatusCode::NO_CONTENT)
+        .map_err(Into::into)
+}
+
+#[utoipa::path(
+    put,
+    path = "/api/transactions/{id}/category",
+    request_body = SetTransactionCategoryRequest,
+    params(
+        ("id" = Uuid, Path, description = "Transaction ID"),
+    ),
+    responses(
+        (status = 200, description = "Category updated"),
+        (status = 400, description = "Validation error"),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 404, description = "Transaction not found"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Transactions"
+)]
+pub async fn set_transaction_category(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Path(id): axum::extract::Path<Uuid>,
+    Json(req): Json<SetTransactionCategoryRequest>,
+) -> Result<StatusCode, (StatusCode, Json<ApiErrorResponse>)> {
+    state
+        .categories()
+        .set_transaction_category(auth_context.user_id, &auth_context.jwt_id, id, req)
+        .await
+        .map(|_| StatusCode::OK)
+        .map_err(Into::into)
 }

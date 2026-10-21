@@ -488,20 +488,23 @@ pub fn create_app(state: AppState) -> Router {
         )
         .route(
             "/api/transactions/categories",
-            get(get_authenticated_transaction_categories),
+            get(handlers::category::get_authenticated_transaction_categories),
         )
-        .route("/api/categories", get(list_categories))
-        .route("/api/categories/custom", post(create_custom_category))
+        .route("/api/categories", get(handlers::category::list_categories))
+        .route(
+            "/api/categories/custom",
+            post(handlers::category::create_custom_category),
+        )
         .route(
             "/api/categories/custom/{id}",
-            delete(delete_custom_category),
+            delete(handlers::category::delete_custom_category),
         )
         .nest("/api/transactions/import", transaction_import_routes)
         .route("/api/export", get(get_authenticated_export))
         .route("/api/transactions", get(get_authenticated_transactions))
         .route(
             "/api/transactions/{id}/category",
-            put(set_transaction_category),
+            put(handlers::category::set_transaction_category),
         )
         .route(
             "/api/transactions/insights",
@@ -1273,140 +1276,6 @@ async fn get_authenticated_transactions_contextual_insights(
         .contextual_insights(auth_context.user_id, filter)
         .await
         .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    get,
-    path = "/api/transactions/categories",
-    description = "Returns the user's transaction categories sorted and deduplicated.",
-    responses(
-        (status = 200, description = "List of categories", body = Vec<String>),
-        (status = 401, description = "Unauthorized"),
-        (status = 500, description = "Internal server error"),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Transactions"
-)]
-async fn get_authenticated_transaction_categories(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-) -> Result<Json<Vec<String>>, StatusCode> {
-    state
-        .categories()
-        .transaction_categories(auth_context.user_id)
-        .await
-        .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    get,
-    path = "/api/categories",
-    responses(
-        (status = 200, description = "List of system and custom categories", body = crate::models::custom_category::CategoryListResponse),
-        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
-        (status = 500, description = "Internal server error"),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Categories"
-)]
-async fn list_categories(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-) -> Result<Json<crate::models::custom_category::CategoryListResponse>, StatusCode> {
-    state
-        .categories()
-        .list(auth_context.user_id)
-        .await
-        .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    post,
-    path = "/api/categories/custom",
-    request_body = crate::models::custom_category::CreateCustomCategoryRequest,
-    responses(
-        (status = 200, description = "Custom category created", body = crate::models::custom_category::CustomCategory),
-        (status = 400, description = "Validation error with error code"),
-        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
-        (status = 500, description = "Internal server error"),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Categories"
-)]
-async fn create_custom_category(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    Json(req): Json<crate::models::custom_category::CreateCustomCategoryRequest>,
-) -> Result<
-    Json<crate::models::custom_category::CustomCategory>,
-    (StatusCode, Json<ApiErrorResponse>),
-> {
-    state
-        .categories()
-        .create_custom(auth_context.user_id, &req.name)
-        .await
-        .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    delete,
-    path = "/api/categories/custom/{id}",
-    params(
-        ("id" = Uuid, Path, description = "Custom category ID"),
-    ),
-    responses(
-        (status = 204, description = "Custom category deleted"),
-        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
-        (status = 500, description = "Internal server error"),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Categories"
-)]
-async fn delete_custom_category(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    axum::extract::Path(id): axum::extract::Path<Uuid>,
-) -> Result<StatusCode, (StatusCode, Json<ApiErrorResponse>)> {
-    state
-        .categories()
-        .delete_custom(auth_context.user_id, id)
-        .await
-        .map(|_| StatusCode::NO_CONTENT)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    put,
-    path = "/api/transactions/{id}/category",
-    request_body = crate::models::transaction_category_override::SetTransactionCategoryRequest,
-    params(
-        ("id" = Uuid, Path, description = "Transaction ID"),
-    ),
-    responses(
-        (status = 200, description = "Category updated"),
-        (status = 400, description = "Validation error"),
-        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
-        (status = 404, description = "Transaction not found"),
-        (status = 500, description = "Internal server error"),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Transactions"
-)]
-async fn set_transaction_category(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    axum::extract::Path(id): axum::extract::Path<Uuid>,
-    Json(req): Json<crate::models::transaction_category_override::SetTransactionCategoryRequest>,
-) -> Result<StatusCode, (StatusCode, Json<ApiErrorResponse>)> {
-    state
-        .categories()
-        .set_transaction_category(auth_context.user_id, &auth_context.jwt_id, id, req)
-        .await
-        .map(|_| StatusCode::OK)
         .map_err(Into::into)
 }
 
