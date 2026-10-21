@@ -57,7 +57,6 @@ use crate::models::{
     account::AccountResponse,
     analytics::DateRangeQuery,
     auth as auth_models,
-    export::{ExportFormat, ExportQuery},
     plaid::{
         ClearSyncedDataResponse, DisconnectRequest, DisconnectResult, ExchangeTokenRequest,
         ExchangeTokenResponse, LinkTokenRequest, LinkTokenResponse, ProviderConnectResponse,
@@ -72,36 +71,11 @@ use crate::models::{
     auth::{DeleteAccountResponse, LogoutResponse, OnboardingCompleteResponse},
 };
 
-#[utoipa::path(
-    get,
-    path = "/api/export",
-    description = "Downloads the current user's stored accounts and transactions as CSV or OFX.",
-    params(
-        ("format" = ExportFormat, Query, description = "Export format"),
-        ("connection_id" = Option<Uuid>, Query, description = "Optional provider connection filter")
-    ),
-    responses(
-        (status = 200, description = "Downloaded export file", body = String),
-        (status = 401, description = "Unauthorized"),
-        (status = 500, description = "Internal server error")
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Transactions"
-)]
-pub async fn get_authenticated_export(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    Query(query): Query<ExportQuery>,
-) -> Result<axum::response::Response, StatusCode> {
-    build_authenticated_export_response(State(state), auth_context, Query(query)).await
-}
-
 use crate::providers::{PlaidCredentialResolver, SimpleFinCredentialResolver};
 use crate::utils::encryption_key::parse_encryption_key_hex;
 use auth_middleware::auth_middleware;
 use config::Config;
 use handlers::analytics::{lenient_analytics_filter, parse_analytics_range, parse_month_param};
-use handlers::export::build_authenticated_export_response;
 use handlers::provider::provider_disabled_response;
 use middleware::auth_ip_ban::auth_ip_ban_middleware;
 use middleware::passkey_enrollment::{
@@ -499,7 +473,10 @@ pub fn create_app(state: AppState) -> Router {
             delete(handlers::category::delete_custom_category),
         )
         .nest("/api/transactions/import", transaction_import_routes)
-        .route("/api/export", get(get_authenticated_export))
+        .route(
+            "/api/export",
+            get(handlers::export::get_authenticated_export),
+        )
         .route(
             "/api/transactions",
             get(handlers::transaction::get_authenticated_transactions),

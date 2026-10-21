@@ -140,7 +140,7 @@ use utoipa::OpenApi;
         crate::handlers::category::list_categories,
         crate::handlers::category::create_custom_category,
         crate::handlers::category::delete_custom_category,
-        crate::get_authenticated_export,
+        crate::handlers::export::get_authenticated_export,
         crate::handlers::transaction::get_authenticated_transactions,
         crate::handlers::transaction::get_authenticated_transactions_insights,
         crate::handlers::transaction::get_authenticated_transactions_contextual_insights,
