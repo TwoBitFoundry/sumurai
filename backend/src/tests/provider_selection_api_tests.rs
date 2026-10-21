@@ -20,7 +20,6 @@ use crate::services::{
     cache_service::CacheService, category_management::service::CategoryManagementService,
     connection_service::ConnectionService, otel_traces_relay::OtlpTracesRelay,
     plaid_service::RealPlaidClient, repository_service::DatabaseRepository,
-    sync_service_factory::SyncServiceFactory,
 };
 use crate::test_fixtures::{
     apply_passkey_enrollment_mock_defaults, build_credential_resolvers, noop_categorizer,
@@ -140,10 +139,6 @@ async fn build_test_app_with_config(
         noop_categorizer(),
         credential_resolvers,
     ));
-    let sync_service_factory = Arc::new(SyncServiceFactory::new(
-        connection_service.clone(),
-        sync_service.clone(),
-    ));
     let auth_service = Arc::new(
         AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap(),
     );
@@ -167,7 +162,6 @@ async fn build_test_app_with_config(
     let state = AppState {
         plaid_client: plaid_client_arc,
         sync_service,
-        sync_service_factory,
         analytics_service,
         budget_service,
         authorization_service,

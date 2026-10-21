@@ -19,7 +19,6 @@ use crate::services::provider_orchestrator::{
 use crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService;
 use crate::services::repository_service::{DatabaseRepository, MockDatabaseRepository};
 use crate::services::sync_service::SyncService;
-use crate::services::sync_service_factory::SyncServiceFactory;
 use crate::test_fixtures::{build_credential_resolvers, noop_categorizer};
 
 fn config(allowlist: Option<&str>) -> Config {
@@ -38,6 +37,10 @@ fn registry(names: &[&'static str]) -> ProviderRegistry {
         provider
             .expect_provider_name()
             .return_const((*name).to_string());
+        let supports_sync = matches!(*name, "plaid" | "simplefin");
+        provider
+            .expect_supports_transaction_sync()
+            .return_const(supports_sync);
         (*name, Arc::new(provider) as Arc<dyn FinancialDataProvider>)
     });
     ProviderRegistry::from_providers(providers)
@@ -75,17 +78,13 @@ impl Fixture {
             build_credential_resolvers(db.clone()),
         ));
         let sync_service = Arc::new(SyncService::new(registry.clone()));
-        let sync_service_factory = Arc::new(SyncServiceFactory::new(
-            connection_service.clone(),
-            sync_service,
-        ));
         ProviderOrchestrator::new(
             connection_service,
             db,
             cache,
             SyncDependencies {
                 rate_limit_service: Arc::new(ProviderSyncRateLimitService::new(quota_cache)),
-                dispatcher_factory: sync_service_factory,
+                sync_service,
             },
             ProviderAvailability {
                 registry,
@@ -225,7 +224,7 @@ async fn given_quota_cache_failure_when_syncing_then_reports_quota_check_failed(
 }
 
 #[tokio::test]
-async fn given_provider_without_dispatcher_when_syncing_then_reports_unsupported_provider() {
+async fn given_provider_without_sync_support_when_syncing_then_reports_unsupported_provider() {
     let mut fixture = Fixture::new();
     expect_quota_allowed(&mut fixture.quota_cache);
     let user_id = Uuid::new_v4();

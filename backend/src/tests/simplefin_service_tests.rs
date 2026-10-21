@@ -873,7 +873,7 @@ async fn build_simplefin_handler_app(
         auto_categorization::AutoCategorizationService, budget_service::BudgetService,
         cache_service::CacheService, connection_service::ConnectionService,
         otel_traces_relay::OtlpTracesRelay, repository_service::DatabaseRepository,
-        sync_service::SyncService, sync_service_factory::SyncServiceFactory, RealPlaidClient,
+        sync_service::SyncService, RealPlaidClient,
     };
 
     let snapshot_for_accounts = snapshot;
@@ -963,11 +963,6 @@ async fn build_simplefin_handler_app(
         noop_categorizer(),
         credential_resolvers,
     ));
-    let sync_service_factory = Arc::new(SyncServiceFactory::new(
-        connection_service.clone(),
-        sync_service.clone(),
-    ));
-
     let auth_service = Arc::new(
         AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap(),
     );
@@ -996,7 +991,6 @@ async fn build_simplefin_handler_app(
     let state = AppState {
         plaid_client,
         sync_service,
-        sync_service_factory,
         analytics_service: Arc::new(AnalyticsService::new()),
         budget_service: Arc::new(BudgetService::new()),
         authorization_service: Arc::new(AuthorizationService::new()),

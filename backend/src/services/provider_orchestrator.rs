@@ -22,7 +22,7 @@ use crate::services::provider_sync_rate_limit_service::{
     ProviderSyncRateLimitError, ProviderSyncRateLimitService, SyncQuotaDecision,
 };
 use crate::services::repository_service::DatabaseRepository;
-use crate::services::sync_service_factory::SyncServiceFactory;
+use crate::services::sync_service::SyncService;
 use crate::services::CacheService;
 
 #[derive(Debug)]
@@ -69,7 +69,7 @@ pub enum ProviderOrchestrationError {
 
 pub struct SyncDependencies {
     pub rate_limit_service: Arc<ProviderSyncRateLimitService>,
-    pub dispatcher_factory: Arc<SyncServiceFactory>,
+    pub sync_service: Arc<SyncService>,
 }
 
 pub struct ProviderAvailability {
@@ -155,10 +155,10 @@ impl ProviderOrchestrator {
             jwt_id,
         };
 
-        let dispatcher = self
-            .sync
-            .dispatcher_factory
-            .get_dispatcher(&provider)
+        self.availability
+            .registry
+            .get(&provider)
+            .filter(|adapter| adapter.supports_transaction_sync())
             .ok_or_else(|| {
                 tracing::error!(
                     "Sync transactions: unsupported provider '{}' for user {}",
@@ -168,8 +168,14 @@ impl ProviderOrchestrator {
                 ProviderOrchestrationError::UnsupportedSyncProvider
             })?;
 
-        match dispatcher
-            .sync(sync_params, &mut connection, Some(request.reference_date))
+        match self
+            .connection_service
+            .sync_provider_connection(
+                sync_params,
+                self.sync.sync_service.as_ref(),
+                &mut connection,
+                Some(request.reference_date),
+            )
             .await
         {
             Ok(response) => {

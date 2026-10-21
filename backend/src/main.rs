@@ -137,7 +137,6 @@ use services::{
     },
     AuthService, AuthorizationService, BudgetService, CacheService, CategorizationService,
     Categorizer, ConnectionService, ProviderSyncRateLimitService, RedisCache, SyncService,
-    SyncServiceFactory,
 };
 use services::{AnalyticsService, RealPlaidClient};
 use utils::auth_cookie::{build_auth_cookie, build_clearing_auth_cookie, extract_auth_cookie};
@@ -345,11 +344,6 @@ async fn main() -> anyhow::Result<()> {
         .with_simplefin_connection_service(simplefin_connection_service),
     );
 
-    let sync_service_factory = Arc::new(SyncServiceFactory::new(
-        connection_service.clone(),
-        sync_service.clone(),
-    ));
-
     let otlp_traces_relay = Arc::new(OtlpTracesRelay::from_config(&telemetry_config)?);
 
     let category_management_service =
@@ -401,7 +395,6 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState {
         plaid_client,
         sync_service,
-        sync_service_factory,
         analytics_service,
         budget_service,
         authorization_service,

@@ -427,6 +427,10 @@ impl FinancialDataProvider for SimpleFinProvider {
         "simplefin"
     }
 
+    fn supports_transaction_sync(&self) -> bool {
+        true
+    }
+
     async fn create_link_token(&self, _user_id: &Uuid) -> Result<String> {
         bail!("not yet implemented")
     }

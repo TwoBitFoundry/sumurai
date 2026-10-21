@@ -23,7 +23,6 @@ use crate::services::provider_orchestrator::{
 use crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService;
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::sync_service::SyncService;
-use crate::services::sync_service_factory::SyncServiceFactory;
 use crate::services::transaction_orchestrator::TransactionOrchestrator;
 use crate::services::webauthn_service::WebAuthnService;
 use crate::services::{
@@ -34,7 +33,6 @@ use crate::services::{
 pub struct AppState {
     pub(crate) plaid_client: Arc<RealPlaidClient>,
     pub(crate) sync_service: Arc<SyncService>,
-    pub(crate) sync_service_factory: Arc<SyncServiceFactory>,
     pub(crate) analytics_service: Arc<crate::services::AnalyticsService>,
     pub(crate) budget_service: Arc<BudgetService>,
     pub(crate) authorization_service: Arc<AuthorizationService>,
@@ -58,7 +56,6 @@ impl Clone for AppState {
         Self {
             plaid_client: self.plaid_client.clone(),
             sync_service: self.sync_service.clone(),
-            sync_service_factory: self.sync_service_factory.clone(),
             analytics_service: self.analytics_service.clone(),
             budget_service: self.budget_service.clone(),
             authorization_service: self.authorization_service.clone(),
@@ -150,7 +147,7 @@ impl AppState {
             self.cache_service.clone(),
             SyncDependencies {
                 rate_limit_service: self.provider_sync_rate_limit_service.clone(),
-                dispatcher_factory: self.sync_service_factory.clone(),
+                sync_service: self.sync_service.clone(),
             },
             ProviderAvailability {
                 registry: self.provider_registry.clone(),
