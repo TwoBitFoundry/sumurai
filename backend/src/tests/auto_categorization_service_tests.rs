@@ -684,3 +684,274 @@ async fn given_completed_job_when_detection_runs_then_detection_count_added_to_u
     assert_eq!(finished.status, AutoCategorizationJobStatus::Completed);
     assert_eq!(finished.updated, 4);
 }
+
+#[tokio::test]
+async fn given_active_job_in_cache_when_starting_then_returns_stored_active_job() {
+    let active = AutoCategorizationJobState {
+        job_id: Uuid::new_v4(),
+        status: AutoCategorizationJobStatus::Running,
+        total: 10,
+        processed: 4,
+        updated: 3,
+        skipped: 1,
+        started_at: chrono::Utc::now(),
+        finished_at: None,
+        error_message: None,
+    };
+    let stored = serde_json::to_string(&active).unwrap();
+    let mut cache = MockCacheService::new();
+    cache.expect_get_string().returning(move |_| {
+        let stored = stored.clone();
+        Box::pin(async move { Ok(Some(stored)) })
+    });
+    let service = make_service(
+        MockDatabaseRepository::new(),
+        cache,
+        Arc::new(StubCategorizer {
+            predictions: vec![],
+            gate: None,
+            entered: None,
+        }),
+    );
+
+    let result = service.start(&Uuid::new_v4(), "jwt").await;
+
+    match result {
+        Err(AutoCategorizationError::ActiveJobExists(state)) => assert_eq!(state, active),
+        other => panic!("expected ActiveJobExists, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn given_no_eligible_transactions_when_starting_then_persists_running_job() {
+    let mut db = MockDatabaseRepository::new();
+    db.expect_count_eligible_auto_categorize_transactions()
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(0) }));
+    let mut cache = MockCacheService::new();
+    cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    cache
+        .expect_set_with_ttl()
+        .times(2)
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
+    let service = make_service(
+        db,
+        cache,
+        Arc::new(StubCategorizer {
+            predictions: vec![],
+            gate: None,
+            entered: None,
+        }),
+    );
+
+    let started = service.start(&Uuid::new_v4(), "jwt").await.unwrap();
+
+    assert_eq!(started.status, AutoCategorizationJobStatus::Running);
+    assert_eq!(started.total, 0);
+    assert_eq!(started.processed, 0);
+}
+
+#[tokio::test]
+async fn given_count_failure_when_starting_then_reports_storage_error() {
+    let mut db = MockDatabaseRepository::new();
+    db.expect_count_eligible_auto_categorize_transactions()
+        .returning(|_| Box::pin(async { Err(anyhow::anyhow!("database unavailable")) }));
+    let mut cache = MockCacheService::new();
+    cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    let service = make_service(
+        db,
+        cache,
+        Arc::new(StubCategorizer {
+            predictions: vec![],
+            gate: None,
+            entered: None,
+        }),
+    );
+
+    let result = service.start(&Uuid::new_v4(), "jwt").await;
+
+    assert!(matches!(result, Err(AutoCategorizationError::Storage(_))));
+}
+
+#[tokio::test]
+async fn given_no_job_when_reading_status_then_returns_none() {
+    let mut cache = MockCacheService::new();
+    cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    let service = make_service(
+        MockDatabaseRepository::new(),
+        cache,
+        Arc::new(StubCategorizer {
+            predictions: vec![],
+            gate: None,
+            entered: None,
+        }),
+    );
+
+    let result = service.get_status(&Uuid::new_v4()).await.unwrap();
+
+    assert_eq!(result, None);
+}
+
+#[tokio::test]
+async fn given_corrupt_job_state_when_reading_status_then_returns_error() {
+    let mut cache = MockCacheService::new();
+    cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Ok(Some("not json".to_string())) }));
+    let service = make_service(
+        MockDatabaseRepository::new(),
+        cache,
+        Arc::new(StubCategorizer {
+            predictions: vec![],
+            gate: None,
+            entered: None,
+        }),
+    );
+
+    let result = service.get_status(&Uuid::new_v4()).await;
+
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn given_cache_failure_when_reading_status_then_returns_error() {
+    let mut cache = MockCacheService::new();
+    cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Err(anyhow::anyhow!("redis unavailable")) }));
+    let service = make_service(
+        MockDatabaseRepository::new(),
+        cache,
+        Arc::new(StubCategorizer {
+            predictions: vec![],
+            gate: None,
+            entered: None,
+        }),
+    );
+
+    let result = service.get_status(&Uuid::new_v4()).await;
+
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn given_no_job_when_cancelling_then_reports_no_active_job() {
+    let mut cache = MockCacheService::new();
+    cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    let service = make_service(
+        MockDatabaseRepository::new(),
+        cache,
+        Arc::new(StubCategorizer {
+            predictions: vec![],
+            gate: None,
+            entered: None,
+        }),
+    );
+
+    let result = service.cancel(&Uuid::new_v4()).await;
+
+    assert!(matches!(result, Err(AutoCategorizationError::NoActiveJob)));
+}
+
+#[tokio::test]
+async fn given_terminal_job_when_cancelling_then_returns_job_without_setting_cancel_flag() {
+    let completed = AutoCategorizationJobState {
+        job_id: Uuid::new_v4(),
+        status: AutoCategorizationJobStatus::Completed,
+        total: 10,
+        processed: 10,
+        updated: 8,
+        skipped: 2,
+        started_at: chrono::Utc::now(),
+        finished_at: Some(chrono::Utc::now()),
+        error_message: None,
+    };
+    let stored = serde_json::to_string(&completed).unwrap();
+    let mut cache = MockCacheService::new();
+    cache.expect_get_string().returning(move |_| {
+        let stored = stored.clone();
+        Box::pin(async move { Ok(Some(stored)) })
+    });
+    cache.expect_set_with_ttl().never();
+    let service = make_service(
+        MockDatabaseRepository::new(),
+        cache,
+        Arc::new(StubCategorizer {
+            predictions: vec![],
+            gate: None,
+            entered: None,
+        }),
+    );
+
+    let result = service.cancel(&Uuid::new_v4()).await.unwrap();
+
+    assert_eq!(result, completed);
+}
+
+#[tokio::test]
+async fn given_active_job_when_cancelling_then_marks_job_cancelling() {
+    let running = AutoCategorizationJobState {
+        job_id: Uuid::new_v4(),
+        status: AutoCategorizationJobStatus::Running,
+        total: 10,
+        processed: 4,
+        updated: 3,
+        skipped: 1,
+        started_at: chrono::Utc::now(),
+        finished_at: None,
+        error_message: None,
+    };
+    let stored = serde_json::to_string(&running).unwrap();
+    let mut cache = MockCacheService::new();
+    cache.expect_get_string().returning(move |_| {
+        let stored = stored.clone();
+        Box::pin(async move { Ok(Some(stored)) })
+    });
+    cache
+        .expect_set_with_ttl()
+        .times(2)
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
+    let service = make_service(
+        MockDatabaseRepository::new(),
+        cache,
+        Arc::new(StubCategorizer {
+            predictions: vec![],
+            gate: None,
+            entered: None,
+        }),
+    );
+
+    let result = service.cancel(&Uuid::new_v4()).await.unwrap();
+
+    assert_eq!(result.status, AutoCategorizationJobStatus::Cancelling);
+    assert_eq!(result.job_id, running.job_id);
+}
+
+#[tokio::test]
+async fn given_cache_failure_when_cancelling_then_reports_storage_error() {
+    let mut cache = MockCacheService::new();
+    cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Err(anyhow::anyhow!("redis unavailable")) }));
+    let service = make_service(
+        MockDatabaseRepository::new(),
+        cache,
+        Arc::new(StubCategorizer {
+            predictions: vec![],
+            gate: None,
+            entered: None,
+        }),
+    );
+
+    let result = service.cancel(&Uuid::new_v4()).await;
+
+    assert!(matches!(result, Err(AutoCategorizationError::Storage(_))));
+}

@@ -4,7 +4,6 @@ use crate::config::Config;
 use crate::providers::ProviderRegistry;
 use crate::services::analytics_orchestrator::AnalyticsOrchestrator;
 use crate::services::auth_orchestrator::AuthOrchestrator;
-use crate::services::auto_categorization_orchestrator::AutoCategorizationOrchestrator;
 use crate::services::budget_orchestrator::BudgetOrchestrator;
 use crate::services::categorization::categorization_service::Categorizer;
 use crate::services::category_management::service::CategoryManagementService;
@@ -91,10 +90,6 @@ impl AppState {
             self.cache_service.clone(),
             self.connection_service.clone(),
         )
-    }
-
-    pub fn auto_categorization(&self) -> AutoCategorizationOrchestrator {
-        AutoCategorizationOrchestrator::new(self.auto_categorization_service.clone())
     }
 
     pub fn budgets(&self) -> BudgetOrchestrator {

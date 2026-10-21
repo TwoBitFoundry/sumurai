@@ -52,7 +52,6 @@ use crate::models::analytics::{
 };
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, AuthMiddlewareState};
-use crate::models::auto_categorization_job::AutoCategorizationJobState;
 use crate::models::{
     account::AccountResponse,
     analytics::DateRangeQuery,
@@ -86,7 +85,6 @@ use middleware::telemetry_middleware::{self, request_tracing_middleware, Telemet
 use migration::MigratorTrait;
 use models::provider_connect::ProviderSyncRequest;
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DbBackend, Statement};
-use services::auto_categorization_orchestrator::AutoCategorizationOrchestrationError;
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
 use services::category_management::service::CategoryManagementService;
 use services::repository_service::{DatabaseRepository, PostgresRepository};
@@ -495,9 +493,9 @@ pub fn create_app(state: AppState) -> Router {
         )
         .route(
             "/api/transactions/auto-categorize",
-            post(start_auto_categorization)
-                .get(get_auto_categorization_status)
-                .delete(cancel_auto_categorization),
+            post(handlers::auto_categorization::start_auto_categorization)
+                .get(handlers::auto_categorization::get_auto_categorization_status)
+                .delete(handlers::auto_categorization::cancel_auto_categorization),
         )
         .route("/api/providers/info", get(get_authenticated_provider_info))
         .route("/api/providers/select", post(select_authenticated_provider))
@@ -1082,82 +1080,6 @@ async fn activate_demo_mode_onboarding(
     state
         .auth()
         .activate_demo_mode(auth_context.user_id)
-        .await
-        .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    post,
-    path = "/api/transactions/auto-categorize",
-    responses(
-        (status = 200, description = "Background categorization started", body = AutoCategorizationJobState),
-        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
-        (status = 409, description = "Active job already exists", body = AutoCategorizationJobState),
-        (status = 500, description = "Internal server error", body = ApiErrorResponse),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Transactions"
-)]
-async fn start_auto_categorization(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-) -> Result<Response, (StatusCode, Json<ApiErrorResponse>)> {
-    match state
-        .auto_categorization()
-        .start(auth_context.user_id, &auth_context.jwt_id)
-        .await
-    {
-        Ok(job) => Ok((StatusCode::OK, Json(job)).into_response()),
-        Err(AutoCategorizationOrchestrationError::ActiveJobExists(job)) => {
-            Ok((StatusCode::CONFLICT, Json(job)).into_response())
-        }
-        Err(error) => Err(error.into()),
-    }
-}
-
-#[utoipa::path(
-    get,
-    path = "/api/transactions/auto-categorize",
-    responses(
-        (status = 200, description = "Latest auto-categorization job status", body = AutoCategorizationJobState),
-        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
-        (status = 500, description = "Internal server error", body = ApiErrorResponse),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Transactions"
-)]
-async fn get_auto_categorization_status(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-) -> Result<Json<Option<AutoCategorizationJobState>>, (StatusCode, Json<ApiErrorResponse>)> {
-    state
-        .auto_categorization()
-        .status(auth_context.user_id)
-        .await
-        .map(Json)
-        .map_err(Into::into)
-}
-
-#[utoipa::path(
-    delete,
-    path = "/api/transactions/auto-categorize",
-    responses(
-        (status = 200, description = "Cancellation requested for active job", body = AutoCategorizationJobState),
-        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
-        (status = 404, description = "No active job to cancel", body = ApiErrorResponse),
-        (status = 500, description = "Internal server error", body = ApiErrorResponse),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Transactions"
-)]
-async fn cancel_auto_categorization(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-) -> Result<Json<AutoCategorizationJobState>, (StatusCode, Json<ApiErrorResponse>)> {
-    state
-        .auto_categorization()
-        .cancel(auth_context.user_id)
         .await
         .map(Json)
         .map_err(Into::into)
